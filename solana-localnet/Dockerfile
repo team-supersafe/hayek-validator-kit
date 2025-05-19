@@ -238,13 +238,6 @@ RUN --mount=type=cache,target=/root/.cache \
     mkdir -p ~/.ssh \
     && mkdir -p "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE"
 
-# COPY "./v$SOLANA_RELEASE_aarch64-unknown-linux-gnu.tar.bz2" "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE.tar.bz2"
-# RUN curl -sSfL "https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download/$SOLANA_RELEASE/aarch64-unknown-linux-gnu.tar.bz2" -o "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE.tar.bz2"
-
-# RUN --mount=type=cache,target=/root/.cache \
-#     mkdir -p "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE" \
-#     && tar -xvjf "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE.tar.bz2" --directory "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE"
-
 COPY --from=solana-binaries --chown=sol:sol "/solana-release" "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE/solana-release"
 
 RUN --mount=type=cache,target=/root/.cache \
@@ -252,10 +245,6 @@ RUN --mount=type=cache,target=/root/.cache \
     && export PATH=$SOLANA_INSTALL_DIR/active_release/bin:$PATH \
     && solana --version \
     && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.bashrc
-
-# generate validator keys
-WORKDIR /solana-localnet/validator-keys
-RUN ./_gen-validator-keys.sh
 
 # switch back to root user so the base container CMD ["/lib/systemd/systemd"] can run
 # otherwise the container will exit with unknown error 255
