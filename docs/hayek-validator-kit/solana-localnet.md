@@ -1,0 +1,205 @@
+# Solana Localnet
+
+Solana has three public clusters: `Mainnet`, `Testnet` and `Devnet`. All of these require coordination with other parties in one way or another, and it becomes hard for devs to reset state when developing locally.&#x20;
+
+The Hayek Validator Toolkit includes a fourth cluster named `Localnet`, which runs 100% inside a Docker container, and spins up a fully functioning Solana network with multiple coordinating validators in seconds.&#x20;
+
+## Benefits
+
+**Exploration**: The main benefit of the Solana Localnet is that it promotes exploration without fear. It is a disposable environment that is easy to setup, take down, change, and break as much as you want.
+
+**Speed**: Launching the Solana Localnet in your workstation takes seconds. Coordinating between nodes is instant.&#x20;
+
+**State**: Resetting state of a validator node, spining a new validator that can join Localnet, or turning off validators is near instant. Even better, you can completely delete the docker localnet cluster, and spin it again if you feel you corrupted the state doing something.
+
+**Automation**: One of the nodes of Localnet is an [Ansible Control node](ansible-control.md), which will let you run ansible scripts against your Localnet nodes as well as Mainnet and Testnet.
+
+## Workstation Setup
+
+Before running the Hayek Validator Kit Solana Localnet, you must [setup your workstation](workstation-setup.md) for success.&#x20;
+
+All the configurations related to the Hayek Validator Kit are in this [GitHub repo](github-repo.md), which you will have to clone locally if you have not done so already:&#x20;
+
+```bash
+git clone https://github.com/team-supersafe/hayek-sol-validator.git
+```
+
+You should [get familiar with the contents of the repo](github-repo.md#navigating-the-repo). The Localnet cluster is defined in the `Dockerfile` under the `solana-localnet` folder.
+
+## The Localnet Cluster
+
+### Host Inventory
+
+The Localnet cluster consist of the following containers:
+
+<table><thead><tr><th width="240.4453125">container</th><th>features</th></tr></thead><tbody><tr><td><code>entrypoint</code><br>Acts as the cluster entry point node to which the other validators connect</td><td>- Slots per epoch: 750 slots (~5 min)</td></tr><tr><td><code>primary</code><br>Runs a Solana validator fully set up and connected to the entrypoint node</td><td>- Validator connected to entrypoint<br>- 200K delegated SOL (~16% of all cluster stake)<br>- Validator identity: <code>demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw</code> (<a href="https://explorer.solana.com/address/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom&#x26;customUrl=http%3A%2F%2Flocalhost%3A8899">explorer link</a>, <a href="https://solscan.io/account/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom&#x26;customUrl=http://localhost:8899">solscan</a>)<br>- Vote account: <code>demo52s9s1foFXgnbVa8vYQM8GS9XRsJ3aMpus1rNnb</code> (<a href="https://explorer.solana.com/address/demo52s9s1foFXgnbVa8vYQM8GS9XRsJ3aMpus1rNnb?cluster=custom&#x26;customUrl=http%3A%2F%2Flocalhost%3A8899">solana explorer</a>, <a href="https://solscan.io/account/demo52s9s1foFXgnbVa8vYQM8GS9XRsJ3aMpus1rNnb?cluster=custom&#x26;customUrl=http://localhost:8899">solscan</a>)<br>- User stake account: <code>demoMwLKQwfPZpjrbGG7Ed6vbXizxFDCp5srVd1Hqky</code> (<a href="https://explorer.solana.com/address/demoMwLKQwfPZpjrbGG7Ed6vbXizxFDCp5srVd1Hqky?cluster=custom&#x26;customUrl=http%3A%2F%2Flocalhost%3A8899">solana explorer</a>, <a href="https://solscan.io/account/demoMwLKQwfPZpjrbGG7Ed6vbXizxFDCp5srVd1Hqky?cluster=custom&#x26;customUrl=http://localhost:8899">solscan</a>)</td></tr><tr><td><code>secondary</code><br>Will not be configured, giving you the chance to do it using the Ansible scripts</td><td>- Validator not configured by default<br>- Identity pubkey:<br>- Vote account pubkey</td></tr><tr><td><code>ansible-control</code><br>Your dev environment with the Solana CLI and Ansible installed</td><td>- Solana CLI and Ansible installed<br>- Access to the local cluster through <code>--url localhost (-ul)</code><br>- Access to Testnet and Mainnet clusters<br>- Access to primary and secondary nodes through ssh (ex. <code>ssh sol@primary</code>)</td></tr></tbody></table>
+
+After the cluster is provisioned, the staked SOL delegated to the `primary` node will be active at the beginning of epoch 1 (after \~5 minutes). Then the `primary` validator will start voting and move from delinquent to not-delinquent at the beginning of epoch 2.&#x20;
+
+The official Solana Explorer, and Solscan, have the option of exploring local clusters like Localnet. This means you can see the `primary` validator transactions [here](https://explorer.solana.com/address/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom\&customUrl=http%3A%2F%2Flocalhost%3A8899), as well as any other validator you provision as part of Localnet.
+
+### Running Localnet
+
+To run Localnet you must run it in Docker
+
+1. **IDE Option (recommended)** \
+   Open the repo in VSCode. This will automatically run the `docker-compose.yml` with `docker compose up` and trigger the build process of the images in the `Dockerfile`
+2.  **Docker Option**\
+    Another option, for those VSCode haters, is the run Localnet directly from Docker by running:&#x20;
+
+    ```bash
+    cd solana-localnet
+    docker compose up --detach
+    ```
+
+Congratulations! You are now running Solana Localnet, connected to your [Ansible Control](ansible-control.md) and ready to make a mess of your Localnet playground.
+
+### Resetting Localnet
+
+At times, and as you corrupt the state of your docker containers running in Localnet, you may need to reset your docker Localnet cluster to start fresh. You can accomplish this by selecting the options of "Reopen in Container" or "Rebuild Container" within VSCode.
+
+<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+
+You can also stop the cluster from docker with&#x20;
+
+```bash
+cd solana-local-cluster
+docker compose down
+```
+
+## SSH into nodes
+
+### From Workstation
+
+```sh
+ssh -p 9122 sol@localhost # ssh into primary node
+ssh -p 9222 sol@localhost # ssh into secondary node
+```
+
+Ports are mapped from your localhost to each container:
+
+* for primary: localhost 9122 maps to container 22
+* for secondary: localhost 9222 maps to container 22
+
+### From Ansible Control
+
+```sh
+ssh sol@primary # ssh into primary node
+ssh sol@secondary # ssh into secondary node
+```
+
+## Validator CLI Commands
+
+After the first login to a validator that was just setup, you'll need to have it join Localnet by setting its entrypoint, like so:&#x20;
+
+```bash
+# After login, set the RPC url to point to the entrypoint node
+RPC_URL=http://entrypoint:8899
+```
+
+Other common validator CLI commands can be found [HERE](../validator-operations/validator-commands.md).
+
+## Cluster Example
+
+### Entrypoint Node
+
+An entrypoint container can use this command to run:
+
+```sh
+solana-test-validator \
+    --slots-per-epoch 750 \
+    --limit-ledger-size 500000000 \
+    --dynamic-port-range 8000-8020 \
+    --rpc-port 8899 \
+    --bind-address 0.0.0.0 \
+    --gossip-host $(hostname -i | awk '{print $1}') \
+    --gossip-port 8001 \
+    --reset
+```
+
+... and it will output the following:
+
+```sh
+2025-04-01 10:04:00 Notice! No wallet available. `solana airdrop` localnet SOL after creating one
+2025-04-01 10:04:00 
+2025-04-01 10:04:00 Ledger location: test-ledger
+2025-04-01 10:04:00 Log: test-ledger/validator.log
+2025-04-01 10:04:00 Initializing...
+2025-04-01 10:04:05 Waiting for fees to stabilize 1...
+2025-04-01 10:04:05 Connecting...
+2025-04-01 10:04:05 Identity: 3jHsYXrWP7GrmBhzkGHp84EEwAvLtKnD6SZC9r6LM3Ji
+2025-04-01 10:04:05 Genesis Hash: 2d6eCexwpnhp66pcKidbTDaczqnnG6zBiHRK196MoFvn
+2025-04-01 10:04:05 Version: 2.1.16
+2025-04-01 10:04:05 Shred Version: 64483
+2025-04-01 10:04:05 Gossip Address: 172.21.0.3:8001
+2025-04-01 10:04:05 TPU Address: 172.21.0.3:8003
+2025-04-01 10:04:05 JSON RPC URL: http://172.21.0.3:8899
+2025-04-01 10:04:05 WebSocket PubSub URL: ws://172.21.0.3:8900
+
+# ENTRYPOINT_IDENTITY_PUBKEY=3jHsYXrWP7GrmBhzkGHp84EEwAvLtKnD6SZC9r6LM3Ji
+```
+
+If `--gossip-host <IP_ADDRESS>` is not provided here, any `agave-validator` client trying to connect through gossip will try hard for a while...
+
+{% code overflow="wrap" %}
+```
+Searching for an RPC service with shred version 36796 (Retrying: Wait for known rpc peers)...
+[2025-03-29T18:02:26.010433513Z INFO  agave_validator::bootstrap] Total 0 RPC nodes found. 0 known, 0 blacklisted
+```
+{% endcode %}
+
+... and eventually die with this message:
+
+{% code overflow="wrap" %}
+```
+[2025-03-29T18:05:00.275887418Z ERROR agave_validator::bootstrap] Failed to get RPC nodes: Unable to find any RPC peers. Consider checking system clock, removing `--no-port-check`, or adjusting `--known-validator ...` arguments as applicable
+```
+{% endcode %}
+
+### Validator Nodes <a href="#validator-nodes" id="validator-nodes"></a>
+
+```sh
+ENTRYPOINT_IDENTITY_PUBKEY=3jHsYXrWP7GrmBhzkGHp84EEwAvLtKnD6SZC9r6LM3Ji
+
+# primary validator node
+agave-validator --entrypoint entrypoint:8001 \
+    --identity ~/keys-localtest/identity.json \
+    --vote-account FadfWQhHGwdQQWbvscyiNLedbBr6q9DDWqfU2bWyhmwx \
+    --authorized-voter ~/keys-localtest/staked-identity.json \
+    --log agave-validator.log \
+    --ledger /mnt/ledger \
+    --accounts /mnt/accounts \
+    --snapshots /mnt/snapshots \
+    --allow-private-addr --rpc-port 9999 \
+    --no-os-network-limits-test \
+    --known-validator 3jHsYXrWP7GrmBhzkGHp84EEwAvLtKnD6SZC9r6LM3Ji \
+    --only-known-rpc
+
+# secondary validator node
+agave-validator --entrypoint entrypoint:8001 \
+    --identity ~/keys-localtest/identity.json \
+    --vote-account FadfWQhHGwdQQWbvscyiNLedbBr6q9DDWqfU2bWyhmwx \
+    --authorized-voter ~/keys-localtest/staked-identity.json \
+    --log agave-validator.log \
+    --ledger /mnt/ledger \
+    --accounts /mnt/accounts \
+    --snapshots /mnt/snapshots \
+    --allow-private-addr --rpc-port 9999 \
+    --no-os-network-limits-test \
+    --known-validator 3jHsYXrWP7GrmBhzkGHp84EEwAvLtKnD6SZC9r6LM3Ji \
+    --only-known-rpc
+```
+
+## Troubleshooting <a href="#troubleshuting" id="troubleshuting"></a>
+
+If your validator doesn't show up as a running process or the process is running but it never catches up of falls behind, make sure to check the logs before anything else:&#x20;
+
+```sh
+tail ~/logs/agave-validator.log
+```
+
+## References
+
+Reference credits for the Dockerfile for ubuntu-ansible:&#x20;
+
+* [https://github.com/geerlingguy/docker-ubuntu2404-ansible/blob/master/Dockerfile](https://github.com/geerlingguy/docker-ubuntu2404-ansible/blob/master/Dockerfile)
