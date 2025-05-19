@@ -253,6 +253,10 @@ RUN --mount=type=cache,target=/root/.cache \
     && solana --version \
     && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.bashrc
 
+# generate validator keys
+WORKDIR /solana-localnet/validator-keys
+RUN ./_gen-validator-keys.sh
+
 # switch back to root user so the base container CMD ["/lib/systemd/systemd"] can run
 # otherwise the container will exit with unknown error 255
 USER root
