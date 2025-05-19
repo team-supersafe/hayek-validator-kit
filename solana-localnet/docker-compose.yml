@@ -1,0 +1,200 @@
+# See https://docs.localstack.cloud/getting-started/installation/
+# See https://stackoverflow.com/questions/76305311/is-there-a-default-value-for-localstacks-localstack-volume-dir-variable-if-o
+# See https://docs.docker.com/compose/install/
+
+
+# # Define a reusable command block using an anchor with a multiline command
+x-validator-docker-entrypoint: &validator-docker-entrypoint
+  privileged: true
+x-validator-variables: &validator-variables
+  image: ${COMPOSE_PROJECT_NAME}-validator
+  volumes:
+    - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    - /mnt/ledger
+    - /mnt/accounts
+    - /mnt/snapshots
+    # - "${HOME}/.ssh/id_ed25519.pub:/tmp/id_ed25519.pub:ro" # Mount the host's public key as read-only
+    - "../server-setup/initial-setup/ansible/roles/users/files/ssh_keys:/tmp/team_ssh_public_keys:ro" # Mount the team public keys as read-only
+  environment:
+    USERNAME: sol # Set the username inside the container
+    VALIDATOR_OPERATOR_USER: ${ANSIBLE_REMOTE_USER:?error}  # Set the validator operator user inside the container
+    RPC_URL: http://entrypoint:8899
+  command: |
+      bash -c "
+      # cat /tmp/id_ed25519.pub >> /home/$$USERNAME/.ssh/authorized_keys
+
+      # set sol service user ssh authorized_keys
+      rm -rf /home/$$USERNAME/.ssh
+      mkdir -p /home/$$USERNAME/.ssh
+      chmod 700 /home/$$USERNAME/.ssh
+      
+      for file in /tmp/team_ssh_public_keys/*; do
+        echo \"Adding public key from $$file\"
+        cat $$file >> /home/$$USERNAME/.ssh/authorized_keys
+        echo "" >> /home/$$USERNAME/.ssh/authorized_keys
+      done
+
+      chmod 600 /home/$$USERNAME/.ssh/authorized_keys
+      chown -R $$USERNAME:$$USERNAME /home/$$USERNAME/.ssh
+
+      # set sol service as owner of ledger, accounts, and snapshots directories
+      chown -R $$USERNAME:$$USERNAME /mnt/ledger
+      chown -R $$USERNAME:$$USERNAME /mnt/accounts
+      chown -R $$USERNAME:$$USERNAME /mnt/snapshots
+
+      # set team member user
+      id -u $$VALIDATOR_OPERATOR_USER || adduser --disabled-password --gecos \"\" $$VALIDATOR_OPERATOR_USER && echo \"$$VALIDATOR_OPERATOR_USER:$${VALIDATOR_OPERATOR_USER}pw\" | chpasswd && usermod -aG sudo $$VALIDATOR_OPERATOR_USER
+
+      # set team member user ssh authorized_keys
+      rm -rf /home/$$VALIDATOR_OPERATOR_USER/.ssh
+      mkdir -p /home/$$VALIDATOR_OPERATOR_USER/.ssh
+      chmod 700 /home/$$VALIDATOR_OPERATOR_USER/.ssh
+      
+      for file in /tmp/team_ssh_public_keys/*; do
+        echo \"Adding public key from $$file\"
+        cat $$file >> /home/$$VALIDATOR_OPERATOR_USER/.ssh/authorized_keys
+        echo "" >> /home/$$VALIDATOR_OPERATOR_USER/.ssh/authorized_keys
+      done
+
+      chmod 600 /home/$$VALIDATOR_OPERATOR_USER/.ssh/authorized_keys
+      chown -R $$VALIDATOR_OPERATOR_USER:$$VALIDATOR_OPERATOR_USER /home/$$VALIDATOR_OPERATOR_USER/.ssh
+
+      # set RPC_URL globally for all users
+      echo \"export RPC_URL=$$RPC_URL\" >> /etc/environment
+
+      /lib/systemd/systemd
+      "
+
+networks:
+  solana_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+services:
+  entrypoint:
+    # image: ubuntu2404-ansible-solana-local-entrypoint:latest
+    build:
+      context: ./
+      # dockerfile: ./entrypoint/Dockerfile
+      target: entrypoint
+    image: ${COMPOSE_PROJECT_NAME}-entrypoint
+    container_name: "entrypoint"
+    hostname: "entrypoint"
+    # privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    environment:
+      - FOO="bar"
+    networks:
+      solana_network:
+        ipv4_address: 172.25.0.10
+    ports:
+      - 9022:22
+      - 8899:8899
+      - 8900:8900
+      - 8000:8000
+      - 8001:8001
+      - 8002:8002
+      - 8003:8003
+      - 8004:8004
+      - 8005:8005
+      - 8006:8006
+      - 8007:8007
+      - 8008:8008
+      - 8009:8009
+      - 8010:8010
+      - 8011:8011
+      - 8012:8012
+      - 8013:8013
+      - 8014:8014
+      - 8015:8015
+      - 8016:8016
+      - 8017:8017
+      - 8018:8018
+      - 8019:8019
+      - 8020:8020
+  
+  primary:
+    # image: ubuntu2404-ansible-solana-local-validator:latest
+    build:
+      context: ./
+      # dockerfile: ./validator/Dockerfile
+      target: validator
+    container_name: "primary"
+    hostname: "primary"
+    # privileged: true
+    ports:
+      - 9122:22
+    networks:
+      solana_network:
+        ipv4_address: 172.25.0.11
+    << : [*validator-variables, *validator-docker-entrypoint]
+
+  secondary:
+    # image: ubuntu2404-ansible-solana-local-validator:latest
+    # build:
+    #   context: ./
+    #   # dockerfile: ./validator/Dockerfile
+    #   target: validator
+    container_name: "secondary"
+    hostname: "secondary"
+    # privileged: true
+    ports:
+      - 9222:22
+    networks:
+      solana_network:
+        ipv4_address: 172.25.0.12
+    << : [*validator-variables, *validator-docker-entrypoint]
+
+  pristine:
+    build:
+      context: ./
+      target: pristine
+    container_name: "pristine"
+    hostname: "pristine"
+    ports:
+      - 9322:22
+    networks:
+      solana_network:
+        ipv4_address: 172.25.0.13
+    << : [*validator-variables, *validator-docker-entrypoint]
+    image: ubuntu
+  
+  ansible-control:
+    # image: ansible-control
+    build:
+      context: ./
+      target: ansible-control
+    image: ${COMPOSE_PROJECT_NAME}-ansible-control
+    depends_on:
+      - entrypoint
+      - primary
+      - secondary
+    container_name: ansible-control
+    # hostname: ansible-control # commented out because it conflicts with network_mode
+    # privileged: true
+    stdin_open: true
+    tty: true
+    volumes:
+      - ..:/workspace
+      # - ~/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro            # SSH keys for connecting to remote hosts
+      # - ~/.ssh/id_ed25519.pub:/root/.ssh/id_ed25519.pub:ro    # SSH keys for connecting to remote hosts
+      - ~/.config/solana/id.json:/root/.config/solana/id_maybe.json:ro   # Solana default CLI keypair
+      - ~/.validator-keys:/root/.validator-keys # TODO: harden permissions
+      - ./validator-keys/authorized-withdrawer.json:/root/.validator-keys/validator-localnet/authorized-withdrawer.json
+      - ./validator-keys/stake-account.json:/root/.validator-keys/validator-localnet/stake-account.json
+      - ./validator-keys/staked-identity.json:/root/.validator-keys/validator-localnet/staked-identity.json
+      - ./validator-keys/vote-account.json:/root/.validator-keys/validator-localnet/vote-account.json
+      - ./validator-keys/jito-relayer-block-engine-private.json:/root/.validator-keys/validator-localnet/jito-relayer-block-engine-private.json
+      - ./validator-keys/jito-relayer-comms-private.pem:/root/.validator-keys/validator-localnet/jito-relayer-comms-private.pem
+      - ./validator-keys/jito-relayer-comms-public.pem:/root/.validator-keys/validator-localnet/jito-relayer-comms-public.pem
+    environment:
+      - FOO="bar"
+      - RPC_URL=http://entrypoint:8899
+    # networks: # commented out because it conflicts with network_mode
+    #   - solana_network
+    network_mode: "container:entrypoint"
+# volumes:
+#   ledger:
