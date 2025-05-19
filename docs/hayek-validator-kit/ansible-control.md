@@ -26,7 +26,20 @@ Under the Ansible Control node you will find the folder `/hayek-validator-kit/va
 4. **Authorized Withdrawer Account Key**: It will always start with the characters `Z4` &#x20;
 5. **Jito Relayer Block Engine Key**: It will always start with the characters `Z5`&#x20;
 
-&#x20;You can view the full accounts by pasting their respective public keys in the [Localnet Explorers](solana-localnet.md#using-explorers).
+To view the public keys of any of these respective private keys, do this:
+
+```bash
+solana-keygen pubkey staked-identity.json
+```
+
+For convenience, we have also generated the public keys as a separate empty file for each of the keys. Each file-pair should look like this:&#x20;
+
+```
+staked-identity-Z1RtExJVeFskxLD1D6RCPHH9NBpLHvcqKW8iXZfkMEK
+staked-identity.json
+```
+
+You can view the full accounts by pasting their respective public keys in the [Localnet Explorers](solana-localnet.md#using-explorers).
 
 ## Ansible from Workstation
 
