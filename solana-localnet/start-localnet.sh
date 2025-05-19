@@ -88,8 +88,8 @@ CLUSTER_RPC=http://localhost:8899
 
 ENTRYPOINT_IDENTITY_PUBKEY=$(solana -ul validators --keep-unstaked-delinquents --output json | jq -r ".validators | .[0].identityPubkey")
 
-VALIDATOR_NAME=localdemo
-CLUSTER_ENVIRONMENT=localcluster
+VALIDATOR_NAME=validator
+CLUSTER_ENVIRONMENT=localnet
 LOCAL_KEYS_DIR=~/.validator-keys/validator-localnet
 REMOTE_KEYS_ROOT_DIR=/home/sol/keys
 REMOTE_KEYS_DIR="$REMOTE_KEYS_ROOT_DIR/$VALIDATOR_NAME-$CLUSTER_ENVIRONMENT"

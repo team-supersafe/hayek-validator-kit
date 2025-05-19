@@ -10,7 +10,7 @@ description: Commonly used validator node CLI commands
 solana --version
 
 # Print content of the validator startup script
-cat bin/validator-localdemo.sh
+cat bin/validator-localnet.sh
 
 # Check if the validator service is running
 ps aux | grep validator

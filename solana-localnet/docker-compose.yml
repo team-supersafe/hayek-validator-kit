@@ -178,18 +178,18 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - ..:/workspace
+      - ..:/hayek-validator-kit
       # - ~/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro            # SSH keys for connecting to remote hosts
       # - ~/.ssh/id_ed25519.pub:/root/.ssh/id_ed25519.pub:ro    # SSH keys for connecting to remote hosts
       - ~/.config/solana/id.json:/root/.config/solana/id_maybe.json:ro   # Solana default CLI keypair
       - ~/.validator-keys:/root/.validator-keys # TODO: harden permissions
-      - ./validator-keys/authorized-withdrawer.json:/root/.validator-keys/validator-localnet/authorized-withdrawer.json
-      - ./validator-keys/stake-account.json:/root/.validator-keys/validator-localnet/stake-account.json
-      - ./validator-keys/staked-identity.json:/root/.validator-keys/validator-localnet/staked-identity.json
-      - ./validator-keys/vote-account.json:/root/.validator-keys/validator-localnet/vote-account.json
-      - ./validator-keys/jito-relayer-block-engine-private.json:/root/.validator-keys/validator-localnet/jito-relayer-block-engine-private.json
-      - ./validator-keys/jito-relayer-comms-private.pem:/root/.validator-keys/validator-localnet/jito-relayer-comms-private.pem
-      - ./validator-keys/jito-relayer-comms-public.pem:/root/.validator-keys/validator-localnet/jito-relayer-comms-public.pem
+      # - ./validator-keys/authorized-withdrawer.json:/root/.validator-keys/validator-localnet/authorized-withdrawer.json
+      # - ./validator-keys/stake-account.json:/root/.validator-keys/validator-localnet/stake-account.json
+      # - ./validator-keys/staked-identity.json:/root/.validator-keys/validator-localnet/staked-identity.json
+      # - ./validator-keys/vote-account.json:/root/.validator-keys/validator-localnet/vote-account.json
+      # - ./validator-keys/jito-relayer-block-engine-private.json:/root/.validator-keys/validator-localnet/jito-relayer-block-engine-private.json
+      # - ./validator-keys/jito-relayer-comms-private.pem:/root/.validator-keys/validator-localnet/jito-relayer-comms-private.pem
+      # - ./validator-keys/jito-relayer-comms-public.pem:/root/.validator-keys/validator-localnet/jito-relayer-comms-public.pem
     environment:
       - FOO="bar"
       - RPC_URL=http://entrypoint:8899
