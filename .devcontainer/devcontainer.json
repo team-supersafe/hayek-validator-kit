@@ -11,7 +11,7 @@
 
 	// The /workspace is where the root project dir is mounted in the volumes section of 
 	// devtools service in docker-compose.yml
-	"workspaceFolder": "/workspace",
+	"workspaceFolder": "/hayek-validator-kit",
 
 	// "target" is the path *inside* the container where the socket will appear
 	"mounts": [
