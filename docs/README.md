@@ -11,7 +11,7 @@ The Hayek Validator Kit is an open source public good for developers and sysadmi
 
 Everything related to the Hayek Validator Kit lives under a public GitHub repo at `https://github.com/team-supersafe/hayek-validator-kit.git` . This is how you engage with that repo to use it and contribute to it:
 
-<figure><img src=".gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/Hayek Validator Kit@2x.webp" alt=""><figcaption></figcaption></figure>
 
 ## Quickstart Setup
 
