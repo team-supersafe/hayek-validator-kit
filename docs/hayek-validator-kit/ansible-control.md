@@ -16,6 +16,18 @@ Your VSCode terminal should look like this:
 
 <figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
 
+## Validator Keys
+
+Under the Ansible Control node you will find the folder `/hayek-validator-kit/validator-keys` . It contains a script that automatically generates the necessary validator keys when the Localnet cluster is mounted by Docker. These keys are necessary for all validators to function well:
+
+1. **Staked Identity Key**: It will always start with the characters `Z1`
+2. **Vote Account Key**: It will always start with the characters `Z2`
+3. **Stake Account Key**: It will always start with the characters `Z3`
+4. **Authorized Withdrawer Account Key**: It will always start with the characters `Z4` &#x20;
+5. **Jito Relayer Block Engine Key**: It will always start with the characters `Z5`&#x20;
+
+&#x20;The keypair file starts with `Z1***` and you can find it under the
+
 ## Ansible from Workstation
 
 {% hint style="warning" %}
