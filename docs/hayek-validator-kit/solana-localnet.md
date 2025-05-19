@@ -28,12 +28,14 @@ You should [get familiar with the contents of the repo](github-repo.md#navigatin
 
 ## The Localnet Cluster
 
-### Host Inventory
+### Using Explorers
 
 You can use the Solana Explorer and Solscan apps to explore any accounts in your localnet cluster using these addresses:
 
 * [https://explorer.solana.com/?cluster=custom\&customUrl=http%3A%2F%2Flocalhost%3A8899](https://explorer.solana.com/address/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom\&customUrl=http%3A%2F%2Flocalhost%3A8899)
 * [https://solscan.io/?cluster=custom\&customUrl=http://localhost:8899](https://solscan.io/account/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom\&customUrl=http://localhost:8899)
+
+### Host Inventory
 
 The Localnet cluster consist of the following containers:
 
