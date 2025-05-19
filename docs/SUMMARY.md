@@ -12,7 +12,7 @@
 
 ## Validator Operations
 
-* [Deploying Agave](validator-operations/deploying-agave.md)
+* [Deploying a validator client](validator-operations/deploying-a-validator-client.md)
 * [Deploying Jito](validator-operations/deploying-jito.md)
 * [Deploying Firedancer](validator-operations/deploying-firedancer.md)
 * [Update Validator Metal](validator-operations/update-validator-metal.md)
