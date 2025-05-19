@@ -7,6 +7,12 @@ icon: rectangle-terminal
 
 The Hayek Validator Kit is an open source public good for developers and sysadmins that want to run high performance Solana validators. It is a pre-configured toolkit that includes automation, dev ops, virtualization services, a local environment, key management tools, and monitoring utilities — everything you need to deploy, test, and operate a validator in Localnet, Testnet and Mainnet environments.
 
+## Using & Contributing
+
+Everything related to the Hayek Validator Kit lives under a public GitHub repo at `https://github.com/team-supersafe/hayek-validator-kit.git` . This is how you engage with that repo to use it and contribute to it:
+
+<figure><img src=".gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+
 ## Quickstart Setup
 
 ### 🧰 Step 1: Prepare Your Machine

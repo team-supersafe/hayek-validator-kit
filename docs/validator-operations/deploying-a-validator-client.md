@@ -1,4 +1,8 @@
-# Deploying Agave
+---
+description: \
+---
+
+# Deploying a validator client
 
 The process to deploy a new validator using the Agave client is similar to that of upgrading an existing client to a new version of Agave. The process goes like this:
 
