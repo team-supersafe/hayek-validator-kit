@@ -1,5 +1,67 @@
-# Created by https://www.toptal.com/developers/gitignore/api/windows,linux,visualstudiocode,macos,visualstudio
-# Edit at https://www.toptal.com/developers/gitignore?templates=windows,linux,visualstudiocode,macos,visualstudio
+# Created by https://www.toptal.com/developers/gitignore/api/linux,macos,windows,visualstudio,visualstudiocode,images
+# Edit at https://www.toptal.com/developers/gitignore?templates=linux,macos,windows,visualstudio,visualstudiocode,images
+
+### Images ###
+# JPEG
+*.jpg
+*.jpeg
+*.jpe
+*.jif
+*.jfif
+*.jfi
+
+# JPEG 2000
+*.jp2
+*.j2k
+*.jpf
+*.jpx
+*.jpm
+*.mj2
+
+# JPEG XR
+*.jxr
+*.hdp
+*.wdp
+
+# Graphics Interchange Format
+*.gif
+
+# RAW
+*.raw
+
+# Portable Network Graphics
+*.png
+
+# Animated Portable Network Graphics
+*.apng
+
+# Multiple-image Network Graphics
+*.mng
+
+# Tagged Image File Format
+*.tiff
+*.tif
+
+# Scalable Vector Graphics
+*.svg
+*.svgz
+
+# Portable Document Format
+*.pdf
+
+# X BitMap
+*.xbm
+
+# BMP
+*.bmp
+*.dib
+
+# ICO
+*.ico
+
+# 3D Images
+*.3dm
+*.max
 
 ### Linux ###
 *~
@@ -483,4 +545,4 @@ FodyWeavers.xsd
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
 
-# End of https://www.toptal.com/developers/gitignore/api/windows,linux,visualstudiocode,macos,visualstudio
+# End of https://www.toptal.com/developers/gitignore/api/linux,macos,windows,visualstudio,visualstudiocode,images
