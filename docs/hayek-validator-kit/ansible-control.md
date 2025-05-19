@@ -48,7 +48,7 @@ The Ansible Control container is provisioned with the following&#x20;
 
 To run playbooks and connect to the different validator nodes inside your Localnet, you must first connect to the Ansible Control node. Think of it as your Command Center for everything Solana from this point on.
 
-### From Workstation VS Code
+### From Workstation VS Code (Recommended)
 
 To connect to your Localnet Ansible Control node, you **HAVE** do it through VSCode or Cursor. When you open the local repo, it will automatically run the cluster, and connect to your Ansible Control node.
 
@@ -89,6 +89,12 @@ ansible --version
 # install ansible-lint
 pip3 install ansible-lint
 ansible-lint --version
+```
+
+Another issue when running your containers NOT within the [Ansible Control within VS Code](ansible-control.md#from-workstation-vs-code-recommended), is that you will have to take care of managing the resources used by your Docker environment. When using Ansible Control within VS Code, the IDE automatically shuts down and reloads the containers when you open and close the repo folder.
+
+```bash
+docker compose down
 ```
 
 ## Common CLI Commands
