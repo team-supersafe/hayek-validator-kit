@@ -9,7 +9,7 @@ This repository contains the open source Hayek Validator Kit. For setup, usage, 
 
 ## Pre-commit Hooks
 
-We recommend using [pre-commit](https://pre-commit.com/) to automatically check your code for common issues before committing.
+We recommend using [pre-commit](https://pre-commit.com/) to automatically check your code for common issues before committing, please.
 
 ### Setup
 
