@@ -11,7 +11,9 @@ The Hayek Validator Kit is an open source public good for developers and sysadmi
 
 Everything related to the Hayek Validator Kit lives under a public GitHub repo at `https://github.com/team-supersafe/hayek-validator-kit.git` . This workflow shows the ways you can engage with that repo to use it and contribute to it:
 
-<figure><img src=".gitbook/assets/Hayek Validator Kit@2x.webp" alt=""><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/Hayek Validator Kit@2x (1).webp" alt=""><figcaption></figcaption></figure>
+
+
 
 ## Quickstart Setup
 
@@ -42,8 +44,8 @@ This will start a local Solana network called Localnet with all of the Hayek Val
 
 Use the menu on the left to explore the rest of the documentation:
 
-* [Hayek Validator Kit](broken-reference) – Detailed setup instructions.
-* [Validator Operations](broken-reference) – Run and manage your own validator.
-* [Key Management](broken-reference) – Secure your staking and signing keys.
+* [Hayek Validator Kit](broken-reference/) – Detailed setup instructions.
+* [Validator Operations](broken-reference/) – Run and manage your own validator.
+* [Key Management](broken-reference/) – Secure your staking and signing keys.
 
 If you’re just experimenting, localnet is all you need. If you’re going live, follow the full setup under Validator Operations.
