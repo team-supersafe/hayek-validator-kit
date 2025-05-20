@@ -32,7 +32,7 @@ You should [get familiar with the contents of the repo](github-repo.md#navigatin
 
 The Localnet cluster consist of the following containers:
 
-<table><thead><tr><th width="260.39453125">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>entrypoint</code><br></td><td><p>The cluster entry point node that starts Localnet.</p><ul><li>It provides Genesis block for Solana Localnet</li><li>Kick-starts POH</li><li>Epoch = 750 slots (~5 min)</li></ul></td></tr><tr><td><code>ansible-control</code></td><td><p>Your official sysadmin automation environment:</p><ul><li>Solana CLI and Ansible installed</li><li>Access Solana Mainnet, Testnet and Localnet</li></ul><pre><code># For Mainnet Connectivity
+<table><thead><tr><th width="260.39453125">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>entrypoint</code><br></td><td><p>The Localnet cluster Gossip entry point node. Other validator nodes use this to join the network and synchronize with other validators.</p><ul><li>It provides Genesis block for Solana Localnet</li><li>Kick-starts POH</li><li>Epoch = 750 slots (~5 min) </li><li>Mostly for cluster boilerplate and not meant to be modified </li></ul></td></tr><tr><td><code>ansible-control</code></td><td><p>Your official sysadmin automation environment:</p><ul><li>Solana CLI and Ansible installed</li><li>Access Solana Mainnet, Testnet and Localnet</li></ul><pre><code># For Mainnet Connectivity
 solana -um ***
 
 #For Testnet Connectivity
