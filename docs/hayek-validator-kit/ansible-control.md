@@ -103,11 +103,7 @@ The Ansible Control node is a special docker container and you cannot directly s
 docker ps
 
 # Connect to the container named 'ansible-control' and load 'bash'
-docker exec -it ansible-control bash
-
-# You may end up here: [ansible-control:/opt/code/tools
-# If you do, just cd into the hayek-validator-kit folder
-cd /hayek-validator-kit
+docker exec -w /hayek-validator-kit -it ansible-control bash
 ```
 
 ## Connecting to Localnet Nodes
