@@ -7,7 +7,7 @@ echo "🚀 Running solana-localnet initialization tasks..."
 echo
 
 LABEL="SOLANA LOCALNET"
-echolog () {
+echolog() {
   echo
   echo "$LABEL: $1"
   echo
@@ -21,8 +21,7 @@ if [[ $OSTYPE == darwin* ]]; then
   # But `greadlink` does, which you can get with `brew install coreutils`
   readlink_cmd="greadlink"
 
-  if ! command -v ${readlink_cmd} &> /dev/null
-  then
+  if ! command -v ${readlink_cmd} &>/dev/null; then
     echo "${readlink_cmd} could not be found. You may need to install coreutils: \`brew install coreutils\`"
     exit 1
   fi
@@ -34,7 +33,7 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$("${readlink_cmd}" -f "${HERE}")"
 
 # setup solana cli default signer
-if [ -f ~/.config/solana/id_maybe.json ] && [ $(solana-keygen pubkey ~/.config/solana/id_maybe.json 2> /dev/null) ]; then
+if [ -f ~/.config/solana/id_maybe.json ] && [ $(solana-keygen pubkey ~/.config/solana/id_maybe.json 2>/dev/null) ]; then
   if [ -f ~/.config/solana/id.json ]; then mv ~/.config/solana/id.json ~/.config/solana/id.json.bak; fi
   ln -sf ~/.config/solana/id_maybe.json ~/.config/solana/id.json
   echo -e "${YELLOW}Default solana cli signer ($(solana-keygen pubkey ~/.config/solana/id.json)) was imported from host${NC}"
@@ -62,21 +61,19 @@ MIN_FINALIZED_SLOT=20 # Recommended value is 100. See https://github.com/mvines/
 
 # the following is not needed because it is done in the docker-compose file
 # OPERATOR_AUTHORIZED_SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-# docker exec -it primary bash -c "sudo echo $OPERATOR_AUTHORIZED_SSH_KEY >> /home/sol/.ssh/authorized_keys"
+# docker exec -it canopy bash -c "sudo echo $OPERATOR_AUTHORIZED_SSH_KEY >> /home/sol/.ssh/authorized_keys"
 # docker exec -it secondary bash -c "sudo echo $OPERATOR_AUTHORIZED_SSH_KEY >> /home/sol/.ssh/authorized_keys"
-
 
 echolog "Waiting for $MIN_FINALIZED_SLOT finalized slots..."
 
-while [ $CURRENT_SLEEP_SECONDS -lt $MAX_SLEEP_SECONDS ]
-do
+while [ $CURRENT_SLEEP_SECONDS -lt $MAX_SLEEP_SECONDS ]; do
   LATEST_FINALIZED_SLOT=$(solana -ul --commitment finalized block --output json | jq -r ".parentSlot" || 0)
   echo "Finalized Slot: $LATEST_FINALIZED_SLOT | Elapsed: $CURRENT_SLEEP_SECONDS seconds"
   if [ ! -z "$LATEST_FINALIZED_SLOT" ] && [ $LATEST_FINALIZED_SLOT -gt $MIN_FINALIZED_SLOT ]; then
     break
   fi
   sleep 1
-  CURRENT_SLEEP_SECONDS=$((CURRENT_SLEEP_SECONDS+1))
+  CURRENT_SLEEP_SECONDS=$((CURRENT_SLEEP_SECONDS + 1))
 done
 
 if [ ! $LATEST_FINALIZED_SLOT -ge $MIN_FINALIZED_SLOT ]; then
@@ -86,13 +83,20 @@ fi
 
 CLUSTER_RPC=http://localhost:8899
 
+# Get the identity public key of the entrypoint validator by:
+# 1. Querying the local validator list with --keep-unstaked-delinquents to include all validators
+# 2. Getting JSON output and using jq to extract the first validator's identity pubkey
+# This will be used later to configure other validators to connect to the entrypoint
 ENTRYPOINT_IDENTITY_PUBKEY=$(solana -ul validators --keep-unstaked-delinquents --output json | jq -r ".validators | .[0].identityPubkey")
 
-VALIDATOR_NAME=validator
+VALIDATOR_NAME=canopy
 CLUSTER_ENVIRONMENT=localnet
-LOCAL_KEYS_DIR=~/.validator-keys/validator-localnet
-REMOTE_KEYS_ROOT_DIR=/home/sol/keys
-REMOTE_KEYS_DIR="$REMOTE_KEYS_ROOT_DIR/$VALIDATOR_NAME-$CLUSTER_ENVIRONMENT"
+ANSIBLE_VALIDATORS_KEYS_DIR=/hayek-validator-kit/validator-keys
+ANSIBLE_CANOPY_KEYS_DIR="$ANSIBLE_VALIDATORS_KEYS_DIR/canopy"
+ALPHA_CANOPY_KEYS_DIR="/home/sol/keys/$VALIDATOR_NAME-$CLUSTER_ENVIRONMENT"
+# We have the CANOPY SERVER BOX
+# We have the CANOPY VALIDATOR KEY SET
+# We could have the SEED VALIDATOR KEY SET deployed on the CANOPY SERVER BOX
 
 SOL_SERVICE_NAME=sol
 MOUNT_ROOT_DIR=/mnt
@@ -103,44 +107,32 @@ LOGS_DIR="~/logs"
 BIN_DIR="~/bin"
 
 solana -u $CLUSTER_RPC epoch-info
+# Airdrop 500k SOL to the default CLI signer at ~/.config/solana/id.json
 solana -u $CLUSTER_RPC airdrop 500000
 
-# mkdir -p $LOCAL_KEYS_DIR
-cd $LOCAL_KEYS_DIR
+# Generate Canopy Accounts and Keys on the Ansible Control.
+# They'll be used to configure the Canopy Validator in the script below.
+echo "---   GENERATING ANSIBLE CANOPY VALIDATOR ACCOUNT KEYS...   ---"
 
-# if [ ! -f staked-identity.json ]; then
-#   echo "Generating validator staked-identity..."
-#   solana-keygen new -s --no-bip39-passphrase -o staked-identity.json
-# fi
-
-# if [ ! -f authorized-withdrawer.json ]; then
-#   echo "Generating validator authorized-withdrawer..."
-#   solana-keygen new -s --no-bip39-passphrase -o authorized-withdrawer.json
-# fi
-
-# if [ ! -f vote-account.json ]; then
-#   echo "Generating validator vote-account..."
-#   solana-keygen new -s --no-bip39-passphrase -o vote-account.json
-# fi
-
+mkdir -p "$ANSIBLE_CANOPY_VALIDATOR_KEYS_DIR"
+cd "$ANSIBLE_CANOPY_VALIDATOR_KEYS_DIR"
+source "$ANSIBLE_VALIDATORS_KEYS_DIR/_gen-validator-keys.sh"
+#Airdrop 42 localnet SOL to the Canopy validator
 solana -u $CLUSTER_RPC --keypair staked-identity.json airdrop 42
+#Create a vote account for the Canopy validator
 solana -u $CLUSTER_RPC create-vote-account vote-account.json staked-identity.json authorized-withdrawer.json
-
-# delegate stake to validator
-if [ ! -f stake-account.json ]; then
-  echo "Generating random stake-account..."
-  solana-keygen new -s --no-bip39-passphrase -o stake-account.json
-fi
-
+#Create a stake account with 200k SOL in it
 solana -u $CLUSTER_RPC create-stake-account stake-account.json 200000
+#Delegate the stake account to the vote account of the Canopy validator
 solana -u $CLUSTER_RPC delegate-stake stake-account.json vote-account.json --force
 
-echo "Generating validator startup script"
-VOTE_ACCOUNT_PUBKEY=$(solana address -k $LOCAL_KEYS_DIR/vote-account.json)
+# Generate ALPHA CANOPY validator startup script
+echo "---   SETTING UP CANOPY VALIDATOR SCRIPT WITH ACCOUNT KEYS...   ---"
+VOTE_ACCOUNT_PUBKEY=$(solana address -k $ANSIBLE_CANOPY_KEYS_DIR/vote-account.json)
 EXPECTED_GENESIS_HASH=$(solana -u $CLUSTER_RPC genesis-hash)
 echo "EXPECTED_GENESIS_HASH: $EXPECTED_GENESIS_HASH"
 
-CLUSTER_NAME=localnet # FIXME
+CLUSTER_NAME=localnet
 TMP_DIR=$(mktemp --directory)
 cd $SCRIPT_DIR
 
@@ -155,7 +147,7 @@ s//VOTE_ACCOUNT_PUBKEY=${VOTE_ACCOUNT_PUBKEY}/
 H
 }
 x
-}" $SCRIPT_DIR/agave-validator-template-$CLUSTER_NAME.sh > $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp.sh
+}" $SCRIPT_DIR/agave-validator-template-$CLUSTER_NAME.sh >$TMP_DIR/agave-validator-$CLUSTER_NAME-tmp.sh
 
 sed "/^KNOWN_VALIDATOR_PUBKEY=/{
 h
@@ -168,7 +160,7 @@ s//KNOWN_VALIDATOR_PUBKEY=${ENTRYPOINT_IDENTITY_PUBKEY}/
 H
 }
 x
-}" $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp.sh > $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp2.sh
+}" $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp.sh >$TMP_DIR/agave-validator-$CLUSTER_NAME-tmp2.sh
 
 sed "/^EXPECTED_GENESIS_HASH=/{
 h
@@ -181,12 +173,28 @@ s//EXPECTED_GENESIS_HASH=${EXPECTED_GENESIS_HASH}/
 H
 }
 x
-}" $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp2.sh > $TMP_DIR/agave-validator-$CLUSTER_NAME.sh
+}" $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp2.sh >$TMP_DIR/agave-validator-$CLUSTER_NAME.sh
+
+sed "/^KEYS_DIR=/{
+h
+s/=.*/=${ALPHA_CANOPY_KEYS_DIR}/
+}
+\${
+x
+/^$/{
+s//KEYS_DIR=${ALPHA_CANOPY_KEYS_DIR}/
+H
+}
+x
+}" $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp3.sh >$TMP_DIR/agave-validator-$CLUSTER_NAME.sh
 
 rm $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp*.sh
 chmod +x $TMP_DIR/agave-validator-$CLUSTER_NAME.sh
 
-cleanup-remote-validator () {
+# Cleanup the host of the validator
+# Parameters: HOST, SSH_PORT, USER
+# USE: cleanup-host HOST SSH_PORT USER 
+cleanup-host() {
   : ${1?"Requires HOST"}
   HOST=$1
 
@@ -248,79 +256,59 @@ cleanup-remote-validator () {
     "
 }
 
-configure-remote-validator () {
-  # ./configure-remote-validator-identity.sh HOST SSH_PORT USER VALIDATOR_NAME LOCAL_KEYS_DIR STAKED_IDENTITY_STATUS
-
+# Configure the validator on the host
+# USE: configure-canopy-in-host HOST SSH_PORT USER 
+configure-canopy-in-host() {
   : ${1?"Requires HOST"}
-  HOST=$1
+  HOST=$3
 
   : ${2?"Requires SSH_PORT"}
-  SSH_PORT=$2
+  SSH_PORT=$4
 
   : ${3?"Requires USER"}
-  USER=$3
-
-  : ${4?"Requires STAKED_IDENTITY_STATUS"}
-  if [ "$4" = "staked-identity" ]; then
-    STAKED_IDENTITY_STATUS=staked
-  elif [ "$4" = "unstaked-identity" ]; then
-    STAKED_IDENTITY_STATUS=unstaked
-  else
-    echo "Unknown STAKED_IDENTITY_STATUS passed: $4"
-    exit 1
-  fi
+  USER=$4
 
   REMOTE_SOLANA_BIN="~/.local/share/solana/install/active_release/bin"
 
-  if [ -f $SCRIPT_DIR/agave-validator-$CLUSTER_NAME.sh ]; then
-    VALIDATOR_STARTUP_SCRIPT=$SCRIPT_DIR/agave-validator-$CLUSTER_NAME.sh
-  elif [ -f $TMP_DIR/agave-validator-$CLUSTER_NAME.sh ]; then
-    VALIDATOR_STARTUP_SCRIPT=$TMP_DIR/agave-validator-$CLUSTER_NAME.sh
+  if [ -f $SCRIPT_DIR/agave-validator-localnet.sh ]; then
+    VALIDATOR_STARTUP_SCRIPT=$SCRIPT_DIR/agave-validator-localnet.sh
+  elif [ -f $TMP_DIR/agave-validator-localnet.sh ]; then
+    VALIDATOR_STARTUP_SCRIPT=$TMP_DIR/agave-validator-localnet.sh
   else
     echo "Validator startup script could not be found. Searched paths:"
     echo "  - $SCRIPT_DIR"
     echo "  - $TMP_DIR"
     exit 1
-  fi    
+  fi
 
-  echo "HOST: $HOST ($VALIDATOR_NAME)..."
-  echo "SSH_PORT: $SSH_PORT"
-  echo "USER: $USER"
-  echo "VALIDATOR_NAME: $VALIDATOR_NAME"
-  echo "LOCAL_KEYS_DIR: $LOCAL_KEYS_DIR"
-  echo "STAKED_IDENTITY_STATUS: $STAKED_IDENTITY_STATUS"
-  echo
-  
-  # echo "Press ENTER to continue..."
-  # read
-  
-  scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $LOCAL_KEYS_DIR/staked-identity.json "$USER@$HOST:~/staked-identity.json"
-  
+  # Copy the staked-identity.json from the Ansible Control to the host
+  scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $ANSIBLE_CANOPY_KEYS_DIR/staked-identity.json "$USER@$HOST:~/staked-identity.json"
+
   echo
   echo "cat validator startup script at $VALIDATOR_STARTUP_SCRIPT"
   cat $VALIDATOR_STARTUP_SCRIPT
   echo
 
-  scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $VALIDATOR_STARTUP_SCRIPT "$USER@$HOST:~/validator-$VALIDATOR_NAME.sh"
+  scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $VALIDATOR_STARTUP_SCRIPT "$USER@$HOST:~/validator-canopy.sh"
 
   ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT -t "
     set -e
     # source ~/.profile
     PATH=$REMOTE_SOLANA_BIN:$PATH
 
-    mkdir -p $REMOTE_KEYS_DIR && chmod 755 $REMOTE_KEYS_DIR
+    mkdir -p $ALPHA_CANOPY_KEYS_DIR && chmod 755 $ALPHA_CANOPY_KEYS_DIR
     mkdir -p ~/bin && chmod 754 ~/bin
     mkdir -p ~/logs && chmod 755 ~/logs
 
-    mv ~/staked-identity.json $REMOTE_KEYS_DIR/staked-identity.json
+    mv ~/staked-identity.json $ALPHA_CANOPY_KEYS_DIR/staked-identity.json
     mv ~/validator-$VALIDATOR_NAME.sh ~/bin
 
-    if [ ! -f "$REMOTE_KEYS_DIR/unstaked-identity.json" ]; then
+    if [ ! -f "$ALPHA_CANOPY_KEYS_DIR/unstaked-identity.json" ]; then
       echo "Generating validator unstaked-identity..."
-      solana-keygen new -s --no-bip39-passphrase -o "$REMOTE_KEYS_DIR/unstaked-identity.json"
+      solana-keygen new -s --no-bip39-passphrase -o "$ALPHA_CANOPY_KEYS_DIR/unstaked-identity.json"
     fi
 
-    ln -sf $REMOTE_KEYS_DIR/$STAKED_IDENTITY_STATUS-identity.json $REMOTE_KEYS_DIR/identity.json
+    ln -sf $ALPHA_CANOPY_KEYS_DIR/$STAKED_IDENTITY_STATUS-identity.json $ALPHA_CANOPY_KEYS_DIR/identity.json
 
 (cat | sudo tee -a /etc/systemd/system/sol.service) <<EOF
 [Unit]
@@ -336,7 +324,7 @@ User=sol
 LimitNOFILE=1000000
 LogRateLimitIntervalSec=0
 Environment="PATH=/bin:/usr/bin:$REMOTE_SOLANA_BIN"
-ExecStart=/home/sol/bin/validator-$VALIDATOR_NAME.sh
+ExecStart=/home/sol/bin/validator-canopy.sh
 
 [Install]
 WantedBy=multi-user.target
@@ -346,21 +334,16 @@ EOF
   "
 }
 
-PRIMARY_HOST=primary
-PRIMARY_SSH_PORT=22
-SECONDARY_HOST=secondary
-SECONDARY_SSH_PORT=22
-
 echo
-echo "Configuring staked-identity on primary node"
+echo "---   Configuring Alpha Host with the Canopy Validator Node   ---"
 echo
-cleanup-remote-validator $PRIMARY_HOST $PRIMARY_SSH_PORT sol
+cleanup-host alpha 22 sol
 # docker exec -it primary bash -c 'sudo chown -R sol:sol /mnt/ledger && sudo chown -R sol:sol /mnt/accounts && sudo chown -R sol:sol /mnt/snapshots'
-configure-remote-validator $PRIMARY_HOST $PRIMARY_SSH_PORT sol staked-identity localnet
+configure-validator alpha 22 sol staked-identity localnet
+#configure-validator canopy localnet alpha 22 sol
 
 echo
-echo "Configuring unstaked-identity on secondary node"
+echo "---   Configuring Bravo Host as a server that is ready for, but NOT running a validator   ---"
 echo
-cleanup-remote-validator $SECONDARY_HOST $PRIMARY_SSH_PORT sol
+cleanup-host bravo 22 sol
 # docker exec -it secondary bash -c 'sudo chown -R sol:sol /mnt/ledger && sudo chown -R sol:sol /mnt/accounts && sudo chown -R sol:sol /mnt/snapshots'
-# configure-remote-validator localhost 9222 sol unstaked-identity localnet

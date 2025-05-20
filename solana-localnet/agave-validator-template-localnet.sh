@@ -1,9 +1,9 @@
 #!/bin/bash
-
 VOTE_ACCOUNT_PUBKEY=
 KNOWN_VALIDATOR_PUBKEY=
 EXPECTED_GENESIS_HASH=
-KEYS_DIR=~/keys/validator-localnet
+KEYS_DIR=
+
 agave-validator \
     --identity $KEYS_DIR/identity.json \
     --vote-account $VOTE_ACCOUNT_PUBKEY \

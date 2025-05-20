@@ -116,14 +116,14 @@ services:
       - 8019:8019
       - 8020:8020
   
-  primary:
+  canopy:
     # image: ubuntu2404-ansible-solana-local-validator:latest
     build:
       context: ./
       # dockerfile: ./validator/Dockerfile
       target: validator
-    container_name: "primary"
-    hostname: "primary"
+    container_name: "canopy"
+    hostname: "canopy"
     # privileged: true
     ports:
       - 9122:22
@@ -170,7 +170,7 @@ services:
     image: ${COMPOSE_PROJECT_NAME}-ansible-control
     depends_on:
       - entrypoint
-      - primary
+      - canopy
       - secondary
     container_name: ansible-control
     # hostname: ansible-control # commented out because it conflicts with network_mode
