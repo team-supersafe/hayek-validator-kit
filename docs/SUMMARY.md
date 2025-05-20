@@ -12,12 +12,10 @@
 
 ## Validator Operations
 
-* [Deploying a validator client](validator-operations/deploying-a-validator-client.md)
+* [Validator clients](validator-operations/deploying-a-validator-client.md)
 * [Changing a validator host](validator-operations/update-validator-metal.md)
 * [Upgrade/Downgrade versions](validator-operations/upgrade-downgrade-versions.md)
 * [Host hardware tuning](validator-operations/hardware-tunning-info.md)
-* [Validator client mods](validator-operations/client-mods.md)
-* [Validator commands](validator-operations/validator-commands.md)
 
 ## Metrics & Monitoring
 

@@ -2,7 +2,7 @@
 description: How to deploy Agave, Jito, or Firedancer clients in your validator
 ---
 
-# Deploying a validator client
+# Validator clients
 
 ## Agave (Anza Technology)
 
@@ -13,7 +13,7 @@ The process to deploy a new validator using the Agave client is similar to that 
 
 Make sure you understand [Localnet and its requirements](../hayek-validator-kit/solana-localnet.md) before deploying to it.
 
-### On Localnet
+### Deploying On Localnet
 
 For [Localnet](../hayek-validator-kit/solana-localnet.md), which is focused on development and operator workloads, we want to **avoid** having to BUILD FROM SOURCE every time we spin up a new docker container, since the build process itself is very resource intensive and slows down the development REPL. For this reason, all Localnet deployments are done from pre-compiled binaries.&#x20;
 
@@ -32,38 +32,72 @@ To accomodate these developers and operators, we pre-compile binaries for Apple 
     → solana-release-aarch64-unknown-linux-gnu.tar.bz2
 4. For everything else, we can use the binaries published by Anza at [https://github.com/solana-labs/solana/releases](https://github.com/solana-labs/solana/releases)
 
-### On Testnet
+### Deploying On Testnet
 
 Agave is always BUILT FROM SOURCE directly on the host machine if it is intended for Solana Testnet.
 
-### On Mainnet
+### Deploying On Mainnet
 
 Agave is always BUILT FROM SOURCE directly on the host machine if it is intended for Solana Mainnet.
 
+### Client Mods
+
+add
+
+### Common Commands
+
+Some of the most used used validator node CLI commands:
+
+```bash
+# Check Solana version
+solana --version
+
+# Print content of the validator startup script
+cat bin/validator-localdemo.sh
+
+# Check if the validator service is running
+ps aux | grep validator
+
+# Check in which stage the validator is during the startup process
+agave-validator --ledger /mnt/ledger monitor
+
+# Check if our validator node is caught up with the rest of the cluster
+# The RPC url ($RPC_URL) is already set as an environment variable pointing to the entrypoint node "http://entrypoint:8899"
+solana -u $RPC_URL catchup --our-localhost 8899
+```
+
 ## Jito (Jito Network)
 
-### On Localnet
+### Deploying On Localnet
 
 add
 
-### On Testnet
+### Deploying On Testnet
 
 add
 
-### On Mainnet
+### Deploying On Mainnet
+
+add
+
+### Client Mods
 
 add
 
 ## Firedancer (Jump Crypto)
 
-### On Localnet
+### Deploying On Localnet
 
 add
 
-### On Testnet
+### Deploying On Testnet
 
 add
 
-### On Mainnet
+### Deploying On Mainnet
+
+add
+
+### Client Mods
 
 add
