@@ -1,5 +1,5 @@
 {
-	"dockerComposeFile": "../solana-localnet/docker-compose.yml",
+	"dockerComposeFile": "../solana-localnet/docker-compose.yml", 
 	"service": "ansible-control",
 	"postStartCommand": "./solana-localnet/start-localnet.sh",
 	"shutdownAction": "stopCompose",
