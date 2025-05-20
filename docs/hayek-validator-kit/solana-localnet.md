@@ -50,9 +50,9 @@ solana -ul ***
 # or also "solana -url localhost (-ul)"
 </code></pre><ul><li>Connect to any Localnet container <a href="ansible-control.md#connecting-to-localnet-nodes">via SSH</a>.</li></ul></td></tr><tr><td><code>alpha</code></td><td><p>Running a validator named <code>Canopy</code> with:</p><ul><li>200K delegated SOL (~16% of all cluster stake)</li><li>See how to view the <code>Canopy</code> validator keys in the <a href="ansible-control.md#validator-keys">Validator Keys section</a>.</li></ul></td></tr><tr><td><code>bravo</code><br></td><td>A validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.</td></tr><tr><td><code>charlie</code></td><td>A naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.</td></tr></tbody></table>
 
-After the cluster is provisioned, the staked SOL delegated to the `primary` node will be active at the beginning of epoch 1 (after \~5 minutes). Then the `primary` validator will start voting and move from delinquent to not-delinquent at the beginning of epoch 2.&#x20;
+After the cluster is provisioned, the staked SOL delegated to the `Canopy` node will be active at the beginning of Epoch 1 (after \~5 minutes). Then the `Canopy` validator will start voting and move from delinquent to not-delinquent at the beginning of Epoch 2.&#x20;
 
-The official Solana Explorer, and Solscan, have the option of exploring local clusters like Localnet. This means you can see the `primary` validator transactions [here](https://explorer.solana.com/address/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom\&customUrl=http%3A%2F%2Flocalhost%3A8899), as well as any other validator you provision as part of Localnet.
+The official Solana Explorer, and Solscan, have the option of [exploring local clusters like Localnet](solana-localnet.md#using-explorers).
 
 ### Running Localnet
 
