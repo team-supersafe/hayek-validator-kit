@@ -1,3 +1,0 @@
-# Update Validator Metal
-
-add

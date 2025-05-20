@@ -13,9 +13,9 @@
 ## Validator Operations
 
 * [Validator clients](validator-operations/deploying-a-validator-client.md)
-* [Changing a validator host](validator-operations/update-validator-metal.md)
+* [Validator hosts](validator-operations/update-validator-metal/README.md)
+  * [Host hardware tuning](validator-operations/update-validator-metal/hardware-tunning-info.md)
 * [Upgrade/Downgrade versions](validator-operations/upgrade-downgrade-versions.md)
-* [Host hardware tuning](validator-operations/hardware-tunning-info.md)
 
 ## Metrics & Monitoring
 
