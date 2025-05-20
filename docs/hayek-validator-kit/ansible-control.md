@@ -116,7 +116,7 @@ You can connect from your Ansible Control to any of your [Localnet Containers](s
 
 ```bash
 # ssh <host-user>@<localnet-container>
-ssh sol@alpha
+ssh sol@host-alpha
 ```
 
 ## Ignoring Ansible Control

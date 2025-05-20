@@ -32,7 +32,7 @@ You should [get familiar with the contents of the repo](github-repo.md#navigatin
 
 The Localnet cluster consist of the following containers:
 
-<table><thead><tr><th width="260.39453125">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>entrypoint</code><br></td><td><p>The Localnet cluster Gossip entry point node. Other validator nodes use this to join the network and synchronize with other validators.</p><ul><li>It provides Genesis block for Solana Localnet</li><li>Kick-starts POH</li><li>Epoch = 750 slots (~5 min) </li><li>Mostly for cluster boilerplate and not meant to be modified </li></ul></td></tr><tr><td><code>ansible-control</code></td><td><p>Your official sysadmin automation environment:</p><ul><li>Solana CLI and Ansible installed</li><li>Access Solana Mainnet, Testnet and Localnet</li></ul><pre><code># For Mainnet Connectivity
+<table><thead><tr><th width="260.39453125">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>entrypoint</code><br>- Maps to localhost:9022</td><td><p>The Localnet cluster Gossip entry point node. Other validator nodes use this to join the network and synchronize with other validators.</p><ul><li>It provides Genesis block for Solana Localnet</li><li>Kick-starts POH</li><li>Epoch = 750 slots (~5 min) </li><li>Mostly for cluster boilerplate and not meant to be modified </li></ul></td></tr><tr><td><code>host-alpha</code><br>- Maps to localhost:9122</td><td><p>Running a validator named <code>Canopy</code> with:</p><ul><li>200K delegated SOL (~16% of all cluster stake)</li><li>See how to view the <code>Canopy</code> validator keys in the <a href="ansible-control.md#validator-keys">Validator Keys section</a>.</li></ul></td></tr><tr><td><code>host-bravo</code><br>- Maps to localhost:9222<br></td><td>A validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.</td></tr><tr><td><code>host-charlie</code><br>- Maps to localhost:9322</td><td>A naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.</td></tr><tr><td><p><code>ansible-control</code><br>- Not mapped</p><p>- See <a href="ansible-control.md#connecting-to-ansible-control">how to connect</a></p></td><td><p>Your official sysadmin automation environment:</p><ul><li>Solana CLI and Ansible installed</li><li>Access Solana Mainnet, Testnet and Localnet</li></ul><pre><code># For Mainnet Connectivity
 solana -um ***
 
 #For Testnet Connectivity
@@ -41,7 +41,7 @@ solana -ut ***
 # For Localnet Connectivity
 solana -ul ***
 # or also "solana -url localhost (-ul)"
-</code></pre><ul><li>Connect to any Localnet container <a href="ansible-control.md#connecting-to-localnet-nodes">via SSH</a>.</li></ul></td></tr><tr><td><code>host-alpha</code></td><td><p>Running a validator named <code>Canopy</code> with:</p><ul><li>200K delegated SOL (~16% of all cluster stake)</li><li>See how to view the <code>Canopy</code> validator keys in the <a href="ansible-control.md#validator-keys">Validator Keys section</a>.</li></ul></td></tr><tr><td><code>host-bravo</code><br></td><td>A validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.</td></tr><tr><td><code>host-charlie</code></td><td>A naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.</td></tr></tbody></table>
+</code></pre><ul><li>Connect to any Localnet container <a href="ansible-control.md#connecting-to-localnet-nodes">via SSH</a>.</li></ul></td></tr></tbody></table>
 
 After the cluster is provisioned, the staked SOL delegated to the `Canopy` node will be active at the beginning of Epoch 1 (after \~5 minutes). Then the `Canopy` validator will start voting and move from delinquent to not-delinquent at the beginning of Epoch 2.&#x20;
 
@@ -86,14 +86,14 @@ docker compose down
 ### From Workstation
 
 ```sh
-ssh -p 9122 sol@localhost # ssh into primary node
-ssh -p 9222 sol@localhost # ssh into secondary node
+ssh -p 9122 sol@host-alpha # ssh into alpha host
+ssh -p 9222 sol@host-bravo # ssh into bravo host
 ```
 
 Ports are mapped from your localhost to each container:
 
-* for primary: localhost 9122 maps to container 22
-* for secondary: localhost 9222 maps to container 22
+* for `host-alpha`: localhost:9122 maps to container 22
+* for `host-bravo`: localhost:9222 maps to container 22
 
 ### From Ansible Control
 
