@@ -96,7 +96,6 @@ ALPHA_CANOPY_KEYS_DIR="/home/sol/keys/canopy-localnet"
 # We have the CANOPY VALIDATOR KEY SET
 # We could have the SEED VALIDATOR KEY SET deployed on the CANOPY SERVER BOX
 
-SOL_SERVICE_NAME=sol
 MOUNT_ROOT_DIR=/mnt
 LEDGER_DIR="${MOUNT_ROOT_DIR}/ledger"
 ACCOUNTS_DIR="${MOUNT_ROOT_DIR}/accounts"
@@ -130,7 +129,6 @@ solana -u $CLUSTER_RPC delegate-stake stake-account.json vote-account.json --for
 echo "---   SETTING UP CANOPY VALIDATOR SCRIPT WITH ACCOUNT KEYS...   ---"
 VOTE_ACCOUNT_PUBKEY=$(solana address -k $ANSIBLE_CANOPY_KEYS_DIR/vote-account.json)
 EXPECTED_GENESIS_HASH=$(solana -u $CLUSTER_RPC genesis-hash)
-echo "EXPECTED_GENESIS_HASH: $EXPECTED_GENESIS_HASH"
 
 CLUSTER_NAME=localnet
 TMP_DIR=$(mktemp --directory)
@@ -186,55 +184,18 @@ cleanup-host() {
   HOST=$1
 
   # cleanup existing sol service
-  ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT -t "
+  ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT "
     set -e
 
-    if [ -z "$SOL_SERVICE_NAME" ]; then
-      echo "Error: SERVICE_NAME is not set. Exiting..."
-      exit 1
-    fi
-
-    sudo systemctl stop $SOL_SERVICE_NAME 2> /dev/null || true
-    sudo systemctl disable $SOL_SERVICE_NAME 2> /dev/null || true
-    sudo rm /etc/systemd/system/${SOL_SERVICE_NAME}.service 2> /dev/null || true
-    sudo rm /etc/systemd/system/${SOL_SERVICE_NAME}.service 2> /dev/null || true # and symlinks that might be related
-    sudo rm /usr/lib/systemd/system/${SOL_SERVICE_NAME}.service 2> /dev/null || true 
-    sudo rm /usr/lib/systemd/system/${SOL_SERVICE_NAME}.servic 2> /dev/null || true # and symlinks that might be related
+    sudo systemctl stop sol 2> /dev/null || true
+    sudo systemctl disable sol 2> /dev/null || true
+    sudo rm /etc/systemd/system/sol.service 2> /dev/null || true
+    sudo rm /etc/systemd/system/sol.service 2> /dev/null || true # and symlinks that might be related
+    sudo rm /usr/lib/systemd/system/sol.service 2> /dev/null || true 
+    sudo rm /usr/lib/systemd/system/sol.servic 2> /dev/null || true # and symlinks that might be related
     sudo systemctl daemon-reload
     sudo systemctl reset-failed
-
-    echo "Cleaning sol service directories..."
-
-    if [ -n "${LEDGER_DIR}" ]; then
-        rm -rf ${LEDGER_DIR}/*
-    else
-        echo "Error: LEDGER_DIR is not set or empty. Skipping deletion."
-    fi
-
-    if [ -n "${ACCOUNTS_DIR}" ]; then
-        rm -rf ${ACCOUNTS_DIR}/*
-    else
-        echo "Error: ACCOUNTS_DIR is not set or empty. Skipping deletion."
-    fi
-
-    if [ -n "${SNAPSHOTS_DIR}" ]; then
-        rm -rf ${SNAPSHOTS_DIR}/*
-    else
-        echo "Error: SNAPSHOTS_DIR is not set or empty. Skipping deletion."
-    fi
-
-    if [ -n "${LOGS_DIR}" ]; then
-        rm -rf ${LOGS_DIR}/*
-    else
-        echo "Error: LOGS_DIR is not set or empty. Skipping deletion."
-    fi
-
-    if [ -n "${BIN_DIR}" ]; then
-        rm -rf ${BIN_DIR}/*
-    else
-        echo "Error: BIN_DIR is not set or empty. Skipping deletion."
-    fi
-    "
+  "
 }
 
 # Configure the validator on the host
@@ -269,7 +230,7 @@ configure-canopy-in-host() {
   scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $ANSIBLE_CANOPY_STARTUP_SCRIPT "$USER@$HOST:~/bin/run-validator-canopy.sh"
 
   # Transfer the validator keys from Ansible to the Host's sol user's keys directory and create symlinks for identity.json
-  ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT -t "
+  ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT "
     set -e
     # source ~/.profile
     PATH=$HOST_SOLANA_BIN:$PATH
