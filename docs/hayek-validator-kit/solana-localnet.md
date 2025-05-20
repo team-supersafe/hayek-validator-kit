@@ -21,7 +21,7 @@ Before running the Hayek Validator Kit Solana Localnet, you must [setup your wor
 All the configurations related to the Hayek Validator Kit are in this [GitHub repo](github-repo.md), which you will have to clone locally if you have not done so already:&#x20;
 
 ```bash
-git clone https://github.com/team-supersafe/hayek-sol-validator.git
+git clone https://github.com/team-supersafe/hayek-validator-kit.git
 ```
 
 You should [get familiar with the contents of the repo](github-repo.md#navigating-the-repo). The Localnet cluster is defined in the `Dockerfile` under the `solana-localnet` folder.
@@ -32,11 +32,25 @@ You should [get familiar with the contents of the repo](github-repo.md#navigatin
 
 The Localnet cluster consist of the following containers:
 
-<table><thead><tr><th width="240.4453125">container</th><th>features</th></tr></thead><tbody><tr><td><code>entrypoint</code><br>Acts as the cluster entry point node to which the other validators connect</td><td>- Slots per epoch: 750 slots (~5 min)</td></tr><tr><td><code>primary</code><br>Runs a Solana validator fully set up and connected to the entrypoint node</td><td>- Validator connected to entrypoint<br>- 200K delegated SOL (~16% of all cluster stake)<br>- Validator identity: <code>demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw</code> (<a href="https://explorer.solana.com/address/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom&#x26;customUrl=http%3A%2F%2Flocalhost%3A8899">explorer link</a>, <a href="https://solscan.io/account/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom&#x26;customUrl=http://localhost:8899">solscan</a>)<br>- Vote account: <code>demo52s9s1foFXgnbVa8vYQM8GS9XRsJ3aMpus1rNnb</code> (<a href="https://explorer.solana.com/address/demo52s9s1foFXgnbVa8vYQM8GS9XRsJ3aMpus1rNnb?cluster=custom&#x26;customUrl=http%3A%2F%2Flocalhost%3A8899">solana explorer</a>, <a href="https://solscan.io/account/demo52s9s1foFXgnbVa8vYQM8GS9XRsJ3aMpus1rNnb?cluster=custom&#x26;customUrl=http://localhost:8899">solscan</a>)<br>- User stake account: <code>demoMwLKQwfPZpjrbGG7Ed6vbXizxFDCp5srVd1Hqky</code> (<a href="https://explorer.solana.com/address/demoMwLKQwfPZpjrbGG7Ed6vbXizxFDCp5srVd1Hqky?cluster=custom&#x26;customUrl=http%3A%2F%2Flocalhost%3A8899">solana explorer</a>, <a href="https://solscan.io/account/demoMwLKQwfPZpjrbGG7Ed6vbXizxFDCp5srVd1Hqky?cluster=custom&#x26;customUrl=http://localhost:8899">solscan</a>)</td></tr><tr><td><code>secondary</code><br>Will not be configured, giving you the chance to do it using the Ansible scripts</td><td>- Validator not configured by default<br>- Identity pubkey:<br>- Vote account pubkey</td></tr><tr><td><code>ansible-control</code><br>Your dev environment with the Solana CLI and Ansible installed</td><td>- Solana CLI and Ansible installed<br>- Access to the local cluster through <code>--url localhost (-ul)</code><br>- Access to Testnet and Mainnet clusters<br>- Access to primary and secondary nodes through ssh (ex. <code>ssh sol@primary</code>)</td></tr></tbody></table>
+<table><thead><tr><th width="260.39453125">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>gossip-entrypoint</code><br>- Maps to localhost:9022</td><td><p>The cluster's Gossip protocol entry point node. Any validator can use this to join the network and synchronize with other validators.</p><ul><li>It provides Genesis block for Solana Localnet</li><li>Kick-starts POH</li><li>Epoch = 750 slots (~5 min) </li><li>Mostly for cluster boilerplate and not meant to be modified </li></ul></td></tr><tr><td><code>host-alpha</code><br>- Maps to localhost:9122</td><td><p>Running a validator named <code>Canopy</code> with:</p><ul><li>200K delegated SOL (~16% of all cluster stake)</li><li>See how to view the <code>Canopy</code> validator keys in the <a href="ansible-control.md#validator-keys">Validator Keys section</a>.</li></ul></td></tr><tr><td><code>host-bravo</code><br>- Maps to localhost:9222<br></td><td>A validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.</td></tr><tr><td><code>host-charlie</code><br>- Maps to localhost:9322</td><td>A naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.</td></tr><tr><td><p><code>ansible-control</code><br>- Not mapped</p><p>- See <a href="ansible-control.md#connecting-to-ansible-control">how to connect</a></p></td><td><p>Your official sysadmin automation environment:</p><ul><li>Solana CLI and Ansible installed</li><li>Access Solana Mainnet, Testnet and Localnet</li></ul><pre><code># For Mainnet Connectivity
+solana -um ***
 
-After the cluster is provisioned, the staked SOL delegated to the `primary` node will be active at the beginning of epoch 1 (after \~5 minutes). Then the `primary` validator will start voting and move from delinquent to not-delinquent at the beginning of epoch 2.&#x20;
+#For Testnet Connectivity
+solana -ut ***
 
-The official Solana Explorer, and Solscan, have the option of exploring local clusters like Localnet. This means you can see the `primary` validator transactions [here](https://explorer.solana.com/address/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom\&customUrl=http%3A%2F%2Flocalhost%3A8899), as well as any other validator you provision as part of Localnet.
+# For Localnet Connectivity
+solana -ul ***
+# or also "solana -url localhost (-ul)"
+</code></pre><ul><li>Connect to any Localnet container <a href="ansible-control.md#connecting-to-localnet-nodes">via SSH</a>.</li></ul></td></tr></tbody></table>
+
+After the cluster is provisioned, the staked SOL delegated to the `Canopy` node will be active at the beginning of Epoch 1 (after \~5 minutes). Then the `Canopy` validator will start voting and move from delinquent to not-delinquent at the beginning of Epoch 2.&#x20;
+
+### Using Explorers
+
+You can use the Solana Explorer and Solscan apps to explore any accounts in your localnet cluster using these addresses:
+
+* [https://explorer.solana.com/?cluster=custom\&customUrl=http%3A%2F%2Flocalhost%3A8899](https://explorer.solana.com/address/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom\&customUrl=http%3A%2F%2Flocalhost%3A8899)
+* [https://solscan.io/?cluster=custom\&customUrl=http://localhost:8899](https://solscan.io/account/demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw?cluster=custom\&customUrl=http://localhost:8899)
 
 ### Running Localnet
 
@@ -72,14 +86,14 @@ docker compose down
 ### From Workstation
 
 ```sh
-ssh -p 9122 sol@localhost # ssh into primary node
-ssh -p 9222 sol@localhost # ssh into secondary node
+ssh -p 9122 sol@host-alpha # ssh into alpha host
+ssh -p 9222 sol@host-bravo # ssh into bravo host
 ```
 
 Ports are mapped from your localhost to each container:
 
-* for primary: localhost 9122 maps to container 22
-* for secondary: localhost 9222 maps to container 22
+* for `host-alpha`: localhost:9122 maps to container 22
+* for `host-bravo`: localhost:9222 maps to container 22
 
 ### From Ansible Control
 
@@ -97,7 +111,7 @@ After the first login to a validator that was just setup, you'll need to have it
 RPC_URL=http://entrypoint:8899
 ```
 
-Other common validator CLI commands can be found [HERE](../validator-operations/validator-commands.md).
+Other common validator CLI commands can be found [HERE](broken-reference).
 
 ## Cluster Example
 

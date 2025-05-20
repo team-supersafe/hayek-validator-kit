@@ -12,20 +12,21 @@
 
 ## Validator Operations
 
-* [Deploying a validator client](validator-operations/deploying-a-validator-client.md)
-* [Deploying Jito](validator-operations/deploying-jito.md)
-* [Deploying Firedancer](validator-operations/deploying-firedancer.md)
-* [Update Validator Metal](validator-operations/update-validator-metal.md)
-* [Upgrade/Downgrade Versions](validator-operations/upgrade-downgrade-versions.md)
-* [Hardware Tunning Info](validator-operations/hardware-tunning-info.md)
-* [Client Mods](validator-operations/client-mods.md)
-* [Validator Commands](validator-operations/validator-commands.md)
+* [Validator clients](validator-operations/deploying-a-validator-client/README.md)
+  * [Agave](validator-operations/deploying-a-validator-client/agave.md)
+  * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
+  * [Jito](validator-operations/deploying-a-validator-client/jito.md)
+* [Validator hosts](validator-operations/update-validator-metal/README.md)
+  * [Choosing your metal](validator-operations/update-validator-metal/choosing-your-metal.md)
+  * [Moving your metal](validator-operations/update-validator-metal/moving-your-metal.md)
+  * [Hardware tuning](validator-operations/update-validator-metal/hardware-tunning-info.md)
+* [Validator stake](validator-operations/validator-stake/README.md)
+  * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
 
 ## Metrics & Monitoring
 
 * [Community Dashboards](metrics-and-monitoring/community-dashboards.md)
 * [Setup Validator Metrics](metrics-and-monitoring/setup-validator-metrics.md)
-* [Stake Pools](metrics-and-monitoring/stake-pools.md)
 
 ## Key Management
 

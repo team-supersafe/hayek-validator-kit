@@ -1,19 +1,17 @@
----
-description: \
----
+# Agave
 
-# Deploying a validator client
+Anza is a Solana validator client developed and maintained by Anza Technology.
 
 The process to deploy a new validator using the Agave client is similar to that of upgrading an existing client to a new version of Agave. The process goes like this:
 
 * For Mainnet and Testnet deployments, Agave is always BUILT FROM SOURCE directly on the host machine.&#x20;
 * For Localnet, which is focused on development and operator workloads, we want to avoid having to BUILD FROM SOURCE every time we spin up a new docker container, since the build process itself is very resource intensive and slows down the development REPL.
 
-Make sure you understand [Localnet and its requirements](../hayek-validator-kit/solana-localnet.md) before deploying to it.
+Make sure you understand [Localnet and its requirements](../../hayek-validator-kit/solana-localnet.md) before deploying to it.
 
-## On Localnet
+### Deploying On Localnet
 
-For [Localnet](../hayek-validator-kit/solana-localnet.md), which is focused on development and operator workloads, we want to **avoid** having to BUILD FROM SOURCE every time we spin up a new docker container, since the build process itself is very resource intensive and slows down the development REPL. For this reason, all Localnet deployments are done from pre-compiled binaries.&#x20;
+For [Localnet](../../hayek-validator-kit/solana-localnet.md), which is focused on development and operator workloads, we want to **avoid** having to BUILD FROM SOURCE every time we spin up a new docker container, since the build process itself is very resource intensive and slows down the development REPL. For this reason, all Localnet deployments are done from pre-compiled binaries.&#x20;
 
 Anza publishes new releases of Agave at [https://github.com/anza-xyz/agave/releases](https://github.com/anza-xyz/agave/releases). However, they **don't** publish pre-built binaries for Apple Silicon running virtualized hosts, which is not an uncommon setup for developer workstations.
 
@@ -30,10 +28,36 @@ To accomodate these developers and operators, we pre-compile binaries for Apple 
     → solana-release-aarch64-unknown-linux-gnu.tar.bz2
 4. For everything else, we can use the binaries published by Anza at [https://github.com/solana-labs/solana/releases](https://github.com/solana-labs/solana/releases)
 
-## On Testnet
+### Deploying On Testnet
 
 Agave is always BUILT FROM SOURCE directly on the host machine if it is intended for Solana Testnet.
 
-## On Mainnet
+### Deploying On Mainnet
 
 Agave is always BUILT FROM SOURCE directly on the host machine if it is intended for Solana Mainnet.
+
+### Client Mods
+
+add
+
+### Common Commands
+
+Some of the most used used validator node CLI commands:
+
+```bash
+# Check Solana version
+solana --version
+
+# Print content of the validator startup script
+cat bin/validator-localdemo.sh
+
+# Check if the validator service is running
+ps aux | grep validator
+
+# Check in which stage the validator is during the startup process
+agave-validator --ledger /mnt/ledger monitor
+
+# Check if our validator node is caught up with the rest of the cluster
+# The RPC url ($RPC_URL) is already set as an environment variable pointing to the entrypoint node "http://entrypoint:8899"
+solana -u $RPC_URL catchup --our-localhost 8899
+```
