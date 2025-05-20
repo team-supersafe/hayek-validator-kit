@@ -1,6 +1,6 @@
 # GitHub Repo
 
-All the configurations related to the Hayek Validator Kit are [in this GitHub repo](https://github.com/team-supersafe/hayek-sol-validator.git), which you will have to clone locally:&#x20;
+All the configurations related to the Hayek Validator Kit are [in this GitHub repo](https://github.com/team-supersafe/hayek-validator-kit.git), which you will have to clone locally:&#x20;
 
 ```bash
 git clone https://github.com/team-supersafe/hayek-validator-kit.git
