@@ -43,7 +43,7 @@ export SSH_AUTH_SOCK="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/
 ```
 {% endcode %}
 
-If it doesn't exist or it doesn't look like this, you'll need to setup the default Ansible user as an environment variable. This user will be the one connecting to the [Ansible Control](ansible-control.md) node and used to run all Ansible commands. Replace `<your_ansible_user>` with your actual Ansible user from the [server-setup provisioned users](https://github.com/team-supersafe/hayek-sol-validator/blob/520c604ea6f7f55279a3ab02a23545b54ad213ea/server-setup/initial-setup/ansible/roles/users/files/ssh_keys).
+If it doesn't exist or it doesn't look like this, you'll need to setup the default Ansible user as an environment variable. This user will be the one connecting to the [Ansible Control](ansible-control.md) node and used to run all Ansible commands. Replace `<your_ansible_user>` with your actual Ansible user from the [server-setup provisioned users](https://github.com/team-supersafe/hayek-validator-kit/tree/main/ansible/iam/users).
 
 Depending on what your host shell is, run:
 
