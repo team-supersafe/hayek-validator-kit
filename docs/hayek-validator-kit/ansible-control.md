@@ -50,15 +50,6 @@ cd "$KEYS_DIRECTORY/$VALIDATOR_NAME"
 $KEYS_DIRECTORY/_gen-validator-keys.sh
 ```
 
-{% hint style="success" %}
-<sup>**Naming Suggestion**</sup>\
-As you name your new key sets, it will help you to think about their name relative to their total stake they will have. Our approach is to size the validators following:
-
-* Canopy = large stake
-* Sprout = medium stake
-* Seed = small stake
-{% endhint %}
-
 You can view the public keys of any of these respective private keys like this:
 
 ```bash
@@ -82,6 +73,14 @@ The Ansible Control container is provisioned with the following&#x20;
 2. Ansible&#x20;
 3. Python3
 4. These packages: rsyslog, sudo, iproute2, openssh-client, git, curl, nano, openssl, tar, jq, less, tree
+
+## Naming Validators
+
+As you name new validators in Localnet or create new validator key sets, it will help you to think about their name relative to their total stake they will have. Our approach is to name the validators as follows:
+
+* **Canopy**, Whale, Benjamin = large stake
+* **Sprout**, Dolphin, Dollar = medium stake
+* **Seed**, Shrimp, Penny = small stake
 
 ## Connecting to Ansible Control
 
