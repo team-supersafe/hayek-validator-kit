@@ -113,9 +113,8 @@ solana -u $CLUSTER_RPC airdrop 500000
 # Generate Canopy Accounts and Keys on the Ansible Control.
 # They'll be used to configure the Canopy Validator in the script below.
 echo "---   GENERATING ANSIBLE CANOPY VALIDATOR ACCOUNT KEYS...   ---"
-
-mkdir -p "$ANSIBLE_CANOPY_VALIDATOR_KEYS_DIR"
-cd "$ANSIBLE_CANOPY_VALIDATOR_KEYS_DIR"
+mkdir -p "$ANSIBLE_CANOPY_KEYS_DIR"
+cd "$ANSIBLE_CANOPY_KEYS_DIR"
 source "$ANSIBLE_VALIDATORS_KEYS_DIR/_gen-validator-keys.sh"
 #Airdrop 42 localnet SOL to the Canopy validator
 solana -u $CLUSTER_RPC --keypair staked-identity.json airdrop 42
