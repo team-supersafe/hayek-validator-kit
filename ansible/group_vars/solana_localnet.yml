@@ -1,0 +1,3 @@
+#Solana Localnet-specific, non-secret (rare) variables
+ansible_control_keys_dir: "~/.validator-keys/localdemo-localcluster" # It should match the path in the operator's host machine running the docker container
+

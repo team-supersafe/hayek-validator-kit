@@ -1,0 +1,9 @@
+---
+- name: Include group creation
+  import_tasks: groups.yml
+
+- name: Include user creation
+  import_tasks: users.yml
+
+- name: Include sudo config
+  import_tasks: sudo.yml

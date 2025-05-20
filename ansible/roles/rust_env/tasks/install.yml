@@ -1,0 +1,19 @@
+---
+- name: Install - Rustup
+  ansible.builtin.get_url:
+    url: https://sh.rustup.rs
+    dest: /tmp/rustup-init.sh
+    mode: "0755"
+
+- name: Install - Rust using rustup
+  ansible.builtin.command: /tmp/rustup-init.sh -y
+  args:
+    creates: "{{ solana_user_dir }}/.cargo/bin/rustc"
+
+- name: Install - Persist Rust environment setup in shell profile
+  ansible.builtin.lineinfile:
+    path: "{{ solana_user_dir }}/.bashrc"
+    line: '. "$HOME/.cargo/env"'
+    create: yes
+    state: present
+  when: solana_user_dir is defined and solana_user_dir != ''

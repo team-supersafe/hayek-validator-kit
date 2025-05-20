@@ -1,0 +1,57 @@
+- name: Print the Agave version
+  ansible.builtin.debug:
+    msg: "Building Agave version {{ agave_version }} from source"
+
+- name: Create solana cli releases directory
+  ansible.builtin.file:
+    path: "{{ solana_user_dir }}/.local/share/solana/install/releases"
+    state: directory
+    mode: '0755'
+
+- name: Set local variable for agave_build_dir
+  ansible.builtin.set_fact:
+    agave_build_dir: "{{ build_dir }}/agave"
+
+- name: Ensure agave_build_dir directory exists
+  ansible.builtin.file:
+    path: "{{ agave_build_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Debug print AGAVE build directory and version
+  ansible.builtin.debug:
+    msg: 
+      - "Agave build directory: {{ agave_build_dir }}"
+      - "Agave version: {{ agave_version }}"
+
+- name: Unarchive solana source code
+  ansible.builtin.unarchive:
+    src: "https://github.com/anza-xyz/agave/archive/refs/tags/v{{ agave_version }}.tar.gz"
+    dest: "{{ agave_build_dir }}"
+    remote_src: true
+    creates: "{{ agave_build_dir }}/agave-{{ agave_version }}"
+
+- name: Run cargo-install-all.sh
+  ansible.builtin.shell: |
+    set -e
+    . "{{ solana_user_dir }}/.cargo/env"
+    ./scripts/cargo-install-all.sh . > {{ agave_build_dir }}/agave-build.log 2>&1
+  args:
+    chdir: "{{ agave_build_dir }}/agave-{{ agave_version }}"
+
+- name: Create release directory for Agave
+  ansible.builtin.file:
+    path: "{{ solana_installed_releases_dir }}/{{ agave_version }}"
+    state: directory
+    mode: "0755"
+
+- name: Move agave we just built into the releases directory
+  ansible.builtin.shell: |
+    set -e
+    mv {{ agave_build_dir }}/agave-{{ agave_version }} {{ solana_installed_releases_dir }}/{{ agave_version }}
+
+- name: Remove temporary build directory
+  ansible.builtin.file:
+    path: "{{ agave_build_dir }}"
+    state: absent
+  when: agave_build_dir is defined

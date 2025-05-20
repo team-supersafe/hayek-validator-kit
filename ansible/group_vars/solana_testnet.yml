@@ -1,0 +1,14 @@
+#Solana Testnet-specific, non-secret (rare) variables
+ansible_control_keys_dir: "~/.validator-keys/hayek-testnet" # It should match the path in the operator's host machine running the docker container
+
+jito_urls:
+  dallas:
+    block_engine: "https://dallas.testnet.block-engine.jito.wtf"
+    relayer: "http://dallas.testnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "141.98.218.45:1002"
+    ntp_server: "ntp.dallas.jito.wtf"
+  newyork:
+    block_engine: "https://ny.testnet.block-engine.jito.wtf"
+    relayer: "http://ny.testnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "141.98.216.132:1002"
+    ntp_server: "ntp.dallas.jito.wtf"

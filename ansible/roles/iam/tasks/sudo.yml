@@ -1,0 +1,11 @@
+---
+- name: Add sudoers config for privileged users
+  ansible.builtin.template:
+    src: sudoers.j2
+    dest: "/etc/sudoers.d/{{ item.name }}"
+    owner: root
+    group: root
+    mode: '0440'
+  when: item.sudo | default(false)
+  loop: "{{ iam_users }}"
+  tags: [iam, sudo]

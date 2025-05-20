@@ -1,0 +1,39 @@
+---
+# Check the input variables
+
+- when: jito_relayer_version is not defined
+  name: "Fail if Jito Relayer version is not defined"
+  ansible.builtin.fail:
+    msg: "Jito Relayer version is not defined. Please set jito_relayer_version in playbook"
+
+- when: jito_relayer_build_dir is not defined
+  name: "Fail if Jito Relayer build path is not defined"
+  ansible.builtin.fail:
+    msg: "Jito Relayer build path is not defined. Please set jito_relayer_build_dir"
+
+- when: jito_relayer_install_dir is not defined
+  name: "Fail if Jito Relayer release path is not defined"
+  ansible.builtin.fail:
+    msg: "Jito Relayer release path is not defined. Please set jito_relayer_install_dir"
+
+# Check system dependencies
+
+- name: Check if Rust is installed
+  command: rustc --version
+  register: rustc_check
+  ignore_errors: yes
+
+- when: rustc_check.rc != 0
+  name: Fail if Rust is not installed
+  fail:
+    msg: "Rust is not installed. Please install Rust before proceeding."
+
+- name: Check if Solana CLI is installed
+  command: solana --version
+  register: solana_check
+  ignore_errors: yes
+
+- when: solana_check.rc != 0
+  name: Fail if Solana CLI is not installed
+  fail:
+    msg: "Solana CLI is not installed. Please install Solana CLI before proceeding."
