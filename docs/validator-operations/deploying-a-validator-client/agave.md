@@ -1,21 +1,17 @@
----
-description: How to deploy Agave, Jito, or Firedancer clients in your validator
----
+# Agave
 
-# Validator clients
-
-## Agave (Anza Technology)
+Anza is a Solana validator client developed and maintained by Anza Technology.
 
 The process to deploy a new validator using the Agave client is similar to that of upgrading an existing client to a new version of Agave. The process goes like this:
 
 * For Mainnet and Testnet deployments, Agave is always BUILT FROM SOURCE directly on the host machine.&#x20;
 * For Localnet, which is focused on development and operator workloads, we want to avoid having to BUILD FROM SOURCE every time we spin up a new docker container, since the build process itself is very resource intensive and slows down the development REPL.
 
-Make sure you understand [Localnet and its requirements](../hayek-validator-kit/solana-localnet.md) before deploying to it.
+Make sure you understand [Localnet and its requirements](../../hayek-validator-kit/solana-localnet.md) before deploying to it.
 
 ### Deploying On Localnet
 
-For [Localnet](../hayek-validator-kit/solana-localnet.md), which is focused on development and operator workloads, we want to **avoid** having to BUILD FROM SOURCE every time we spin up a new docker container, since the build process itself is very resource intensive and slows down the development REPL. For this reason, all Localnet deployments are done from pre-compiled binaries.&#x20;
+For [Localnet](../../hayek-validator-kit/solana-localnet.md), which is focused on development and operator workloads, we want to **avoid** having to BUILD FROM SOURCE every time we spin up a new docker container, since the build process itself is very resource intensive and slows down the development REPL. For this reason, all Localnet deployments are done from pre-compiled binaries.&#x20;
 
 Anza publishes new releases of Agave at [https://github.com/anza-xyz/agave/releases](https://github.com/anza-xyz/agave/releases). However, they **don't** publish pre-built binaries for Apple Silicon running virtualized hosts, which is not an uncommon setup for developer workstations.
 
@@ -65,39 +61,3 @@ agave-validator --ledger /mnt/ledger monitor
 # The RPC url ($RPC_URL) is already set as an environment variable pointing to the entrypoint node "http://entrypoint:8899"
 solana -u $RPC_URL catchup --our-localhost 8899
 ```
-
-## Jito (Jito Network)
-
-### Deploying On Localnet
-
-add
-
-### Deploying On Testnet
-
-add
-
-### Deploying On Mainnet
-
-add
-
-### Client Mods
-
-add
-
-## Firedancer (Jump Crypto)
-
-### Deploying On Localnet
-
-add
-
-### Deploying On Testnet
-
-add
-
-### Deploying On Mainnet
-
-add
-
-### Client Mods
-
-add
