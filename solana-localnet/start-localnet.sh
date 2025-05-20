@@ -281,3 +281,4 @@ echo "---   Configuring Bravo Host as a server that is ready for, but NOT runnin
 echo
 cleanup-host host-bravo 
 # docker exec -it secondary bash -c 'sudo chown -R sol:sol /mnt/ledger && sudo chown -R sol:sol /mnt/accounts && sudo chown -R sol:sol /mnt/snapshots'
+echo "---   ALL DONE. LOCALNET IS RUNNING.   ---"
