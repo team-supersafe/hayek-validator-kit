@@ -1,0 +1,54 @@
+---
+
+# Startup script
+
+- name: Set Jito relayer startup script path
+  ansible.builtin.set_fact:
+    jito_relayer_startup_script: "{{ scripts_dir }}/{{ jito_relayer_service_name }}-startup.sh"
+  tags: [jito_relayer.config, jito_relayer.startup_script]
+
+- name: Ensure scripts_dir exists
+  ansible.builtin.file:
+    path: "{{ scripts_dir }}"
+    state: directory
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+    mode: "0754"
+  tags: [jito_relayer.config, jito_relayer.startup_script]
+
+- name: Create Jito Relayer startup script
+  when: not ansible_check_mode
+  ansible.builtin.template:
+    src: startup.sh.j2
+    dest: "{{ jito_relayer_startup_script }}"
+    mode: "0754"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  tags: [jito_relayer.config, jito_relayer.startup_script]
+
+# Service
+
+- name: Template Jito relayer systemd service file
+  become: true
+  ansible.builtin.template:
+    src: jito-relayer.service.j2
+    dest: "/lib/systemd/system/{{ jito_relayer_service_name }}.service"
+    mode: "0644"
+    owner: root
+    group: root
+  notify: "restart {{ jito_relayer_service_name }}"
+  tags: [jito_relayer.config, jito_relayer.systemd]
+
+- name: Reload systemd to pick up new service
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  ignore_errors: yes
+  tags: [jito_relayer.config, jito_relayer.systemd]
+
+- name: Enable Jito relayer service
+  ansible.builtin.systemd:
+    name: "{{ jito_relayer_service_name }}"
+    enabled: yes
+    state: started
+  ignore_errors: yes
+  tags: [jito_relayer.config, jito_relayer.systemd]

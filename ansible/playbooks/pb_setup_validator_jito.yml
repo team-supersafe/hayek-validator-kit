@@ -1,0 +1,33 @@
+---
+# Jito Validator Setup
+# -------------------
+# Sets up a Solana validator with Jito client for MEV capabilities.
+#
+# Usage:
+# ------
+# Run from /ansible directory:
+#
+# Shared relayer:
+#   ansible-playbook -i hosts.yml playbooks/pb_setup_validator_jito.yml -e "jito_relayer_type=shared"
+#
+# Co-hosted relayer (recommended):
+#   ansible-playbook -i hosts.yml playbooks/pb_setup_validator_jito.yml -e "jito_relayer_type=co-hosted"
+#
+# Options:
+# - jito_version: Client version (default: v2.2.14)
+# - jito_relayer_type: "shared" or "co-hosted"
+# - solana_cluster: "testnet", "mainnet" or "localnet"
+# - hosts: "local_pristine", "local_blue", "local_green".
+
+- name: Install Jito Client with Co-Hosted Relayer
+  hosts: local_pristine
+  user: "{{ solana_user }}"
+  become: false
+  roles:
+    - role: solana_validator_jito
+      jito_version: "2.2.14"
+      jito_relayer_type: "co-hosted" # "shared" or "co-hosted"
+      jito_relayer_version: "v0.3.1"
+      jito_relayer_force_build: false
+      agave_version: "{{ jito_version }}"
+      solana_cluster: 'testnet'

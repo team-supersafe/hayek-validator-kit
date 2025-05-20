@@ -77,7 +77,7 @@ At times, and as you corrupt the state of your docker containers running in Loca
 You can also stop the cluster from docker with&#x20;
 
 ```bash
-cd solana-local-cluster
+cd solana-localnet
 docker compose down
 ```
 
@@ -177,9 +177,9 @@ ENTRYPOINT_IDENTITY_PUBKEY=3jHsYXrWP7GrmBhzkGHp84EEwAvLtKnD6SZC9r6LM3Ji
 
 # primary validator node
 agave-validator --entrypoint entrypoint:8001 \
-    --identity ~/keys-localtest/identity.json \
+    --identity ~/keys-localnet/identity.json \
     --vote-account FadfWQhHGwdQQWbvscyiNLedbBr6q9DDWqfU2bWyhmwx \
-    --authorized-voter ~/keys-localtest/staked-identity.json \
+    --authorized-voter ~/keys-localnet/staked-identity.json \
     --log agave-validator.log \
     --ledger /mnt/ledger \
     --accounts /mnt/accounts \
@@ -191,9 +191,9 @@ agave-validator --entrypoint entrypoint:8001 \
 
 # secondary validator node
 agave-validator --entrypoint entrypoint:8001 \
-    --identity ~/keys-localtest/identity.json \
+    --identity ~/keys-localnet/identity.json \
     --vote-account FadfWQhHGwdQQWbvscyiNLedbBr6q9DDWqfU2bWyhmwx \
-    --authorized-voter ~/keys-localtest/staked-identity.json \
+    --authorized-voter ~/keys-localnet/staked-identity.json \
     --log agave-validator.log \
     --ledger /mnt/ledger \
     --accounts /mnt/accounts \

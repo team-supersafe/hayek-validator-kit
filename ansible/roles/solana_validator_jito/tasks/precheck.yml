@@ -1,0 +1,17 @@
+---
+- name: Ensure jito_relayer_type variable is defined and valid
+  ansible.builtin.assert:
+    that:
+      - jito_relayer_type is defined
+      - jito_relayer_type in ['shared', 'co-hosted']
+    fail_msg: >
+      "The playbook variable 'jito_relayer_type' must be defined and set to either 'shared' or 'co-hosted'."
+    success_msg: "jito_relayer_type is set to {{ jito_relayer_type }}"
+
+- name: Ensure jito_version variable is defined
+  ansible.builtin.assert:
+    that:
+      - jito_version is defined
+    fail_msg: >
+      "The playbook variable 'jito_version' must be defined."
+    success_msg: "jito_version is set to {{ jito_version }}"

@@ -1,0 +1,53 @@
+---
+# Solana CLI Installation Tasks
+# This file handles architecture detection and delegates to the appropriate install method.
+
+# Ensure the host architecture is set (required for conditional installation logic)
+- import_tasks: ../common/tasks/set_host_architecture.yml
+
+- name: Install prerequisites
+  become: true
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - pkg-config
+      - libudev-dev
+      - llvm
+      - libclang-dev
+      - protobuf-compiler
+      - bzip2
+    update_cache: true
+
+# Choose installation method based on architecture and user preference
+- when: build_from_source | bool
+  name: Install - Installing from source based on architecture
+  ansible.builtin.include_tasks: install_from_source.yml
+  
+- when: not build_from_source | bool
+  name: Install - Installing from url based on architecture
+  ansible.builtin.include_tasks: install_from_url.yml
+
+# Create symlink to new release
+- name: Create symlink to new release
+  ansible.builtin.file:
+    src: "{{ solana_user_dir }}/.local/share/solana/install/releases/{{ agave_version }}/solana-release"
+    dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
+    state: link
+    force: true
+
+# Ensure Solana CLI bin path is in the user's .bashrc and .zshrc for persistent CLI access
+- name: Install - Ensure Solana CLI bin path is in .bashrc
+  ansible.builtin.lineinfile:
+    path: "$HOME/.bashrc"
+    line: 'export PATH="{{ solana_install_dir }}:$PATH"'
+    create: yes
+    state: present
+  tags: [solana_cli, install]
+
+- name: Install - Ensure Solana CLI bin path is in .zshrc
+  ansible.builtin.lineinfile:
+    path: "$HOME/.zshrc"
+    line: 'export PATH="{{ solana_install_dir }}:$PATH"'
+    create: yes
+    state: present
+  tags: [solana_cli, install]

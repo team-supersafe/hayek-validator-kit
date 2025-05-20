@@ -1,0 +1,187 @@
+# See https://docs.localstack.cloud/getting-started/installation/
+# See https://stackoverflow.com/questions/76305311/is-there-a-default-value-for-localstacks-localstack-volume-dir-variable-if-o
+# See https://docs.docker.com/compose/install/
+
+# # Define a reusable command block using an anchor with a multiline command
+x-validator-variables: &validator-variables
+  image: ${COMPOSE_PROJECT_NAME}-validator
+  volumes:
+    - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    - /mnt/ledger
+    - /mnt/accounts
+    - /mnt/snapshots
+    - type: bind
+      source: ${SSH_AUTH_SOCK:-/dev/null}
+      target: /ssh-agent
+      read_only: true
+    # - "${HOME}/.ssh/id_ed25519.pub:/tmp/id_ed25519.pub:ro" # Mount the host's public key as read-only
+    - "../ansible/iam/users:/tmp/team_ssh_public_keys:ro" # Mount the team public keys as read-only
+  environment:
+    SSH_AUTH_SOCK: /ssh-agent
+    USERNAME: sol # Set the username inside the container
+    VALIDATOR_OPERATOR_USER: ${ANSIBLE_REMOTE_USER:?error} # Set the validator operator user inside the container
+    RPC_URL: http://gossip-entrypoint:8899
+  command: |
+    bash -c "
+    # cat /tmp/id_ed25519.pub >> /home/$$USERNAME/.ssh/authorized_keys
+
+    # set sol service user ssh authorized_keys
+    rm -rf /home/$$USERNAME/.ssh
+    mkdir -p /home/$$USERNAME/.ssh
+    chmod 700 /home/$$USERNAME/.ssh
+
+    for file in /tmp/team_ssh_public_keys/*; do
+      echo \"Adding public key from $$file\"
+      cat $$file >> /home/$$USERNAME/.ssh/authorized_keys
+      echo "" >> /home/$$USERNAME/.ssh/authorized_keys
+    done
+
+    chmod 600 /home/$$USERNAME/.ssh/authorized_keys
+    chown -R $$USERNAME:$$USERNAME /home/$$USERNAME/.ssh
+
+    # set sol service as owner of ledger, accounts, and snapshots directories
+    chown -R $$USERNAME:$$USERNAME /mnt/ledger
+    chown -R $$USERNAME:$$USERNAME /mnt/accounts
+    chown -R $$USERNAME:$$USERNAME /mnt/snapshots
+
+    # set team member user
+    id -u $$VALIDATOR_OPERATOR_USER || adduser --disabled-password --gecos \"\" $$VALIDATOR_OPERATOR_USER && echo \"$$VALIDATOR_OPERATOR_USER:$${VALIDATOR_OPERATOR_USER}pw\" | chpasswd && usermod -aG sudo $$VALIDATOR_OPERATOR_USER
+
+    # set team member user ssh authorized_keys
+    rm -rf /home/$$VALIDATOR_OPERATOR_USER/.ssh
+    mkdir -p /home/$$VALIDATOR_OPERATOR_USER/.ssh
+    chmod 700 /home/$$VALIDATOR_OPERATOR_USER/.ssh
+
+    for file in /tmp/team_ssh_public_keys/*; do
+      echo \"Adding public key from $$file\"
+      cat $$file >> /home/$$VALIDATOR_OPERATOR_USER/.ssh/authorized_keys
+      echo "" >> /home/$$VALIDATOR_OPERATOR_USER/.ssh/authorized_keys
+    done
+
+    chmod 600 /home/$$VALIDATOR_OPERATOR_USER/.ssh/authorized_keys
+    chown -R $$VALIDATOR_OPERATOR_USER:$$VALIDATOR_OPERATOR_USER /home/$$VALIDATOR_OPERATOR_USER/.ssh
+
+    # set RPC_URL globally for all users
+    echo \"export RPC_URL=$$RPC_URL\" >> /etc/environment
+
+    /lib/systemd/systemd
+    "
+
+networks:
+  solana_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+services:
+  gossip-entrypoint:
+    build:
+      context: ./
+      target: gossip-entrypoint-builder
+    image: ${COMPOSE_PROJECT_NAME}-gossip-entrypoint
+    container_name: "gossip-entrypoint"
+    hostname: "gossip-entrypoint"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    environment:
+      - FOO="bar"
+    networks:
+      solana_network:
+        ipv4_address: 172.25.0.10
+    ports:
+      - 9022:22
+      - 8899:8899
+      - 8900:8900
+      - 8000:8000
+      - 8001:8001
+      - 8002:8002
+      - 8003:8003
+      - 8004:8004
+      - 8005:8005
+      - 8006:8006
+      - 8007:8007
+      - 8008:8008
+      - 8009:8009
+      - 8010:8010
+      - 8011:8011
+      - 8012:8012
+      - 8013:8013
+      - 8014:8014
+      - 8015:8015
+      - 8016:8016
+      - 8017:8017
+      - 8018:8018
+      - 8019:8019
+      - 8020:8020
+
+  # host-alpha will be hosting a voting non-delinquent validator named Canopy with a bunch of SOL stake
+  host-alpha:
+    privileged: true
+    build:
+      context: ./
+      target: validator-builder
+    container_name: "host-alpha"
+    hostname: "host-alpha"
+    ports:
+      - 9122:22
+    networks:
+      solana_network:
+        ipv4_address: 172.25.0.11
+    <<: [ *validator-variables ]
+
+  # host-bravo is a validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.
+  host-bravo:
+    # NO NEED TO BUILD, because we already have the image built in the validator-variables
+    # Remember we don't want to run the actual validator client here
+    # build:
+    #   context: ./
+    #   # dockerfile: ./validator/Dockerfile
+    #   target: validator-builder
+    privileged: true
+    container_name: "host-bravo"
+    hostname: "host-bravo"
+    ports:
+      - 9222:22
+    networks:
+      solana_network:
+        ipv4_address: 172.25.0.12
+    <<: [ *validator-variables ]
+
+  # host-charlie is a naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.
+  host-charlie:
+    privileged: true
+    build:
+      context: ./
+      target: naked-builder
+    container_name: "host-charlie"
+    hostname: "host-charlie"
+    ports:
+      - 9322:22
+    networks:
+      solana_network:
+        ipv4_address: 172.25.0.13
+    <<: [ *validator-variables ]
+    image: ubuntu
+
+  ansible-control:
+    build:
+      context: ./
+      target: ansible-control-builder
+    image: ${COMPOSE_PROJECT_NAME}-ansible-control
+    depends_on:
+      - gossip-entrypoint
+      - host-alpha
+      - host-bravo
+      - host-charlie
+    container_name: ansible-control
+    stdin_open: true
+    tty: true
+    volumes:
+      - ..:/hayek-validator-kit
+      - ~/.config/solana/id.json:/root/.config/solana/id_maybe.json:ro # Solana default CLI keypair
+      - ~/.validator-keys:/root/.validator-keys # TODO: harden permissions
+    environment:
+      - FOO="bar"
+      - RPC_URL=http://gossip-entrypoint:8899
+    network_mode: "container:gossip-entrypoint"

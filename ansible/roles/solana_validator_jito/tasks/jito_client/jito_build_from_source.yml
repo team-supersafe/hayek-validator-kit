@@ -1,0 +1,124 @@
+- name: DEBUG
+  ansible.builtin.debug:
+    msg: "Installing Jito-Solana CLI {{ jito_version }}"
+
+# - name: update solana (agave)
+#   shell: "agave-install init {{ agave_version }}"
+#   become: yes
+#   become_user: "{{ solana_user }}"
+#   environment:
+#     PATH: "{{ solana_user_dir }}/.local/share/solana/install/active_release/bin"
+#   tags:
+#     - cli.update
+
+# - name: Install Rust using rustup
+#   # The '-y' flag ensures the installation proceeds without prompting the user
+#   # The 'creates' argument prevents re-execution if Rust is already installed
+#   nsible.builtin.shell: |
+#     set -o pipefail
+#     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+#   args:
+#     creates: ~/.cargo/bin/rustc
+
+- name: Download rustup install script
+  ansible.builtin.get_url:
+    url: https://sh.rustup.rs
+    dest: /tmp/rustup-init.sh
+    mode: '0755'
+
+- name: Install Rust using rustup
+  ansible.builtin.command: /tmp/rustup-init.sh -y
+  args:
+    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustc"
+
+- name: Source "$HOME/.cargo/env"
+  ansible.builtin.shell: |
+    source "$HOME/.cargo/env"
+    rustup component add rustfmt
+    rustup update
+  args:
+    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustfmt"
+
+- name: Install prerequisites
+  become: true
+  ansible.builtin.apt:
+    name:
+      - libssl-dev
+      - libudev-dev
+      - pkg-config
+      - zlib1g-dev
+      - llvm
+      - clang
+      - cmake
+      - make
+      - libprotobuf-dev
+      - protobuf-compiler
+    update_cache: true
+
+- name: Create solana cli releases directory
+  ansible.builtin.file:
+    path: {{ solana_installed_releases_dir }}
+    state: directory
+    mode: '0755'
+
+- name: Ensure build directory exists
+  ansible.builtin.file:
+    path: "{{ build_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Ensure git is installed
+  become: true
+  ansible.builtin.package:
+    name: git
+    state: present
+
+- name: Clone/Pull jito-solana repository with submodules
+  ansible.builtin.git:
+    repo: "{{ jito_repo_url }}"
+    dest: "{{ jito_repo_dest }}"
+    version: "tags/{{ jito_tag }}"
+    recursive: true
+    update: true
+
+- name: Get the latest commit hash
+  ansible.builtin.command: git rev-parse HEAD
+  args:
+    chdir: "{{ jito_repo_dest }}"
+  register: ci_commit
+  ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode
+
+- name: Build Jito-Solana CLI
+  ansible.builtin.shell: |
+    set -e
+    . $HOME/.cargo/env
+    scripts/cargo-install-all.sh --validator-only {{ solana_installed_releases_dir }}/{{ jito_tag }}
+  environment:
+    CI_COMMIT: "{{ ci_commit.stdout }}"
+  args:
+    chdir: "{{ jito_repo_dest }}"
+    creates: "{{ solana_installed_releases_dir }}/{{ jito_tag }}/bin/agave-validator"
+  ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode
+
+- name: Create symlink to new release
+  ansible.builtin.file:
+    src: "{{ solana_installed_releases_dir }}/{{ jito_tag }}"
+    dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+    state: link
+    force: true
+
+- name: Get installed Jito-Solana CLI version
+  ansible.builtin.shell: solana --version
+  register: jito_cli_version
+  environment:
+    PATH: "{{ solana_install_dir }}"
+
+- name: Fail if Jito-Solana CLI version is not as expected
+  ansible.builtin.fail:
+    msg: "Jito-Solana CLI version is not as expected. Expected: {{ jito_version }}, Found: {{ jito_cli_version.stdout }}"
+  when: jito_cli_version.stdout is not regex("solana-cli .* \(src:.*; feat:.*, client:JitoLabs\)")
+  changed_when: false
+  # when: jito_cli_version.stdout != "solana-cli {{ jito_version }}"
+  ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode

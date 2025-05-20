@@ -1,0 +1,34 @@
+#Solana Mainnet-specific, non-secret (rare) variables
+ansible_control_keys_dir: "~/.validator-keys/hayek-mainnet" # It should match the path in the operator's host machine running the docker container
+
+jito_urls:
+  amsterdam:
+    block_engine: "https://amsterdam.mainnet.block-engine.jito.wtf"
+    relayer: "http://amsterdam.mainnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "74.118.140.240:1002"
+    ntp_server: "ntp.amsterdam.jito.wtf"
+  frankfurt:
+    block_engine: "https://frankfurt.mainnet.block-engine.jito.wtf"
+    relayer: "http://frankfurt.mainnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "64.130.50.14:1002"
+    ntp_server: "ntp.frankfurt.jito.wtf"
+  london:
+    block_engine: "https://london.mainnet.block-engine.jito.wtf"
+    relayer: "http://london.mainnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "142.91.127.175:1002"
+    ntp_server: "ntp.london.jito.wtf"
+  newyork:
+    block_engine: "https://ny.mainnet.block-engine.jito.wtf"
+    relayer: "http://ny.mainnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "141.98.216.96:1002"
+    ntp_server: "ntp.dallas.jito.wtf"
+  salt_lake_city:
+    block_engine: "https://slc.mainnet.block-engine.jito.wtf"
+    relayer: "http://slc.mainnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "64.130.53.8:1002"
+    ntp_server: "ntp.slc.jito.wtf"
+  tokyo:
+    block_engine: "https://tokyo.mainnet.block-engine.jito.wtf"
+    relayer: "http://tokyo.mainnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "202.8.9.160:1002"
+    ntp_server: "ntp.tokyo.jito.wtf"

@@ -1,0 +1,8 @@
+---
+- name: Ensure groups are present
+  ansible.builtin.group:
+    name: "{{ item.name }}"
+    gid: "{{ item.gid | default(omit) }}"
+    state: present
+  loop: "{{ iam_groups }}"
+  tags: [iam, groups]

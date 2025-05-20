@@ -1,0 +1,41 @@
+---
+- name: Check if Jito relayer binary exists
+  ansible.builtin.stat:
+    path: "{{ jito_relayer_install_dir }}/jito-transaction-relayer"
+  register: relayer_binary
+  tags: [jito_relayer.verify]
+
+- name: Fail if Jito relayer binary is missing
+  ansible.builtin.fail:
+    msg: "Jito relayer binary not found at {{ jito_relayer_install_dir }}/jito-transaction-relayer!"
+  when: not relayer_binary.stat.exists
+  tags: [jito_relayer.verify]
+
+- name: Check Jito relayer systemd service status
+  ansible.builtin.systemd:
+    name: jito-relayer
+  register: relayer_service
+  tags: [jito_relayer.verify]
+
+- name: Print Jito relayer service status
+  ansible.builtin.debug:
+    var: relayer_service
+  tags: [jito_relayer.verify]
+
+- name: Get last 50 lines of Jito relayer logs
+  ansible.builtin.shell: journalctl -u jito-relayer --no-pager | tail -n 50
+  register: relayer_logs
+  changed_when: false
+  tags: [jito_relayer.verify]
+
+- name: Print last 50 lines of Jito relayer logs
+  ansible.builtin.debug:
+    var: relayer_logs.stdout_lines
+  tags: [jito_relayer.verify]
+
+- name: Summary - Jito relayer verification complete
+  ansible.builtin.debug:
+    msg: |
+      Jito relayer verification complete. Check service status and logs above for troubleshooting.
+      For further monitoring, see the Jito metrics dashboard: https://grafana.metrics.jito.wtf:3000/
+  tags: [jito_relayer.verify] 

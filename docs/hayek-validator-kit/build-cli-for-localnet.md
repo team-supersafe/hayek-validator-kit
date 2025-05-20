@@ -97,7 +97,7 @@ cd solana-local-cluster/build-solana-cli
 
 # Set credentials for script
 export SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID="op://Solana Validator/Hayek Validator Solana Local Cluster/SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID"
-export SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY="op://Solana Validator/Hayek Validator Solana Local Cluster/SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY"
+export SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_SECRET="op://Solana Validator/Hayek Validator Solana Local Cluster/SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_SECRET"
 
 # Run script with the 1Password CLI op run command
 op run -- ./run-build-in-container.sh 2.1.21
@@ -113,7 +113,7 @@ cd solana-local-cluster/build-solana-cli
 
 # Set credentials for script
 export SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID="<COPY_FROM_1PASSWORD>"
-export SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY="<COPY_FROM_1PASSWORD>"
+export SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_SECRET="<COPY_FROM_1PASSWORD>"
 
 # Run script
 ./run-build-in-container.sh 2.1.21

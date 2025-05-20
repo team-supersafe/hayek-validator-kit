@@ -1,0 +1,3 @@
+# Dallas-specific, non-secret (rare) variables
+jito_mainnet_block_engine_city: "london"
+jito_testnet_block_engine_city: "newyork"

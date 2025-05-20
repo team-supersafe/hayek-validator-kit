@@ -66,4 +66,4 @@ If you have questions about contributing, please:
 - Open an issue in the repository
 - Contact the maintainers directly
 
-Thank you for contributing to the Hayek Solana Validator Toolkit! 
+Thank you for contributing to the Hayek Solana Validator Toolkit!!

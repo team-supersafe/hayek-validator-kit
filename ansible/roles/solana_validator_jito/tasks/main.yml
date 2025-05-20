@@ -1,0 +1,21 @@
+---
+- name: Precheck parameters
+  import_tasks: precheck.yml
+  tags: [solana_validator_jito, precheck]
+
+- when: jito_relayer_type == 'co-hosted'
+  block:
+    - name: Check for Co-hosted Relayer installation
+      import_tasks: jito_relayer_cohosted/install.yml
+    - name: Configure Co-hosted Relayer post installation
+      import_tasks: jito_relayer_cohosted/config.yml
+    - name: Verify Co-hosted Relayer installation and configuration are correct
+      import_tasks: jito_relayer_cohosted/verify.yml
+
+# - block:
+#     - name: Install Jito-Solana client
+#       import_tasks: jito_client/install.yml
+#     - name: Configure the Jito-Solana client post installation
+#       import_tasks: jito_client/config.yml
+#     - name: Verify Jito-Solana client installation and configuration are correct
+#       import_tasks: jito_client/verify.yml
