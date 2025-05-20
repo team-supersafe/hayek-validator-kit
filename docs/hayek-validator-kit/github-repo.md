@@ -3,7 +3,7 @@
 All the configurations related to the Hayek Validator Kit are [in this GitHub repo](https://github.com/team-supersafe/hayek-sol-validator.git), which you will have to clone locally:&#x20;
 
 ```bash
-git clone https://github.com/team-supersafe/hayek-sol-validator.git
+git clone https://github.com/team-supersafe/hayek-validator-kit.git
 ```
 
 You should get familiar with the contents of the repo. The Localnet cluster is defined in the `Dockerfile` under the `solana-localnet` folder.
