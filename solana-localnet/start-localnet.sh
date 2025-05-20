@@ -83,10 +83,10 @@ fi
 
 CLUSTER_RPC=http://localhost:8899
 
-# Get the identity public key of the entrypoint validator by:
+# Get the identity public key of the gossip entrypoint validator by:
 # 1. Querying the local validator list with --keep-unstaked-delinquents to include all validators
 # 2. Getting JSON output and using jq to extract the first validator's identity pubkey
-# This will be used later to configure other validators to connect to the entrypoint
+# This will be used later to configure other validators to connect to the gossipentrypoint
 ENTRYPOINT_IDENTITY_PUBKEY=$(solana -ul validators --keep-unstaked-delinquents --output json | jq -r ".validators | .[0].identityPubkey")
 
 VALIDATOR_NAME=canopy
@@ -133,6 +133,7 @@ EXPECTED_GENESIS_HASH=$(solana -u $CLUSTER_RPC genesis-hash)
 echo "EXPECTED_GENESIS_HASH: $EXPECTED_GENESIS_HASH"
 
 CLUSTER_NAME=localnet
+AGAVE_SETUP_SCRIPT_FILE_NAME=agave-validator-$CLUSTER_NAME
 TMP_DIR=$(mktemp --directory)
 cd $SCRIPT_DIR
 
@@ -147,7 +148,7 @@ s//VOTE_ACCOUNT_PUBKEY=${VOTE_ACCOUNT_PUBKEY}/
 H
 }
 x
-}" $SCRIPT_DIR/agave-validator-template-$CLUSTER_NAME.sh >$TMP_DIR/agave-validator-$CLUSTER_NAME-tmp.sh
+}" $SCRIPT_DIR/$CLUSTER_NAME-agave-setup-template.sh >$TMP_DIR/$AGAVE_SETUP_SCRIPT_FILE_NAME-tmp.sh
 
 sed "/^KNOWN_VALIDATOR_PUBKEY=/{
 h
@@ -160,7 +161,7 @@ s//KNOWN_VALIDATOR_PUBKEY=${ENTRYPOINT_IDENTITY_PUBKEY}/
 H
 }
 x
-}" $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp.sh >$TMP_DIR/agave-validator-$CLUSTER_NAME-tmp2.sh
+}" $TMP_DIR/$AGAVE_SETUP_SCRIPT_FILE_NAME-tmp.sh >$TMP_DIR/$AGAVE_SETUP_SCRIPT_FILE_NAME-tmp2.sh
 
 sed "/^EXPECTED_GENESIS_HASH=/{
 h
@@ -173,7 +174,7 @@ s//EXPECTED_GENESIS_HASH=${EXPECTED_GENESIS_HASH}/
 H
 }
 x
-}" $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp2.sh >$TMP_DIR/agave-validator-$CLUSTER_NAME.sh
+}" $TMP_DIR/$AGAVE_SETUP_SCRIPT_FILE_NAME-tmp2.sh >$TMP_DIR/$AGAVE_SETUP_SCRIPT_FILE_NAME-tmp3.sh
 
 sed "/^KEYS_DIR=/{
 h
@@ -186,10 +187,10 @@ s//KEYS_DIR=${ALPHA_CANOPY_KEYS_DIR}/
 H
 }
 x
-}" $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp3.sh >$TMP_DIR/agave-validator-$CLUSTER_NAME.sh
+}" $TMP_DIR/$AGAVE_SETUP_SCRIPT_FILE_NAME-tmp3.sh >$TMP_DIR/$AGAVE_SETUP_SCRIPT_FILE_NAME.sh
 
-rm $TMP_DIR/agave-validator-$CLUSTER_NAME-tmp*.sh
-chmod +x $TMP_DIR/agave-validator-$CLUSTER_NAME.sh
+rm $TMP_DIR/$AGAVE_SETUP_SCRIPT_FILE_NAME-tmp*.sh
+chmod +x $TMP_DIR/$AGAVE_SETUP_SCRIPT_FILE_NAME.sh
 
 # Cleanup the host of the validator
 # Parameters: HOST, SSH_PORT, USER
@@ -260,15 +261,15 @@ cleanup-host() {
 # USE: configure-canopy-in-host HOST SSH_PORT USER 
 configure-canopy-in-host() {
   : ${1?"Requires HOST"}
-  HOST=$3
+  HOST=$1
 
   : ${2?"Requires SSH_PORT"}
-  SSH_PORT=$4
+  SSH_PORT=$2
 
   : ${3?"Requires USER"}
-  USER=$4
+  USER=$3
 
-  REMOTE_SOLANA_BIN="~/.local/share/solana/install/active_release/bin"
+  HOST_SOLANA_BIN="~/.local/share/solana/install/active_release/bin"
 
   if [ -f $SCRIPT_DIR/agave-validator-localnet.sh ]; then
     VALIDATOR_STARTUP_SCRIPT=$SCRIPT_DIR/agave-validator-localnet.sh
@@ -294,7 +295,7 @@ configure-canopy-in-host() {
   ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT -t "
     set -e
     # source ~/.profile
-    PATH=$REMOTE_SOLANA_BIN:$PATH
+    PATH=$HOST_SOLANA_BIN:$PATH
 
     mkdir -p $ALPHA_CANOPY_KEYS_DIR && chmod 755 $ALPHA_CANOPY_KEYS_DIR
     mkdir -p ~/bin && chmod 754 ~/bin
@@ -323,7 +324,7 @@ RestartSec=5
 User=sol
 LimitNOFILE=1000000
 LogRateLimitIntervalSec=0
-Environment="PATH=/bin:/usr/bin:$REMOTE_SOLANA_BIN"
+Environment="PATH=/bin:/usr/bin:$HOST_SOLANA_BIN"
 ExecStart=/home/sol/bin/validator-canopy.sh
 
 [Install]

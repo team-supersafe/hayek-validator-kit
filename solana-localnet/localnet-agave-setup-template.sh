@@ -14,7 +14,7 @@ agave-validator \
     --ledger /mnt/ledger \
     --accounts /mnt/accounts \
     --snapshots /mnt/snapshots \
-    --entrypoint entrypoint:8001 \
+    --entrypoint gossip-entrypoint:8001 \
     --expected-genesis-hash $EXPECTED_GENESIS_HASH \
     --allow-private-addr \
     --rpc-port 8899 \

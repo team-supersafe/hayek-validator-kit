@@ -67,7 +67,7 @@ RUN --mount=type=cache,target=/root/.cache \
 
 
 # Dockerfile
-FROM ubuntu-base AS ansible-control
+FROM ubuntu-base AS ansible-control-builder
 LABEL maintainer="eydel.rivero@gmail.com"
 
 # Fix potential UTF-8 errors with ansible-test.
@@ -114,7 +114,7 @@ CMD [ "bash" ]
 
 
 # Dockerfile
-FROM ubuntu-base AS entrypoint
+FROM ubuntu-base AS gossip-entrypoint-builder
 LABEL maintainer="eydel.rivero@gmail.com"
 
 ARG SOLANA_RELEASE=2.1.21
@@ -162,7 +162,7 @@ RUN --mount=type=cache,target=/root/.cache \
 EXPOSE 8899/tcp
 # RPC pubsub
 EXPOSE 8900/tcp
-# entrypoint
+# gossip entrypoint
 EXPOSE 8001/tcp
 # (future) bank service
 EXPOSE 8901/tcp
@@ -191,16 +191,16 @@ EXPOSE 8008/udp
 # tpu_vote
 EXPOSE 8009/udp
 
-COPY "./solana-test-validator-entrypoint.sh" "/usr/bin"
+COPY "./localnet-gossip-entrypoint-setup.sh" "/usr/bin"
 ENV PATH=$SOLANA_INSTALL_DIR/active_release/bin:$PATH
-ENTRYPOINT /usr/bin/solana-test-validator-entrypoint.sh
+ENTRYPOINT /usr/bin/localnet-gossip-entrypoint-setup.sh
 CMD [""]
 
-# End of entrypoint
+# End of gossip-entrypoint-builder
 
 
 # Dockerfile
-FROM ubuntu-base AS validator
+FROM ubuntu-base AS validator-builder
 LABEL maintainer="eydel.rivero@gmail.com"
 
 ARG SOLANA_RELEASE=2.1.21
@@ -255,7 +255,7 @@ USER root
 
 # Dockerfile - This target is used to create a pristine image with basic tooling, users and ssh server
 # The purpose of this image is to test rust and solana cli install from scratch
-FROM ubuntu-base AS pristine
+FROM ubuntu-base AS naked-builder
 LABEL maintainer="eydel.rivero@gmail.com"
 
 # Set workdir
