@@ -1,3 +1,0 @@
-# Deploying Firedancer
-
-add

@@ -1,8 +1,10 @@
 ---
-description: \
+description: How to deploy Agave, Jito, or Firedancer clients in your validator
 ---
 
 # Deploying a validator client
+
+## Agave (Anza Technology)
 
 The process to deploy a new validator using the Agave client is similar to that of upgrading an existing client to a new version of Agave. The process goes like this:
 
@@ -11,7 +13,7 @@ The process to deploy a new validator using the Agave client is similar to that 
 
 Make sure you understand [Localnet and its requirements](../hayek-validator-kit/solana-localnet.md) before deploying to it.
 
-## On Localnet
+### On Localnet
 
 For [Localnet](../hayek-validator-kit/solana-localnet.md), which is focused on development and operator workloads, we want to **avoid** having to BUILD FROM SOURCE every time we spin up a new docker container, since the build process itself is very resource intensive and slows down the development REPL. For this reason, all Localnet deployments are done from pre-compiled binaries.&#x20;
 
@@ -30,10 +32,38 @@ To accomodate these developers and operators, we pre-compile binaries for Apple 
     → solana-release-aarch64-unknown-linux-gnu.tar.bz2
 4. For everything else, we can use the binaries published by Anza at [https://github.com/solana-labs/solana/releases](https://github.com/solana-labs/solana/releases)
 
-## On Testnet
+### On Testnet
 
 Agave is always BUILT FROM SOURCE directly on the host machine if it is intended for Solana Testnet.
 
-## On Mainnet
+### On Mainnet
 
 Agave is always BUILT FROM SOURCE directly on the host machine if it is intended for Solana Mainnet.
+
+## Jito (Jito Network)
+
+### On Localnet
+
+add
+
+### On Testnet
+
+add
+
+### On Mainnet
+
+add
+
+## Firedancer (Jump Crypto)
+
+### On Localnet
+
+add
+
+### On Testnet
+
+add
+
+### On Mainnet
+
+add

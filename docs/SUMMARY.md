@@ -13,13 +13,11 @@
 ## Validator Operations
 
 * [Deploying a validator client](validator-operations/deploying-a-validator-client.md)
-* [Deploying Jito](validator-operations/deploying-jito.md)
-* [Deploying Firedancer](validator-operations/deploying-firedancer.md)
-* [Update Validator Metal](validator-operations/update-validator-metal.md)
-* [Upgrade/Downgrade Versions](validator-operations/upgrade-downgrade-versions.md)
-* [Hardware Tunning Info](validator-operations/hardware-tunning-info.md)
-* [Client Mods](validator-operations/client-mods.md)
-* [Validator Commands](validator-operations/validator-commands.md)
+* [Changing a validator host](validator-operations/update-validator-metal.md)
+* [Upgrade/Downgrade versions](validator-operations/upgrade-downgrade-versions.md)
+* [Host hardware tuning](validator-operations/hardware-tunning-info.md)
+* [Validator client mods](validator-operations/client-mods.md)
+* [Validator commands](validator-operations/validator-commands.md)
 
 ## Metrics & Monitoring
 
