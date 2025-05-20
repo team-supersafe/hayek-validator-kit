@@ -1,69 +1,55 @@
 # Contributing Guidelines
 
-Thank you for your interest in contributing to the Hayek Solana Validator Toolkit! This document provides guidelines and instructions for contributing to this project.
+Thank you for your interest in contributing to the Hayek Validator Kit! We welcome all contributions—code, documentation, and ideas.
 
 ## Code of Conduct
 
-Please be respectful and considerate of others when contributing to this project. We follow the [Solana Code of Conduct](https://solana.com/code-of-conduct).
+Please be respectful and considerate of others when contributing. We follow the [Solana Code of Conduct](https://solana.com/code-of-conduct).
 
-## How to Contribute
+## Getting Started
 
-1. **Fork the Repository**
-   - Fork the repository to your GitHub account
-   - Clone your fork locally
-
-2. **Create a Branch**
-   - Create a new branch for your feature or fix
-   - Use descriptive branch names (e.g., `feature/add-validator-monitoring` or `fix/ansible-playbook-error`)
-
-3. **Make Changes**
-   - Follow the existing code style and documentation format
-   - Write clear commit messages
-   - Test your changes thoroughly
-   - Update documentation as needed
-
-4. **Submit a Pull Request**
-   - Push your changes to your fork
-   - Create a pull request to the main repository
-   - Include a clear description of your changes
-   - Reference any related issues
-
-## Documentation Standards
-
-- Use Markdown format for all documentation
-- Follow the existing documentation structure
-- Include code examples where applicable
-- Keep documentation up-to-date with code changes
+- **Read the [official documentation](https://docs.hayek.fi/public-goods)** for setup, usage, and development instructions.
+- **Fork** this repository and clone your fork locally.
+- **Create a branch** for your feature or fix (e.g., `feature/add-monitoring` or `fix/playbook-error`).
 
 ## Code Standards
 
-- Follow the existing code style and patterns
-- Include comments for complex logic
-- Write tests for new features
-- Ensure backward compatibility
+- Follow the existing code style and patterns.
+- Include comments for complex logic.
+- Write tests for new features.
+- Keep documentation up-to-date with code changes.
 
-## Pull Request Process
+## Pre-commit Hooks
 
-1. Update the README.md with details of changes if needed
-2. Update the documentation if your changes affect existing functionality
-3. The PR will be reviewed by maintainers
-4. Address any feedback or requested changes
-5. Once approved, your PR will be merged
+We use [pre-commit](https://pre-commit.com/) to help maintain code quality. Please install and run the hooks before committing:
+
+```sh
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+## Making a Pull Request
+
+1. Push your branch to your fork.
+2. Open a pull request (PR) to the main repository.
+3. Include a clear description of your changes and reference any related issues.
+4. Ensure your code passes all pre-commit hooks and tests.
+5. Update the README or documentation if your changes affect usage or setup.
+6. Address any feedback from maintainers.
 
 ## Reporting Issues
 
-When reporting issues, please include:
-- Description of the problem
-- Steps to reproduce
-- Expected behavior
-- Actual behavior
+If you find a bug or have a feature request, please open an issue and include:
+
+- A clear description of the problem or request
+- Steps to reproduce (if applicable)
+- Expected and actual behavior
 - Environment details (OS, Solana version, etc.)
 - Any relevant logs or error messages
 
 ## Questions?
 
-If you have questions about contributing, please:
-- Open an issue in the repository
-- Contact the maintainers directly
+If you have questions, open an issue or contact the maintainers directly.
 
-Thank you for contributing to the Hayek Solana Validator Toolkit!!
+Thank you for helping improve the Hayek Solana Kit!
