@@ -15,7 +15,7 @@ x-validator-variables: &validator-variables
       target: /ssh-agent
       read_only: true
     # - "${HOME}/.ssh/id_ed25519.pub:/tmp/id_ed25519.pub:ro" # Mount the host's public key as read-only
-    - "../server-setup/initial-setup/ansible/roles/users/files/ssh_keys:/tmp/team_ssh_public_keys:ro" # Mount the team public keys as read-only
+    - "../ansible/iam/users:/tmp/team_ssh_public_keys:ro" # Mount the team public keys as read-only
   environment:
     SSH_AUTH_SOCK: /ssh-agent
     USERNAME: sol # Set the username inside the container
