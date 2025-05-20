@@ -10,17 +10,56 @@ Having one of the nodes of the Localnet as the `ansible-control` allows all oper
 
 ## Pre-Provisioned Assets
 
-### Validator Keys
+### The Canopy Validator Key Set
 
-Under the Ansible Control node you will find the folder `/hayek-validator-kit/validator-keys` . It contains a script that automatically generates the necessary validator keys when the Localnet cluster is mounted by Docker. These keys are necessary for all validators to function well:
+We have pre-provisioned a sets of keys for the `Canopy` validator that will be running with 200k SOL staked in Localnet every time you start the cluster. These 200k SOL represents roughly \~16% of all cluster stake... which is a lot... and that's why we named it `Canopy` .
+
+### Creating New Validator Key Sets
+
+Under the Ansible Control node you will find the script:
+
+&#x20;`/hayek-validator-kit/validator-keys/_gen-validator-keys.sh`&#x20;
+
+This script generates a new set of validator keys. These will be needed when provisioning a new validator on any of the containers in the Localnet cluster. A set of keys contains the following:
 
 1. **Staked Identity Key**: It will always start with the characters `Z1`
 2. **Vote Account Key**: It will always start with the characters `Z2`
 3. **Stake Account Key**: It will always start with the characters `Z3`
 4. **Authorized Withdrawer Account Key**: It will always start with the characters `Z4` &#x20;
 5. **Jito Relayer Block Engine Key**: It will always start with the characters `Z5`&#x20;
+6. **Jito Relayer Comms Key**: RSA keys in the `jito-relayer-comms-private.pem` and `jito-relayer-comms-public.pem` files.
 
-To view the public keys of any of these respective private keys, do this:
+{% hint style="info" %}
+There is never the need to run this script manually if you provision your validators using the Hayek Validator Kit Ansible playbooks provided, since they do this automatically for us. However, for development purposes it may be useful to understand this part a little further, ergo we take the time to explain more.
+{% endhint %}
+
+To generate a new set of keys, you should give them a name (aka: the validator name) and run the following commands from your Ansible Control:
+
+```bash
+# Set the keys directory and name your validator
+KEYS_DIRECTORY="/hayek-validator-kit/validator-keys"
+VALIDATOR_NAME="Sprout"
+
+# Make a new directory for your key set
+mkdir -p "$KEYS_DIRECTORY/$VALIDATOR_NAME"
+
+# Move to the new key set directory
+cd "$KEYS_DIRECTORY/$VALIDATOR_NAME"
+
+# Run the script on the directory
+$KEYS_DIRECTORY/_gen-validator-keys.sh
+```
+
+{% hint style="success" %}
+<sup>**Naming Suggestion**</sup>\
+As you name your new key sets, it will help you to think about their name relative to their total stake they will have. Our approach is to size the validators following:
+
+* Canopy = large stake
+* Sprout = medium stake
+* Seed = small stake
+{% endhint %}
+
+You can view the public keys of any of these respective private keys like this:
 
 ```bash
 solana-keygen pubkey staked-identity.json
