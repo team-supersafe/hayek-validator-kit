@@ -273,7 +273,7 @@ echo "---   Configuring Alpha Host with the Canopy Validator Node   ---"
 echo
 cleanup-host host-alpha 
 # docker exec -it primary bash -c 'sudo chown -R sol:sol /mnt/ledger && sudo chown -R sol:sol /mnt/accounts && sudo chown -R sol:sol /mnt/snapshots'
-configure-validator host-alpha
+configure-canopy-in-host host-alpha
 
 echo
 echo "---   Configuring Bravo Host as a server that is ready for, but NOT running a validator   ---"
