@@ -20,7 +20,7 @@
   * [Choosing your metal](validator-operations/update-validator-metal/choosing-your-metal.md)
   * [Moving your metal](validator-operations/update-validator-metal/moving-your-metal.md)
   * [Hardware tuning](validator-operations/update-validator-metal/hardware-tunning-info.md)
-* [Upgrade/Downgrade versions](validator-operations/upgrade-downgrade-versions.md)
+* [Validator stake](validator-operations/validator-stake.md)
 
 ## Metrics & Monitoring
 
