@@ -110,6 +110,15 @@ docker exec -it ansible-control bash
 cd /hayek-validator-kit
 ```
 
+## Connecting to Localnet Nodes
+
+You can connect from your Ansible Control to any of your [Localnet Containers](solana-localnet.md#host-inventory) using SSH as follows:
+
+```bash
+# ssh <host-user>@<localnet-container>
+ssh sol@alpha
+```
+
 ## Ignoring Ansible Control
 
 {% hint style="warning" %}

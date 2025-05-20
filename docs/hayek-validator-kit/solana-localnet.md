@@ -39,7 +39,16 @@ You can use the Solana Explorer and Solscan apps to explore any accounts in your
 
 The Localnet cluster consist of the following containers:
 
-<table><thead><tr><th width="260.39453125">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>entrypoint</code><br>Acts as the cluster entry point node to which the other validators connect</td><td>- Slots per epoch: 750 slots (~5 min)</td></tr><tr><td><code>ansible-control</code><br>Your dev environment with the Solana CLI and Ansible installed</td><td>- Solana CLI and Ansible installed<br>- Access to the local cluster through <code>--url localhost (-ul)</code><br>- Access to Testnet and Mainnet clusters<br>- Access to primary and secondary nodes through ssh (ex. <code>ssh sol@primary</code>)</td></tr><tr><td><code>alpha</code><br>A validator-ready container with the <code>Canopy</code> validator key-set.</td><td><p>Running a validator named <code>Canopy</code> with:</p><ul><li>200K delegated SOL (~16% of all cluster stake)</li><li>See how to explore <code>Canopy</code> keys in the <a href="ansible-control.md#validator-keys">Validator Keys section</a>.</li></ul></td></tr><tr><td><code>bravo</code><br>A validator-ready container without a validator key-set.</td><td>Not running any validator, but has the tooling already installed.<br>You could leverage the <code>Sprout</code> validator key set to setup.</td></tr><tr><td><code>charlie</code><br>A naked Ubuntu 24.04</td><td></td></tr></tbody></table>
+<table><thead><tr><th width="260.39453125">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>entrypoint</code><br></td><td><p>The cluster entry point node that starts Localnet.</p><ul><li>It provides Genesis block for Solana Localnet</li><li>Kick-starts POH</li><li>Epoch = 750 slots (~5 min)</li></ul></td></tr><tr><td><code>ansible-control</code></td><td><p>Your official sysadmin automation environment:</p><ul><li>Solana CLI and Ansible installed</li><li>Access Solana Mainnet, Testnet and Localnet</li></ul><pre><code># For Mainnet Connectivity
+solana -um ***
+
+#For Testnet Connectivity
+solana -ut ***
+
+# For Localnet Connectivity
+solana -ul ***
+# or also "solana -url localhost (-ul)"
+</code></pre><ul><li>Connect to our Localnet nodes primary and secondary nodes through ssh (ex. <code>ssh sol@primary</code>)</li></ul></td></tr><tr><td><code>alpha</code><br>A validator-ready container with the <code>Canopy</code> validator key-set.</td><td><p>Running a validator named <code>Canopy</code> with:</p><ul><li>200K delegated SOL (~16% of all cluster stake)</li><li>See how to view the <code>Canopy</code> validator keys in the <a href="ansible-control.md#validator-keys">Validator Keys section</a>.</li></ul></td></tr><tr><td><code>bravo</code><br>A validator-ready container without a validator key-set.</td><td>Not running any validator, but has the tooling already installed.</td></tr><tr><td><code>charlie</code><br>A naked Ubuntu 24.04</td><td></td></tr></tbody></table>
 
 After the cluster is provisioned, the staked SOL delegated to the `primary` node will be active at the beginning of epoch 1 (after \~5 minutes). Then the `primary` validator will start voting and move from delinquent to not-delinquent at the beginning of epoch 2.&#x20;
 
