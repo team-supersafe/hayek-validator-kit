@@ -20,13 +20,13 @@
   * [Choosing your metal](validator-operations/update-validator-metal/choosing-your-metal.md)
   * [Moving your metal](validator-operations/update-validator-metal/moving-your-metal.md)
   * [Hardware tuning](validator-operations/update-validator-metal/hardware-tunning-info.md)
-* [Validator stake](validator-operations/validator-stake.md)
+* [Validator stake](validator-operations/validator-stake/README.md)
+  * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
 
 ## Metrics & Monitoring
 
 * [Community Dashboards](metrics-and-monitoring/community-dashboards.md)
 * [Setup Validator Metrics](metrics-and-monitoring/setup-validator-metrics.md)
-* [Stake Pools](metrics-and-monitoring/stake-pools.md)
 
 ## Key Management
 
