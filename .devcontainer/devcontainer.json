@@ -7,7 +7,7 @@
 	// It might be fixed soon, see https://github.com/microsoft/vscode-remote-release/issues/4537
 	// "postAttachCommand": "bash",
 	// The /workspace is where the root project dir is mounted in the volumes section of 
-	// devtools service in docker-compose.yml
+	// devtools service in docker-compose.yml 
 	"workspaceFolder": "/hayek-validator-kit",
 	// "target" is the path *inside* the container where the socket will appear
 	"mounts": [
