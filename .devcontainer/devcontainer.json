@@ -1,6 +1,6 @@
 {
-	"dockerComposeFile": "../solana-localnet/docker-compose.yml",
-	"service": "ansible-control",
+	"dockerComposeFile": "../solana-localnet/docker-compose.yml", 
+	"service": "ansible-control", 
 	"postStartCommand": "./solana-localnet/start-localnet.sh",
 	"shutdownAction": "stopCompose",
 	// somehow it works in keeping the terminal open after postStartCommand but meh...
