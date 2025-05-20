@@ -92,7 +92,7 @@ To connect to your Localnet Ansible Control node, you **HAVE** do it through VSC
 
 Your VSCode terminal should look like this:
 
-<figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/terminal.webp" alt=""><figcaption></figcaption></figure>
 
 ### From Workstation Terminal
 
