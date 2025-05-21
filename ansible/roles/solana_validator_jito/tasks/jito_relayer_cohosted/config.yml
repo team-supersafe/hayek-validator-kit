@@ -4,7 +4,7 @@
 
 - name: Set Jito relayer startup script path
   ansible.builtin.set_fact:
-    jito_relayer_startup_script: "{{ scripts_dir }}/{{ jito_relayer_service_name }}-startup.sh"
+    jito_relayer_startup_script: "{{ scripts_dir }}/run-{{ jito_relayer_service_name }}.sh"
   tags: [jito_relayer.config, jito_relayer.startup_script]
 
 - name: Ensure scripts_dir exists

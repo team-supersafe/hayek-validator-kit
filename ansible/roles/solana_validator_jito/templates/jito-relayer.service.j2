@@ -4,9 +4,9 @@ Requires=network-online.target
 After=network-online.target
 
 # Ensure key files exist
-ConditionPathExists={{ jito_relayer_keys_dir }}/jito-relayer-block-engine-private.json
-ConditionPathExists={{ jito_relayer_keys_dir }}/jito-relayer-comms-private.pem
-ConditionPathExists={{ jito_relayer_keys_dir }}/jito-relayer-comms-public.pem
+ConditionPathExists={{ keys_dir }}/jito-relayer-block-eng.json
+ConditionPathExists={{ keys_dir }}/jito-relayer-comms-pvt.pem
+ConditionPathExists={{ keys_dir }}/jito-relayer-comms-pub.pem
 
 [Service]
 Type=simple

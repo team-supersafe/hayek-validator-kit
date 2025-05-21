@@ -32,16 +32,16 @@ if [ ! -f authorized-withdrawer.json ]; then
 fi
 
 # jito relayer block engine
-if [ ! -f jito-relayer-block-engine-private.json ]; then
+if [ ! -f jito-relayer-block-eng.json ]; then
   solana-keygen grind --starts-with Z5:1
-  mv Z5*.json jito-relayer-block-engine-private.json
-  touch jito-relayer-block-engine-"$(solana-keygen pubkey jito-relayer-block-engine-private.json)" # handy for fast checking the pubkey
+  mv Z5*.json jito-relayer-block-eng.json
+  touch jito-relayer-block-engine-"$(solana-keygen pubkey jito-relayer-block-eng.json)" # handy for fast checking the pubkey
 fi
 
 # Generate Jito relayer comms keypair only if private key does not exist
-if [ ! -f jito-relayer-comms-private.pem ]; then
-  openssl genrsa --out jito-relayer-comms-private.pem 2048
-  openssl rsa --in jito-relayer-comms-private.pem --pubout --out jito-relayer-comms-public.pem
+if [ ! -f jito-relayer-comms-pvt.pem ]; then
+  openssl genrsa --out jito-relayer-comms-pvt.pem 2048
+  openssl rsa --in jito-relayer-comms-pvt.pem --pubout --out jito-relayer-comms-pub.pem
 fi
 
 echo "All validator keys have been generated."

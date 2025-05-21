@@ -1,3 +1,2 @@
-jito_relayer_keys_dir: "{{ solana_user_dir }}/spsf-{{ solana_cluster }}/jito"
 jito_relayer_install_dir: "{{ solana_user_dir }}/.local/share/jito-relayer/install/active_release"
 jito_block_engine_url: "{{ jito_urls[('jito_' + solana_cluster + '_block_engine_city')]['block_engine'] }}"

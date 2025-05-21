@@ -27,7 +27,7 @@ This script generates a new set of validator keys. These will be needed when pro
 3. **Stake Account Key**: It will always start with the characters `Z3`
 4. **Authorized Withdrawer Account Key**: It will always start with the characters `Z4` &#x20;
 5. **Jito Relayer Block Engine Key**: It will always start with the characters `Z5`&#x20;
-6. **Jito Relayer Comms Key**: RSA keys in the `jito-relayer-comms-private.pem` and `jito-relayer-comms-public.pem` files.
+6. **Jito Relayer Comms Key**: RSA keys in the `jito-relayer-comms-pvt.pem` and `jito-relayer-comms-pub.pem` files.
 
 {% hint style="info" %}
 There is never the need to run this script manually if you provision your validators using the Hayek Validator Kit Ansible playbooks provided, since they do this automatically for us. However, for development purposes it may be useful to understand this part a little further, ergo we take the time to explain more.
@@ -153,7 +153,7 @@ solana --version
 # List validators in Localnet
 solana -ul validators --keep-unstaked-delinquents
 
-# Verify your validators' ip addresses via Solana gossip 
+# Verify your validators' ip addresses via Solana gossip
 solana -ul gossip | grep demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw
 ```
 

@@ -5,6 +5,7 @@ solana_user: 'sol'
 solana_user_dir: "/home/{{ solana_user }}"
 
 # User variables
+keys_dir: "{{ solana_user_dir }}/keys"
 build_dir: "{{ solana_user_dir }}/build"
 scripts_dir: "{{ solana_user_dir }}/bin"
 solana_install_dir: "{{ solana_user_dir }}/.local/share/solana/install/active_release/bin"
