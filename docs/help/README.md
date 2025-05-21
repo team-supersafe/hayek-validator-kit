@@ -4,4 +4,4 @@ icon: life-ring
 
 # Help Center
 
-asdfasdfasdf
+add help center here
