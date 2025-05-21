@@ -8,12 +8,12 @@ git clone https://github.com/team-supersafe/hayek-validator-kit.git
 
 ## Two Branches
 
-The repo has two parallel branches named `main` and `docs` .
+This repository is setup as a monorepo with two parallel branches named `main` and `docs` .
 
-1. The `main` branch contains all the code and automation, and NONE of the docs.&#x20;
-2. The `docs` branch contains all of the docs, and NONE of the code and automations.
+1. The `main` branch contains **all the code**, and **none of the docs**.&#x20;
+2. The `docs` branch contains **all of the docs**, and **none of the code**.
 
-The two branches are meant to co-exists in parallel Ad Infinitum without merging PRs from one to the other.&#x20;
+The two branches are meant to co-exists in parallel ad infinitum without merging PRs from one to the other.&#x20;
 
 {% hint style="danger" %}
 Any GitHub suggestion to merge PR from `docs`  to `main`  to the other should be ignored.
