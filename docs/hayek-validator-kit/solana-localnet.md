@@ -111,7 +111,7 @@ After the first login to a validator that was just setup, you'll need to have it
 RPC_URL=http://entrypoint:8899
 ```
 
-Other common validator CLI commands can be found [HERE](broken-reference).
+Other common validator CLI commands can be found [HERE](../validator-operations/deploying-a-validator-client/agave.md#common-commands).
 
 ## Cluster Example
 
