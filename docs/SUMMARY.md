@@ -9,6 +9,7 @@
 * [Solana Localnet](hayek-validator-kit/solana-localnet.md)
 * [Ansible Control](hayek-validator-kit/ansible-control.md)
 * [Build CLI for Localnet](hayek-validator-kit/build-cli-for-localnet.md)
+* [Validator Conventions](hayek-validator-kit/validator-conventions.md)
 
 ## Validator Operations
 
