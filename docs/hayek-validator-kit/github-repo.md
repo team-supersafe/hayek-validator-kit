@@ -10,7 +10,7 @@ You should get familiar with the contents of the repo. The Localnet cluster is d
 
 ## Navigating the repo
 
-The repo structure is intended to be self explanatory. It should resemble this structure, but with actual validator roles and hosts:
+The repo structure is intended to be self explanatory. It should resemble this structure, but with your final actual validator roles and host names:
 
 ```
 HAYEK SOLANA VALIDATOR KIT REPO
