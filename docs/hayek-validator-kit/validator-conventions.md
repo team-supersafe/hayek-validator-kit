@@ -7,7 +7,8 @@ The Hayek Validator Kit focuses on provisioning validators that follow best prac
 ### System Units
 
 ```
-A VALIDATOR (MANAGED BY HAYEK VALIDATOR KIT)
+THE UBUNTU HOST METAL/MACHINE
+
 root/
 │
 ├─ etc/           
@@ -29,7 +30,8 @@ root/
 The 'sol' user is present on every validator provisioned by the Hayek Validator Kit. There are additional configuration files as shown below under the `sol` user home folder:
 
 ```
-A VALIDATOR (MANAGED BY HAYEK VALIDATOR KIT)
+THE 'sol' USER HOME FOLDER
+
 home/sol/
 │
 ├─ bin/                            # Binaries and scripts used on the host
