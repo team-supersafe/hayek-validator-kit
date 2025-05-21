@@ -218,3 +218,63 @@ journalctl -u <SERVICE> -f
 ## Additional Configurations
 
 Repeat the process for each identity (Mainnet, Testnet, Debug) by creating separate services with appropriate configurations for each environment.
+
+# Setup Validator Metrics - Outbox Monitoring
+
+We pull metrics from several sources such as Stakewiz, Solana API, Solana CLI, Jpool, etc.
+
+## Setup Service for Validators Metrics and Block Production Metrics
+
+Create a service:
+```bash
+nano /etc/systemd/system/validator-metrics.service
+```
+
+```bash
+[Unit]
+Description=Stakewiz Validator Metrics Sender (every 2 minutes)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/bin/bash -c 'while true; do /usr/local/bin/send_validator_metrics.sh & /usr/local/bin/send_block_metrics_v6.sh; wait; sleep 120; done'
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The script "send_block_metrics_v6.sh" will send the metrics to a separate database which is only dedicated for block production metrics.
+This script collects the metrics for block production through Solana CLI and also collects epoch information:
+```bash
+solana block <blocknumber>
+solana epoch-info
+```
+
+## Configuration Variables
+
+Here are some variables you should be aware of for this script:
+
+```bash
+# You can choose which networks to analyze by changing these variables to true/false
+PROCESS_MAINNET=true
+PROCESS_TESTNET=false  # Change to true if you want to process testnet
+PROCESS_DEBUG=false    # Change to true if you want to process debug
+
+# MAINNET
+MAINNET_VOTE_ACCOUNT="<VOTEKEY>"
+MAINNET_IDENTITY_KEY="<PUBKEY>"
+MAINNET_RPC_API="https://api.mainnet-beta.solana.com"
+MAINNET_HOST="<SERVERNAME>"
+
+# ===== INFLUXDB CONFIGURATION =====
+INFLUX_URL="https://influxdb-server-url:8086"
+INFLUX_DB="validator_blocks"
+INFLUX_USER="<DB_USER>"
+INFLUX_PASS="<DB_PASSWORD>"  # Recommendation: Move this to a protected configuration file
+
+# ===== PATH TO SOLANA BIN =====
+SOLANA_BIN="/root/.local/share/solana/install/active_release/bin/solana"
+```
