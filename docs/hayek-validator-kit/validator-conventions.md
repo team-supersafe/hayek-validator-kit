@@ -4,11 +4,33 @@ The Hayek Validator Kit focuses on provisioning validators that follow best prac
 
 ## File System
 
-In general, validators will have the following key directories and files:
+### System Units
 
 ```
 A VALIDATOR (MANAGED BY HAYEK VALIDATOR KIT)
-~
+root/
+│
+├─ etc/           
+│  └─ systemd/  
+│  │  └─ system/
+│  │  │  └─ sol.service    # Defines how the Solana client should start/stop/restart on this host                                 
+├─ mnt/                # The mount points on the host
+│  └─ accounts/            # Storage for the full Solana accounts db
+│  └─ ledger/              # Storage for the full Solana ledger
+│  └─ snapshots/           # Storage for snapshot archives of network state
+├─ home
+│  └─ sol                  # The home of the user 'sol' 
+│  └─ alice                # The home of the user 'alice' 
+│  └─ bob                  # The home of the user 'bob' 
+```
+
+### The 'sol' user home
+
+The 'sol' user is present on every validator provisioned by the Hayek Validator Kit. There are additional configuration files as shown below under the `sol` user home folder:
+
+```
+A VALIDATOR (MANAGED BY HAYEK VALIDATOR KIT)
+home/sol/
 │
 ├─ bin/                            # Binaries and scripts used on the host
 │  └─ run-validator-a.sh             # Starts validator-a with its related key set
@@ -16,14 +38,14 @@ A VALIDATOR (MANAGED BY HAYEK VALIDATOR KIT)
 │  └─ run-validator-c.sh             # Sta... 
 │  └─ run-jito-relayer.sh            # Starts a co-hosted jito-relayer with its keys
 ├─ keys/                           # The key store of a host
-│  └─ validator-a/                   # The key set for validator a 
+│  └─ validator-a/                   # The key set for a validator named "a" 
 │  │  └─ identity.json (lnk)           # A link to the active identity of this validator
 │  │  └─ staked-identity.json          # A validator identity with active stake
 │  │  └─ unstaked-identity.json        # A validator identity without active stake
 │  │  └─ jito-relayer-block-eng.json   # For block engine authentication
 │  │  └─ jito-relayer-comms-pvt.pem    # Private key for relayer comms handshake
 │  │  └─ jito-relayer-comms-pub.pem    # Public key for relayer comms handshake
-│  └─ validator-b/                  
+│  └─ validator-b/                   # The key set for a validator named "b" 
 │  │  └─ [same as validator-a]
 ├─ logs/                           # The log dump root folder
 │  └─ agave-validator.log
