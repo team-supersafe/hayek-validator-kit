@@ -13,7 +13,7 @@ Everything related to the Hayek Validator Kit lives under a public GitHub repo a
 
 <figure><img src=".gitbook/assets/Hayek Validator Kit@2x (1).webp" alt=""><figcaption></figcaption></figure>
 
-
+Learn how to do the upper orange part of the diagram [HERE](hayek-validator-kit/github-repo.md#updating-the-docs), and the lower purple part [HERE](hayek-validator-kit/github-repo.md#using-the-hayek-validator-kit).
 
 ## Quickstart Setup
 
