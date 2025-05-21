@@ -16,7 +16,7 @@ We have pre-provisioned a sets of keys for the `Canopy` validator that will be r
 
 ### Creating Validator Key Sets
 
-Under the Ansible Control node you will find the script:
+Under the Ansible Control node you will find this script:
 
 &#x20;`/hayek-validator-kit/validator-keys/_gen-validator-keys.sh`&#x20;
 
