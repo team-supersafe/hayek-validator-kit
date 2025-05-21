@@ -1,4 +1,75 @@
-# Setup Validator Metrics
+# Setup Validator Metrics - InfluxDB
+
+Install InfluxDB in a different box from the validator servers. InfluxDB will receive metrics from the Telegraf agent installed on the validator servers as well as from other sources.
+
+## Installation
+
+For DEB-based platforms (e.g. Ubuntu, Debian), add the InfluxData repository with the following commands:
+
+```bash
+wget -q https://repos.influxdata.com/influxdata-archive_compat.key
+echo '393e8779c89ac8d958f81f942f9ad7fb82a25e133faddaf92e15b16e6ac9ce4c influxdata-archive_compat.key' | sha256sum -c && cat influxdata-archive_compat.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg > /dev/null
+echo 'deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/debian stable main' | sudo tee /etc/apt/sources.list.d/influxdata.list
+```
+
+Update package lists and install InfluxDB:
+
+```bash
+sudo apt-get update
+sudo apt-get install influxdb -y
+```
+
+Start InfluxDB and enable it to run at system startup:
+
+```bash
+sudo systemctl enable influxdb
+sudo systemctl start influxdb
+```
+
+## Configure InfluxDB
+
+Connect to the InfluxDB shell:
+
+```bash
+influx
+```
+
+Or, if you need to connect with SSL (for self-signed or invalid certificates):
+
+```bash
+influx -ssl -unsafeSsl
+```
+
+### Create Databases
+
+We need to create three separate databases:
+1. For validator server Telegraf metrics
+2. For metrics from a separate monitoring box
+3. For Solana block production data
+
+For each database, follow these steps:
+
+```bash
+create database <database_name>
+use <database_name>
+```
+
+### Create Users and Assign Permissions
+
+For each database, create a user and grant appropriate permissions:
+
+```bash
+create user <username> with password '<password>'
+grant all on <database_name> to <username>
+```
+
+## Database Structure
+
+Our setup includes three main databases:
+
+1. **Validator Metrics Database**: Receives metrics from Telegraf agents installed on validator servers.
+2. **Monitoring Box Metrics Database**: Collects metrics from a separate monitoring system.
+3. **Solana Block Production Database**: Tracks block production statistics from Solana validators.
 
 ## Setup Agave Watchtower
 
