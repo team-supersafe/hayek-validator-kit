@@ -16,7 +16,7 @@ The repo has two parallel branches named `main` and `docs` .
 The two branches are meant to co-exists in parallel Ad Infinitum without merging PRs from one to the other.&#x20;
 
 {% hint style="danger" %}
-Any GitHub suggestion to merge PR from one to the other should be ignored.
+Any GitHub suggestion to merge PR from `docs`  to `main`  to the other should be ignored.
 {% endhint %}
 
 You should get familiar with the contents of the repo.&#x20;
