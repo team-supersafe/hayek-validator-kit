@@ -3,7 +3,7 @@
 # ansible-playbook -i hosts.yml playbooks/pb_install_solana_cli.yml --diff --check
 # ansible-playbook -i hosts.yml playbooks/pb_install_solana_cli.yml --diff
 - name: Runs install_solana_cli task from solana_cli role
-  hosts: local_pristine # local_blue or local_green
+  hosts: host-charlie # host-alpha or host-bravo
   user: "{{ solana_user }}"
   become: false
   roles:

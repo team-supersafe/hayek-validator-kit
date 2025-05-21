@@ -1,5 +1,5 @@
 ---
-- hosts: local_green
+- hosts: host-bravo
   gather_facts: true
   become: true
   roles:

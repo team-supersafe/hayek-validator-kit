@@ -39,7 +39,7 @@ A pre-requisitive to setting up the Relayer is to have your [Operator Host corre
 With your Operator Host setup, you can connect to your Ansible Control node, and run the following playbook:
 
 ```sh
-ansible-playbook -i playbooks/pb_setup_validator_jito_cohost_relayer.yml -limit local_blue
+ansible-playbook -i playbooks/pb_setup_validator_jito_cohost_relayer.yml -limit host-alpha
 ```
 
 This playbook will print the Jito Block Engine Keypair. This keypair needs to be whitelisted (permissioned) with Jito in order for our relayer to receive re-ordered blocks optimal for MEV. 
