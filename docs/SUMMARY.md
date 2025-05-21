@@ -17,6 +17,7 @@
   * [Choosing your metal](validator-operations/update-validator-metal/choosing-your-metal.md)
   * [Moving your metal](validator-operations/update-validator-metal/moving-your-metal.md)
   * [Hardware tuning](validator-operations/update-validator-metal/hardware-tunning-info.md)
+  * [System Tuning](validator-operations/update-validator-metal/system-tuning.md)
 * [Validator clients](validator-operations/deploying-a-validator-client/README.md)
   * [Agave](validator-operations/deploying-a-validator-client/agave.md)
   * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
