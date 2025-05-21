@@ -13,21 +13,21 @@
 
 ## Validator Operations
 
-* [Validator clients](validator-operations/deploying-a-validator-client/README.md)
-  * [Agave](validator-operations/deploying-a-validator-client/agave.md)
-  * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
-  * [Jito](validator-operations/deploying-a-validator-client/jito.md)
 * [Host metal infrastructure](validator-operations/update-validator-metal/README.md)
   * [Choosing your metal](validator-operations/update-validator-metal/choosing-your-metal.md)
   * [Moving your metal](validator-operations/update-validator-metal/moving-your-metal.md)
   * [Hardware tuning](validator-operations/update-validator-metal/hardware-tunning-info.md)
+* [Validator clients](validator-operations/deploying-a-validator-client/README.md)
+  * [Agave](validator-operations/deploying-a-validator-client/agave.md)
+  * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
+  * [Jito](validator-operations/deploying-a-validator-client/jito.md)
+* [Metrics & Monitoring](validator-operations/metrics-and-monitoring/README.md)
+  * [Community Dashboards](validator-operations/metrics-and-monitoring/community-dashboards.md)
+  * [Setup Validator Metrics](validator-operations/metrics-and-monitoring/setup-validator-metrics.md)
 * [Stake Management](validator-operations/validator-stake/README.md)
   * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
   * [SFDP](validator-operations/validator-stake/sfdp.md)
   * [Liquid Staking](validator-operations/validator-stake/liquid-staking.md)
-* [Metrics & Monitoring](validator-operations/metrics-and-monitoring/README.md)
-  * [Community Dashboards](validator-operations/metrics-and-monitoring/community-dashboards.md)
-  * [Setup Validator Metrics](validator-operations/metrics-and-monitoring/setup-validator-metrics.md)
 
 ## Security Infrastructure
 
