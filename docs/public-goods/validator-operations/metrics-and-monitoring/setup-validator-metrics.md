@@ -42,10 +42,11 @@ influx -ssl -unsafeSsl
 
 ### Create Databases
 
-We need to create three separate databases:
-1. For validator server Telegraf metrics
-2. For metrics from a separate monitoring box
-3. For Solana block production data
+Our setup includes three main databases:
+
+1. **Validator Metrics Database**: Receives metrics from Telegraf agents installed on validator servers.
+2. **Monitoring Box Metrics Database**: Collects metrics from a separate monitoring system.
+3. **Solana Block Production Database**: Tracks block production statistics from Solana validators.
 
 For each database, follow these steps:
 
@@ -62,14 +63,6 @@ For each database, create a user and grant appropriate permissions:
 create user <username> with password '<password>'
 grant all on <database_name> to <username>
 ```
-
-## Database Structure
-
-Our setup includes three main databases:
-
-1. **Validator Metrics Database**: Receives metrics from Telegraf agents installed on validator servers.
-2. **Monitoring Box Metrics Database**: Collects metrics from a separate monitoring system.
-3. **Solana Block Production Database**: Tracks block production statistics from Solana validators.
 
 ## Setup Agave Watchtower
 
