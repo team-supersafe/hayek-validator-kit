@@ -17,20 +17,20 @@
   * [Agave](validator-operations/deploying-a-validator-client/agave.md)
   * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
   * [Jito](validator-operations/deploying-a-validator-client/jito.md)
-* [Validator hosts](validator-operations/update-validator-metal/README.md)
+* [Host metal infrastructure](validator-operations/update-validator-metal/README.md)
   * [Choosing your metal](validator-operations/update-validator-metal/choosing-your-metal.md)
   * [Moving your metal](validator-operations/update-validator-metal/moving-your-metal.md)
   * [Hardware tuning](validator-operations/update-validator-metal/hardware-tunning-info.md)
-* [Validator stake](validator-operations/validator-stake/README.md)
+* [Stake Management](validator-operations/validator-stake/README.md)
   * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
+  * [SFDP](validator-operations/validator-stake/sfdp.md)
+  * [Liquid Staking](validator-operations/validator-stake/liquid-staking.md)
+* [Metrics & Monitoring](validator-operations/metrics-and-monitoring/README.md)
+  * [Community Dashboards](validator-operations/metrics-and-monitoring/community-dashboards.md)
+  * [Setup Validator Metrics](validator-operations/metrics-and-monitoring/setup-validator-metrics.md)
 
-## Metrics & Monitoring
+## Security Infrastructure
 
-* [Community Dashboards](metrics-and-monitoring/community-dashboards.md)
-* [Setup Validator Metrics](metrics-and-monitoring/setup-validator-metrics.md)
-
-## Key Management
-
-* [Key Security 101](key-management/key-security-101.md)
-* [1Password](key-management/1password.md)
-* [Keeper](key-management/keeper.md)
+* [Key Security 101](security-infrastructure/key-security-101.md)
+* [1Password](security-infrastructure/1password.md)
+* [Keeper](security-infrastructure/keeper.md)
