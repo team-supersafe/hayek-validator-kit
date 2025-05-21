@@ -1,4 +1,4 @@
-# Troubleshooting Agave
+# Client Troubleshooting
 
 See [https://youtu.be/nY2SFjaDXHw?si=Sd-ko1lTmpgkz\_VH\&t=1560](https://youtu.be/nY2SFjaDXHw?si=Sd-ko1lTmpgkz_VH\&t=1560)
 
@@ -82,7 +82,7 @@ It tells you how far behind the network your validator is and how quickly you ar
 
 * If you use `--private-rpc` then you need to pass `--our-localhost` here. See [https://github.com/solana-labs/solana/issues/8407?ref=solana.ghost.io](https://github.com/solana-labs/solana/issues/8407?ref=solana.ghost.io)
 
-```
+```bash
 solana -ut catchup /home/sol/keys-testnet/validator-identity-keypair.json
 
 solana -ut catchup --our-localhost 8899
@@ -96,7 +96,7 @@ solana -ut catchup --our-localhost 8899
 
 Monitor with `agave-validator monitor` (run on validator machine)
 
-```
+```bash
 agave-validator -l /mnt/ledger/ monitor
 
 # Output if you have firewall issues:
@@ -110,13 +110,13 @@ Check that ports 8801, ... are open after agave-validator is running (run on val
 
 It can take a few minutes for the process to open ports after the validator started
 
-```
+```bash
 sudo netstat -ntlp # check open ports
 ```
 
 Check connection is possible from validator machine to the network entry points (run on validator machine)
 
-```
+```bash
 telnet entrypoint.testnet.solana.com 8001
 telnet entrypoint2.testnet.solana.com 8001
 telnet entrypoint3.testnet.solana.com 8001
@@ -130,7 +130,7 @@ nc -vz entrypoint3.testnet.solana.com 8001
 
 Check connection is possible from the outside to your validator machine (run anywhere)
 
-```
+```bash
 nc -vz <YOUR_VALIDATOR_HOSTNAME> 8001 # gossip port you use. # this port is only open after the agave-validator is running
 
 nc -vz <YOUR_VALIDATOR_HOSTNAME> 8900 # this port is only open after the agave-validator is running
@@ -140,7 +140,7 @@ nc -vz <YOUR_VALIDATOR_HOSTNAME> 8900 # this port is only open after the agave-v
 
 Make sure network entry points resolve to the expected IP addresses (run anywhere). I've seen issues with outdated DNS server on Solana's side:
 
-```
+```bash
 nslookup entrypoint.testnet.solana.com # resolved to 35.203.170.30 at the time of writing
 nslookup entrypoint2.testnet.solana.com # resolved to 139.178.94.143 at the time of writing
 ```
@@ -149,7 +149,7 @@ nslookup entrypoint2.testnet.solana.com # resolved to 139.178.94.143 at the time
 
 Check if you are behind a NAT (run on validator machine)
 
-```
+```bash
 sudo apt install inetutils-traceroute
 traceroute <YOUR_VALIDATOR_HOSTNAME>
 # If you only see one hop, then you are not behind a NAT
@@ -163,7 +163,7 @@ Manually getting snapshot from another validator
 
 * See [https://youtu.be/nY2SFjaDXHw?si=R3VeG1z3NzRyd8RR\&t=4246](https://youtu.be/nY2SFjaDXHw?si=R3VeG1z3NzRyd8RR\&t=4246)
 
-```
+```bash
 # stop the validator service
 systemctl stop sol
 
