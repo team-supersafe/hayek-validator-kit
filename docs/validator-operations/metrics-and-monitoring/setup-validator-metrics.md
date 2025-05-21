@@ -91,7 +91,29 @@ RestartSec=10
 [Install]
 WantedBy=multi-user.target
 ```
+This script is charged tosent the alert to DISCORD and TELEGRAM Chanels
+Inside this sctipr we have some variables we need to be aware
 
+```bash
+# Alert Intervals (in seconds)
+VALIDATOR_DELINQUENT_ALERT_INTERVAL = 180  # Time between delinquent alerts (3 minutes)
+LOW_BALANCE_ALERT_INTERVAL = 60 # Time between alerts when the validator have low ballance
+SUGGESTED_BALANCE = 10   # Suggested balance in SOL for identity accounts
+# Enable/Disable specific alert types
+ENABLE_DELINQUENT_ALERTS = True      # Set to False to disable validator delinquent alerts
+ENABLE_RECOVERY_ALERTS = True        # Set to False to disable validator recovery alerts
+ENABLE_LOW_BALANCE_ALERTS = True     # Set to False to disable low balance alerts
+ENABLE_BALANCE_RECOVERY_ALERTS = True # Set to False to disable balance recovery alerts
+# Communication platforms
+ENABLE_DISCORD = True
+ENABLE_TELEGRAM = True 
+# Discord configuration
+DISCORD_WEBHOOK = "webhooks_url"
+# Telegram configuration
+TELEGRAM_BOT_TOKEN = ""
+TELEGRAM_CHAT_ID = ""
+```
+Entire Script < URL >
 4. Enable the service
 
 ```bash
