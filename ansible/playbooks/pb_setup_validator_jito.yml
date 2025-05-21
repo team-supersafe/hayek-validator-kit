@@ -17,10 +17,10 @@
 # - jito_version: Client version (default: v2.2.14)
 # - jito_relayer_type: "shared" or "co-hosted"
 # - solana_cluster: "testnet", "mainnet" or "localnet"
-# - hosts: "local_pristine", "local_blue", "local_green".
+# - hosts: "host-charlie", "host-alpha", "host-bravo".
 
 - name: Install Jito Client with Co-Hosted Relayer
-  hosts: local_pristine
+  hosts: host-charlie
   user: "{{ solana_user }}"
   become: false
   roles:
