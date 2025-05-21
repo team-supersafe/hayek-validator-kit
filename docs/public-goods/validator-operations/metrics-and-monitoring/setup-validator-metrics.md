@@ -273,7 +273,7 @@ MAINNET_HOST="<SERVERNAME>"
 INFLUX_URL="https://influxdb-server-url:8086"
 INFLUX_DB="validator_blocks"
 INFLUX_USER="<DB_USER>"
-INFLUX_PASS="<DB_PASSWORD>"  # Recommendation: Move this to a protected configuration file
+INFLUX_PASS="<DB_PASSWORD>"  
 
 # ===== PATH TO SOLANA BIN =====
 SOLANA_BIN="/root/.local/share/solana/install/active_release/bin/solana"
