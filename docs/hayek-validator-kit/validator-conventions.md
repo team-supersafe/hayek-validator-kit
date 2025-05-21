@@ -30,4 +30,4 @@ Important notes on this structure:
 2. The same HOST can only be running ONE validator at any moment.
 3. At any time the configuration files present in a HOST should be limited to those corresponding to  the running validator at that time. That is:
    1. If Host-A is running Validator-X, then only the files, keys and config for Validator-X should be present in Host-A, and no other.
-   2. If Validator-X is moved from Host-B to Host-C, Host-B should end up with none of Validator-X's files from its file system, and Host-C should end up with only Validator-X files in its file system.
+   2. If Validator-X is moved from Host-A to Host-B, Host-A should end up with none of Validator-X's files from its file system, and Host-B should end up with only Validator-X files in its file system.
