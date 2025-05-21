@@ -6,7 +6,7 @@ All the configurations related to the Hayek Validator Kit as well as all documen
 git clone https://github.com/team-supersafe/hayek-validator-kit.git
 ```
 
-## Two Branches
+## Monorepo Setup
 
 This repository is setup as a monorepo with two parallel branches named `main` and `docs` .
 
