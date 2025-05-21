@@ -1,0 +1,72 @@
+---
+# This playbook is used to manage the Ansible Vault for validator keypairs
+#
+# Run from /ansible folder:
+# ansible-playbook -i hosts.yml playbooks/manage_vault.yml -e "hostname=host-alpha validator_name=canopy vault_password=mole"
+
+- name: Manage Ansible Vault for Validator Keypairs
+  hosts: localhost
+  gather_facts: false
+  vars:
+    vault_dir: "/ansible/vault"
+    vault_id: "{{ hostname }}-{{ validator_name }}"
+    keys_dir: "{{ lookup('env', 'HOME') }}/.validator-keys"
+    keypair_file: "jito-relayer-block-eng.json"
+    source_path: "{{ keys_dir }}/{{ vault_id }}/{{ keypair_file }}"
+    vault_file: "{{ vault_dir }}/group_vars/host_keys_vault.yml"
+    manage_vault_script: "{{ vault_dir }}/manage_vault.sh"
+    password_file: "{{ vault_dir }}/.vault_pass"
+
+  tasks:
+    - name: Check if source keypair file exists
+      ansible.builtin.stat:
+        path: "{{ source_path }}"
+      register: keypair_stat
+
+    - name: Fail if keypair file not found
+      ansible.builtin.fail:
+        msg: "Keypair file not found at {{ source_path }}"
+      when: not keypair_stat.stat.exists
+
+    - name: Check if vault file exists
+      ansible.builtin.stat:
+        path: "{{ vault_file }}"
+      register: vault_stat
+
+    - name: Create vault file if it doesn't exist
+      ansible.builtin.shell: |
+        ansible-vault create "{{ vault_file }}"
+      when: not vault_stat.stat.exists
+
+    - name: Check if password file exists
+      ansible.builtin.stat:
+        path: "{{ password_file }}"
+      register: pass_stat
+
+    - name: Check for required vault password
+      ansible.builtin.fail:
+        msg: "vault_password parameter is required when password file does not exist"
+      when:
+        - not pass_stat.stat.exists
+        - vault_password is not defined
+
+    - name: Create password file if it doesn't exist
+      ansible.builtin.shell: |
+        echo "{{ vault_password }}" > "{{ password_file }}"
+        chmod 600 "{{ password_file }}"
+      when: not pass_stat.stat.exists
+
+    - name: Update vault with keypair
+      ansible.builtin.shell: |
+        "{{ manage_vault_script }}" update "{{ vault_id }}"
+      args:
+        chdir: "{{ vault_dir }}"
+      register: vault_update
+
+    - name: Display vault update result
+      ansible.builtin.debug:
+        msg: "{{ vault_update.stdout_lines }}"
+
+    - name: Display warning about source file
+      ansible.builtin.debug:
+        msg: "IMPORTANT: Please delete the source keypair file at {{ source_path }} immediately!"
