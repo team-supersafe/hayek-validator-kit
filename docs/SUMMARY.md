@@ -25,6 +25,7 @@
 * [Metrics & Monitoring](validator-operations/metrics-and-monitoring/README.md)
   * [Community Dashboards](validator-operations/metrics-and-monitoring/community-dashboards.md)
   * [Setup Validator Metrics](validator-operations/metrics-and-monitoring/setup-validator-metrics.md)
+  * [Troubleshooting Agave](validator-operations/metrics-and-monitoring/troubleshooting-agave.md)
 * [Stake Management](validator-operations/validator-stake/README.md)
   * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
   * [SFDP](validator-operations/validator-stake/sfdp.md)
