@@ -44,15 +44,15 @@ HAYEK SOLANA VALIDATOR KIT REPO
 │   └── build-cli/         #builds and run the solana cli in localnet 
 ```
 
-## Contributing
+## Repo Workflows
 
 Everything related to the Hayek Validator Kit lives under a public GitHub repo at `https://github.com/team-supersafe/hayek-validator-kit.git` . This workflow shows the ways you can engage with that repo to use it and contribute to it:
 
 <figure><img src="../.gitbook/assets/Hayek Validator Kit@2x (1).webp" alt=""><figcaption><p>Contributing Workflows</p></figcaption></figure>
 
-### Contributing to the Docs
+## Contributing to the Docs
 
-This will show you how to do the upper/orange part of the [diagram above](github-repo.md#using-and-contributing).
+This will show you how to do the upper/orange part of the [diagram above](github-repo.md#using-and-contributing) using the `docs` branch.
 
 The docs are hosted by [GitHub](https://github.com/), managed by [GitBook](https://gitbook.com), and deployed to [https://docs.hayek.fi](https://docs.hayek.fi/)
 
@@ -72,9 +72,9 @@ Once you are happy with your changes, make sure to [sync your **docs** branch](h
 
 After re-synch, make sure you merge any new updates into your `doc-improvements` branch and push your changes to GitHub to start the [Pull Request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) process.
 
-### Contributing to the Kit
+## Contributing to the Kit
 
-This will show you how to do the lower/purple part of the [diagram above](github-repo.md#using-and-contributing).
+This will show you how to do the upper/orange part of the [diagram above](github-repo.md#using-and-contributing) using the `main` branch.
 
 If you want to contribute to improving the Ansible scripts and automation workflows of the Hayek Validator Kit, this is how you do it:
 
@@ -94,7 +94,7 @@ After re-synch, make sure you merge any new updates into your `my-branch` branch
 
 ## Using the Hayek Validator Kit
 
-This will show you how to do the lower part of [this diagram](../#using-and-contributing).
+This will show you how to do the lower/purple part of the [diagram above](github-repo.md#using-and-contributing).
 
 If you want to use the Hayek Validator Kit for your own validator operations, and keep your configuration private, you might find it a little challenging to use the GitHub Forking infrastructure for this purpose.
 
