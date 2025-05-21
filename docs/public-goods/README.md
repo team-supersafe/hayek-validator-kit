@@ -11,18 +11,18 @@ See the [Github Repo](hayek-validator-kit/github-repo.md) page to view how to us
 
 ## Quickstart Setup
 
-### 🧰 Step 1: Prepare Your Machine
+### Step 1: Prepare Your Machine
 
 Start by following the [Workstation Setup](hayek-validator-kit/workstation-setup.md) guide to ensure your system has the required tools and dependencies.
 
-### 📦 Step 2: Clone the Repository
+### Step 2: Clone the Repository
 
 ```bash
 git clone https://github.com/team-supersafe/hayek-validator-kit.git
 cd hayek-validator-kit
 ```
 
-### ▶️ Step 3: Run Solana Localnet
+### Step 3: Run Solana Localnet
 
 To spin up a local testnet environment:
 
@@ -34,7 +34,7 @@ This will start a local Solana network called Localnet with all of the Hayek Val
 
 ***
 
-### 🧭 What’s Next?
+### What’s Next?
 
 Use the menu on the left to explore the rest of the documentation:
 
