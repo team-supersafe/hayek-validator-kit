@@ -68,3 +68,18 @@ When running your playbook, speficy the `--ask-vault-pass` to get prompted for t
 ansible-playbook playbook.yml --ask-vault-pass
 ```
 
+## Change Vault Password
+
+To change the password on your existing Vault file — like group\_vars/all/vault.yml — use the ansible-vault rekey command.
+
+```bash
+ansible-vault rekey group_vars/all/vault.yml
+```
+
+You’ll be prompted to:
+
+1. Enter the current vault password (to unlock it)
+2. Enter the new password
+3. Confirm the new password
+
+That’s it! The file is now encrypted with the new password.
