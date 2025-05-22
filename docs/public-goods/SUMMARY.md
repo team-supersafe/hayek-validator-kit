@@ -34,5 +34,6 @@
 ## Security Infrastructure
 
 * [Key Security 101](security-infrastructure/key-security-101.md)
+* [Ansible Vault](security-infrastructure/ansible-vault.md)
 * [1Password](security-infrastructure/1password.md)
 * [Keeper](security-infrastructure/keeper.md)
