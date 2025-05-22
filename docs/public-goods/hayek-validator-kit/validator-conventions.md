@@ -34,13 +34,13 @@ THE 'sol' USER HOME FOLDER
 
 home/sol/
 │
-├─ bin/                            # Binaries and scripts used on the host
-│  └─ run-validator-a.sh             # Starts validator-a with its related key set
-│  └─ run-validator-b.sh             # Starts validator-b with...
-│  └─ run-validator-c.sh             # Sta... 
-│  └─ run-jito-relayer.sh            # Starts a co-hosted jito-relayer with its keys
-├─ keys/                           # The key store of a host
-│  └─ canopy/                   # The key set for a validator named "canopy" 
+├─ bin/                        # Binaries and scripts used on the host
+│  └─ run-canopy.sh               # Starts validator-a with its related key set
+│  └─ run-sprout.sh               # Starts validator-b with...
+│  └─ run-alice_validator.sh      # Sta... 
+│  └─ run-jito-relayer.sh         # Starts a co-hosted jito-relayer with its keys
+├─ keys/                        # The key store of a host
+│  └─ canopy/                     # The key set for a validator named "canopy" 
 │  │  └─ identity.json (lnk)           # A link to the active identity of this validator
 │  │  └─ staked-identity.json          # A validator identity with active stake
 │  │  └─ unstaked-identity.json        # A validator identity without active stake
