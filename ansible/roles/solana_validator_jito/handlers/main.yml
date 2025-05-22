@@ -1,5 +1,6 @@
 ---
 - name: restart jito-relayer
+  become: true
   ansible.builtin.systemd:
     name: jito-relayer
     state: restarted 

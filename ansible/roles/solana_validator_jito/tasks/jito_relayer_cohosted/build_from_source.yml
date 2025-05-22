@@ -50,10 +50,14 @@
     path: "{{ jito_relayer_build_dir }}/target/release/jito-transaction-relayer"
   register: build_target_stat
 
-- when: not jito_relayer_force_build and build_target_stat.stat.exists
-  name: Skipping build, reusing existing Jito Relayer build
+- name: Show build status message
   ansible.builtin.debug:
-    msg: "Skipping build: existing Jito Relayer build found at {{ jito_relayer_build_dir }}/target/release and jito_relayer_force_build is not set."
+    msg: >-
+      {% if not jito_relayer_force_build and build_target_stat.stat.exists %}
+      Skipping build: existing Jito Relayer build found at {{ jito_relayer_build_dir }}/target/release and jito_relayer_force_build is not set.
+      {% else %}
+      Starting build process for Jito Relayer
+      {% endif %}
 
 - block:
     - name: Build Jito Relayer

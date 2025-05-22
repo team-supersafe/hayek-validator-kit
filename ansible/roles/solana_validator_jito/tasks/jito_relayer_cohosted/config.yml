@@ -40,12 +40,14 @@
   tags: [jito_relayer.config, jito_relayer.systemd]
 
 - name: Reload systemd to pick up new service
+  become: true
   ansible.builtin.systemd:
     daemon_reload: yes
   ignore_errors: yes
   tags: [jito_relayer.config, jito_relayer.systemd]
 
 - name: Enable Jito relayer service
+  become: true
   ansible.builtin.systemd:
     name: "{{ jito_relayer_service_name }}"
     enabled: yes

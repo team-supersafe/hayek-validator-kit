@@ -3,7 +3,7 @@
 - name: Get Agave Download URL
   ansible.builtin.shell: |
     set -e
-    echo "https://github.com/anza-xyz/agave/releases/download/v{{ agave_version }}/solana-release-{{ host_arch }}.tar.bz2"
+    echo "https://github.com/anza-xyz/agave/releases/download/{{ agave_version }}/solana-release-{{ host_arch }}.tar.bz2"
   args:
     executable: /bin/bash
   register: agave_download_url_reg
