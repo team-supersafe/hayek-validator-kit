@@ -17,7 +17,7 @@ A full documentation of the Ansible Vault feature is available in [Ansible's off
 
 ## Vault password
 
-The simplest way to access encrypted assets stored in the Ansible Vault, is by sharing a passwords to each of the vault items. We recommend using a password manager, like [1Password](1password.md),  to manage shared passwords across your team.
+The simplest way to access encrypted assets stored in the Ansible Vault, is by sharing passwords to each of the vault items. We recommend using a password manager, like [1Password](1password.md),  to manage shared passwords across your team.
 
 ## Best Practices
 
