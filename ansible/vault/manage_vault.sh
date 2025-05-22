@@ -15,8 +15,8 @@ KEYS_DIR="$HOME/.validator-keys"
 check_vault_file() {
     if [ ! -f "$VAULT_FILE" ]; then
         echo -e "${YELLOW}Vault file not found. Creating new vault...${NC}"
-        # Create a new vault file
-        ansible-vault create "$VAULT_FILE"
+    else
+        echo -e "${YELLOW}Vault file: $VAULT_FILE.${NC}"
     fi
 }
 
@@ -56,7 +56,7 @@ update_vault() {
     if [ ! -f "$source_path" ]; then
         echo -e "${RED}Error: Keypair file not found at $source_path${NC}"
         exit 1
-    }
+    fi
 
     # Check if vault file exists
     check_vault_file
@@ -103,7 +103,7 @@ show_help() {
     echo "  help      - Show this help message"
     echo
     echo "Examples:"
-    echo "  $0 update host-alpha-canopy  # Update vault with keypair for host-alpha-canopy"
+    echo "  $0 update canopy  # Update vault with keypair for validator canopy"
 }
 
 # Main script logic

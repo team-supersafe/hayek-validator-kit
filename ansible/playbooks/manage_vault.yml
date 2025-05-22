@@ -1,27 +1,60 @@
 ---
 # This playbook is used to manage the Ansible Vault for validator keypairs
 #
-# Run from /ansible folder:
-# ansible-playbook -i hosts.yml playbooks/manage_vault.yml -e "hostname=host-alpha validator_name=canopy vault_password=mole"
+# Usage:
+# ------
+# Run from /ansible directory:
+#
+# ansible-playbook playbooks/manage_vault.yml \
+#   -i hosts.yml \
+#   --limit host-alpha \
+#   -e "target_host=host-alpha" \
+#   -e "validator_name=canopy" \
+#   -e "vault_password=mole"
 
 - name: Manage Ansible Vault for Validator Keypairs
-  hosts: localhost
+  hosts: "{{ target_host }}"
   gather_facts: false
+  user: "{{ solana_user }}"
   vars:
-    vault_dir: "/ansible/vault"
-    vault_id: "{{ hostname }}-{{ validator_name }}"
-    keys_dir: "{{ lookup('env', 'HOME') }}/.validator-keys"
+    vault_dir: "/hayek-validator-kit/ansible/vault"
+    keys_dir: "{{ ansible_env.HOME }}/.validator-keys"
     keypair_file: "jito-relayer-block-eng.json"
-    source_path: "{{ keys_dir }}/{{ vault_id }}/{{ keypair_file }}"
+    source_path: "{{ keys_dir }}/{{ validator_name }}/{{ keypair_file }}"
     vault_file: "{{ vault_dir }}/group_vars/host_keys_vault.yml"
     manage_vault_script: "{{ vault_dir }}/manage_vault.sh"
     password_file: "{{ vault_dir }}/.vault_pass"
 
+  pre_tasks:
+    - name: Gather facts for localhost
+      ansible.builtin.setup:
+      delegate_to: localhost
+      run_once: true
+
   tasks:
+    - name: Check for required parameters 'validator_name'
+      ansible.builtin.fail:
+        msg: "'validator_name' parameters is required. Example: ansible-playbook -i hosts.yml playbooks/manage_vault.yml -e 'validator_name=canopy vault_password=mole'"
+      when: validator_name is not defined
+
+    - name: Check for required vault password
+      ansible.builtin.fail:
+        msg: "vault_password parameter is required"
+      when: vault_password is not defined
+
+    - name: Create password file
+      ansible.builtin.shell: |
+        echo "{{ vault_password }}" > "{{ password_file }}"
+        chmod 600 "{{ password_file }}"
+      delegate_to: localhost
+      run_once: true
+
     - name: Check if source keypair file exists
       ansible.builtin.stat:
         path: "{{ source_path }}"
       register: keypair_stat
+      delegate_to: localhost
+      run_once: true
 
     - name: Fail if keypair file not found
       ansible.builtin.fail:
@@ -35,32 +68,17 @@
 
     - name: Create vault file if it doesn't exist
       ansible.builtin.shell: |
-        ansible-vault create "{{ vault_file }}"
+        cd "{{ vault_dir }}"
+        ./manage_vault.sh update "{{ validator_name }}"
       when: not vault_stat.stat.exists
-
-    - name: Check if password file exists
-      ansible.builtin.stat:
-        path: "{{ password_file }}"
-      register: pass_stat
-
-    - name: Check for required vault password
-      ansible.builtin.fail:
-        msg: "vault_password parameter is required when password file does not exist"
-      when:
-        - not pass_stat.stat.exists
-        - vault_password is not defined
-
-    - name: Create password file if it doesn't exist
-      ansible.builtin.shell: |
-        echo "{{ vault_password }}" > "{{ password_file }}"
-        chmod 600 "{{ password_file }}"
-      when: not pass_stat.stat.exists
+      delegate_to: localhost
+      run_once: true
 
     - name: Update vault with keypair
       ansible.builtin.shell: |
-        "{{ manage_vault_script }}" update "{{ vault_id }}"
-      args:
-        chdir: "{{ vault_dir }}"
+        cd "{{ vault_dir }}"
+        ./manage_vault.sh update "{{ validator_name }}"
+      delegate_to: localhost
       register: vault_update
 
     - name: Display vault update result
