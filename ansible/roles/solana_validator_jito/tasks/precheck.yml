@@ -1,4 +1,13 @@
 ---
+- name: Ensure solana_cluster is defined and valid
+  ansible.builtin.assert:
+    that:
+      - solana_cluster is defined
+      - solana_cluster in ['localnet', 'testnet', 'mainnet']
+    fail_msg: >
+      "The playbook variable 'solana_cluster' must be defined and set to either 'localnet', 'testnet' or 'mainnet'."
+    success_msg: "solana_cluster is set to {{ solana_cluster }}"
+
 - name: Ensure jito_relayer_type variable is defined and valid
   ansible.builtin.assert:
     that:
