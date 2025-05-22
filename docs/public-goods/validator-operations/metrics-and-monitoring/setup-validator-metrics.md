@@ -278,3 +278,111 @@ INFLUX_PASS="<DB_PASSWORD>"
 # ===== PATH TO SOLANA BIN =====
 SOLANA_BIN="/root/.local/share/solana/install/active_release/bin/solana"
 ```
+
+This script "/usr/local/bin/send_validator_metrics.sh" obtein metrics from Solana clusters API and solana CLI, else pull metrics from stakewiz API.
+
+Here are some variables you should be aware of for this script:
+
+```bash
+MAINNET_VOTE_ACCOUNT="<VOTEKEY>"
+MAINNET_IDENTITY_KEY="<PUBKEY>"
+MAINNET_RPC_API="https://api.mainnet-beta.solana.com"
+MAINNET_HOST="<SERVERNAME>"
+MAINNET_STAKEWIZ_ENABLED=true # If is false don't pull metrics from stakewiz APi 
+MAINNET_GOSSIP_ENABLED=true 
+
+# ===== INFLUXDB CONFIGURATION =====
+INFLUX_URL="https://validator.secu.one:8086"
+INFLUX_DB="< INFLUX_DATABASE>"
+INFLUX_USER="<DB_USER>"
+INFLUX_PASS="<DB_PASSWORD>"
+
+# ===== ABSOLUTE PATH TO SOLANA BIN =====
+SOLANA_BIN="/root/.local/share/solana/install/active_release/bin/solana"
+```
+
+## Grant execution privileges to the scripts
+
+```bash
+chmod +x /usr/local/bin/send_block_metrics_v6.sh
+chmod +x /usr/local/bin/send_validator_metrics.sh
+```
+
+## Install service to pull Jpool Rank from https://app.jpool.one/validators/<VOTEKEY>
+
+Jpool doesn't have an API which we can use to get metrics and scores, so we had to use scraping methods to get the metrics. JPool doesn't use Cloudflare Turnstile for captcha challenge, so we are able to get these metrics.
+
+First we need to create a Python virtual environment to install some dependencies.
+
+## Install and create Python virtual environment
+
+```bash
+sudo apt update
+sudo apt install python3 python3-venv
+```
+
+## Create Python virtual environment
+
+```bash
+sudo python3 -m venv /root/venv
+```
+
+## Activate virtual environment
+
+```bash
+source /root/venv/bin/activate
+```
+
+## Install dependencies into virtual environment
+
+```bash
+/root/venv/bin/pip install flask playwright
+# Install browser playwright, which is necessary for scraping 
+/root/venv/bin/python -m playwright install
+```
+
+## Close Python virtual environment
+
+```bash
+deactivate
+```
+
+## Create the service
+
+```bash
+nano /etc/systemd/system/tvc-api.service
+```
+
+```bash
+[Unit]
+Description=TVC Rank API with Flask and Playwright
+After=network.target
+
+[Service]
+User=root
+ExecStart=/root/venv/bin/python /usr/local/bin/get_tvc_rank.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## Grant execution privileges for the script
+
+```bash
+chmod +x /usr/local/bin/get_tvc_rank.py
+```
+
+## Enable the service
+
+```bash
+systemctl enable tvc-api.service
+```
+
+## Start the service
+
+```bash
+systemctl start tvc-api.service
+```
