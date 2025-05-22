@@ -1,8 +1,10 @@
-# Setup Validator Metrics - InfluxDB
+# Setup Validator Metrics
+
+## Setup Validator Metrics - InfluxDB.
 
 Install InfluxDB in a different box from the validator servers. InfluxDB will receive metrics from the Telegraf agent installed on the validator servers as well as from other sources.
 
-## Installation
+### Installation
 
 For DEB-based platforms (e.g. Ubuntu, Debian), add the InfluxData repository with the following commands:
 
@@ -26,7 +28,7 @@ sudo systemctl enable influxdb
 sudo systemctl start influxdb
 ```
 
-## Configure InfluxDB
+### Configure InfluxDB
 
 Connect to the InfluxDB shell:
 
@@ -40,7 +42,7 @@ Or, if you need to connect with SSL (for self-signed or invalid certificates):
 influx -ssl -unsafeSsl
 ```
 
-### Create Databases
+#### Create Databases
 
 Our setup includes three main databases:
 
@@ -55,7 +57,7 @@ create database <database_name>
 use <database_name>
 ```
 
-### Create Users and Assign Permissions
+#### Create Users and Assign Permissions
 
 For each database, create a user and grant appropriate permissions:
 
@@ -64,18 +66,18 @@ create user <username> with password '<password>'
 grant all on <database_name> to <username>
 ```
 
-## Setup Agave Watchtower
+### Setup Agave Watchtower
 
 The watchtower is recommended to be installed in a separate box. We use watchtower for monitoring and alerting identity keys for Mainnet and Testnet. Critical metrics such as Identity balance and validator health are checked every minute.
 
-### Prerequisites
+#### Prerequisites
 
-- Solana CLI < URL Solana CLI Docs >
-- Python # Used for monitoring scripts
-- Telegram Group
-- Discord WEBHOOK
+* Solana CLI < URL Solana CLI Docs >
+* Python # Used for monitoring scripts
+* Telegram Group
+* Discord WEBHOOK
 
-### Installation
+#### Installation
 
 1. Install Solana CLI.
 2. Create a service for agave watchtower. We recommend one service for each identity (Mainnet, Testnet, Debug).
@@ -121,7 +123,7 @@ systemctl start agave-watchtower-mainnet.service
 
 At this point we don't send alerts to Telegram and Discord yet. We want to capture the metrics for agave watchtower and format them with Python. Then, through another service, we send the alerts to Discord and Telegram.
 
-## Create Formatting Service for Mainnet
+### Create Formatting Service for Mainnet
 
 1. Create the Python script
 
@@ -155,7 +157,8 @@ RestartSec=10
 [Install]
 WantedBy=multi-user.target
 ```
-This script is charged tosent the alert to DISCORD and TELEGRAM Chanels
+
+This script is charged tosent the alert to DISCORD and TELEGRAM Chanels\
 Inside this sctipr we have some variables we need to be aware
 
 ```bash
@@ -177,6 +180,7 @@ DISCORD_WEBHOOK = "webhooks_url"
 TELEGRAM_BOT_TOKEN = ""
 TELEGRAM_CHAT_ID = ""
 ```
+
 Entire Script < URL >
 
 4. Enable the service
@@ -191,7 +195,7 @@ systemctl enable solana-alert-formatter-mainnet.service
 systemctl start solana-alert-formatter-mainnet.service
 ```
 
-## Service Maintenance and Monitoring
+### Service Maintenance and Monitoring
 
 We must be aware that every time a service is changed, we need to reload the daemon and then restart the service:
 
@@ -203,7 +207,7 @@ systemctl daemon-reload
 systemctl restart <SERVICE>
 ```
 
-### Checking Service Logs
+#### Checking Service Logs
 
 To monitor the services and troubleshoot issues, use these commands:
 
@@ -215,17 +219,18 @@ systemctl status <SERVICE>
 journalctl -u <SERVICE> -f
 ```
 
-## Additional Configurations
+### Additional Configurations
 
 Repeat the process for each identity (Mainnet, Testnet, Debug) by creating separate services with appropriate configurations for each environment.
 
-# Setup Validator Metrics - Outbox Monitoring
+## Setup Validator Metrics - Outbox Monitoring
 
 We pull metrics from several sources such as Stakewiz, Solana API, Solana CLI, Jpool, etc.
 
-## Setup Service for Validators Metrics and Block Production Metrics
+### Setup Service for Validators Metrics and Block Production Metrics
 
 Create a service:
+
 ```bash
 nano /etc/systemd/system/validator-metrics.service
 ```
@@ -246,14 +251,15 @@ User=root
 WantedBy=multi-user.target
 ```
 
-The script "send_block_metrics_v6.sh" will send the metrics to a separate database which is only dedicated for block production metrics.
+The script "send\_block\_metrics\_v6.sh" will send the metrics to a separate database which is only dedicated for block production metrics.\
 This script collects the metrics for block production through Solana CLI and also collects epoch information:
+
 ```bash
 solana block <blocknumber>
 solana epoch-info
 ```
 
-## Configuration Variables
+### Configuration Variables
 
 Here are some variables you should be aware of for this script:
 
@@ -279,7 +285,7 @@ INFLUX_PASS="<DB_PASSWORD>"
 SOLANA_BIN="/root/.local/share/solana/install/active_release/bin/solana"
 ```
 
-This script "/usr/local/bin/send_validator_metrics.sh" obtein metrics from Solana clusters API and solana CLI, else pull metrics from stakewiz API.
+This script "/usr/local/bin/send\_validator\_metrics.sh" obtein metrics from Solana clusters API and solana CLI, else pull metrics from stakewiz API.
 
 Here are some variables you should be aware of for this script:
 
@@ -301,39 +307,39 @@ INFLUX_PASS="<DB_PASSWORD>"
 SOLANA_BIN="/root/.local/share/solana/install/active_release/bin/solana"
 ```
 
-## Grant execution privileges to the scripts
+### Grant execution privileges to the scripts
 
 ```bash
 chmod +x /usr/local/bin/send_block_metrics_v6.sh
 chmod +x /usr/local/bin/send_validator_metrics.sh
 ```
 
-## Install service to pull Jpool Rank from https://app.jpool.one/validators/<VOTEKEY>
+### Install service to pull Jpool Rank from https://app.jpool.one/validators/
 
 Jpool doesn't have an API which we can use to get metrics and scores, so we had to use scraping methods to get the metrics. JPool doesn't use Cloudflare Turnstile for captcha challenge, so we are able to get these metrics.
 
 First we need to create a Python virtual environment to install some dependencies.
 
-## Install and create Python virtual environment
+### Install and create Python virtual environment
 
 ```bash
 sudo apt update
 sudo apt install python3 python3-venv
 ```
 
-## Create Python virtual environment
+### Create Python virtual environment
 
 ```bash
 sudo python3 -m venv /root/venv
 ```
 
-## Activate virtual environment
+### Activate virtual environment
 
 ```bash
 source /root/venv/bin/activate
 ```
 
-## Install dependencies into virtual environment
+### Install dependencies into virtual environment
 
 ```bash
 /root/venv/bin/pip install flask playwright
@@ -341,13 +347,13 @@ source /root/venv/bin/activate
 /root/venv/bin/python -m playwright install
 ```
 
-## Close Python virtual environment
+### Close Python virtual environment
 
 ```bash
 deactivate
 ```
 
-## Create the service
+### Create the service
 
 ```bash
 nano /etc/systemd/system/tvc-api.service
@@ -369,19 +375,19 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 ```
 
-## Grant execution privileges for the script
+### Grant execution privileges for the script
 
 ```bash
 chmod +x /usr/local/bin/get_tvc_rank.py
 ```
 
-## Enable the service
+### Enable the service
 
 ```bash
 systemctl enable tvc-api.service
 ```
 
-## Start the service
+### Start the service
 
 ```bash
 systemctl start tvc-api.service
