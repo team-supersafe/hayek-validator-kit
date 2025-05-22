@@ -1,27 +1,26 @@
 ---
-# This playbook is used to manage the Ansible Vault for validator keypairs
+# Store Encrypted Keys
+# --------------------
+# Stores encrypted Validator's keys in the Ansible Vault given the balidator name and a password.
+#   Keys are expected to exist in folder: ~/.validator-keys/{{ validator_name }}
+#   See: https://docs.hayek.fi/dev-public-goods/hayek-validator-kit/validator-conventions#the-sol-user-home
 #
 # Usage:
 # ------
 # Run from /ansible directory:
 #
-# ansible-playbook playbooks/manage_vault.yml \
-#   -i hosts.yml \
-#   --limit host-alpha \
-#   -e "target_host=host-alpha" \
-#   -e "validator_name=canopy" \
-#   -e "vault_password=mole"
+# ansible-playbook playbooks/pb_store_encrypted_keys.yml -e "validator_name=canopy vault_password=guacamole"
 
 - name: Manage Ansible Vault for Validator Keypairs
-  hosts: "{{ target_host }}"
+  hosts: localhost
   gather_facts: false
   user: "{{ solana_user }}"
   vars:
     vault_dir: "/hayek-validator-kit/ansible/vault"
-    keys_dir: "{{ ansible_env.HOME }}/.validator-keys"
+    ansible_keys_dir: "{{ ansible_env.HOME }}/.validator-keys"
     keypair_file: "jito-relayer-block-eng.json"
-    source_path: "{{ keys_dir }}/{{ validator_name }}/{{ keypair_file }}"
-    vault_file: "{{ vault_dir }}/group_vars/host_keys_vault.yml"
+    source_path: "{{ ansible_keys_dir }}/{{ validator_name }}/{{ keypair_file }}"
+    vault_file: "{{ vault_dir }}/group_vars/all/vault.yml"
     manage_vault_script: "{{ vault_dir }}/manage_vault.sh"
     password_file: "{{ vault_dir }}/.vault_pass"
 

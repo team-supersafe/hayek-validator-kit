@@ -1,3 +1,2 @@
 ---
-solana_keys_dir: "{{ solana_user_dir }}/keys"
 solana_installed_releases_dir: "{{ solana_user_dir }}/.local/share/solana/install/releases"

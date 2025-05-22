@@ -7,7 +7,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Vault file path
-VAULT_FILE="group_vars/host_keys_vault.yml"
+VAULT_FILE="group_vars/all/vault.yml"
 PASSWORD_FILE=".vault_pass"
 KEYS_DIR="$HOME/.validator-keys"
 

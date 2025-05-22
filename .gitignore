@@ -550,3 +550,10 @@ FodyWeavers.xsd
 # Ignore all files in validator-keys except _gen-validator-keys.sh
 solana-localnet/validator-keys/*
 !solana-localnet/validator-keys/_gen-validator-keys.sh
+
+# Ansible's password files
+# See https://docs.ansible.com/ansible/latest/vault_guide/vault_managing_passwords.html#storing-and-accessing-vault-passwords
+.pass
+*.pass
+.vaul_pass
+*.vaul_pass

@@ -1,6 +1,5 @@
+---
 #Solana Mainnet-specific, non-secret (rare) variables
-ansible_control_keys_dir: "~/.validator-keys/hayek-mainnet" # It should match the path in the operator's host machine running the docker container
-
 jito_urls:
   amsterdam:
     block_engine: "https://amsterdam.mainnet.block-engine.jito.wtf"

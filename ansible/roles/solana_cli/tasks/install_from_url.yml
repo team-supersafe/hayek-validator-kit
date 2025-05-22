@@ -1,9 +1,23 @@
 ---
+# Standardize agave_version value for idempotency either supplied with or without the starting v
+- name: Standardize Agave version
+  ansible.builtin.shell: |
+    set -e
+    echo "{{ agave_version }}" | sed 's/^v//'
+  args:
+    executable: /bin/bash
+  register: standardized_version_reg
+  changed_when: false
+
+- name: Set standardized version as fact
+  ansible.builtin.set_fact:
+    standardized_agave_version: "v{{ standardized_version_reg.stdout }}"
+
 # Priodically check anza downloads url formatting
 - name: Get Agave Download URL
   ansible.builtin.shell: |
     set -e
-    echo "https://github.com/anza-xyz/agave/releases/download/{{ agave_version }}/solana-release-{{ host_arch }}.tar.bz2"
+    echo "https://github.com/anza-xyz/agave/releases/download/{{ standardized_agave_version }}/solana-release-{{ host_arch }}.tar.bz2"
   args:
     executable: /bin/bash
   register: agave_download_url_reg
@@ -19,18 +33,18 @@
 
 - name: Create Solana CLI releases directory
   ansible.builtin.file:
-    path: "{{ solana_installed_releases_dir }}/{{ agave_version }}"
+    path: "{{ solana_installed_releases_dir }}/{{ standardized_agave_version }}"
     state: directory
     mode: '0755'
 
 - name: Unarchiving solana binaries into the releases directory
   ansible.builtin.debug:
-    msg: "Unarchive release directory: {{ solana_installed_releases_dir }}/{{ agave_version }}"
+    msg: "Unarchive release directory: {{ solana_installed_releases_dir }}/{{ standardized_agave_version }}"
 
 - name: Unarchive solana binaries
   ansible.builtin.unarchive:
     src: "{{ agave_download_url }}"
-    dest: "{{ solana_installed_releases_dir }}/{{ agave_version }}"
+    dest: "{{ solana_installed_releases_dir }}/{{ standardized_agave_version }}"
     remote_src: true
-    creates: "{{ solana_installed_releases_dir }}/{{ agave_version }}/solana-release/bin/agave-validator"
+    creates: "{{ solana_installed_releases_dir }}/{{ standardized_agave_version }}/solana-release/bin/agave-validator"
   ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode

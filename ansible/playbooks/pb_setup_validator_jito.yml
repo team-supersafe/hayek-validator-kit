@@ -13,6 +13,7 @@
 # ansible-playbook playbooks/pb_setup_validator_jito.yml \
 #   -i hosts.yml \
 #   --limit host-alpha \
+#   -e "validator_name=emilia_validator" \
 #   -e "target_host=host-alpha" \
 #   -e "solana_cluster=testnet" \
 #   -e "jito_version=v2.2.14" \
@@ -38,6 +39,7 @@
       ansible.builtin.assert:
         that:
           - target_host is defined
+          - validator_name is defined
           - solana_cluster is defined
           - jito_version is defined
           - jito_relayer_type is defined
@@ -46,6 +48,7 @@
           Missing required variables.
           Must provide:
             - target_host
+            - validator_name
             - solana_cluster
             - jito_version
             - jito_relayer_type
@@ -73,6 +76,7 @@
     - role: solana_validator_jito
       vars:
         solana_cluster: "{{ solana_cluster }}"
+        validator_name: "{{ validator_name }}"
         jito_version: "{{ jito_version }}"
         jito_relayer_type: "{{ jito_relayer_type }}"
         jito_relayer_version: "{{ jito_relayer_version }}"
