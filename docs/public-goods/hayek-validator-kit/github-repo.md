@@ -67,7 +67,7 @@ The Localnet cluster is defined in the `Dockerfile` under the `solana-localnet` 
 
 ### Contributing to the Kit
 
-This will show you how to do the upper/orange part of the [diagram above](github-repo.md#using-and-contributing) using the `main` branch.
+This will show you how to do the upper/orange part of the [diagram above](github-repo.md#branch-workflows) using the `main` branch.
 
 If you want to contribute to improving the Ansible scripts and automation workflows of the Hayek Validator Kit, this is how you do it:
 
@@ -87,7 +87,7 @@ After re-synch, make sure you merge any new updates into your `my-branch` branch
 
 ### Using the Hayek Validator Kit
 
-This will show you how to do the lower/purple part of the [diagram above](github-repo.md#using-and-contributing).
+This will show you how to do the lower/purple part of the [diagram above](github-repo.md#branch-workflows).
 
 If you want to use the Hayek Validator Kit for your own validator operations, and keep your configuration private, you might find it a little challenging to use the GitHub Forking infrastructure for this purpose.
 
@@ -127,7 +127,7 @@ THE HOME OF THE HAYEK VALIDATOR KIT DOCUMENTATION (@docs)
 
 ### Contributing to the Docs
 
-This will show you how to do the upper/orange part of the [diagram above](github-repo.md#using-and-contributing) using the `docs` branch.
+This will show you how to do the upper/orange part of the [diagram above](github-repo.md#branch-workflows) using the `docs` branch.
 
 The docs are hosted by [GitHub](https://github.com/), managed by [GitBook](https://gitbook.com), and deployed to [https://docs.hayek.fi](https://docs.hayek.fi/)
 
