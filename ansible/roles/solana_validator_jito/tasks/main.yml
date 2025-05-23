@@ -12,10 +12,6 @@
     - name: Verify Co-hosted Relayer installation and configuration are correct
       import_tasks: jito_relayer_cohosted/verify.yml
 
-# - block:
-#     - name: Install Jito-Solana client
-#       import_tasks: jito_client/install.yml
-#     - name: Configure the Jito-Solana client post installation
-#       import_tasks: jito_client/config.yml
-#     - name: Verify Jito-Solana client installation and configuration are correct
-#       import_tasks: jito_client/verify.yml
+# Jito client installation
+- name: Setup Jito client
+  import_tasks: jito_client/main.yml

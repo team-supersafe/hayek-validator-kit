@@ -1,0 +1,18 @@
+---
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - jito_version is defined
+      - jito_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
+      - solana_installed_releases_dir is defined
+      - solana_user_dir is defined
+      - solana_user is defined
+    fail_msg: >
+      Required variables are missing or invalid:
+      - jito_version must be defined and follow semantic versioning (e.g. 1.2.3)
+      - solana_installed_releases_dir must be defined
+      - solana_user_dir must be defined
+      - solana_user must be defined
+
+- name: "Fail if validator service is already running"
+  ansible.builtin.import_tasks: "../fail_if_validator_service_running.yml"

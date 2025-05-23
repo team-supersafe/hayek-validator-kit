@@ -1,0 +1,10 @@
+---
+- name: Get Service Status
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+  register: validator_service_status
+
+- name: "Fail if validator service is already running"
+  ansible.builtin.fail:
+    msg: "Validator service is already running"
+  when: (force is not defined or not force|bool) and validator_service_status.status.ActiveState == "active"

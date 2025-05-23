@@ -3,6 +3,7 @@
 # Validator variables (target host)
 solana_user: 'sol'
 solana_user_dir: "/home/{{ solana_user }}"
+validator_service_name: "sol"
 
 # User variables
 keys_dir: "{{ solana_user_dir }}/keys"

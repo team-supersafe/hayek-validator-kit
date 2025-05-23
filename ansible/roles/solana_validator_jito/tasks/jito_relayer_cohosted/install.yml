@@ -1,5 +1,5 @@
---- 
-- name: Installing Jito Relayer Co-Hosted 
+---
+- name: Installing Jito Relayer Co-Hosted
   ansible.builtin.debug:
     msg: "Setting up Co-Hosted Jito Relayer"
 
@@ -36,6 +36,6 @@
   tags:
     - jito_relayer.build
 
-- name: Debug Message 
+- name: Debug Message
   ansible.builtin.debug:
     msg: "Jito Relayer setup completed!"

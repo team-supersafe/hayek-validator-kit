@@ -1,0 +1,19 @@
+---
+- name: Precheck Jito client requirements
+  import_tasks: precheck.yml
+
+- name: Install Jito client
+  import_tasks: install.yml
+
+- name: Configure Jito client
+  import_tasks: config.yml
+
+- when: jito_client_verify | default(true)
+  name: Verify Jito client setup
+  import_tasks: verify.yml
+
+- name: Jito client setup complete
+  debug:
+    msg: >-
+      Jito client has been installed, configured{{ ' and verified' if jito_client_verify | default(true) else '' }}.
+  tags: [jito_client, done]
