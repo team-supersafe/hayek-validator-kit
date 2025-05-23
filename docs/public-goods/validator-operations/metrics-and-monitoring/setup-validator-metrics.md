@@ -1,8 +1,11 @@
+---
+description: All this configuration where implemented in a separate Box
+---
 # Setup Validator Metrics
 
-## Setup Validator Metrics - InfluxDB.
+## Setup InfluxDB
 
-Install InfluxDB in a different box from the validator servers. InfluxDB will receive metrics from the Telegraf agent installed on the validator servers as well as from other sources.
+InfluxDB will receive metrics from the Telegraf agent installed on the validator servers as well as from other sources.
 
 ### Installation
 
@@ -28,7 +31,7 @@ sudo systemctl enable influxdb
 sudo systemctl start influxdb
 ```
 
-### Configure InfluxDB
+### Access to InfluxDB
 
 Connect to the InfluxDB shell:
 
@@ -57,7 +60,7 @@ create database <database_name>
 use <database_name>
 ```
 
-#### Create Users and Assign Permissions
+#### Create Users
 
 For each database, create a user and grant appropriate permissions:
 
@@ -66,7 +69,7 @@ create user <username> with password '<password>'
 grant all on <database_name> to <username>
 ```
 
-### Setup Agave Watchtower
+## Setup Watchtower
 
 The watchtower is recommended to be installed in a separate box. We use watchtower for monitoring and alerting identity keys for Mainnet and Testnet. Critical metrics such as Identity balance and validator health are checked every minute.
 
@@ -131,7 +134,7 @@ At this point we don't send alerts to Telegram and Discord yet. We want to captu
 nano /usr/local/bin/solana-alert-formatter-mainnet.py
 ```
 
-2. Grant execution privileges for the script
+2. Script Execution Rights
 
 ```bash
 chmod +x /usr/local/bin/solana-alert-formatter-mainnet.py
@@ -159,7 +162,7 @@ WantedBy=multi-user.target
 ```
 
 This script is charged tosent the alert to DISCORD and TELEGRAM Chanels\
-Inside this sctipr we have some variables we need to be aware
+Inside this script we have some variables we need to be aware
 
 ```bash
 # Alert Intervals (in seconds)
@@ -195,9 +198,11 @@ systemctl enable solana-alert-formatter-mainnet.service
 systemctl start solana-alert-formatter-mainnet.service
 ```
 
-### Service Maintenance and Monitoring
+## Services Maintenance and Monitoring
 
-We must be aware that every time a service is changed, we need to reload the daemon and then restart the service:
+We must be aware that every time a service is changed, we need to reload the daemon and then restart the service.
+
+### Reload/Restart Systemd
 
 ```bash
 systemctl daemon-reload
@@ -223,11 +228,11 @@ journalctl -u <SERVICE> -f
 
 Repeat the process for each identity (Mainnet, Testnet, Debug) by creating separate services with appropriate configurations for each environment.
 
-## Setup Validator Metrics - Outbox Monitoring
+## Setup Metrics
 
 We pull metrics from several sources such as Stakewiz, Solana API, Solana CLI, Jpool, etc.
 
-### Setup Service for Validators Metrics and Block Production Metrics
+### Validator and Block Production Metrics
 
 Create a service:
 
@@ -307,27 +312,29 @@ INFLUX_PASS="<DB_PASSWORD>"
 SOLANA_BIN="/root/.local/share/solana/install/active_release/bin/solana"
 ```
 
-### Grant execution privileges to the scripts
+### Script Execution Rights
 
 ```bash
 chmod +x /usr/local/bin/send_block_metrics_v6.sh
 chmod +x /usr/local/bin/send_validator_metrics.sh
 ```
 
-### Install service to pull Jpool Rank from https://app.jpool.one/validators/
+## Setup JPool Rank Fetcher
 
 Jpool doesn't have an API which we can use to get metrics and scores, so we had to use scraping methods to get the metrics. JPool doesn't use Cloudflare Turnstile for captcha challenge, so we are able to get these metrics.
 
 First we need to create a Python virtual environment to install some dependencies.
 
-### Install and create Python virtual environment
+### Install Python Venv
 
 ```bash
 sudo apt update
 sudo apt install python3 python3-venv
 ```
 
-### Create Python virtual environment
+### Create Virtual Environment
+
+To isolate Python dependencies, create a virtual environment:
 
 ```bash
 sudo python3 -m venv /root/venv
@@ -339,7 +346,9 @@ sudo python3 -m venv /root/venv
 source /root/venv/bin/activate
 ```
 
-### Install dependencies into virtual environment
+### Install dependencies
+
+Install the required Python packages inside the virtual environment:
 
 ```bash
 /root/venv/bin/pip install flask playwright
@@ -347,7 +356,7 @@ source /root/venv/bin/activate
 /root/venv/bin/python -m playwright install
 ```
 
-### Close Python virtual environment
+### Deactivate Environment
 
 ```bash
 deactivate
@@ -375,7 +384,7 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 ```
 
-### Grant execution privileges for the script
+### Script Execution Rights
 
 ```bash
 chmod +x /usr/local/bin/get_tvc_rank.py
