@@ -555,5 +555,5 @@ solana-localnet/validator-keys/*
 # See https://docs.ansible.com/ansible/latest/vault_guide/vault_managing_passwords.html#storing-and-accessing-vault-passwords
 .pass
 *.pass
-.vaul_pass
-*.vaul_pass
+.vault_pass
+*.vault_pass
