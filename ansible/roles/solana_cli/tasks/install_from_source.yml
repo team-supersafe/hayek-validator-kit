@@ -4,7 +4,7 @@
 
 - name: Create solana cli releases directory
   ansible.builtin.file:
-    path: "{{ solana_user_dir }}/.local/share/solana/install/releases"
+    path: "{{ solana_installed_releases_dir }}"
     state: directory
     mode: '0755'
 
@@ -41,14 +41,14 @@
 
 - name: Create release directory for Agave
   ansible.builtin.file:
-    path: "{{ solana_installed_releases_dir }}/{{ agave_version }}"
+    path: "{{ solana_installed_releases_dir }}/v{{ agave_version }}"
     state: directory
     mode: "0755"
 
 - name: Move agave we just built into the releases directory
   ansible.builtin.shell: |
     set -e
-    mv {{ agave_build_dir }}/agave-{{ agave_version }} {{ solana_installed_releases_dir }}/{{ agave_version }}
+    mv {{ agave_build_dir }}/agave-{{ agave_version }} {{ solana_installed_releases_dir }}/v{{ agave_version }}
 
 - name: Remove temporary build directory
   ansible.builtin.file:

@@ -8,17 +8,17 @@
 # Run from /ansible directory:
 #
 # syntax check
-# ansible-playbook -i hosts.yml playbooks/pb_setup_validator_jito.yml --syntax-check -e "target_host=host-alpha" --limit host-alpha
+# ansible-playbook -i hosts.yml playbooks/pb_setup_validator_jito.yml --syntax-check -e "target_host=host-charlie" --limit host-charlie
 #
 # ansible-playbook playbooks/pb_setup_validator_jito.yml \
 #   -i hosts.yml \
-#   --limit host-alpha \
+#   --limit host-charlie \
 #   -e "validator_name=emilia_validator" \
-#   -e "target_host=host-alpha" \
+#   -e "target_host=host-charlie" \
 #   -e "solana_cluster=testnet" \
-#   -e "jito_version=v2.2.14" \
+#   -e "jito_version=2.2.14" \
 #   -e "jito_relayer_type=co-hosted" \
-#   -e "jito_relayer_version=v0.3.1"
+#   -e "jito_relayer_version=0.3.1"
 
 - name: Install Jito Client with Co-Hosted Relayer
   hosts: "{{ target_host }}"
@@ -66,11 +66,17 @@
           - solana_cluster in ['localnet', 'testnet', 'mainnet']
         fail_msg: "Invalid solana_cluster '{{ solana_cluster }}'. Must be 'localnet', 'testnet', or 'mainnet'."
 
+    - name: Validate jito_version format
+      ansible.builtin.assert:
+        that:
+          - jito_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
+        fail_msg: "Invalid jito_version '{{ jito_version }}'. Must follow semantic versioning pattern (e.g. 1.2.3)."
+
     - name: Validate jito_relayer_version format
       ansible.builtin.assert:
         that:
-          - jito_relayer_version is match("^v.+")
-        fail_msg: "Invalid jito_relayer_version '{{ jito_relayer_version }}'. Must start with 'v' (e.g., v1.3.2)."
+          - jito_relayer_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
+        fail_msg: "Invalid jito_relayer_version '{{ jito_relayer_version }}'. Must follow semantic versioning pattern (e.g. 1.2.3)."
 
   roles:
     - role: solana_validator_jito

@@ -3,4 +3,4 @@ dependencies:
   - role: rust_env
   - role: solana_cli
     vars:
-      agave_version: "{{ jito_version | replace('^v', '') }}"
+      agave_version: "{{ jito_version }}"
