@@ -1,0 +1,57 @@
+---
+- name: Configure validator keys
+  block:
+    - name: Create validator key directory
+      ansible.builtin.file:
+        path: "{{ solana_home }}/validator-keypair.json"
+        state: directory
+        mode: "0700"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+
+    - name: Upload validator keypair
+      ansible.builtin.copy:
+        src: "{{ validator_keypair_path }}"
+        dest: "{{ solana_home }}/validator-keypair.json"
+        mode: "0600"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      when: validator_keypair_path is defined
+
+    - name: Create vote account key directory
+      ansible.builtin.file:
+        path: "{{ solana_home }}/vote-account-keypair.json"
+        state: directory
+        mode: "0700"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+
+    - name: Upload vote account keypair
+      ansible.builtin.copy:
+        src: "{{ vote_account_keypair_path }}"
+        dest: "{{ solana_home }}/vote-account-keypair.json"
+        mode: "0600"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      when: vote_account_keypair_path is defined
+
+    - name: Create authorized voter key directory
+      ansible.builtin.file:
+        path: "{{ solana_home }}/authorized-voter-keypair.json"
+        state: directory
+        mode: "0700"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+
+    - name: Upload authorized voter keypair
+      ansible.builtin.copy:
+        src: "{{ authorized_voter_keypair_path }}"
+        dest: "{{ solana_home }}/authorized-voter-keypair.json"
+        mode: "0600"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      when: authorized_voter_keypair_path is defined
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator keys. Error: {{ ansible_failed_result }}"

@@ -1,0 +1,56 @@
+---
+- name: Clean validator data before start
+  block:
+    - name: Check if validator service is running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+      register: service_status
+      changed_when: false
+      failed_when: false
+
+    - name: Stop validator service if running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        state: stopped
+      when: service_status.status.ActiveState == "active"
+      become: true
+
+    - name: Clean ledger directory
+      ansible.builtin.file:
+        path: "{{ ledger_path }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
+
+    - name: Clean accounts directory
+      ansible.builtin.file:
+        path: "{{ accounts_path }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
+
+    - name: Clean snapshots directory
+      ansible.builtin.file:
+        path: "{{ snapshots_path }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
+
+    - name: Clean logs directory
+      ansible.builtin.file:
+        path: "{{ validator_logs_dir }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to clean validator data. Error: {{ ansible_failed_result }}"

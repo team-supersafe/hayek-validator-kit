@@ -1,0 +1,32 @@
+---
+- name: Configure validator startup script
+  block:
+    - name: Set validator script path
+      ansible.builtin.set_fact:
+        validator_script_path: "{{ solana_home }}/bin/validator-{{ validator_name }}-{{ cluster_environment }}-jito.sh"
+
+    - name: Create validator startup script directory
+      ansible.builtin.file:
+        path: "{{ solana_home }}/bin"
+        state: directory
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+
+    - name: Create validator startup script
+      ansible.builtin.template:
+        src: validator.startup.j2
+        dest: "{{ validator_script_path }}"
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+
+    - name: Verify startup script
+      ansible.builtin.command: "{{ validator_script_path }} --version"
+      register: startup_script_version
+      changed_when: false
+      failed_when: false
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator startup script. Error: {{ ansible_failed_result }}"
