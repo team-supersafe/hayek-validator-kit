@@ -35,7 +35,7 @@
 
 - name: Checkout Jito Relayer version
   ansible.builtin.shell: |
-    git checkout tags/{{ jito_relayer_version }}
+    git checkout tags/v{{ jito_relayer_version }}
   args:
     chdir: "{{ jito_relayer_build_dir }}"
 
@@ -50,10 +50,14 @@
     path: "{{ jito_relayer_build_dir }}/target/release/jito-transaction-relayer"
   register: build_target_stat
 
-- when: not jito_relayer_force_build and build_target_stat.stat.exists
-  name: Skipping build, reusing existing Jito Relayer build
+- name: Show build status message
   ansible.builtin.debug:
-    msg: "Skipping build: existing Jito Relayer build found at {{ jito_relayer_build_dir }}/target/release and jito_relayer_force_build is not set."
+    msg: >-
+      {% if not jito_relayer_force_build and build_target_stat.stat.exists %}
+      Skipping build: existing Jito Relayer build found at {{ jito_relayer_build_dir }}/target/release and jito_relayer_force_build is not set.
+      {% else %}
+      Starting build process for Jito Relayer
+      {% endif %}
 
 - block:
     - name: Build Jito Relayer
@@ -73,25 +77,25 @@
 
 - name: Remove existing release directory if present
   ansible.builtin.file:
-    path: "{{ jito_relayer_installed_releases_dir }}/{{ jito_relayer_version }}"
+    path: "{{ jito_relayer_installed_releases_dir }}/v{{ jito_relayer_version }}"
     state: absent
 
 - name: Create a release directory for the new target
   ansible.builtin.file:
-    path: "{{ jito_relayer_installed_releases_dir }}/{{ jito_relayer_version }}"
+    path: "{{ jito_relayer_installed_releases_dir }}/v{{ jito_relayer_version }}"
     state: directory
     mode: "0755"
 
 - name: Copy built binaries to release directory
   ansible.builtin.copy:
     src: "{{ jito_relayer_build_dir }}/target/release/"
-    dest: "{{ jito_relayer_installed_releases_dir }}/{{ jito_relayer_version }}/"
+    dest: "{{ jito_relayer_installed_releases_dir }}/v{{ jito_relayer_version }}/"
     remote_src: yes
     mode: "0755"
 
 - name: Update active release symlink
   ansible.builtin.file:
-    src: "{{ jito_relayer_installed_releases_dir }}/{{ jito_relayer_version }}"
+    src: "{{ jito_relayer_installed_releases_dir }}/v{{ jito_relayer_version }}"
     dest: "{{ jito_relayer_install_dir }}"
     state: link
     force: true
@@ -136,7 +140,7 @@
   environment:
     PATH: "{{ updated_path.stdout }}"
   register: relayer_version_check
-  failed_when: "{{ jito_relayer_version | replace('v', '') not in relayer_version_check.stdout }}"
+  failed_when: jito_relayer_version not in relayer_version_check.stdout
 
 - name: Debug relayer path
   ansible.builtin.debug:

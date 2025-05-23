@@ -1,6 +1,5 @@
+---
 #Solana Testnet-specific, non-secret (rare) variables
-ansible_control_keys_dir: "~/.validator-keys/hayek-testnet" # It should match the path in the operator's host machine running the docker container
-
 jito_urls:
   dallas:
     block_engine: "https://dallas.testnet.block-engine.jito.wtf"

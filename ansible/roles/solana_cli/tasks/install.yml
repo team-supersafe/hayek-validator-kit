@@ -30,7 +30,7 @@
 # Create symlink to new release
 - name: Create symlink to new release
   ansible.builtin.file:
-    src: "{{ solana_user_dir }}/.local/share/solana/install/releases/{{ agave_version }}/solana-release"
+    src: "{{ solana_installed_releases_dir }}/v{{ agave_version }}/solana-release"
     dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
     state: link
     force: true

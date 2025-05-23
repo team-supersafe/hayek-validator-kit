@@ -1,4 +1,8 @@
 ---
+- name: Precheck environment
+  import_tasks: precheck.yml
+  tags: [solana, precheck]
+
 - name: Install Solana CLI
   import_tasks: install.yml
   tags: [solana, install]

@@ -8,7 +8,7 @@
 
 - name: Install - Gen Comms Keys - Get stats of the RSA private key
   ansible.builtin.stat:
-    path: "{{ jito_relayer_keys_dir }}/jito-relayer-comms-private.pem"
+    path: "{{ jito_relayer_keys_dir }}/jito-relayer-comms-pvt.pem"
   register: comms_private_key
   tags:
     - check.keys
@@ -17,17 +17,17 @@
   when:
     - not comms_private_key.stat.exists | default(false)
   ansible.builtin.shell: |
-    openssl genrsa --out {{ jito_relayer_keys_dir }}/jito-relayer-comms-private.pem 2048
+    openssl genrsa --out {{ jito_relayer_keys_dir }}/jito-relayer-comms-pvt.pem 2048
   args:
-    creates: "{{ jito_relayer_keys_dir }}/jito-relayer-comms-private.pem"
+    creates: "{{ jito_relayer_keys_dir }}/jito-relayer-comms-pvt.pem"
   tags:
     - gen.keys.private
 
 - name: Install - Gen Comms Keys - Generate comms RSA public key
   ansible.builtin.shell: |
-    openssl rsa --in {{ jito_relayer_keys_dir }}/jito-relayer-comms-private.pem --pubout --out {{ jito_relayer_keys_dir }}/jito-relayer-comms-public.pem
+    openssl rsa --in {{ jito_relayer_keys_dir }}/jito-relayer-comms-pvt.pem --pubout --out {{ jito_relayer_keys_dir }}/jito-relayer-comms-pub.pem
   args:
-    creates: "{{ jito_relayer_keys_dir }}/jito-relayer-comms-public.pem"
+    creates: "{{ jito_relayer_keys_dir }}/jito-relayer-comms-pub.pem"
   tags:
     - gen.keys.public
 
@@ -39,7 +39,7 @@
 
 - name: Install - Gen Block Engine keys - Check if Jito Relayer Block Engine private key exists
   ansible.builtin.stat:
-    path: "{{ jito_relayer_keys_dir }}/jito-relayer-block-engine-private.json"
+    path: "{{ jito_relayer_keys_dir }}/jito-relayer-block-eng.json"
   register: private_key_exists
 
 - name: Install - Gen Block Engine keys - Get current env PATH value
@@ -55,11 +55,11 @@
     - jito_relayer_keys_dir is defined
     - force_keygen | default(false) or not private_key_exists.stat.exists | default(false)
   ansible.builtin.shell: |
-    solana-keygen new --no-passphrase --outfile {{ jito_relayer_keys_dir }}/jito-relayer-block-engine-private.json
+    solana-keygen new --no-passphrase --outfile {{ jito_relayer_keys_dir }}/jito-relayer-block-eng.json
   environment:
     PATH: "{{ cli_shell_env_path.stdout }}"
   args:
-    creates: "{{ jito_relayer_keys_dir }}/jito-relayer-block-engine-private.json"
+    creates: "{{ jito_relayer_keys_dir }}/jito-relayer-block-eng.json"
   register: keygen_result
   tags:
     - gen.keys.private
@@ -75,14 +75,14 @@
 
 - name: Install - Gen Block Engine keys - Get Block Engine public key
   ansible.builtin.shell: |
-    solana-keygen pubkey {{ jito_relayer_keys_dir }}/jito-relayer-block-engine-private.json
+    solana-keygen pubkey {{ jito_relayer_keys_dir }}/jito-relayer-block-eng.json
   environment:
     PATH: "{{ cli_shell_env_path.stdout }}"
   register: block_engine_public_key
 
 - name: Install - Gen Block Engine keys - Print Jito Relayer Block Engine public key path
   ansible.builtin.debug:
-    msg: "Jito Relayer Block Engine private key generated at: {{ jito_relayer_keys_dir }}/jito-relayer-block-engine-private.json"
+    msg: "Jito Relayer Block Engine private key generated at: {{ jito_relayer_keys_dir }}/jito-relayer-block-eng.json"
   when:
     - force_keygen | default(false) or not private_key_exists.stat.exists | default(false)
 

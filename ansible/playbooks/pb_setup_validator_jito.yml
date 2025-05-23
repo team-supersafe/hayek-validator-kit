@@ -7,27 +7,82 @@
 # ------
 # Run from /ansible directory:
 #
-# Shared relayer:
-#   ansible-playbook -i hosts.yml playbooks/pb_setup_validator_jito.yml -e "jito_relayer_type=shared"
+# syntax check
+# ansible-playbook -i hosts.yml playbooks/pb_setup_validator_jito.yml --syntax-check -e "target_host=host-charlie" --limit host-charlie
 #
-# Co-hosted relayer (recommended):
-#   ansible-playbook -i hosts.yml playbooks/pb_setup_validator_jito.yml -e "jito_relayer_type=co-hosted"
-#
-# Options:
-# - jito_version: Client version (default: v2.2.14)
-# - jito_relayer_type: "shared" or "co-hosted"
-# - solana_cluster: "testnet", "mainnet" or "localnet"
-# - hosts: "host-charlie", "host-alpha", "host-bravo".
+# ansible-playbook playbooks/pb_setup_validator_jito.yml \
+#   -i hosts.yml \
+#   --limit host-charlie \
+#   -e "validator_name=emilia_validator" \
+#   -e "target_host=host-charlie" \
+#   -e "solana_cluster=testnet" \
+#   -e "jito_version=2.2.14" \
+#   -e "jito_relayer_type=co-hosted" \
+#   -e "jito_relayer_version=0.3.1"
 
 - name: Install Jito Client with Co-Hosted Relayer
-  hosts: host-charlie
+  hosts: "{{ target_host }}"
   user: "{{ solana_user }}"
   become: false
+
+  pre_tasks:
+    - name: Validate that target_host matches the limited host
+      ansible.builtin.assert:
+        that:
+          - ansible_play_hosts | length == 1
+          - target_host == ansible_play_hosts[0]
+        fail_msg: >
+          'target_host' ({{ target_host }}) does not match the actual host targeted ({{ ansible_play_hosts[0] }}).
+          Make sure you run this playbook with: --limit {{ target_host }} -e "target_host={{ target_host }}"
+
+    - name: Assert required parameters are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - validator_name is defined
+          - solana_cluster is defined
+          - jito_version is defined
+          - jito_relayer_type is defined
+          - jito_relayer_version is defined
+        fail_msg: >
+          Missing required variables.
+          Must provide:
+            - target_host
+            - validator_name
+            - solana_cluster
+            - jito_version
+            - jito_relayer_type
+            - jito_relayer_version
+
+    - name: Validate jito_relayer_type value
+      ansible.builtin.assert:
+        that:
+          - jito_relayer_type in ['co-hosted', 'shared']
+        fail_msg: "Invalid jito_relayer_type '{{ jito_relayer_type }}'. Must be 'co-hosted' or 'shared'."
+
+    - name: Validate solana_cluster value
+      ansible.builtin.assert:
+        that:
+          - solana_cluster in ['localnet', 'testnet', 'mainnet']
+        fail_msg: "Invalid solana_cluster '{{ solana_cluster }}'. Must be 'localnet', 'testnet', or 'mainnet'."
+
+    - name: Validate jito_version format
+      ansible.builtin.assert:
+        that:
+          - jito_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
+        fail_msg: "Invalid jito_version '{{ jito_version }}'. Must follow semantic versioning pattern (e.g. 1.2.3)."
+
+    - name: Validate jito_relayer_version format
+      ansible.builtin.assert:
+        that:
+          - jito_relayer_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
+        fail_msg: "Invalid jito_relayer_version '{{ jito_relayer_version }}'. Must follow semantic versioning pattern (e.g. 1.2.3)."
+
   roles:
     - role: solana_validator_jito
-      jito_version: "2.2.14"
-      jito_relayer_type: "co-hosted" # "shared" or "co-hosted"
-      jito_relayer_version: "v0.3.1"
-      jito_relayer_force_build: false
-      agave_version: "{{ jito_version }}"
-      solana_cluster: 'testnet'
+      vars:
+        solana_cluster: "{{ solana_cluster }}"
+        validator_name: "{{ validator_name }}"
+        jito_version: "{{ jito_version }}"
+        jito_relayer_type: "{{ jito_relayer_type }}"
+        jito_relayer_version: "{{ jito_relayer_version }}"

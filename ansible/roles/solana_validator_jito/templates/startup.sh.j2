@@ -8,6 +8,6 @@ export BLOCK_ENGINE_URL="{{ jito_relayer_block_engine_url | default('https://dal
 export GRPC_BIND_IP="{{ jito_relayer_grpc_bind_ip | default('127.0.0.1') }}"
 
 exec "{{ jito_relayer_install_dir }}/jito-transaction-relayer" \
-  --keypair-path="{{ jito_relayer_keys_dir }}/jito-relayer-block-engine-private.json" \
-  --signing-key-pem-path="{{ jito_relayer_keys_dir }}/jito-relayer-comms-private.pem" \
-  --verifying-key-pem-path="{{ jito_relayer_keys_dir }}/jito-relayer-comms-public.pem"
+  --keypair-path="{{ jito_relayer_keys_dir }}/jito-relayer-block-eng.json" \
+  --signing-key-pem-path="{{ jito_relayer_keys_dir }}/jito-relayer-comms-pvt.pem" \
+  --verifying-key-pem-path="{{ jito_relayer_keys_dir }}/jito-relayer-comms-pub.pem"

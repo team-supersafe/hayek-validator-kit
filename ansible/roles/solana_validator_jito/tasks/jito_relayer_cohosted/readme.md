@@ -12,13 +12,13 @@ You should consider running our own Jito Relayer because:
 
 # Dedicated vs Co-Hosted Setup
 
-There are two options for runing the Jito relayer 
+There are two options for runing the Jito relayer
 1. Co-Hosted Single Machine (hosted on the same metal as the validator)
-    - This is the option recommended by Jito 
+    - This is the option recommended by Jito
     - Does not require external RPC access (it uses the staked validator as RPC)
     - No extra machines to monitor
     - Simpler setup
-    - It is a ligher process that should not affect the validator process (needs only a few VCPUs)   
+    - It is a ligher process that should not affect the validator process (needs only a few VCPUs)
 
 2. Dedicated External Machine (on a separate metal box)
     - Requires monitoring and costs of additinal machine
@@ -33,7 +33,7 @@ In this guide we will focus in the recommended approach, which is the Co-Hosted 
 
 Official docs on how to setup a Co-Hosted Relayer are [HERE](https://jito-foundation.gitbook.io/mev/jito-relayer/running-a-relayer#co-hosted-setup)
 
-> **IMPORTANT**:  
+> **IMPORTANT**:
 A pre-requisitive to setting up the Relayer is to have your [Operator Host correctly setup](/docs/guides/operator_host_setup.md). Please double check you have this OK before proceding.
 
 With your Operator Host setup, you can connect to your Ansible Control node, and run the following playbook:
@@ -42,14 +42,14 @@ With your Operator Host setup, you can connect to your Ansible Control node, and
 ansible-playbook -i playbooks/pb_setup_validator_jito_cohost_relayer.yml -limit host-alpha
 ```
 
-This playbook will print the Jito Block Engine Keypair. This keypair needs to be whitelisted (permissioned) with Jito in order for our relayer to receive re-ordered blocks optimal for MEV. 
+This playbook will print the Jito Block Engine Keypair. This keypair needs to be whitelisted (permissioned) with Jito in order for our relayer to receive re-ordered blocks optimal for MEV.
 
-To register the Block Engine Keypair with, you must open a ticket in the Jito Discord requesting whitelisting. More details [HERE](https://jito-foundation.gitbook.io/mev/jito-relayer/running-a-relayer#preparation) 
+To register the Block Engine Keypair with, you must open a ticket in the Jito Discord requesting whitelisting. More details [HERE](https://jito-foundation.gitbook.io/mev/jito-relayer/running-a-relayer#preparation)
 
 ## Verify Relayer Setup
 
-You can verify your replayer stats in the logs (every second) 
-```sh 
+You can verify your replayer stats in the logs (every second)
+```sh
 tail -f solana-validator.log | grep relayer_stage-stats`
 ```
 
@@ -57,7 +57,7 @@ You can also check perf metrics of the relayer directly on [Jito's metrics dashb
 
 
 ---
-PROGRESS TRACKER 
+PROGRESS TRACKER
 ---
 
 ## 2. Generate Block Engine key pair
@@ -70,7 +70,7 @@ PROGRESS TRACKER
 Jito relayer validator flags: TODO
 
 Verify the Jito relayer setup
- 
+
 
 
 Zantetsu comment about potential issue with Jito relayer creating blocks with small number of transactions. It is recommended to monitor your blocks for a while to make sure they have hundreds of user transactions and not docens or even zero transactions. (possible causes: firewall misconfiguration, websocket misconfiguration)
@@ -187,11 +187,11 @@ jito-transaction-relayer --version
 ssh sol@<REMOTE_VALIDATOR_HOST> "mkdir -p ~/keys/jito"
 
 scp "$LOCAL_KEYS_DIR/jito-relayer-block-engine-authentication-private-key.json" sol@<REMOTE_VALIDATOR_HOST>:/home/sol/spsf-testnet/jito/
-# jito-relayer-block-engine-authentication-private-key.json                                               100%  219    93.0KB/s   00:00 
+# jito-relayer-block-engine-authentication-private-key.json                                               100%  219    93.0KB/s   00:00
 
 scp ./jito/jito-relayer-block-engine-authentication-*-key.json sol@<REMOTE_VALIDATOR_HOST>:/home/sol/spsf-testnet/jito/
 scp ./jito/jito-relayer-validators-authentication-*-key.pem sol@<REMOTE_VALIDATOR_HOST>:/home/sol/spsf-testnet/jito/
-# jito-relayer-validators-authentication-private-key.pem                                                  100% 1704   833.7KB/s   00:00    
+# jito-relayer-validators-authentication-private-key.pem                                                  100% 1704   833.7KB/s   00:00
 # jito-relayer-validators-authentication-public-key.pem                                                   100%  451   507.4KB/s   00:00
 
 ```
@@ -236,7 +236,7 @@ Replace these values:
  - `RELAYER_PATH`: path to your relayer executable and make sure that it has executable permissions
  - `RUST_LOG`: to emit info level datapoints to the metrics server
 
-Using a user with sudo access, create/edit the file `/etc/systemd/system/sol.service` 
+Using a user with sudo access, create/edit the file `/etc/systemd/system/sol.service`
 ```sh
 sudo nano /etc/systemd/system/relayer.service
 ```
@@ -286,12 +286,12 @@ WIP...
 
 ## Jito Relayer Role Variables
 
-| Variable                        | Default Value                                                      | Description                                                                                   |
-|----------------------------------|--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| `jito_relayer_install_dir`      | `/home/sol/.local/share/jito-relayer/install/active_release/release` | Path to the directory containing the built Jito relayer binary.                               |
-| `jito_relayer_keys_dir`          | `/home/sol/spsf-testnet/jito`                                     | Directory where relayer key files (private/public keys, block engine keypair) are stored.     |
-| `jito_relayer_user`              | `sol`                                                             | The system user that runs the relayer and owns the files.                                     |
-| `jito_relayer_block_engine_url`  | `https://dallas.testnet.block-engine.jito.wtf`                    | The block engine URL to connect to (override for mainnet, etc.).                              |
+| Variable                         | Default Value                                                        | Description                                                                                   |
+|----------------------------------|----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| `jito_relayer_install_dir`       | `/home/sol/.local/share/jito-relayer/install/active_release/release` | Path to the directory containing the built Jito relayer binary.                               |
+| `jito_relayer_keys_dir`          | `/home/sol/keys/{validator_name}`                                    | Directory where relayer key files (private/public keys, block engine keypair) are stored.     |
+| `jito_relayer_user`              | `sol`                                                                | The system user that runs the relayer and owns the files.                                     |
+| `jito_relayer_block_engine_url`  | `https://dallas.testnet.block-engine.jito.wtf`                       | The block engine URL to connect to (override for mainnet, etc.).                              |
 | `jito_relayer_metrics_config`    | `host=http://metrics.jito.wtf:8086,db=relayer,u=relayer-operators,p=jito-relayer-write` | Metrics server configuration string.                                                          |
 
 **Note:** You should override these variables in your playbook or inventory as needed for your environment (e.g., for mainnet, different user, or custom paths).

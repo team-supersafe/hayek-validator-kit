@@ -19,18 +19,18 @@
 
 - name: Create Solana CLI releases directory
   ansible.builtin.file:
-    path: "{{ solana_installed_releases_dir }}/{{ agave_version }}"
+    path: "{{ solana_installed_releases_dir }}/v{{ agave_version }}"
     state: directory
     mode: '0755'
 
 - name: Unarchiving solana binaries into the releases directory
   ansible.builtin.debug:
-    msg: "Unarchive release directory: {{ solana_installed_releases_dir }}/{{ agave_version }}"
+    msg: "Unarchive release directory: {{ solana_installed_releases_dir }}/v{{ agave_version }}"
 
 - name: Unarchive solana binaries
   ansible.builtin.unarchive:
     src: "{{ agave_download_url }}"
-    dest: "{{ solana_installed_releases_dir }}/{{ agave_version }}"
+    dest: "{{ solana_installed_releases_dir }}/v{{ agave_version }}"
     remote_src: true
-    creates: "{{ solana_installed_releases_dir }}/{{ agave_version }}/solana-release/bin/agave-validator"
+    creates: "{{ solana_installed_releases_dir }}/v{{ agave_version }}/solana-release/bin/agave-validator"
   ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode

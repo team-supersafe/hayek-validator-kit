@@ -1,11 +1,39 @@
 ---
-# Run from /ansible folder:
-# ansible-playbook -i hosts.yml playbooks/pb_install_solana_cli.yml --diff --check
-# ansible-playbook -i hosts.yml playbooks/pb_install_solana_cli.yml --diff
-- name: Runs install_solana_cli task from solana_cli role
-  hosts: host-charlie # host-alpha or host-bravo
+# Solana CLI Setup
+# -------------------
+# Installs Solana CLI binaries.
+#
+# Usage:
+# ------
+# Run from /ansible directory:
+#
+# ansible-playbook playbooks/pb_install_solana_cli.yml \
+#   -i hosts.yml \
+#   --limit host-charlie \
+#   -e "agave_version=2.2.14" \
+#   -e "target_host=host-charlie"
+#
+# For syntax check add --syntax-check
+# For dry run add --diff --check
+
+- name: Install Solana CLI
+  hosts: "{{ target_host }}"
   user: "{{ solana_user }}"
   become: false
+
+  pre_tasks:
+    - name: Assert required parameters are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - agave_version is defined
+        fail_msg: >
+          Missing required variables.
+          Must provide:
+            - target_host
+            - agave_version
+
   roles:
     - role: solana_cli
-      agave_version: "2.2.14"
+      vars:
+        agave_version: "{{ agave_version }}"

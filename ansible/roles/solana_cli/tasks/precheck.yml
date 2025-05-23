@@ -1,0 +1,14 @@
+---
+- name: Check if agave_version is defined
+  fail:
+    msg: "agave_version variable must be defined"
+  when: agave_version is not defined
+
+- name: Validate agave_version format
+  fail:
+    msg: "agave_version must follow semantic versioning pattern (e.g. 1.2.3)"
+  when: not agave_version | regex_search('^[0-9]+\.[0-9]+\.[0-9]+$')
+
+- name: Display version message
+  debug:
+    msg: "Start Solana CLI setup for version {{ agave_version }}"
