@@ -38,4 +38,8 @@
     msg: |
       Jito relayer verification complete. Check service status and logs above for troubleshooting.
       For further monitoring, see the Jito metrics dashboard: https://grafana.metrics.jito.wtf:3000/
-  tags: [jito_relayer.verify] 
+  tags: [jito_relayer.verify]
+
+- name: Verify Jito Relayer installation
+  debug:
+    msg: "Jito Relayer setup completed!" 
