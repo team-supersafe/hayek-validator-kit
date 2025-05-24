@@ -41,23 +41,13 @@ agave-validator \
 --tip-distribution-program-pubkey {{ jito_tip_distribution_program_pubkey }} \
 --merkle-root-upload-authority {{ jito_merkle_root_upload_authority }} \
 --commission-bps {{ jito_commission_bps }} \
-{% set city_group = '' %}
-{% for group in group_names %}
-    {% if group.startswith('city_') %}
-        {% set city_group = group %}
-    {% endif %}
-{% endfor %}
-{% set jito_city_var = 'jito_' + solana_cluster + '_block_engine_city' %}
-{% set target_city = vars[city_group][jito_city_var] %}
---block-engine-url {{ jito_urls[target_city].block_engine }} \
---shred-receiver-address {{ jito_urls[target_city].shred_receiver_addr }} \
+--block-engine-url {{ jito_block_engine_url }} \
+--shred-receiver-address {{ jito_shred_receiver_addr }} \
+--relayer-url {{ jito_relayer_url }} \
 {% if jito_relayer_type == 'co-hosted' %}
---relayer-url http://127.0.0.1:11226 \
 --full-rpc-api \
 --account-index program-id \
 --account-index-include-key AddressLookupTab1e1111111111111111111111111 \
-{% else %}
---relayer-url {{ jito_urls[target_city].relayer }} \
 {% endif %}
 {% endif %}
 {% if extra_params is defined %}
