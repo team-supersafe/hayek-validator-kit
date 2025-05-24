@@ -5,8 +5,8 @@
 - name: Install Jito client
   import_tasks: install.yml
 
-- name: Configure Jito client
-  import_tasks: configure/main.yml
+# - name: Configure Jito client
+#   import_tasks: configure/main.yml
 
 - name: Jito client setup complete
   debug:
