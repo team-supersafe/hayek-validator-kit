@@ -51,7 +51,11 @@ agave-validator \
 {% set target_city = vars[city_group][jito_city_var] %}
 --block-engine-url {{ jito_urls[target_city].block_engine }} \
 --shred-receiver-address {{ jito_urls[target_city].shred_receiver_addr }} \
+{% if jito_relayer_type == 'co-hosted' %}
+--relayer-url http://127.0.0.1:11226 \
+{% else %}
 --relayer-url {{ jito_urls[target_city].relayer }} \
+{% endif %}
 {% endif %}
 {% if extra_params is defined %}
 {% for extra_var in extra_params %}
