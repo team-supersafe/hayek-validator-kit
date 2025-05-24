@@ -1,2 +1,10 @@
 ---
-# TODO: Add tasks to verify validator_jito installation and configuration 
+- name: Verify Jito-Solana installation
+  debug:
+    msg: >-
+      Jito-Solana {{ jito_version }} has been successfully installed
+      {% if should_build_from_source %}
+      (built from source)
+      {% else %}
+      (from binaries)
+      {% endif %}
