@@ -3,44 +3,29 @@
   import_tasks: precheck.yml
   tags: [solana_validator_jito, precheck]
 
-- name: Install components
+- name: Set Jito target city
+  set_fact:
+    jito_target_city: "{{ hostvars[inventory_hostname][city_group][jito_city_var] }}"
+  vars:
+    city_group: "{{ group_names | select('match', '^city_') | first }}"
+    jito_city_var: "jito_{{ solana_cluster }}_block_engine_city"
+  failed_when: city_group is not defined or jito_target_city is not defined
+
+- name: Set Jito URLs
+  set_fact:
+    jito_relayer_url: "{{ 'http://127.0.0.1:11226' if jito_relayer_type == 'co-hosted' else jito_urls[jito_target_city].relayer }}"
+    jito_block_engine_url: "{{ jito_urls[jito_target_city].block_engine }}"
+    jito_shred_receiver_addr: "{{ jito_urls[jito_target_city].shred_receiver_addr }}"
+
+- when: jito_relayer_type == 'co-hosted'
   block:
-    - name: Install Co-hosted Relayer
+    - name: Check for Co-hosted Relayer installation
       import_tasks: jito_relayer_cohosted/install.yml
-      when: jito_relayer_type == 'co-hosted'
-    - name: Install Jito client
-      import_tasks: jito_client/install.yml
-  tags: [solana_validator_jito, install]
-
-- name: Configure components
-  block:
-    - name: Set Jito target city
-      set_fact:
-        jito_target_city: "{{ hostvars[inventory_hostname][city_group][jito_city_var] }}"
-      vars:
-        city_group: "{{ group_names | select('match', '^city_') | first }}"
-        jito_city_var: "jito_{{ solana_cluster }}_block_engine_city"
-      failed_when: city_group is not defined or jito_target_city is not defined
-
-    - name: Set Jito URLs
-      set_fact:
-        jito_relayer_url: "{{ 'http://127.0.0.1:11226' if jito_relayer_type == 'co-hosted' else jito_urls[jito_target_city].relayer }}"
-        jito_block_engine_url: "{{ jito_urls[jito_target_city].block_engine }}"
-        jito_shred_receiver_addr: "{{ jito_urls[jito_target_city].shred_receiver_addr }}"
-
-    - name: Configure Co-hosted Relayer
+    - name: Configure Co-hosted Relayer post installation
       import_tasks: jito_relayer_cohosted/config.yml
-      when: jito_relayer_type == 'co-hosted'
-
-    - name: Configure Jito client
-      import_tasks: jito_client/configure.yml
-  tags: [solana_validator_jito, configure]
-
-- name: Verify components
-  block:
-    - name: Verify Co-hosted Relayer
+    - name: Verify Co-hosted Relayer installation and configuration are correct
       import_tasks: jito_relayer_cohosted/verify.yml
-      when: jito_relayer_type == 'co-hosted'
-    - name: Verify Jito client
-      import_tasks: jito_client/verify.yml
-  tags: [solana_validator_jito, verify]
+
+# Jito client installation
+- name: Setup Jito client
+  import_tasks: jito_client/main.yml
