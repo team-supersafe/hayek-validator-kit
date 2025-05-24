@@ -74,6 +74,7 @@
         owner: "{{ solana_user }}"
         group: "{{ solana_user }}"
       become: true
+
   rescue:
     - name: Fail with error message
       ansible.builtin.fail:
