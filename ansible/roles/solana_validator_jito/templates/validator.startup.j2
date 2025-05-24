@@ -53,6 +53,9 @@ agave-validator \
 --shred-receiver-address {{ jito_urls[target_city].shred_receiver_addr }} \
 {% if jito_relayer_type == 'co-hosted' %}
 --relayer-url http://127.0.0.1:11226 \
+--full-rpc-api \
+--account-index program-id \
+--account-index-include-key AddressLookupTab1e1111111111111111111111111 \
 {% else %}
 --relayer-url {{ jito_urls[target_city].relayer }} \
 {% endif %}
