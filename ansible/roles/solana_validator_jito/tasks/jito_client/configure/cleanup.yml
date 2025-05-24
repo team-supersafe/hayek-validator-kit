@@ -62,13 +62,13 @@
 
     - name: Reset logs directory
       ansible.builtin.file:
-        path: "{{ validator_logs_dir }}"
+        path: "{{ logs_dir }}"
         state: absent
       become: true
 
     - name: Ensure logs directory exists
       ansible.builtin.file:
-        path: "{{ validator_logs_dir }}"
+        path: "{{ logs_dir }}"
         state: directory
         mode: "0755"
         owner: "{{ solana_user }}"

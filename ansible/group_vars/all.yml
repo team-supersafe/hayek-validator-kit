@@ -13,6 +13,7 @@ keys_dir: "{{ solana_user_dir }}/keys"
 build_dir: "{{ solana_user_dir }}/build"
 scripts_dir: "{{ solana_user_dir }}/bin"
 solana_install_dir: "{{ solana_user_dir }}/.local/share/solana/install/active_release/bin"
+logs_dir: "{{ solana_home }}/logs"
 
 # System Units configuration
 mount_base_path: '/mnt'

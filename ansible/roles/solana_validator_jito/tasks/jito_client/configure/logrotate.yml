@@ -1,19 +1,28 @@
 ---
 - name: Configure validator log rotation
   block:
+    - name: Ensure logs directory exists
+      ansible.builtin.file:
+        path: "{{ logs_dir }}"
+        state: directory
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+        mode: "0754"
+
     - name: Create logrotate configuration
       ansible.builtin.template:
         src: validator.logrotate.j2
-        dest: /etc/logrotate.d/{{ validator_service_name }}
+        dest: /etc/logrotate.d/validator.logrotate
         mode: "0644"
       become: true
 
     - name: Verify logrotate configuration
-      ansible.builtin.command: logrotate -d /etc/logrotate.d/{{ validator_service_name }}
+      ansible.builtin.command: logrotate -d /etc/logrotate.d/validator.logrotate
       register: logrotate_check
       changed_when: false
       failed_when: false
       become: true
+
   rescue:
     - name: Fail with error message
       ansible.builtin.fail:

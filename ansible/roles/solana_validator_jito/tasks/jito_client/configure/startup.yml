@@ -45,6 +45,15 @@
         owner: "{{ solana_user }}"
         group: "{{ solana_user }}"
 
+    - name: Copy fix_core_afinity_bug_for_poh.sh script to remote
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../scripts/fix_core_afinity_bug_for_poh.sh"
+        dest: "{{ scripts_dir }}"
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode
+
   rescue:
     - name: Fail with error message
       ansible.builtin.fail:

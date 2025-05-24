@@ -16,12 +16,12 @@
   ansible.builtin.import_tasks: startup.yml
   tags: [jito_client, check.keys]
 
-- name: Import systemd service configuration
-  ansible.builtin.import_tasks: service.yml
-  tags: [jito_client, check.keys]
-
 - name: Import log rotation configuration
   ansible.builtin.import_tasks: logrotate.yml
+  tags: [jito_client, check.keys]
+
+- name: Import systemd service configuration
+  ansible.builtin.import_tasks: service.yml
   tags: [jito_client, check.keys]
 
 - name: Configuration complete
