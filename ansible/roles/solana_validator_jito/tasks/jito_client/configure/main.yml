@@ -2,32 +2,29 @@
 - name: Configure Jito-Solana validator
   ansible.builtin.debug:
     msg: "Starting Jito-Solana validator configuration"
+  tags: [jito_client, check.keys]
 
 - name: Import cleanup tasks
   ansible.builtin.import_tasks: cleanup.yml
-  tags:
-    - jito_client.configure.cleanup
+  tags: [jito_client, check.keys]
 
 - name: Import key management configuration
   ansible.builtin.import_tasks: keys.yml
-  tags:
-    - jito_client.configure.keys
+  tags: [jito_client, check.keys]
 
 - name: Import startup script configuration
   ansible.builtin.import_tasks: startup.yml
-  tags:
-    - jito_client.configure.startup
+  tags: [jito_client, check.keys]
 
 - name: Import systemd service configuration
   ansible.builtin.import_tasks: service.yml
-  tags:
-    - jito_client.configure.service
+  tags: [jito_client, check.keys]
 
 - name: Import log rotation configuration
   ansible.builtin.import_tasks: logrotate.yml
-  tags:
-    - jito_client.configure.logrotate
+  tags: [jito_client, check.keys]
 
 - name: Configuration complete
   ansible.builtin.debug:
     msg: "Jito-Solana validator configuration completed successfully"
+  tags: [jito_client, check.keys]

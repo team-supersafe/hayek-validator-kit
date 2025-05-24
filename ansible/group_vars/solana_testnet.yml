@@ -11,3 +11,25 @@ jito_urls:
     relayer: "http://ny.testnet.relayer.jito.wtf:8100"
     shred_receiver_addr: "141.98.216.132:1002"
     ntp_server: "ntp.dallas.jito.wtf"
+
+solana_metrics_url: 'https://metrics.solana.com:8086,db=tds,u=testnet_write,p=c4fa841aa918bf8274e3e2a44d77568d9861b3ea'
+
+poh_pinned_cpu_core_enabled: true
+poh_pinned_cpu_core: 2
+
+solana_gossip_entrypoints:
+  - entrypoint.testnet.solana.com:8001
+  - entrypoint2.testnet.solana.com:8001
+  - entrypoint3.testnet.solana.com:8001
+
+known_validators:
+  - 5D1fNXzvv5NjV1ysLjirC4WY92RNsVH18vjmcszZd8on
+  - dDzy5SR3AXdYWVqbDEkVFdvSPCtS9ihF5kJkHCtXoFs
+  - Ft5fbkqNa76vnsjYNwjDZUXoTWpP7VYm3mtsaQckQADN
+  - eoKpUABi59aT4rR9HGS3LcMecfut9x7zJyodWWP43YQ
+  - 9QxCLckBiJc783jnMvXZubK4wH86Eqqvashtrwvcsgkv
+
+jito_tip_payment_program_pubkey: "GJHtFqM9agxPmkeKjHny6qiRKrXZALvvFGiKf11QE7hy"
+jito_tip_distribution_program_pubkey: "F2Zu7QZiTYUhPd7u9ukRVwxh7B71oA3NMJcHuCHc29P2"
+jito_merkle_root_upload_authority: "GZctHpWXmsZC1YHACTGGcHhYxjdRqQvTpYkb9LMvxDib"
+jito_commission_bps: 0

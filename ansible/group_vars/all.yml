@@ -1,5 +1,8 @@
 # Global trivial stuff (non-secret) that apply to all hosts
 
+# Ansible home directory
+ansible_home_dir: "{{ ansible_env.HOME }}"
+
 # Validator variables (target host)
 solana_user: 'sol'
 solana_user_dir: "/home/{{ solana_user }}"
@@ -10,6 +13,20 @@ keys_dir: "{{ solana_user_dir }}/keys"
 build_dir: "{{ solana_user_dir }}/build"
 scripts_dir: "{{ solana_user_dir }}/bin"
 solana_install_dir: "{{ solana_user_dir }}/.local/share/solana/install/active_release/bin"
+
+# System Units configuration
+mount_base_path: '/mnt'
+ledger_path: "{{ mount_base_path }}/ledger"
+accounts_path: "{{ mount_base_path }}/accounts"
+snapshots_path: "{{ mount_base_path }}/snapshots"
+
+# System service settings
+snapshot_interval_slots: 0
+solana_rpc_port: 8899
+open_solana_ports_start: 8000
+open_solana_ports_end: 8020
+gossip_port: 8001
+minimal_snapshot_download_speed: 31457280
 
 # Ledger Configuration
 ledger_device: "/dev/nvme0n1"
@@ -27,7 +44,3 @@ disk_group: "sol"
 data_device: "/dev/sda1"
 data_fstype: "ext4"
 data_skip_format: true #Skips formatting of the disk
-
-jito_tip_payment_program_pubkey: "T1pyyaTNZsKv2WcRAB8oVnk93mLJw2XzjtVYqCsaHqt"
-jito_tip_distribution_program_pubkey: "4R3gSG8BpU4t19KYj8CfnbtRpnT8gtk4dvTHxVRwc2r7"
-jito_merkle_root_upload_authority: "GZctHpWXmsZC1YHACTGGcHhYxjdRqQvTpYkb9LMvxDib"

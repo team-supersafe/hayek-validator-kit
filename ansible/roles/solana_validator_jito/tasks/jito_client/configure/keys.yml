@@ -1,57 +1,61 @@
 ---
 - name: Configure validator keys
   block:
-    - name: Create validator key directory
+    - name: Ensure validator_keys_dir exists
       ansible.builtin.file:
-        path: "{{ solana_home }}/validator-keypair.json"
+        path: "{{ validator_keys_dir }}"
         state: directory
-        mode: "0700"
-        owner: "{{ solana_user }}"
-        group: "{{ solana_user }}"
+        mode: '0755'
+      tags: [jito_client, check.keys]
 
-    - name: Upload validator keypair
+    # Copy staked-identity.json keypair
+    - name: Check if staked-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/staked-identity.json"
+      register: staked_identity_file
+      tags: [jito_client, check.keys]
+
+    - name: Fail if staked-identity.json is missing
+      ansible.builtin.fail:
+        msg: "staked-identity.json not found in {{ ansible_keys_dir }}"
+      when: not staked_identity_file.stat.exists
+      tags: [jito_client, check.keys]
+
+    - name: Copy staked-identity.json to validator_keys_dir
       ansible.builtin.copy:
-        src: "{{ validator_keypair_path }}"
-        dest: "{{ solana_home }}/validator-keypair.json"
-        mode: "0600"
-        owner: "{{ solana_user }}"
-        group: "{{ solana_user }}"
-      when: validator_keypair_path is defined
+        src: "{{ ansible_keys_dir }}/staked-identity.json"
+        dest: "{{ validator_keys_dir }}/staked-identity.json"
+        mode: '0600'
+      tags: [jito_client, check.keys]
 
-    - name: Create vote account key directory
-      ansible.builtin.file:
-        path: "{{ solana_home }}/vote-account-keypair.json"
-        state: directory
-        mode: "0700"
-        owner: "{{ solana_user }}"
-        group: "{{ solana_user }}"
+    # Copy vote-account.json keypair
+    - name: Check if vote-account.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/vote-account.json"
+      register: vote_account_file
+      tags: [jito_client, check.keys]
 
-    - name: Upload vote account keypair
+    - name: Fail if vote-account.json is missing
+      ansible.builtin.fail:
+        msg: "vote-account.json not found in {{ ansible_keys_dir }}"
+      when: not vote_account_file.stat.exists
+      tags: [jito_client, check.keys]
+
+    - name: Copy vote-account.json to validator_keys_dir
       ansible.builtin.copy:
-        src: "{{ vote_account_keypair_path }}"
-        dest: "{{ solana_home }}/vote-account-keypair.json"
-        mode: "0600"
-        owner: "{{ solana_user }}"
-        group: "{{ solana_user }}"
-      when: vote_account_keypair_path is defined
+        src: "{{ ansible_keys_dir }}/vote-account.json"
+        dest: "{{ validator_keys_dir }}/vote-account.json"
+        mode: '0600'
+      tags: [jito_client, check.keys]
 
-    - name: Create authorized voter key directory
-      ansible.builtin.file:
-        path: "{{ solana_home }}/authorized-voter-keypair.json"
-        state: directory
-        mode: "0700"
-        owner: "{{ solana_user }}"
-        group: "{{ solana_user }}"
+    # Generate unstaked-identity.json keypair
+    - name: Generate unstaked-identity.json keypair
+      ansible.builtin.command:
+        cmd: solana-keygen new -s --no-bip39-passphrase -o unstaked-identity.json
+        chdir: "{{ validator_keys_dir }}"
+      tags: [jito_client, check.keys]
 
-    - name: Upload authorized voter keypair
-      ansible.builtin.copy:
-        src: "{{ authorized_voter_keypair_path }}"
-        dest: "{{ solana_home }}/authorized-voter-keypair.json"
-        mode: "0600"
-        owner: "{{ solana_user }}"
-        group: "{{ solana_user }}"
-      when: authorized_voter_keypair_path is defined
   rescue:
     - name: Fail with error message
       ansible.builtin.fail:
-        msg: "Failed to configure validator keys. Error: {{ ansible_failed_result }}"
+        msg: "Failed to upload validator keys. Error: {{ ansible_failed_result }}"

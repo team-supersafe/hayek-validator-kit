@@ -17,9 +17,8 @@
   user: "{{ solana_user }}"
   vars:
     vault_dir: "/hayek-validator-kit/ansible/vault"
-    ansible_keys_dir: "{{ ansible_env.HOME }}/.validator-keys"
     keypair_file: "jito-relayer-block-eng.json"
-    source_path: "{{ ansible_keys_dir }}/{{ validator_name }}/{{ keypair_file }}"
+    source_path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/{{ keypair_file }}"
     vault_file: "{{ vault_dir }}/group_vars/all/vault.yml"
     manage_vault_script: "{{ vault_dir }}/manage_vault.sh"
     password_file: "{{ vault_dir }}/.vault_pass"

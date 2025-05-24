@@ -289,7 +289,7 @@ WIP...
 | Variable                         | Default Value                                                        | Description                                                                                   |
 |----------------------------------|----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
 | `jito_relayer_install_dir`       | `/home/sol/.local/share/jito-relayer/install/active_release/release` | Path to the directory containing the built Jito relayer binary.                               |
-| `jito_relayer_keys_dir`          | `/home/sol/keys/{validator_name}`                                    | Directory where relayer key files (private/public keys, block engine keypair) are stored.     |
+| `validator_keys_dir`             | `/home/sol/keys/{validator_name}`                                    | Directory where all key files (private/public keys, block engine keypair) are stored.         |
 | `jito_relayer_user`              | `sol`                                                                | The system user that runs the relayer and owns the files.                                     |
 | `jito_relayer_block_engine_url`  | `https://dallas.testnet.block-engine.jito.wtf`                       | The block engine URL to connect to (override for mainnet, etc.).                              |
 | `jito_relayer_metrics_config`    | `host=http://metrics.jito.wtf:8086,db=relayer,u=relayer-operators,p=jito-relayer-write` | Metrics server configuration string.                                                          |

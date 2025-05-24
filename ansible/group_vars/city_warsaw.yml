@@ -1,3 +1,4 @@
 # Warsaw-specific, non-secret (rare) variables
 jito_mainnet_block_engine_city: "frankfurt"
 jito_testnet_block_engine_city: "newyork"
+jito_localnet_block_engine_city: "dallas"

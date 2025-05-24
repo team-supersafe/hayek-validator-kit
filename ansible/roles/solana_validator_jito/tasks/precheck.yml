@@ -33,11 +33,11 @@
       "The playbook variable 'validator_name' must be defined."
     success_msg: "validator_name is set to {{ validator_name }}"
 
-- name: Ensure the jito_relayer_keys_dir is defined and valid
+- name: Ensure the validator_keys_dir is defined and valid
   ansible.builtin.assert:
     that:
-      - jito_relayer_keys_dir is defined
-      - jito_relayer_keys_dir == keys_dir + "/" + validator_name
+      - validator_keys_dir is defined
+      - validator_keys_dir == keys_dir + "/" + validator_name
     fail_msg: >
-      "Variable 'jito_relayer_keys_dir' must be defined."
-    success_msg: "jito_relayer_keys_dir is set to {{ jito_relayer_keys_dir }}"
+      "Variable 'validator_keys_dir' must be defined."
+    success_msg: "validator_keys_dir is set to {{ validator_keys_dir }}"

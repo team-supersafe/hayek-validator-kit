@@ -1,0 +1,4 @@
+---
+use_jito: false
+ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+validator_keys_dir: "{{ keys_dir }}/{{ validator_name }}"

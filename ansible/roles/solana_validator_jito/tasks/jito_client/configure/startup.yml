@@ -1,18 +1,42 @@
 ---
 - name: Configure validator startup script
   block:
-    - name: Set validator script path
-      ansible.builtin.set_fact:
-        validator_script_path: "{{ solana_home }}/bin/validator-{{ validator_name }}-{{ cluster_environment }}-jito.sh"
-
-    - name: Create validator startup script directory
+    - name: Ensure scripts_dir exists
       ansible.builtin.file:
-        path: "{{ solana_home }}/bin"
+        path: "{{ scripts_dir }}"
         state: directory
-        mode: "0755"
         owner: "{{ solana_user }}"
         group: "{{ solana_user }}"
+        mode: "0754"
 
+    - name: Set validator script path
+      ansible.builtin.set_fact:
+        validator_script_path: "{{ scripts_dir }}/run-{{ validator_name }}.sh"
+
+    # Get vote account pubkey
+    - name: Get vote account public key
+      ansible.builtin.command: solana address -k {{ ansible_keys_dir }}/vote-account.json
+      register: vote_account_cmd
+      delegate_to: localhost
+
+    - name: Set vote account public key
+      ansible.builtin.set_fact:
+        vote_account_pubkey: "{{ vote_account_cmd.stdout }}"
+
+    # Get genesis hash for localnet
+    - name: Get localnet genesis hash
+      block:
+        - name: Get genesis hash
+          ansible.builtin.command: solana -ul genesis-hash
+          register: cluster_genesis_hash
+          delegate_to: localhost
+
+        - name: Set expected genesis hash
+          ansible.builtin.set_fact:
+            expected_genesis_hash: "{{ cluster_genesis_hash.stdout }}"
+      when: solana_cluster == "localnet"
+
+    # Create the validator startup script from template
     - name: Create validator startup script
       ansible.builtin.template:
         src: validator.startup.j2
@@ -21,11 +45,6 @@
         owner: "{{ solana_user }}"
         group: "{{ solana_user }}"
 
-    - name: Verify startup script
-      ansible.builtin.command: "{{ validator_script_path }} --version"
-      register: startup_script_version
-      changed_when: false
-      failed_when: false
   rescue:
     - name: Fail with error message
       ansible.builtin.fail:

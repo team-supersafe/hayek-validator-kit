@@ -11,3 +11,18 @@ jito_urls:
     relayer: "http://ny.testnet.relayer.jito.wtf:8100"
     shred_receiver_addr: "141.98.216.132:1002"
     ntp_server: "ntp.dallas.jito.wtf"
+
+solana_metrics_url: ""
+limit_ledger_size: 50000000
+poh_pinned_cpu_core_enabled: false
+poh_pinned_cpu_core: 2
+
+solana_gossip_entrypoints:
+  - gossip-entrypoint:8001
+
+known_validators: []
+
+jito_tip_payment_program_pubkey: "GJHtFqM9agxPmkeKjHny6qiRKrXZALvvFGiKf11QE7hy"
+jito_tip_distribution_program_pubkey: "F2Zu7QZiTYUhPd7u9ukRVwxh7B71oA3NMJcHuCHc29P2"
+jito_merkle_root_upload_authority: "GZctHpWXmsZC1YHACTGGcHhYxjdRqQvTpYkb9LMvxDib"
+jito_commission_bps: 0

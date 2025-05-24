@@ -15,7 +15,13 @@
       when: service_status.status.ActiveState == "active"
       become: true
 
-    - name: Clean ledger directory
+    - name: Reset ledger directory
+      ansible.builtin.file:
+        path: "{{ ledger_path }}"
+        state: absent
+      become: true
+
+    - name: Ensure ledger directory exists
       ansible.builtin.file:
         path: "{{ ledger_path }}"
         state: directory
@@ -24,7 +30,13 @@
         group: "{{ solana_user }}"
       become: true
 
-    - name: Clean accounts directory
+    - name: Reset accounts directory
+      ansible.builtin.file:
+        path: "{{ accounts_path }}"
+        state: absent
+      become: true
+
+    - name: Ensure accounts directory exists
       ansible.builtin.file:
         path: "{{ accounts_path }}"
         state: directory
@@ -33,7 +45,13 @@
         group: "{{ solana_user }}"
       become: true
 
-    - name: Clean snapshots directory
+    - name: Reset snapshots directory
+      ansible.builtin.file:
+        path: "{{ snapshots_path }}"
+        state: absent
+      become: true
+
+    - name: Ensure snapshots directory exists
       ansible.builtin.file:
         path: "{{ snapshots_path }}"
         state: directory
@@ -42,7 +60,13 @@
         group: "{{ solana_user }}"
       become: true
 
-    - name: Clean logs directory
+    - name: Reset logs directory
+      ansible.builtin.file:
+        path: "{{ validator_logs_dir }}"
+        state: absent
+      become: true
+
+    - name: Ensure logs directory exists
       ansible.builtin.file:
         path: "{{ validator_logs_dir }}"
         state: directory
