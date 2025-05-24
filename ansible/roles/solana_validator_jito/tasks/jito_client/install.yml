@@ -1,7 +1,4 @@
 ---
-- name: Get host architecture and infer value for build_from_source
-  ansible.builtin.import_tasks: ../../../common/tasks/set_host_architecture.yml
-
 - name: Set Jito tag
   ansible.builtin.set_fact:
     jito_tag: "v{{ jito_version }}"
