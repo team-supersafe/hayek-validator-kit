@@ -42,6 +42,53 @@
       "Variable 'validator_keys_dir' must be defined."
     success_msg: "validator_keys_dir is set to {{ validator_keys_dir }}"
 
+- name: Gather facts for localhost
+  ansible.builtin.setup:
+  delegate_to: localhost
+  run_once: true
+
+- name: Check required validator keypairs
+  block:
+    - name: Check if staked-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/staked-identity.json"
+      register: staked_identity_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail if staked-identity.json is missing
+      ansible.builtin.fail:
+        msg: "staked-identity.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+      when: not staked_identity_file.stat.exists
+
+    - name: Check if vote-account.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/vote-account.json"
+      register: vote_account_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail if vote-account.json is missing
+      ansible.builtin.fail:
+        msg: "vote-account.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+      when: not vote_account_file.stat.exists
+
+    - name: Check if Jito Relayer Block Engine keypair exists
+      ansible.builtin.stat:
+        path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/jito-relayer-block-eng.json"
+      register: private_key_exists
+      delegate_to: localhost
+      run_once: true
+
+    - name: Warn if jito-relayer-block-eng.json is missing
+      ansible.builtin.debug:
+        msg: >
+          WARNING: jito-relayer-block-eng.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}.
+          The keypair will be generated later. When this happens, please be alert to copy
+          the public key from the console output as it needs to be registered with Jito
+          to whitelist our relayer.
+      when: not private_key_exists.stat.exists
+
 - name: Get host architecture and infer value for build_from_source
   ansible.builtin.import_tasks: ../../common/tasks/set_host_architecture.yml
 

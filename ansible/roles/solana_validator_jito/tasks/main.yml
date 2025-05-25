@@ -3,13 +3,21 @@
   import_tasks: precheck.yml
   tags: [solana_validator_jito, precheck]
 
+- name: Debug group names
+  debug:
+    msg: "Available groups: {{ group_names }}"
+
 - name: Set Jito target city
   set_fact:
-    jito_target_city: "{{ hostvars[inventory_hostname][city_group][jito_city_var] }}"
-  vars:
-    city_group: "{{ group_names | select('match', '^city_') | first }}"
-    jito_city_var: "jito_{{ solana_cluster }}_block_engine_city"
-  failed_when: city_group is not defined or jito_target_city is not defined
+    jito_target_city: "{{ group_names | select('match', '^city_') | first | regex_replace('^city_', '') }}"
+  failed_when: jito_target_city == ''
+  register: jito_city_result
+  ignore_errors: yes
+
+- name: Fail if no valid city group found
+  fail:
+    msg: "Host {{ inventory_hostname }} must be assigned to a city group (city_dallas, city_manchester, or city_warsaw) in the inventory"
+  when: jito_city_result is failed
 
 - name: Set Jito URLs
   set_fact:

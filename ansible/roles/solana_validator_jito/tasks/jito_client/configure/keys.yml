@@ -13,6 +13,8 @@
       ansible.builtin.stat:
         path: "{{ ansible_keys_dir }}/staked-identity.json"
       register: staked_identity_file
+      delegate_to: localhost
+      run_once: true
       tags: [jito_client, check.keys]
 
     - name: Fail if staked-identity.json is missing
@@ -33,6 +35,8 @@
       ansible.builtin.stat:
         path: "{{ ansible_keys_dir }}/vote-account.json"
       register: vote_account_file
+      delegate_to: localhost
+      run_once: true
       tags: [jito_client, check.keys]
 
     - name: Fail if vote-account.json is missing
@@ -50,10 +54,18 @@
 
     # Generate unstaked-identity.json keypair
     - name: Generate unstaked-identity.json keypair
-      ansible.builtin.command:
-        cmd: solana-keygen new -s --no-bip39-passphrase -o unstaked-identity.json
+      ansible.builtin.shell: |
+        . "$HOME/.cargo/env"
+        . "$HOME/.bashrc"
+        {{ solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o unstaked-identity.json -f
+      args:
         chdir: "{{ validator_keys_dir }}"
-      tags: [jito_client, check.keys]
+      register: keygen_result
+
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to upload validator keys. Error: {{ keygen_result }}"
+      when: keygen_result.rc != 0
 
   rescue:
     - name: Fail with error message
