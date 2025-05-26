@@ -10,14 +10,9 @@
 - name: Set Jito target city
   set_fact:
     jito_target_city: "{{ group_names | select('match', '^city_') | first | regex_replace('^city_', '') }}"
-  failed_when: jito_target_city == ''
-  register: jito_city_result
-  ignore_errors: yes
-
-- name: Fail if no valid city group found
-  fail:
+  ansible.builtin.fail:
+    when: jito_target_city == ''
     msg: "Host {{ inventory_hostname }} must be assigned to a city group (city_dallas, city_manchester, or city_warsaw) in the inventory"
-  when: jito_city_result is failed
 
 - name: Set Jito URLs
   set_fact:
