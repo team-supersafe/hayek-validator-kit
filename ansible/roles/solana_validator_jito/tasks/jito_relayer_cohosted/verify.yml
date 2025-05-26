@@ -13,7 +13,7 @@
 
 - name: Check Jito relayer systemd service status
   ansible.builtin.systemd:
-    name: jito-relayer
+    name: "{{ jito_relayer_service_name }}"
   register: relayer_service
   tags: [jito_relayer.verify]
 

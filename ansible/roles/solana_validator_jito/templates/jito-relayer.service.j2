@@ -10,9 +10,8 @@ ConditionPathExists={{ validator_keys_dir }}/jito-relayer-comms-pub.pem
 
 [Service]
 Type=simple
-User={{ jito_relayer_user | default('sol') }}
+User={{ jito_relayer_user }}
 Restart=on-failure
-
 ExecStart={{ jito_relayer_startup_script }}
 
 [Install]
