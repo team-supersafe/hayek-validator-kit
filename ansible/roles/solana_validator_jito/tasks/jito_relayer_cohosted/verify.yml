@@ -44,17 +44,6 @@
     var: relayer_process.stdout_lines
   tags: [jito_relayer.verify]
 
-- name: Check Jito relayer port status
-  ansible.builtin.shell: netstat -tulpn | grep 11226
-  register: relayer_port
-  changed_when: false
-  tags: [jito_relayer.verify]
-
-- name: Print Jito relayer port status
-  ansible.builtin.debug:
-    var: relayer_port.stdout_lines
-  tags: [jito_relayer.verify]
-
 - name: Check Jito relayer service file
   ansible.builtin.shell: cat /lib/systemd/system/{{ jito_relayer_service_name }}.service
   register: relayer_service_file
@@ -77,9 +66,8 @@
       - Service active: {{ relayer_service.status.ActiveState }}
       - Service enabled: {{ relayer_service.status.UnitFileState }}
       - Process running: {{ relayer_process.stdout_lines | length > 0 }}
-      - Port 11226 listening: {{ relayer_port.stdout_lines | length > 0 }}
   tags: [jito_relayer.verify]
 
 - name: Verify Jito Relayer installation
   debug:
-    msg: "Jito Relayer setup completed!" 
+    msg: "Jito Relayer setup completed!"

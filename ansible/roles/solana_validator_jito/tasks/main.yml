@@ -22,14 +22,14 @@
     jito_block_engine_url: "{{ jito_urls[jito_target_city].block_engine }}"
     jito_shred_receiver_addr: "{{ jito_urls[jito_target_city].shred_receiver_addr }}"
 
-# - when: jito_relayer_type == 'co-hosted'
-#   block:
-#     - name: Check for Co-hosted Relayer installation
-#       import_tasks: jito_relayer_cohosted/install.yml
-#     - name: Configure Co-hosted Relayer post installation
-#       import_tasks: jito_relayer_cohosted/config.yml
-#     - name: Verify Co-hosted Relayer installation and configuration are correct
-#       import_tasks: jito_relayer_cohosted/verify.yml
+- when: jito_relayer_type == 'co-hosted'
+  block:
+    - name: Check for Co-hosted Relayer installation
+      import_tasks: jito_relayer_cohosted/install.yml
+    - name: Configure Co-hosted Relayer post installation
+      import_tasks: jito_relayer_cohosted/config.yml
+    - name: Verify Co-hosted Relayer installation and configuration are correct
+      import_tasks: jito_relayer_cohosted/verify.yml
 
 # Jito client installation
 - name: Setup Jito client
