@@ -15,10 +15,12 @@
 #   --limit host-charlie \
 #   -e "validator_name=emilia_validator" \
 #   -e "target_host=host-charlie" \
-#   -e "solana_cluster=testnet" \
+#   -e "solana_cluster=localnet" \
 #   -e "jito_version=2.2.14" \
 #   -e "jito_relayer_type=co-hosted" \
-#   -e "jito_relayer_version=0.3.1"
+#   -e "jito_relayer_version=0.3.1" \
+#   -e "force_stop_service=true"  # Optional: Use this if a validator service is already running
+#   -e "setup_voting_validator=true"  # Optional: Set to true to use staked-identity.json as identity.json
 
 - name: Install Jito Client with Co-Hosted Relayer
   hosts: "{{ target_host }}"
@@ -53,6 +55,9 @@
             - jito_version
             - jito_relayer_type
             - jito_relayer_version
+          Optional:
+            - force_stop_service (set to true to force stop existing validator service)
+            - setup_voting_validator (set to true to use staked-identity.json as identity.json)
 
     - name: Validate jito_relayer_type value
       ansible.builtin.assert:
@@ -78,6 +83,10 @@
           - jito_relayer_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
         fail_msg: "Invalid jito_relayer_version '{{ jito_relayer_version }}'. Must follow semantic versioning pattern (e.g. 1.2.3)."
 
+    - name: Set default value for setup_voting_validator
+      ansible.builtin.set_fact:
+        setup_voting_validator: "{{ setup_voting_validator | default(false) | bool }}"
+
   roles:
     - role: solana_validator_jito
       vars:
@@ -86,3 +95,4 @@
         jito_version: "{{ jito_version }}"
         jito_relayer_type: "{{ jito_relayer_type }}"
         jito_relayer_version: "{{ jito_relayer_version }}"
+        setup_voting_validator: "{{ setup_voting_validator }}"

@@ -14,5 +14,13 @@
       - solana_user_dir must be defined
       - solana_user must be defined
 
-- name: "Fail if validator service is already running"
-  ansible.builtin.import_tasks: "../fail_if_validator_service_running.yml"
+# Fail if validator service is already running
+- name: Check if validator service is running
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+  register: validator_service_status
+
+- name: Fail if validator service is already running
+  ansible.builtin.fail:
+    msg: "Validator service is already running. To force stop the existing service and proceed with installation, run the playbook with: -e \"force_stop_service=true\""
+  when: (force_stop_service is not defined or not force_stop_service|bool) and validator_service_status.status.ActiveState == "active"

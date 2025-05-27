@@ -34,6 +34,15 @@
         - name: Set expected genesis hash
           ansible.builtin.set_fact:
             expected_genesis_hash: "{{ cluster_genesis_hash.stdout }}"
+
+        - name: Get entrypoint identity pubkey
+          ansible.builtin.shell: solana -ul validators --keep-unstaked-delinquents --output json | jq -r ".validators | .[0].identityPubkey"
+          register: entrypoint_identity_cmd
+          delegate_to: localhost
+
+        - name: Add entrypoint to known validators
+          ansible.builtin.set_fact:
+            known_validators: "{{ known_validators + [entrypoint_identity_cmd.stdout] }}"
       when: solana_cluster == "localnet"
 
     # Create the validator startup script from template

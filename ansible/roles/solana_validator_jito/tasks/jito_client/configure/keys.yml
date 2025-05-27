@@ -61,13 +61,25 @@
       args:
         chdir: "{{ validator_keys_dir }}"
       register: keygen_result
+      tags: [jito_client, check.keys]
 
     - name: Fail with error message
       ansible.builtin.fail:
         msg: "Failed to upload validator keys. Error: {{ keygen_result }}"
       when: keygen_result.rc != 0
+      tags: [jito_client, check.keys]
+
+    # Create identity.json symlink based on setup_voting_validator
+    - name: Create identity.json symlink
+      ansible.builtin.file:
+        src: "{{ validator_keys_dir }}/{{ 'staked-identity.json' if setup_voting_validator else 'unstaked-identity.json' }}"
+        dest: "{{ validator_keys_dir }}/identity.json"
+        state: link
+        force: true
+      tags: [jito_client, check.keys]
 
   rescue:
     - name: Fail with error message
       ansible.builtin.fail:
         msg: "Failed to upload validator keys. Error: {{ ansible_failed_result }}"
+      tags: [jito_client, check.keys]

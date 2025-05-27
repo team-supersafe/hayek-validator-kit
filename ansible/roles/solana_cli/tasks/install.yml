@@ -9,6 +9,7 @@
   become: true
   ansible.builtin.apt:
     name:
+      - jq
       - build-essential
       - pkg-config
       - libudev-dev

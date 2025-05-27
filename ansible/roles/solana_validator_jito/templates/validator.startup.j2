@@ -50,6 +50,10 @@ agave-validator \
 --account-index-include-key AddressLookupTab1e1111111111111111111111111 \
 {% endif %}
 {% endif %}
+{% if solana_cluster == "localnet" %}
+--no-os-network-limits-test \
+--allow-private-addr \
+{% endif %}
 {% if extra_params is defined %}
 {% for extra_var in extra_params %}
 {{ extra_var }} \
