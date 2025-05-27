@@ -95,7 +95,7 @@ You need to make sure the Grafana user has the read privileges over these files,
 
 ```bash
 systemctl show grafana-server -p User
-##output message
+#output message
 #User=grafana
 ```
 
