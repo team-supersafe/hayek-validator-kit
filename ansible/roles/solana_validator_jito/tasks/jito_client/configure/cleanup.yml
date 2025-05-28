@@ -12,7 +12,6 @@
       ansible.builtin.systemd:
         name: "{{ validator_service_name }}"
         state: stopped
-        timeout: 300  # 5 minutes timeout
       register: stop_result
       retries: 3
       delay: 10
