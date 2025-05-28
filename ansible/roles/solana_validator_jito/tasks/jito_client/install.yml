@@ -1,8 +1,4 @@
 ---
-- name: Set Jito tag
-  ansible.builtin.set_fact:
-    jito_tag: "v{{ jito_version }}"
-
 - name: Determine if we should build from source
   ansible.builtin.set_fact:
     should_build_from_source: "{{ jito_force_build | default(false) or build_from_source }}"

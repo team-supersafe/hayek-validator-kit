@@ -22,6 +22,10 @@
       ansible.builtin.fail:
         msg: "Failed to install build prerequisites. Error: {{ ansible_failed_result }}"
 
+- name: Set Jito tag
+  ansible.builtin.set_fact:
+    jito_tag: "v{{ jito_version }}-jito"
+
 - name: Prepare build environment
   block:
     - name: Create solana releases directory

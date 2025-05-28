@@ -3,3 +3,5 @@ use_jito: true
 ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
 validator_keys_dir: "{{ keys_dir }}/{{ validator_name }}"
 jito_relayer_install_dir: "{{ solana_user_dir }}/.local/share/jito-relayer/install/active_release"
+jito_repo_url: "https://github.com/jito-foundation/jito-solana.git"
+jito_repo_dest: "{{ solana_user_dir }}/build/jito-solana"
