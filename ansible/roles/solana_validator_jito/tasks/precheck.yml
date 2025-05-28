@@ -109,7 +109,7 @@
 
 - name: Set minimum required space (experimental)
   ansible.builtin.set_fact:
-    min_required_space: "10G"  # This is an initial estimate, can be adjusted based on experience
+    min_required_space: "14G"  # This is an initial estimate, can be adjusted based on experience
 
 - name: Convert space to bytes for comparison
   ansible.builtin.set_fact:
