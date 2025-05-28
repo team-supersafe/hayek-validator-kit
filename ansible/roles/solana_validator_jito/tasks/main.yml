@@ -16,7 +16,7 @@
       import_tasks: jito_relayer_cohosted/config.yml
     - name: Verify Co-hosted Relayer installation and configuration are correct
       import_tasks: jito_relayer_cohosted/verify.yml
-
+      
 # Jito client installation and configuration
 - name: Setup Jito client
   import_tasks: jito_client/main.yml

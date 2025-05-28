@@ -22,7 +22,6 @@
           - Space used: {{ space_used }}G
           - Minimum required space (experimental): {{ min_required_space }}
       
-# Next steps
 # Display helpful hints for monitoring
 - name: Display validator monitoring hints
   debug:
