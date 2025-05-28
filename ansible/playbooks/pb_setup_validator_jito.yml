@@ -19,7 +19,8 @@
 #   -e "jito_version=2.2.14" \
 #   -e "jito_relayer_type=co-hosted" \
 #   -e "jito_relayer_version=0.3.1" \
-#   -e "force_stop_service=true"  # Optional: Use this if a validator service is already running
+#   -e "jito_force_build=true" \ # Optional: Force build Jito regardless of architecture
+#   -e "force_stop_service=true" \ # Optional: Use this if a validator service is already running
 #   -e "setup_voting_validator=true"  # Optional: Set to true to use staked-identity.json as identity.json
 
 - name: Install Jito Client with Co-Hosted Relayer
@@ -58,6 +59,7 @@
           Optional:
             - force_stop_service (set to true to force stop existing validator service)
             - setup_voting_validator (set to true to use staked-identity.json as identity.json)
+            - jito_force_build (set to true to force build Jito regardless of architecture)
 
     - name: Validate jito_relayer_type value
       ansible.builtin.assert:
@@ -87,6 +89,10 @@
       ansible.builtin.set_fact:
         setup_voting_validator: "{{ setup_voting_validator | default(false) | bool }}"
 
+    - name: Set default value for jito_force_build
+      ansible.builtin.set_fact:
+        jito_force_build: "{{ jito_force_build | default(false) | bool }}"
+
   roles:
     - role: solana_validator_jito
       vars:
@@ -96,3 +102,4 @@
         jito_relayer_type: "{{ jito_relayer_type }}"
         jito_relayer_version: "{{ jito_relayer_version }}"
         setup_voting_validator: "{{ setup_voting_validator }}"
+        jito_force_build: "{{ jito_force_build }}"
