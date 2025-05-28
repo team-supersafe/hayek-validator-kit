@@ -1,0 +1,58 @@
+---
+# Check final disk space usage
+- name: Check final disk space usage
+  when: jito_relayer_verify | default(true) 
+  block:
+    - name: Get current disk space
+      ansible.builtin.shell: |
+        df -h /home/sol | awk 'NR==2 {print $4}'
+      register: final_space
+      changed_when: false
+
+    - name: Calculate space used
+      ansible.builtin.set_fact:
+        space_used: "{{ initial_space.stdout | regex_replace('^([0-9]+)([KMG])$', '\\1') | int - final_space.stdout | regex_replace('^([0-9]+)([KMG])$', '\\1') | int }}"
+
+    - name: Print space usage summary
+      ansible.builtin.debug:
+        msg: |
+          Disk space usage summary:
+          - Initial available space: {{ initial_space.stdout }}
+          - Final available space: {{ final_space.stdout }}
+          - Space used: {{ space_used }}G
+          - Minimum required space (experimental): {{ min_required_space }}
+      
+# Next steps
+# Display helpful hints for monitoring
+- name: Display validator monitoring hints
+  debug:
+    msg: |
+      ===========================================================
+      🚀 Validator Setup Complete! Here are some helpful commands:
+      ===========================================================
+
+      📈 Monitor cluster validators (including delinquent ones):
+      solana -ul validators --keep-unstaked-delinquents
+      solana gossip -ul
+
+      📱 Log-in to {{ inventory_hostname }} via SSH:
+      ssh -p {{ ansible_port }} {{ ansible_user }}@{{ inventory_hostname }}
+
+      🔍 Check for running validator process:
+      ps aux | grep validator
+
+      🔄 Check for running Jito Relayer process (if installed):
+      ps aux | grep jito-relayer
+
+      📊 Monitor validator startup state:
+      agave-validator -l /mnt/ledger/ monitor
+
+      ⚡ View validator catchup status:
+      solana -ul catchup --our-localhost 8899 --url http://172.25.0.10:8899
+
+      🔍 Inspect logs:
+      tail -f logs/agave-validator.log
+      Exclude metrics bloating your debug process
+      tail -f logs/agave-validator.log | grep -v 'solana_metrics::metrics'
+
+      ====================================================
