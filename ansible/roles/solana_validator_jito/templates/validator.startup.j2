@@ -36,7 +36,6 @@ agave-validator \
 {% endif %}
 --disable-accounts-disk-index \
 {% endif %}
-{% if use_jito %}
 --tip-payment-program-pubkey {{ jito_tip_payment_program_pubkey }} \
 --tip-distribution-program-pubkey {{ jito_tip_distribution_program_pubkey }} \
 --merkle-root-upload-authority {{ jito_merkle_root_upload_authority }} \
@@ -48,7 +47,6 @@ agave-validator \
 --full-rpc-api \
 --account-index program-id \
 --account-index-include-key AddressLookupTab1e1111111111111111111111111 \
-{% endif %}
 {% endif %}
 {% if solana_cluster == "localnet" %}
 --no-os-network-limits-test \
