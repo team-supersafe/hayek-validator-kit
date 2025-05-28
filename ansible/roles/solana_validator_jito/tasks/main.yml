@@ -22,42 +22,50 @@
     jito_block_engine_url: "{{ jito_urls[jito_target_city].block_engine }}"
     jito_shred_receiver_addr: "{{ jito_urls[jito_target_city].shred_receiver_addr }}"
 
-- when: jito_relayer_type == 'co-hosted'
-  block:
-    - name: Check for Co-hosted Relayer installation
-      import_tasks: jito_relayer_cohosted/install.yml
-    - name: Configure Co-hosted Relayer post installation
-      import_tasks: jito_relayer_cohosted/config.yml
-    - name: Verify Co-hosted Relayer installation and configuration are correct
-      import_tasks: jito_relayer_cohosted/verify.yml
+# - when: jito_relayer_type == 'co-hosted'
+#   block:
+#     - name: Check for Co-hosted Relayer installation
+#       import_tasks: jito_relayer_cohosted/install.yml
+#     - name: Configure Co-hosted Relayer post installation
+#       import_tasks: jito_relayer_cohosted/config.yml
+#     - name: Verify Co-hosted Relayer installation and configuration are correct
+#       import_tasks: jito_relayer_cohosted/verify.yml
 
 # Jito client installation
-- name: Setup Jito client
-  import_tasks: jito_client/main.yml
+# - name: Setup Jito client
+#   import_tasks: jito_client/main.yml
+
+# Check final disk space usage
+- name: Check final disk space usage
+  import_tasks: check_disk_space.yml
+  when: jito_relayer_verify | default(true)
 
 # Next steps
 
 # Display helpful hints for monitoring
-- name: Display validator monitoring hints
-  debug:
-    msg: |
-      ===========================================================
-      🚀 Validator Setup Complete! Here are some helpful commands:
-      ===========================================================
+# - name: Display validator monitoring hints
+#   debug:
+#     msg: |
+#       ===========================================================
+#       🚀 Validator Setup Complete! Here are some helpful commands:
+#       ===========================================================
 
-      📱 Log-in to {{ inventory_hostname }} via SSH:
-      ssh -p {{ ansible_port }} {{ ansible_user }}@{{ inventory_hostname }}
+#       📈 Monitor cluster validators (including delinquent ones):
+#       solana -ul validators --keep-unstaked-delinquents
 
-      🔍 Check for running validator process:
-      ps aux | grep validator
+#       📱 Log-in to {{ inventory_hostname }} via SSH:
+#       ssh -p {{ ansible_port }} {{ ansible_user }}@{{ inventory_hostname }}
 
-      🔄 Check for running Jito Relayer process (if installed):
-      ps aux | grep jito-relayer
+#       🔍 Check for running validator process:
+#       ps aux | grep validator
 
-      📊 Monitor validator startup state:
-      agave-validator -l /mnt/ledger/ monitor
+#       🔄 Check for running Jito Relayer process (if installed):
+#       ps aux | grep jito-relayer
 
-      ⚡ View validator catchup status:
-      solana -ul catchup --our-localhost 8899 --url http://172.25.0.10:8899
+#       📊 Monitor validator startup state:
+#       agave-validator -l /mnt/ledger/ monitor
 
-      ====================================================
+#       ⚡ View validator catchup status:
+#       solana -ul catchup --our-localhost 8899 --url http://172.25.0.10:8899
+
+#       ====================================================
