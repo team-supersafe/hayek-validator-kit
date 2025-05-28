@@ -51,6 +51,7 @@
 
       📈 Monitor cluster validators (including delinquent ones):
       solana -ul validators --keep-unstaked-delinquents
+      solana gossip -ul
 
       📱 Log-in to {{ inventory_hostname }} via SSH:
       ssh -p {{ ansible_port }} {{ ansible_user }}@{{ inventory_hostname }}
@@ -66,5 +67,10 @@
 
       ⚡ View validator catchup status:
       solana -ul catchup --our-localhost 8899 --url http://172.25.0.10:8899
+
+      🔍 Inspect logs:
+      tail -f logs/agave-validator.log
+      Exclude metrics bloating your debug process
+      tail -f logs/agave-validator.log | grep -v 'solana_metrics::metrics'
 
       ====================================================
