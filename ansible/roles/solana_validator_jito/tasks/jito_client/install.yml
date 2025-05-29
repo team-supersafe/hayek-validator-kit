@@ -4,11 +4,11 @@
     should_build_from_source: "{{ jito_force_build | default(false) or build_from_source }}"
 
 - name: Install Jito-Solana from binaries
-  import_tasks: jito_install.yml
+  import_tasks: install/install_jito_from_binaries.yml
   when: not should_build_from_source
 
-- name: Build Jito-Solana from source
-  import_tasks: jito_build_from_source.yml
+- name: Build and install Jito from source
+  import_tasks: install/install_jito_from_source.yml
   when: should_build_from_source
 
 - name: Installation complete
