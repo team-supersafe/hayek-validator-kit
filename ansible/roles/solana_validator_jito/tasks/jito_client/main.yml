@@ -1,0 +1,17 @@
+---
+- name: Precheck Jito client requirements
+  import_tasks: precheck.yml
+
+- name: Install Jito client
+  import_tasks: install.yml
+
+- name: Configure Jito client
+  import_tasks: configure.yml
+
+- name: Verify the Jito client is running correctly
+  import_tasks: verify.yml
+
+- name: Jito client setup complete
+  debug:
+    msg: "Jito client has been installed and configured successfully."
+  tags: [jito_client, done]

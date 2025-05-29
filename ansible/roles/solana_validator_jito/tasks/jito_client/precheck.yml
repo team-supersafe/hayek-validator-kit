@@ -1,0 +1,26 @@
+---
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - jito_version is defined
+      - jito_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
+      - solana_installed_releases_dir is defined
+      - solana_user_dir is defined
+      - solana_user is defined
+    fail_msg: >
+      Required variables are missing or invalid:
+      - jito_version must be defined and follow semantic versioning (e.g. 1.2.3)
+      - solana_installed_releases_dir must be defined
+      - solana_user_dir must be defined
+      - solana_user must be defined
+
+# Fail if validator service is already running
+- name: Check if validator service is running
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+  register: validator_service_status
+
+- name: Fail if validator service is already running
+  ansible.builtin.fail:
+    msg: "Validator service is already running. To force stop the existing service and proceed with installation, run the playbook with: -e \"force_stop_service=true\""
+  when: (force_stop_service is not defined or not force_stop_service|bool) and validator_service_status.status.ActiveState == "active"

@@ -1,94 +1,22 @@
 ---
-- name: Get solana binaries download url
-  ansible.builtin.shell: |
-    _ostype="$(uname -s)"
-    _cputype="$(uname -m)"
+- name: Determine if we should build from source
+  ansible.builtin.set_fact:
+    should_build_from_source: "{{ jito_force_build | default(false) or build_from_source }}"
 
-    case "$_ostype" in
-    Linux)
-      _ostype=unknown-linux-gnu
-      ;;
-    Darwin)
-      if [[ $_cputype = arm64 ]]; then
-        _cputype=aarch64
-      fi
-      _ostype=apple-darwin
-      ;;
-    *)
-      err "machine architecture is currently unsupported"
-      ;;
-    esac
-    TARGET_ARCH="${_cputype}-${_ostype}"
-    # echo $TARGET_ARCH
+- name: Install Jito-Solana from binaries
+  import_tasks: install/install_jito_from_binaries.yml
+  when: not should_build_from_source
 
-    SOLANA_DOWNLOAD_ROOT="https://github.com/jito-foundation/jito-solana/releases/download"
-    if [ "$TARGET_ARCH" = "aarch64-unknown-linux-gnu" ]; then
-      SOLANA_DOWNLOAD_ROOT="https://solv-store.s3.us-east-1.amazonaws.com/jito-solana/releases/download"
-    fi
-    SOLANA_DOWNLOAD_URL="$SOLANA_DOWNLOAD_ROOT/{{ jito_tag }}/$TARGET_ARCH.tar.bz2"
-    echo $SOLANA_DOWNLOAD_URL
-  register: solana_download_url
+- name: Build and install Jito from source
+  import_tasks: install/install_jito_from_source.yml
+  when: should_build_from_source
 
-- name: DEBUG SOLANA_DOWNLOAD_URL
-  ansible.builtin.debug:
-    msg: "{{ solana_download_url.stdout }}"
-
-# - name: Echo SOLANA_DOWNLOAD_URL
-#   shell:
-#     echo "$SOLANA_DOWNLOAD_URL"
-#   environment:
-#     SOLANA_DOWNLOAD_URL: "{{ solana_download_url.stdout }}"
-
-- name: Create solana cli releases directory
-  ansible.builtin.file:
-    path: "{{ solana_installed_releases_dir }}/{{ jito_tag }}"
-    state: directory
-    mode: '0755'
-
-- name: Unarchive solana binaries
-  ansible.builtin.unarchive:
-    src: "{{ solana_download_url.stdout }}"
-    dest: "{{ solana_installed_releases_dir }}/{{ jito_tag }}"
-    remote_src: true
-    creates: "{{ solana_installed_releases_dir }}/{{ jito_tag }}/bin/agave-validator"
-  ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode
-
-- name: Create symlink to new release
-  ansible.builtin.file:
-    src: "{{ solana_user_dir }}/.local/share/solana/install/releases/{{ jito_tag }}"
-    dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-    state: link
-    force: true
-
-# - name: create download dir
-#   file:
-#     path: /home/sol/solana
-#     state: directory
-#     owner: "{{ solana_user }}"
-#     group: "{{ solana_user }}"
-#   tags:
-#     - cli.install
-
-# - name: install solana
-#   block:
-#     - name: download latest solana release installer
-#       get_url:
-#         url: "https://release.anza.xyz/{{ agave_version | default('stable') }}/install"
-#         dest: /home/sol/solana/
-#         mode: 0755
-
-#     - name: run solana installer
-#       shell: /home/sol/solana/install
-#   become: true
-#   become_user: "{{ solana_user }}"
-#   tags:
-#     - cli.install
-
-# - name: remove installer
-#   file:
-#     path: /tmp/solana
-#     state: absent
-#   tags:
-#     - cli.install
+- name: Installation complete
+  debug:
+    msg: >-
+      Jito-Solana {{ jito_version }} has been successfully installed
+      {% if should_build_from_source %}
+      (built from source)
+      {% else %}
+      (from binaries)
+      {% endif %}

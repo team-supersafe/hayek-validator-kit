@@ -1,2 +1,29 @@
 ---
-#Solana Localnet-specific, non-secret (rare) variables
+#Solana Testnet-specific, non-secret (rare) variables
+jito_urls:
+  dallas:
+    block_engine: "https://dallas.testnet.block-engine.jito.wtf"
+    relayer: "http://dallas.testnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "141.98.218.45:1002"
+    ntp_server: "ntp.dallas.jito.wtf"
+  newyork:
+    block_engine: "https://ny.testnet.block-engine.jito.wtf"
+    relayer: "http://ny.testnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "141.98.216.132:1002"
+    ntp_server: "ntp.dallas.jito.wtf"
+
+expected_genesis_hash: ""
+solana_metrics_url: ""
+limit_ledger_size: 50000000
+poh_pinned_cpu_core_enabled: false
+poh_pinned_cpu_core: 2
+
+solana_gossip_entrypoints:
+  - gossip-entrypoint:8001
+
+known_validators: []
+
+jito_tip_payment_program_pubkey: "GJHtFqM9agxPmkeKjHny6qiRKrXZALvvFGiKf11QE7hy"
+jito_tip_distribution_program_pubkey: "F2Zu7QZiTYUhPd7u9ukRVwxh7B71oA3NMJcHuCHc29P2"
+jito_merkle_root_upload_authority: "GZctHpWXmsZC1YHACTGGcHhYxjdRqQvTpYkb9LMvxDib"
+jito_commission_bps: 0

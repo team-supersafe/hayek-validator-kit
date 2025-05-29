@@ -3,6 +3,11 @@
   import_tasks: precheck.yml
   tags: [solana_validator_jito, precheck]
 
+- name: Prepare variables needed for the role
+  import_tasks: prepare.yml
+  tags: [solana_validator_jito, prepare]
+
+# Jito relayer installation and configuration
 - when: jito_relayer_type == 'co-hosted'
   block:
     - name: Check for Co-hosted Relayer installation
@@ -11,11 +16,10 @@
       import_tasks: jito_relayer_cohosted/config.yml
     - name: Verify Co-hosted Relayer installation and configuration are correct
       import_tasks: jito_relayer_cohosted/verify.yml
+      
+# Jito client installation and configuration
+- name: Setup Jito client
+  import_tasks: jito_client/main.yml
 
-# - block:
-#     - name: Install Jito-Solana client
-#       import_tasks: jito_client/install.yml
-#     - name: Configure the Jito-Solana client post installation
-#       import_tasks: jito_client/config.yml
-#     - name: Verify Jito-Solana client installation and configuration are correct
-#       import_tasks: jito_client/verify.yml
+- name: Print Summary 
+  import_tasks: summary.yml

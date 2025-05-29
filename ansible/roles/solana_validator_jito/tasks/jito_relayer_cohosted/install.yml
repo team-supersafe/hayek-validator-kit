@@ -1,5 +1,5 @@
---- 
-- name: Installing Jito Relayer Co-Hosted 
+---
+- name: Installing Jito Relayer Co-Hosted
   ansible.builtin.debug:
     msg: "Setting up Co-Hosted Jito Relayer"
 
@@ -13,6 +13,7 @@
     - name: Install packages
       ansible.builtin.apt:
         name:
+          - jq
           - git
           - libssl-dev
           - libudev-dev
@@ -35,7 +36,3 @@
   import_tasks: build_from_source.yml
   tags:
     - jito_relayer.build
-
-- name: Debug Message 
-  ansible.builtin.debug:
-    msg: "Jito Relayer setup completed!"

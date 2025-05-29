@@ -19,7 +19,7 @@
 - name: Create Jito Relayer startup script
   when: not ansible_check_mode
   ansible.builtin.template:
-    src: startup.sh.j2
+    src: jito-relayer.startup.j2
     dest: "{{ jito_relayer_startup_script }}"
     mode: "0754"
     owner: "{{ solana_user }}"

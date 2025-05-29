@@ -1,12 +1,12 @@
 ---
 - name: Check if Solana keypair exists
   ansible.builtin.stat:
-    path: "{{ jito_relayer_keys_dir }}/jito-relayer-block-engine-authentication.json"
+    path: "{{ validator_keys_dir }}/jito-relayer-block-engine-authentication.json"
   register: keypair_stat
   tags:
     - jito_relayer.check.keys
 
 - name: "Require block engine authentication keypair"
   ansible.builtin.fail:
-    msg: "jito-relayer-block-engine-authentication.json does not exist locally at {{ jito_relayer_keys_dir }}/jito-relayer-block-engine-authentication.json"
+    msg: "jito-relayer-block-engine-authentication.json does not exist locally at {{ validator_keys_dir }}/jito-relayer-block-engine-authentication.json"
   when: not keypair_stat.stat.exists|bool

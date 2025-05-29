@@ -1,0 +1,70 @@
+---
+- name: Set Jito tag
+  ansible.builtin.set_fact:
+    jito_tag: "v{{ jito_version }}-jito"
+
+- name: Set download URL
+  ansible.builtin.set_fact:
+    solana_download_url: >-
+      {% if host_arch == 'aarch64-unknown-linux-gnu' %}
+        https://solv-store.s3.us-east-1.amazonaws.com/jito-solana/releases/download/{{ jito_tag }}/solana-release-{{ host_arch }}.tar.bz2
+      {% else %}
+        https://github.com/jito-foundation/jito-solana/releases/download/{{ jito_tag }}/solana-release-{{ host_arch }}.tar.bz2
+      {% endif %}
+
+- name: Create temporary directory for download
+  ansible.builtin.file:
+    path: "{{ ansible_env.TMPDIR | default('/tmp') }}/jito-solana-{{ jito_tag }}"
+    state: directory
+    mode: '0755'
+  register: temp_dir
+
+- name: Download Jito-Solana binaries
+  ansible.builtin.get_url:
+    url: "{{ solana_download_url }}"
+    dest: "{{ temp_dir.path }}/{{ host_arch }}.tar.bz2"
+    mode: '0644'
+  register: download_result
+
+- name: Create solana releases directory
+  ansible.builtin.file:
+    path: "{{ solana_installed_releases_dir }}/{{ jito_tag }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+
+- name: Extract Jito-Solana binaries
+  ansible.builtin.unarchive:
+    src: "{{ temp_dir.path }}/{{ host_arch }}.tar.bz2"
+    dest: "{{ solana_installed_releases_dir }}/{{ jito_tag }}"
+    remote_src: true
+    creates: "{{ solana_installed_releases_dir }}/{{ jito_tag }}/bin/agave-validator"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  register: extract_result
+
+- name: Create symlink to new release
+  ansible.builtin.file:
+    src: "{{ solana_installed_releases_dir }}/{{ jito_tag }}/solana-release"
+    dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+    state: link
+    force: true
+
+- name: Verify Jito-Solana installation
+  ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
+  register: version_check
+  changed_when: false
+  failed_when: jito_version not in version_check.stdout
+
+- name: Clean up temporary directory
+  ansible.builtin.file:
+    path: "{{ temp_dir.path }}"
+    state: absent
+  when: temp_dir is defined
+
+- name: Installation complete
+  ansible.builtin.debug:
+    msg: "Jito-Solana {{ jito_version }} has been successfully installed"

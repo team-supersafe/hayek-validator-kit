@@ -9,19 +9,23 @@
 
 - name: Install rust
   import_tasks: install.yml
+  when: not rust_already_installed | default(false)
   tags: [rust, install]
 
 - name: Configure the rust environment post installation
   import_tasks: config.yml
+  when: not rust_already_installed | default(false)
   tags: [rust, config]
 
-- when: rust_verify | default(true)
-  name: Verify rust installation is correct
+- name: Verify rust installation is correct
   import_tasks: verify.yml
+  when: >
+    rust_verify | default(true) and
+    not rust_already_installed | default(false)
   tags: [rust, verify]
 
 - name: Rust environment setup complete
   debug:
     msg: >-
-      Rust environment has been installed, configured{{ ' and verified' if rust_verify | default(true) else '' }}.
+      Rust environment has been {{ 'already installed' if rust_already_installed | default(false) else 'installed, configured' + (' and verified' if rust_verify | default(true) else '') }}.
   tags: [rust, done]

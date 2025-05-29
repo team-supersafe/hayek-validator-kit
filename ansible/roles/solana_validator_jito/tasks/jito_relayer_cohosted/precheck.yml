@@ -21,12 +21,8 @@
 - name: Check if Rust is installed
   command: rustc --version
   register: rustc_check
-  ignore_errors: yes
-
-- when: rustc_check.rc != 0
-  name: Fail if Rust is not installed
-  fail:
-    msg: "Rust is not installed. Please install Rust before proceeding."
+  failed_when: rustc_check.rc != 0
+  failed_msg: "Rust is not installed. Please install Rust before proceeding."
 
 - name: Check if Solana CLI is installed
   command: solana --version
@@ -35,5 +31,5 @@
 
 - when: solana_check.rc != 0
   name: Fail if Solana CLI is not installed
-  fail:
+  ansible.builtin.fail:
     msg: "Solana CLI is not installed. Please install Solana CLI before proceeding."

@@ -1,4 +1,8 @@
 ---
-jito_relayer_keys_dir: "{{ keys_dir }}/{{ validator_name }}"
+# Other variables are expected as input when calling this role 
+# and checked during the role's precheck task
+# e.g. jito_relayer_type, etc.
 jito_relayer_install_dir: "{{ solana_user_dir }}/.local/share/jito-relayer/install/active_release"
-jito_block_engine_url: "{{ jito_urls[('jito_' + solana_cluster + '_block_engine_city')]['block_engine'] }}"
+jito_repo_url: "https://github.com/jito-foundation/jito-solana.git"
+jito_repo_dest: "{{ solana_user_dir }}/build/jito-solana"
+

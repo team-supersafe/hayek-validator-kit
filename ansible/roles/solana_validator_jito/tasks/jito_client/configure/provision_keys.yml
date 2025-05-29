@@ -1,0 +1,85 @@
+---
+- name: Configure validator keys
+  block:
+    - name: Ensure validator_keys_dir exists
+      ansible.builtin.file:
+        path: "{{ validator_keys_dir }}"
+        state: directory
+        mode: '0755'
+      tags: [jito_client, check.keys]
+
+    # Copy staked-identity.json keypair
+    - name: Check if staked-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/staked-identity.json"
+      register: staked_identity_file
+      delegate_to: localhost
+      run_once: true
+      tags: [jito_client, check.keys]
+
+    - name: Fail if staked-identity.json is missing
+      ansible.builtin.fail:
+        msg: "staked-identity.json not found in {{ ansible_keys_dir }}"
+      when: not staked_identity_file.stat.exists
+      tags: [jito_client, check.keys]
+
+    - name: Copy staked-identity.json to validator_keys_dir
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/staked-identity.json"
+        dest: "{{ validator_keys_dir }}/staked-identity.json"
+        mode: '0600'
+      tags: [jito_client, check.keys]
+
+    # Copy vote-account.json keypair
+    - name: Check if vote-account.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/vote-account.json"
+      register: vote_account_file
+      delegate_to: localhost
+      run_once: true
+      tags: [jito_client, check.keys]
+
+    - name: Fail if vote-account.json is missing
+      ansible.builtin.fail:
+        msg: "vote-account.json not found in {{ ansible_keys_dir }}"
+      when: not vote_account_file.stat.exists
+      tags: [jito_client, check.keys]
+
+    - name: Copy vote-account.json to validator_keys_dir
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/vote-account.json"
+        dest: "{{ validator_keys_dir }}/vote-account.json"
+        mode: '0600'
+      tags: [jito_client, check.keys]
+
+    # Generate unstaked-identity.json keypair
+    - name: Generate unstaked-identity.json keypair
+      ansible.builtin.shell: |
+        . "$HOME/.cargo/env"
+        . "$HOME/.bashrc"
+        {{ solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o unstaked-identity.json -f
+      args:
+        chdir: "{{ validator_keys_dir }}"
+      register: keygen_result
+      tags: [jito_client, check.keys]
+
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to upload validator keys. Error: {{ keygen_result }}"
+      when: keygen_result.rc != 0
+      tags: [jito_client, check.keys]
+
+    # Create identity.json symlink based on setup_voting_validator
+    - name: Create identity.json symlink
+      ansible.builtin.file:
+        src: "{{ validator_keys_dir }}/{{ 'staked-identity.json' if setup_voting_validator else 'unstaked-identity.json' }}"
+        dest: "{{ validator_keys_dir }}/identity.json"
+        state: link
+        force: true
+      tags: [jito_client, check.keys]
+
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to upload validator keys. Error: {{ ansible_failed_result }}"
+      tags: [jito_client, check.keys]
