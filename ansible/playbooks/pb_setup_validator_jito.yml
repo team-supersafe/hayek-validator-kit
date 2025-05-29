@@ -17,7 +17,7 @@
 #   -e "target_host=host-charlie" \
 #   -e "solana_cluster=localnet" \
 #   -e "jito_version=2.2.14" \
-#   -e "jito_relayer_type=co-hosted" \
+#   -e "jito_relayer_type=shared" \
 #   -e "jito_relayer_version=0.3.1" \
 #   -e "jito_force_build=true" \ # Optional: Force build Jito regardless of architecture
 #   -e "force_stop_service=true" \ # Optional: Use this if a validator service is already running
