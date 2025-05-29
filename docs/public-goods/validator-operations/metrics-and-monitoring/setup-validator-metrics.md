@@ -1,7 +1,123 @@
 ---
-description: All this configuration where implemented in a separate Box
+description: All this configuration was implemented in a separate Box
 ---
 # Setup Validator Metrics
+
+## Hayek Monitoring Environment
+
+For monitoring our validator, we use **Telegraf**, a lightweight metrics collection agent. It runs directly on the validator nodes and gathers various hardware metrics such as:
+
+- CPU performance
+- NVMe health and usage
+- Network traffic
+- RAM usage
+
+For validator-specific metrics (such as block production, vote credits, identity balance, etc.), we rely on the **Stakeconomy scripts**. All collected metrics are sent to an external time-series database powered by **InfluxDB**.
+
+### Alerting System
+
+We use **Watchtower** for monitoring the validator's health across the Solana cluster. Watchtower runs on a separate machine and continuously checks validator status. If it detects any issues (delinquency, low balance), it sends alerts through multiple channels such as:
+
+- Telegraf
+- Discord
+
+### Hardware Alerts
+
+For hardware-related alerts, we rely on **Grafana Alerts**. These are configured to notify us when metrics exceed defined thresholds, including:
+
+- High CPU usage
+- High memory usage
+- NVMe disks reaching critical usage levels
+
+This setup ensures both the performance and reliability of our validator are actively monitored and issues are promptly addressed.
+
+### Setup Grafana
+
+You can install it yourself or you can use a provider template such as ***Vultr***, which is easy by ***selecting the server, operating system and at the marketplace center find Grafana***.
+If you prefer to install Grafana you can use the official guide at
+https://grafana.com/docs/grafana/latest/setup-grafana/installation/
+else you can use Grafana Cloud if you don't want to pay for a private server, you have to be aware Grafana Cloud has some retention metrics limitations
+https://grafana.com/docs/grafana-cloud/
+
+Once your Grafana is running you need to open port 3000 in your firewall
+
+UFW
+```bash
+ufw allow 3000/tcp
+ufw reload
+```
+
+Else for proper monitoring system you need to add an SSL certificate to your Grafana Server
+
+You can use an auto-signed certificate or much better you can use a free certificate through Let's Encrypt
+
+### Enable SSL 
+
+Install Certbot
+```bash
+apt install certbot
+```
+
+***For NGINX***
+
+```bash
+apt install python3-certbot-nginx
+```
+
+Get Certificate
+
+```bash
+certbot --nginx -d your-domain.com -d www.yourdomain.com --email your@email.com --agree-tos --no-eff-email
+```
+
+***For Apache***
+
+```bash
+apt install python3-certbot-apache
+```
+
+Get Certificate
+
+```bash
+certbot --apache -d your-domain.com -d www.yourdomain.com --email your@email.com --agree-tos --no-eff-email
+```
+
+After getting the certificates you need to add them to Grafana, you must go to Grafana folder configuration and add the certificates path
+
+```bash
+nano /etc/grafana/grafana.ini
+## locate the certificates lines and add / edit the Let's Encrypt certificates
+cert_file = /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+cert_key = /etc/letsencrypt/live/yourdomain.com/privkey.pem
+```
+
+You need to make sure the Grafana user has the read privileges over these files, for that identify which user Grafana is using for running the systemd service
+
+```bash
+systemctl show grafana-server -p User
+###output message
+#User=grafana
+```
+
+You need to grant read privileges for that user for certificates
+
+```bash
+chmod root:grafana /etc/letsencrypt/live/yourdomain.com/{fullchain.pem,privkey.pem}
+chmod 640 root:grafana /etc/letsencrypt/live/yourdomain.com/{fullchain.pem,privkey.pem}
+```
+
+Restart Grafana Service
+
+```bash
+systemctl restart grafana-server
+```
+
+Check your Grafana
+https://yourdomain.com:3000
+
+If you install Grafana through provider templates such as Vultr they will provide you the credentials.
+
+If you used the self installation see the Grafana docs link above.
 
 ## Setup InfluxDB
 
@@ -161,13 +277,13 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-This script is charged tosent the alert to DISCORD and TELEGRAM Chanels\
-Inside this script we have some variables we need to be aware
+This script is charged to send the alert to DISCORD and TELEGRAM Channels.
+Inside this script we have some variables we need to be aware of:
 
 ```bash
 # Alert Intervals (in seconds)
 VALIDATOR_DELINQUENT_ALERT_INTERVAL = 180  # Time between delinquent alerts (3 minutes)
-LOW_BALANCE_ALERT_INTERVAL = 60 # Time between alerts when the validator have low ballance
+LOW_BALANCE_ALERT_INTERVAL = 60 # Time between alerts when the validator has low balance
 SUGGESTED_BALANCE = 10   # Suggested balance in SOL for identity accounts
 # Enable/Disable specific alert types
 ENABLE_DELINQUENT_ALERTS = True      # Set to False to disable validator delinquent alerts
@@ -256,7 +372,7 @@ User=root
 WantedBy=multi-user.target
 ```
 
-The script "send\_block\_metrics\_v6.sh" will send the metrics to a separate database which is only dedicated for block production metrics.\
+The script "send_block_metrics_v6.sh" will send the metrics to a separate database which is only dedicated for block production metrics.
 This script collects the metrics for block production through Solana CLI and also collects epoch information:
 
 ```bash
@@ -290,7 +406,7 @@ INFLUX_PASS="<DB_PASSWORD>"
 SOLANA_BIN="/root/.local/share/solana/install/active_release/bin/solana"
 ```
 
-This script "/usr/local/bin/send\_validator\_metrics.sh" obtein metrics from Solana clusters API and solana CLI, else pull metrics from stakewiz API.
+This script "/usr/local/bin/send_validator_metrics.sh" obtains metrics from Solana clusters API and Solana CLI, else pulls metrics from stakewiz API.
 
 Here are some variables you should be aware of for this script:
 
@@ -299,12 +415,12 @@ MAINNET_VOTE_ACCOUNT="<VOTEKEY>"
 MAINNET_IDENTITY_KEY="<PUBKEY>"
 MAINNET_RPC_API="https://api.mainnet-beta.solana.com"
 MAINNET_HOST="<SERVERNAME>"
-MAINNET_STAKEWIZ_ENABLED=true # If is false don't pull metrics from stakewiz APi 
+MAINNET_STAKEWIZ_ENABLED=true # If false don't pull metrics from stakewiz API 
 MAINNET_GOSSIP_ENABLED=true 
 
 # ===== INFLUXDB CONFIGURATION =====
 INFLUX_URL="https://validator.secu.one:8086"
-INFLUX_DB="< INFLUX_DATABASE>"
+INFLUX_DB="<INFLUX_DATABASE>"
 INFLUX_USER="<DB_USER>"
 INFLUX_PASS="<DB_PASSWORD>"
 
@@ -321,7 +437,7 @@ chmod +x /usr/local/bin/send_validator_metrics.sh
 
 ## Setup JPool Rank Fetcher
 
-Jpool doesn't have an API which we can use to get metrics and scores, so we had to use scraping methods to get the metrics. JPool doesn't use Cloudflare Turnstile for captcha challenge, so we are able to get these metrics.
+JPool doesn't have an API which we can use to get metrics and scores, so we had to use scraping methods to get the metrics. JPool doesn't use Cloudflare Turnstile for captcha challenge, so we are able to get these metrics.
 
 First we need to create a Python virtual environment to install some dependencies.
 
