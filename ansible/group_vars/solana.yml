@@ -1,0 +1,31 @@
+# Variables that apply to all hosts in the solana group
+
+solana_user: 'sol'
+solana_user_dir: "/home/{{ solana_user }}"
+validator_service_name: "sol"
+
+# User variables
+keys_dir: "{{ solana_user_dir }}/keys"
+build_dir: "{{ solana_user_dir }}/build"
+scripts_dir: "{{ solana_user_dir }}/bin"
+logs_dir: "{{ solana_user_dir }}/logs"
+solana_install_dir: "{{ solana_user_dir }}/.local/share/solana/install/active_release/bin"
+
+# Disk mount points configuration
+ledger_path: "{{ mount_base_path }}/ledger"
+ledger_device: "/dev/nvme0n1"
+ledger_fstype: "ext4"
+accounts_path: "{{ mount_base_path }}/accounts"
+accounts_device: "/dev/nvme1n1"
+accounts_fstype: "ext4"
+snapshots_path: "{{ mount_base_path }}/snapshots"
+
+# Solana service settings
+snapshot_interval_slots: 0 # 0 means no snapshots are taken
+
+# Solana service network settings
+solana_rpc_port: 8899 # RPC port
+open_solana_ports_start: 8000 # Start of the range of ports to open for Solana services
+open_solana_ports_end: 8020 # End of the range of ports to open for Solana services
+gossip_port: 8001 # Gossip port
+minimal_snapshot_download_speed: 31457280 # Minimal snapshot download speed in bytes per second
