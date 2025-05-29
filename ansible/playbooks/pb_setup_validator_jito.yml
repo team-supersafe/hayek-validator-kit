@@ -13,7 +13,7 @@
 # ansible-playbook playbooks/pb_setup_validator_jito.yml \
 #   -i hosts.yml \
 #   --limit host-charlie \
-#   -e "validator_name=emilia_validator" \
+#   -e "validator_name=penny" \
 #   -e "target_host=host-charlie" \
 #   -e "solana_cluster=localnet" \
 #   -e "jito_version=2.2.14" \
@@ -29,15 +29,6 @@
   become: false
 
   pre_tasks:
-    - name: Validate that target_host matches the limited host
-      ansible.builtin.assert:
-        that:
-          - ansible_play_hosts | length == 1
-          - target_host == ansible_play_hosts[0]
-        fail_msg: >
-          'target_host' ({{ target_host }}) does not match the actual host targeted ({{ ansible_play_hosts[0] }}).
-          Make sure you run this playbook with: --limit {{ target_host }} -e "target_host={{ target_host }}"
-
     - name: Assert required parameters are defined
       ansible.builtin.assert:
         that:
@@ -60,6 +51,23 @@
             - force_stop_service (set to true to force stop existing validator service)
             - setup_voting_validator (set to true to use staked-identity.json as identity.json)
             - jito_force_build (set to true to force build Jito regardless of architecture)
+
+    - name: Debug ansible_limit and target_host
+      ansible.builtin.debug:
+        msg:
+          - "ansible_limit: {{ ansible_limit | default('not defined') }}"
+          - "ansible_limit type: {{ ansible_limit | type_debug }}"
+          - "target_host: {{ target_host }}"
+          - "ansible_play_hosts: {{ ansible_play_hosts }}"
+
+    - name: Validate that target_host matches the limited host
+      ansible.builtin.assert:
+        that:
+          - ansible_limit is defined
+          - target_host == ansible_limit
+        fail_msg: >
+          This playbook must be run with --limit to target exactly one host.
+          Make sure you run this playbook with: --limit {{ target_host }} -e "target_host={{ target_host }}"
 
     - name: Validate jito_relayer_type value
       ansible.builtin.assert:

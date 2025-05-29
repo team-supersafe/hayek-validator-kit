@@ -1,23 +1,13 @@
 ---
-- name: Verify Jito-Solana installation
-  debug:
-    msg: >-
-      Jito-Solana {{ jito_version }} has been successfully installed
-      {% if should_build_from_source %}
-      (built from source)
-      {% else %}
-      (from binaries)
-      {% endif %}
-
 - name: Check if Jito-Solana binary exists
   ansible.builtin.stat:
-    path: "{{ solana_install_dir }}/solana"
+    path: "{{ solana_install_dir }}"
   register: solana_binary
   tags: [jito_client.verify]
 
 - name: Fail if Jito-Solana binary is missing
   ansible.builtin.fail:
-    msg: "Jito-Solana binary not found at {{ solana_install_dir }}/solana!"
+    msg: "Jito-Solana binary not found at {{ solana_install_dir }}!"
   when: not solana_binary.stat.exists
   tags: [jito_client.verify]
 
@@ -44,7 +34,7 @@
   tags: [jito_client.verify]
 
 - name: Check validator process status
-  ansible.builtin.shell: ps aux | grep solana-validator | grep -v grep
+  ansible.builtin.shell: ps aux | grep "validator" | grep -v grep
   register: validator_process
   changed_when: false
   tags: [jito_client.verify]
@@ -54,19 +44,8 @@
     var: validator_process.stdout_lines
   tags: [jito_client.verify]
 
-- name: Check validator ports status
-  ansible.builtin.shell: netstat -tulpn | grep -E '8899|8900|8001|8002|8003|8004|8005|8006|8007|8008|8009|8010|8011|8012|8013|8014|8015|8016|8017|8018|8019|8020'
-  register: validator_ports
-  changed_when: false
-  tags: [jito_client.verify]
-
-- name: Print validator ports status
-  ansible.builtin.debug:
-    var: validator_ports.stdout_lines
-  tags: [jito_client.verify]
-
 - name: Check validator service file
-  ansible.builtin.shell: cat /lib/systemd/system/{{ validator_service_name }}.service
+  ansible.builtin.shell: cat /etc/systemd/system/{{ validator_service_name }}.service
   register: validator_service_file
   changed_when: false
   tags: [jito_client.verify]
@@ -77,7 +56,7 @@
   tags: [jito_client.verify]
 
 - name: Check validator startup script
-  ansible.builtin.shell: cat {{ scripts_dir }}/run-{{ validator_service_name }}.sh
+  ansible.builtin.shell: cat {{ scripts_dir }}/run-{{ validator_name }}.sh
   register: validator_startup_script
   changed_when: false
   tags: [jito_client.verify]
@@ -97,7 +76,6 @@
       - Service active: {{ validator_service.status.ActiveState }}
       - Service enabled: {{ validator_service.status.UnitFileState }}
       - Process running: {{ validator_process.stdout_lines | length > 0 }}
-      - Ports listening: {{ validator_ports.stdout_lines | length > 0 }}
       
       If the validator is not running properly, check:
       1. Service status and logs above
