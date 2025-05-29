@@ -32,7 +32,7 @@
   become: true
   ansible.builtin.template:
     src: jito-relayer.service.j2
-    dest: "/lib/systemd/system/{{ jito_relayer_service_name }}.service"
+    dest: "/etc/systemd/system/{{ jito_relayer_service_name }}.service"
     mode: "0644"
     owner: root
     group: root

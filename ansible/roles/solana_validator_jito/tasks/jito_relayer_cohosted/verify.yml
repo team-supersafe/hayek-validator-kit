@@ -45,7 +45,7 @@
   tags: [jito_relayer.verify]
 
 - name: Check Jito relayer service file
-  ansible.builtin.shell: cat /lib/systemd/system/{{ jito_relayer_service_name }}.service
+  ansible.builtin.shell: cat /etc/systemd/system/{{ jito_relayer_service_name }}.service
   register: relayer_service_file
   changed_when: false
   tags: [jito_relayer.verify]

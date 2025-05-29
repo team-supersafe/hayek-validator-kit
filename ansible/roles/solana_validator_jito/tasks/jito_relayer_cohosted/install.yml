@@ -3,29 +3,43 @@
   ansible.builtin.debug:
     msg: "Setting up Co-Hosted Jito Relayer"
 
+- name: Gather package facts
+  ansible.builtin.package_facts:
+    manager: apt
+
+- name: Set required packages
+  ansible.builtin.set_fact:
+    required_packages:
+      - jq
+      - git
+      - libssl-dev
+      - libudev-dev
+      - pkg-config
+      - zlib1g-dev
+      - llvm
+      - clang
+      - cmake
+      - make
+      - libprotobuf-dev
+      - protobuf-compiler
+
+- name: Check which packages need to be installed
+  ansible.builtin.set_fact:
+    packages_to_install: "{{ required_packages | difference(ansible_facts.packages.keys() | list) }}"
+
 - name: Install prerequisites
   become: true
   block:
     - name: Update package index
       ansible.builtin.apt:
         update_cache: yes
+      when: packages_to_install | length > 0
 
-    - name: Install packages
+    - name: Install missing packages
       ansible.builtin.apt:
-        name:
-          - jq
-          - git
-          - libssl-dev
-          - libudev-dev
-          - pkg-config
-          - zlib1g-dev
-          - llvm
-          - clang
-          - cmake
-          - make
-          - libprotobuf-dev
-          - protobuf-compiler
+        name: "{{ packages_to_install }}"
         update_cache: true
+      when: packages_to_install | length > 0
 
 - name: Generate Jito relayer Auth keys
   import_tasks: gen_relayer_keys.yml

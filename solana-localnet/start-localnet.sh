@@ -191,8 +191,6 @@ cleanup-host() {
     sudo systemctl disable sol 2> /dev/null || true
     sudo rm /etc/systemd/system/sol.service 2> /dev/null || true
     sudo rm /etc/systemd/system/sol.service 2> /dev/null || true # and symlinks that might be related
-    sudo rm /usr/lib/systemd/system/sol.service 2> /dev/null || true 
-    sudo rm /usr/lib/systemd/system/sol.servic 2> /dev/null || true # and symlinks that might be related
     sudo systemctl daemon-reload
     sudo systemctl reset-failed
   "
