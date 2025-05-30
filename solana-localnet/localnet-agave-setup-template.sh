@@ -7,7 +7,7 @@ KEYS_DIR=
 agave-validator \
     --identity $KEYS_DIR/identity.json \
     --vote-account $VOTE_ACCOUNT_PUBKEY \
-    --authorized-voter $KEYS_DIR/staked-identity.json \
+    --authorized-voter $KEYS_DIR/primary-target-identity.json \
     --known-validator $KNOWN_VALIDATOR_PUBKEY \
     --only-known-rpc \
     --log /home/sol/logs/agave-validator.log \

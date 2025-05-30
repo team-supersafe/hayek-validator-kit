@@ -21,7 +21,7 @@
 #   -e "jito_relayer_version=0.3.1" \
 #   -e "jito_force_build=true" \ # Optional: Force build Jito regardless of architecture
 #   -e "force_stop_service=true" \ # Optional: Use this if a validator service is already running
-#   -e "setup_voting_validator=true"  # Optional: Set to true to use staked-identity.json as identity.json
+#   -e "setup_voting_validator=true"  # Optional: Set to true to use primary-target-identity.json as identity.json
 
 - name: Install Jito Client with Co-Hosted Relayer
   hosts: "{{ target_host }}"
@@ -49,7 +49,7 @@
             - jito_relayer_version
           Optional:
             - force_stop_service (set to true to force stop existing validator service)
-            - setup_voting_validator (set to true to use staked-identity.json as identity.json)
+            - setup_voting_validator (set to true to use primary-target-identity.json as identity.json)
             - jito_force_build (set to true to force build Jito regardless of architecture)
 
     - name: Debug ansible_limit and target_host

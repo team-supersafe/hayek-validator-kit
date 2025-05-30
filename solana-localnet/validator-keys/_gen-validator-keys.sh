@@ -1,13 +1,18 @@
 #!/bin/bash
+
 set -e
 
-# Generate Solana keypairs only if they do not already exist
+# Generate primary target identity
+if [ ! -f primary-target-identity.json ]; then
+    solana-keygen new -s --no-bip39-passphrase -o primary-target-identity.json
+    mv Z1*.json primary-target-identity.json
+    touch primary-target-identity-"$(solana-keygen pubkey primary-target-identity.json)" # handy for fast checking the pubkey
+fi
 
-# validator identity
-if [ ! -f staked-identity.json ]; then
-  solana-keygen grind --starts-with Z1:1
-  mv Z1*.json staked-identity.json
-  touch staked-identity-"$(solana-keygen pubkey staked-identity.json)" # handy for fast checking the pubkey
+# Generate hot spare identity
+if [ ! -f hot-spare-identity.json ]; then
+    solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json
+    touch hot-spare-identity-"$(solana-keygen pubkey hot-spare-identity.json)" # handy for fast checking the pubkey
 fi
 
 # vote account
@@ -44,4 +49,4 @@ if [ ! -f jito-relayer-comms-pvt.pem ]; then
   openssl rsa --in jito-relayer-comms-pvt.pem --pubout --out jito-relayer-comms-pub.pem
 fi
 
-echo "All validator keys have been generated."
+echo "Validator keypairs generated successfully!"

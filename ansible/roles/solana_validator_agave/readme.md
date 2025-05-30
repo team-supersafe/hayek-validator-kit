@@ -180,7 +180,7 @@ nano /home/sol/bin/validator-mainnet.sh
 #!/bin/bash
 export SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=tds,u=testnet_write,p=c4fa841aa918bf8274e3e2a44d77568d9861b3ea"
 exec agave-validator \
-    --identity /home/sol/keys-testnet/staked-identity.json \
+    --identity /home/sol/keys-testnet/primary-target-identity.json \
     --vote-account <vote-account-pubkey> \
     --known-validator 5D1fNXzvv5NjV1ysLjirC4WY92RNsVH18vjmcszZd8on \
     --known-validator dDzy5SR3AXdYWVqbDEkVFdvSPCtS9ihF5kJkHCtXoFs \
@@ -244,7 +244,7 @@ NOTES:
 
 4. Add the `--no-snapshot-fetch` to the validator script
 
-After you know your validator es running fine and catching up and already downloaded a snapshot, add the `--no-snapshot-fetch` to the validator script for the next time it starts. 
+After you know your validator es running fine and catching up and already downloaded a snapshot, add the `--no-snapshot-fetch` to the validator script for the next time it starts.
 
 There are times though, when you want to NOT use `--no-snapshot-fetch`, e.g. if your validator crashes and you fall too far behind then there is usually no way to catch up because you are too far behind the network to make up the progress that the rest of the cluster made, so this is when you want to remove the `--no-snapshot-fetch` flag. See https://youtu.be/HKR5dn5CSZo?si=zrb-dT6NMlgKWXCl&t=1933.
 
@@ -263,7 +263,7 @@ This is a python script that tests a bunch of RPC endpoints that are open to che
 ### Possible Reasons for falling behind (can't catch up)
   - See https://youtu.be/HKR5dn5CSZo?si=xvu47Bcre3L3jF2f&t=2120
   - Snapshots you are downloading are too old (try using known validator, increase minimal download speed, snapshot finder)
-  - If snapshot is good, but you still can't catch up, it's likely a hardware perf issue 
+  - If snapshot is good, but you still can't catch up, it's likely a hardware perf issue
     - Check CPU, Thermal Design Power (TDP), NVMe drives, IOPS, Network, etc.
     - Try another server for a month?
     - Consider upgrading

@@ -8,25 +8,25 @@
         mode: '0755'
       tags: [jito_client, check.keys]
 
-    # Copy staked-identity.json keypair
-    - name: Check if staked-identity.json exists in ansible_keys_dir
+    # Copy primary-target-identity.json keypair
+    - name: Check if primary-target-identity.json exists in ansible_keys_dir
       ansible.builtin.stat:
-        path: "{{ ansible_keys_dir }}/staked-identity.json"
-      register: staked_identity_file
+        path: "{{ ansible_keys_dir }}/primary-target-identity.json"
+      register: primary_target_identity_file
       delegate_to: localhost
       run_once: true
       tags: [jito_client, check.keys]
 
-    - name: Fail if staked-identity.json is missing
+    - name: Fail if primary-target-identity.json is missing
       ansible.builtin.fail:
-        msg: "staked-identity.json not found in {{ ansible_keys_dir }}"
-      when: not staked_identity_file.stat.exists
+        msg: "primary-target-identity.json not found in {{ ansible_keys_dir }}"
+      when: not primary_target_identity_file.stat.exists
       tags: [jito_client, check.keys]
 
-    - name: Copy staked-identity.json to validator_keys_dir
+    - name: Copy primary-target-identity.json to validator_keys_dir
       ansible.builtin.copy:
-        src: "{{ ansible_keys_dir }}/staked-identity.json"
-        dest: "{{ validator_keys_dir }}/staked-identity.json"
+        src: "{{ ansible_keys_dir }}/primary-target-identity.json"
+        dest: "{{ validator_keys_dir }}/primary-target-identity.json"
         mode: '0600'
       tags: [jito_client, check.keys]
 
@@ -52,12 +52,12 @@
         mode: '0600'
       tags: [jito_client, check.keys]
 
-    # Generate unstaked-identity.json keypair
-    - name: Generate unstaked-identity.json keypair
+    # Generate hot-spare-identity.json keypair
+    - name: Generate hot-spare-identity.json keypair
       ansible.builtin.shell: |
         . "$HOME/.cargo/env"
         . "$HOME/.bashrc"
-        {{ solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o unstaked-identity.json -f
+        {{ solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json -f
       args:
         chdir: "{{ validator_keys_dir }}"
       register: keygen_result
@@ -72,7 +72,7 @@
     # Create identity.json symlink based on setup_voting_validator
     - name: Create identity.json symlink
       ansible.builtin.file:
-        src: "{{ validator_keys_dir }}/{{ 'staked-identity.json' if setup_voting_validator else 'unstaked-identity.json' }}"
+        src: "{{ validator_keys_dir }}/{{ 'primary-target-identity.json' if setup_voting_validator else 'hot-spare-identity.json' }}"
         dest: "{{ validator_keys_dir }}/identity.json"
         state: link
         force: true
