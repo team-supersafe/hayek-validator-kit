@@ -49,17 +49,17 @@
 
 - name: Check required validator keypairs
   block:
-    - name: Check if staked-identity.json exists in ansible_keys_dir
+    - name: Check if primary-target-identity.json exists in ansible_keys_dir
       ansible.builtin.stat:
-        path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/staked-identity.json"
-      register: staked_identity_file
+        path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/primary-target-identity.json"
+      register: primary_target_identity_file
       delegate_to: localhost
       run_once: true
 
-    - name: Fail if staked-identity.json is missing
+    - name: Fail if primary-target-identity.json is missing
       ansible.builtin.fail:
-        msg: "staked-identity.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
-      when: not staked_identity_file.stat.exists
+        msg: "primary-target-identity.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+      when: not primary_target_identity_file.stat.exists
 
     - name: Check if vote-account.json exists in ansible_keys_dir
       ansible.builtin.stat:

@@ -117,9 +117,9 @@ mkdir -p "$ANSIBLE_CANOPY_KEYS_DIR"
 cd "$ANSIBLE_CANOPY_KEYS_DIR"
 source "$ANSIBLE_VALIDATORS_KEYS_DIR/_gen-validator-keys.sh"
 #Airdrop 42 localnet SOL to the Canopy validator
-solana -u $CLUSTER_RPC --keypair staked-identity.json airdrop 42
+solana -u $CLUSTER_RPC --keypair primary-target-identity.json airdrop 42
 #Create a vote account for the Canopy validator
-solana -u $CLUSTER_RPC create-vote-account vote-account.json staked-identity.json authorized-withdrawer.json
+solana -u $CLUSTER_RPC create-vote-account vote-account.json primary-target-identity.json authorized-withdrawer.json
 #Create a stake account with 200k SOL in it
 solana -u $CLUSTER_RPC create-stake-account stake-account.json 200000
 #Delegate the stake account to the vote account of the Canopy validator
@@ -154,7 +154,7 @@ generate_tmp_validator_startup_script() {
 agave-validator \\
     --identity ${ALPHA_CANOPY_KEYS_DIR}/identity.json \\
     --vote-account ${VOTE_ACCOUNT_PUBKEY} \\
-    --authorized-voter ${ALPHA_CANOPY_KEYS_DIR}/staked-identity.json \\
+    --authorized-voter ${ALPHA_CANOPY_KEYS_DIR}/primary-target-identity.json \\
     --known-validator ${ENTRYPOINT_IDENTITY_PUBKEY} \\
     --only-known-rpc \\
     --log /home/sol/logs/agave-validator.log \\
@@ -176,7 +176,7 @@ cleanup-tmp-dir() {
 
 # Cleanup the host of the validator
 # Parameters: HOST, SSH_PORT, USER
-# USE: cleanup-host HOST SSH_PORT USER 
+# USE: cleanup-host HOST SSH_PORT USER
 cleanup-host() {
   USER=sol
   SSH_PORT=22
@@ -197,7 +197,7 @@ cleanup-host() {
 }
 
 # Configure the validator on the host
-# USE: configure-canopy-in-host HOST  
+# USE: configure-canopy-in-host HOST
 configure-canopy-in-host() {
   USER=sol
   SSH_PORT=22
@@ -206,8 +206,8 @@ configure-canopy-in-host() {
 
   HOST_SOLANA_BIN="~/.local/share/solana/install/active_release/bin"
 
-  # Copy the staked-identity.json from the Ansible Control to the host
-  scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $ANSIBLE_CANOPY_KEYS_DIR/staked-identity.json "$USER@$HOST:~/staked-identity.json"
+  # Copy the primary-target-identity.json from the Ansible Control to the host
+  scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $ANSIBLE_CANOPY_KEYS_DIR/primary-target-identity.json "$USER@$HOST:~/primary-target-identity.json"
 
   # Generate the validator startup script
   ANSIBLE_CANOPY_STARTUP_SCRIPT=$CURRENT_SCRIPT_RUNTIME_DIR/agave-validator-localnet.sh
@@ -218,7 +218,7 @@ configure-canopy-in-host() {
     echo "Validator startup script could not be created."
     exit 1
   fi
-  
+
   echo "cat validator startup script at $ANSIBLE_CANOPY_STARTUP_SCRIPT"
   cat $ANSIBLE_CANOPY_STARTUP_SCRIPT
   echo
@@ -235,12 +235,12 @@ configure-canopy-in-host() {
     PATH=$HOST_SOLANA_BIN:$PATH
     mkdir -p $ALPHA_CANOPY_KEYS_DIR && chmod 755 $ALPHA_CANOPY_KEYS_DIR
     mkdir -p ~/logs && chmod 755 ~/logs
-    mv ~/staked-identity.json $ALPHA_CANOPY_KEYS_DIR/staked-identity.json
-    ln -sf $ALPHA_CANOPY_KEYS_DIR/staked-identity.json $ALPHA_CANOPY_KEYS_DIR/identity.json
+    mv ~/primary-target-identity.json $ALPHA_CANOPY_KEYS_DIR/primary-target-identity.json
+    ln -sf $ALPHA_CANOPY_KEYS_DIR/primary-target-identity.json $ALPHA_CANOPY_KEYS_DIR/identity.json
 
-    if [ ! -f "$ALPHA_CANOPY_KEYS_DIR/unstaked-identity.json" ]; then
-      echo "Generating validator unstaked-identity..."
-      solana-keygen new -s --no-bip39-passphrase -o "$ALPHA_CANOPY_KEYS_DIR/unstaked-identity.json"
+    if [ ! -f "$ALPHA_CANOPY_KEYS_DIR/hot-spare-identity.json" ]; then
+      echo "Generating hot-spare-identity.json..."
+      solana-keygen new -s --no-bip39-passphrase -o "$ALPHA_CANOPY_KEYS_DIR/hot-spare-identity.json"
     fi
 
 (cat | sudo tee -a /etc/systemd/system/sol.service) <<EOF
@@ -270,13 +270,13 @@ EOF
 echo
 echo "---   Configuring Alpha Host with the Canopy Validator Node   ---"
 echo
-cleanup-host host-alpha 
+cleanup-host host-alpha
 # docker exec -it primary bash -c 'sudo chown -R sol:sol /mnt/ledger && sudo chown -R sol:sol /mnt/accounts && sudo chown -R sol:sol /mnt/snapshots'
 configure-canopy-in-host host-alpha
 
 echo
 echo "---   Configuring Bravo Host as a server that is ready for, but NOT running a validator   ---"
 echo
-cleanup-host host-bravo 
+cleanup-host host-bravo
 # docker exec -it secondary bash -c 'sudo chown -R sol:sol /mnt/ledger && sudo chown -R sol:sol /mnt/accounts && sudo chown -R sol:sol /mnt/snapshots'
 echo "---   ALL DONE. LOCALNET IS RUNNING.   ---"
