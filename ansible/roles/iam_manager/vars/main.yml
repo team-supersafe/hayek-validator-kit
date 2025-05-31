@@ -1,17 +1,4 @@
-# Optional predefined groups
-iam_groups:
-  - name: devs
-    gid: 1001
-  - name: ops
-    gid: 1002
-
-iam_users:
-  - name: alice
-    groups: ['devs']
-    shell: /bin/bash
-    ssh_key: "ssh-rsa AAAAB3Nz..."
-    sudo: true
-  - name: bob
-    groups: ['ops']
-    shell: /bin/bash
-    sudo: false
+---
+# iam variables
+vault_file: "{{ inventory_dir }}/vault/group_vars/email_vars.yml"
+users_file: "~/.new-metal-box-secrets/users.csv"

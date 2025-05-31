@@ -1,9 +1,6 @@
 ---
-- name: Include group creation
-  import_tasks: groups.yml
+- name: Precheck role imputs
+  import_tasks: precheck.yml
 
-- name: Include user creation
-  import_tasks: users.yml
-
-- name: Include sudo config
-  import_tasks: sudo.yml
+- name: Cleanup
+  import_tasks: cleanup.yml
