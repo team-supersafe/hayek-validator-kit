@@ -99,7 +99,7 @@
 # Disk space requirements (experimental)
 - name: Get initial disk space
   ansible.builtin.shell: |
-    df -h /home/sol | awk 'NR==2 {print $4}'
+    df -h "{{ solana_user_dir }}" | awk 'NR==2 {print $4}'
   register: initial_space
   changed_when: false
 

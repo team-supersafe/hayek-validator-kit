@@ -1,11 +1,11 @@
 ---
 # Check final disk space usage
 - name: Check final disk space usage
-  when: jito_relayer_verify | default(true) 
+  when: jito_relayer_verify | default(true)
   block:
     - name: Get current disk space
       ansible.builtin.shell: |
-        df -h /home/sol | awk 'NR==2 {print $4}'
+        df -h "{{ solana_user_dir }}" | awk 'NR==2 {print $4}'
       register: final_space
       changed_when: false
 
@@ -21,7 +21,7 @@
           - Final available space: {{ final_space.stdout }}
           - Space used: {{ space_used }}G
           - Minimum required space (experimental): {{ min_required_space }}
-      
+
 # Display helpful hints for monitoring
 - name: Display validator monitoring hints
   debug:

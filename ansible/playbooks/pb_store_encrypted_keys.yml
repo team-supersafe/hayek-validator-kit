@@ -32,7 +32,7 @@
   tasks:
     - name: Check for required parameters 'validator_name'
       ansible.builtin.fail:
-        msg: "'validator_name' parameters is required. Example: ansible-playbook -i hosts.yml playbooks/manage_vault.yml -e 'validator_name=canopy vault_password=mole'"
+        msg: "'validator_name' parameters is required. Example: ansible-playbook playbooks/manage_vault.yml -e 'validator_name=canopy vault_password=mole'"
       when: validator_name is not defined
 
     - name: Check for required vault password
