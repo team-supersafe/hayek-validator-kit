@@ -74,7 +74,7 @@ LABEL maintainer="eydel.rivero@gmail.com"
 RUN locale-gen en_US.UTF-8
 
 # Install Ansible via Pip.
-ENV PIP_PACKAGES="ansible"
+ENV PIP_PACKAGES="ansible passlib"
 RUN pip3 install $PIP_PACKAGES
 
 # Set workdir
@@ -157,7 +157,7 @@ RUN --mount=type=cache,target=/root/.cache \
     && export PATH=$SOLANA_INSTALL_DIR/active_release/bin:$PATH \
     && solana --version \
     && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.bashrc
-    
+
 # RPC JSON
 EXPOSE 8899/tcp
 # RPC pubsub
