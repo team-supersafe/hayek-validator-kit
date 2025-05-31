@@ -1,23 +1,4 @@
 ---
-- name: Check if SMTP and email variables are defined
-  ansible.builtin.fail:
-    msg: "{{ item }} is not defined. Please define it in your variables."
-  when:
-    - item is not defined
-    - smtp_username is defined or smtp_password is defined
-  loop:
-    - "{{ smtp_host | default('') }}"
-    - "{{ smtp_port | default('') }}"
-    - "{{ smtp_username | default('') }}"
-    - "{{ smtp_password | default('') }}"
-    - "{{ smtp_from | default('') }}"
-    - "{{ daryl_email | default('') }}"
-    - "{{ sol_email | default('') }}"
-    - "{{ eydel_email | default('') }}"
-    - "{{ yamel_email | default('') }}"
-    - "{{ michel_email | default('') }}"
-    - "{{ alex_email | default('') }}"
-
 - name: Check if SSH key files exist
   ansible.builtin.stat:
     path: "{{ inventory_dir }}/iam/users/{{ item }}.pub"

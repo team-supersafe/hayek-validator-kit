@@ -5,3 +5,5 @@ eydel_send_email: false
 yamel_send_email: false
 michel_send_email: false
 alex_send_email: false
+
+vault_file: "{{ inventory_dir }}/vault/group_vars/email_vars.yml"

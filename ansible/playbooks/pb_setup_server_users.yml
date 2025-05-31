@@ -10,10 +10,6 @@
 - name: Setup users for a new metal box
   hosts: new_metal_box
   user: root
-  vars:
-    vault_dir: "/hayek-validator-kit/ansible/vault"
-    vault_file: "{{ vault_dir }}/group_vars/email_vars.yml"
-
   roles:
     - role: iam_manager
 
