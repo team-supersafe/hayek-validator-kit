@@ -1,17 +1,7 @@
-# Optional predefined groups
-iam_groups:
-  - name: devs
-    gid: 1001
-  - name: ops
-    gid: 1002
-
-iam_users:
-  - name: alice
-    groups: ['devs']
-    shell: /bin/bash
-    ssh_key: "ssh-rsa AAAAB3Nz..."
-    sudo: true
-  - name: bob
-    groups: ['ops']
-    shell: /bin/bash
-    sudo: false
+# Email Control Variables
+daryl_send_email: true
+sol_send_email: false
+eydel_send_email: false
+yamel_send_email: false
+michel_send_email: false
+alex_send_email: false
