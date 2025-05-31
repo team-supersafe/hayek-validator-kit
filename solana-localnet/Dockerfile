@@ -1,21 +1,26 @@
 FROM ubuntu:24.04 AS ubuntu-base
 LABEL maintainer="eydel.rivero@gmail.com"
 
-ARG SOLANA_RELEASE=2.1.21
+ARG SOLANA_RELEASE=2.2.14
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Clean up docker
-RUN rm -f /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock* && \
+# Clean up docker and handle apt locks properly
+RUN rm -rf /var/lib/apt/lists/* && \
+    rm -f /var/cache/apt/archives/lock && \
+    rm -f /var/lib/dpkg/lock* && \
     dpkg --configure -a && \
+    apt-get clean && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         openssh-server nano curl git openssl tar jq less tree && \
-    apt-get purge -y --auto-remove
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install dependencies.
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install -y --no-install-recommends \
+# Install dependencies with proper lock handling
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
        apt-utils \
        locales \
        python3-dev \
@@ -25,11 +30,10 @@ RUN --mount=type=cache,target=/var/cache/apt \
        software-properties-common \
        rsyslog sudo iproute2 \
        openssh-client git curl nano openssl tar jq less tree \
-    && apt-get purge -y --auto-remove \
     && apt-get clean \
-    && rm -Rf /var/lib/apt/lists/* \
-    && rm -Rf /usr/share/doc && rm -Rf /usr/share/man
-# RUN sed -i 's/^\($ModLoad imklog\)/#\1/' /etc/rsyslog.conf
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/share/doc \
+    && rm -rf /usr/share/man
 
 # Remove useless Python environment warning flag.
 RUN sudo rm -rf /usr/lib/python3.12/EXTERNALLY-MANAGED
@@ -38,7 +42,7 @@ RUN sudo rm -rf /usr/lib/python3.12/EXTERNALLY-MANAGED
 
 
 FROM alpine AS solana-binaries
-ARG SOLANA_RELEASE=2.1.21
+ARG SOLANA_RELEASE=2.2.14
 
 # ADD "https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download/$SOLANA_RELEASE/solana-release-aarch64-unknown-linux-gnu.tar.bz2" "/$SOLANA_RELEASE.tar.bz2"
 
@@ -117,7 +121,7 @@ CMD [ "bash" ]
 FROM ubuntu-base AS gossip-entrypoint-builder
 LABEL maintainer="eydel.rivero@gmail.com"
 
-ARG SOLANA_RELEASE=2.1.21
+ARG SOLANA_RELEASE=2.2.14
 
 # set workdir
 RUN mkdir -p /opt/code/tools
@@ -157,7 +161,7 @@ RUN --mount=type=cache,target=/root/.cache \
     && export PATH=$SOLANA_INSTALL_DIR/active_release/bin:$PATH \
     && solana --version \
     && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.bashrc
-    
+
 # RPC JSON
 EXPOSE 8899/tcp
 # RPC pubsub
@@ -203,7 +207,7 @@ CMD [""]
 FROM ubuntu-base AS validator-builder
 LABEL maintainer="eydel.rivero@gmail.com"
 
-ARG SOLANA_RELEASE=2.1.21
+ARG SOLANA_RELEASE=2.2.14
 
 # set workdir
 RUN mkdir -p /opt/code/tools

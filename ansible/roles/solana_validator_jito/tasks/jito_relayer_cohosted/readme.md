@@ -15,7 +15,7 @@ You should consider running our own Jito Relayer because:
 There are two options for runing the Jito relayer
 1. Co-Hosted Single Machine (hosted on the same metal as the validator)
     - This is the option recommended by Jito
-    - Does not require external RPC access (it uses the staked validator as RPC)
+    - Does not require external RPC access (it uses the running primary target validator as RPC)
     - No extra machines to monitor
     - Simpler setup
     - It is a ligher process that should not affect the validator process (needs only a few VCPUs)
