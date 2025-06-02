@@ -1,0 +1,133 @@
+---
+# Tasks to prepare both source and destination hosts for the swap operation
+
+- name: Generate SSH key for sol user if not present
+  community.crypto.openssh_keypair:
+    path: "{{ ssh_key_path }}"
+    type: "{{ ssh_key_type }}"
+    size: "{{ ssh_key_size }}"
+  register: ssh_key
+  when: not (ssh_key_path is exists)
+
+- name: Get public key content
+  ansible.builtin.slurp:
+    src: "{{ ssh_key_path }}.pub"
+  register: pubkey
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Authorize key on both hosts
+  delegate_to: "{{ item }}"
+  ansible.posix.authorized_key:
+    user: sol
+    key: "{{ pubkey.content | b64decode }}"
+  loop: "{{ [source_host, destination_host] }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Ensure rsync is installed on both hosts
+  become: true
+  ansible.builtin.apt:
+    name: rsync
+    state: present
+  delegate_to: "{{ item }}"
+  loop: "{{ [source_host, destination_host] }}"
+
+# Determine staked/unstaked identity keypairs on source host
+# and set resolved file path as fact
+- name: Check for staked identity file on source host
+  block:
+    - name: Check for new convention staked identity
+      ansible.builtin.stat:
+        path: "{{ source_host_keys_dir }}/primary-target-identity.json"
+      register: new_staked_identity
+      when: inventory_hostname == source_host
+
+    - name: Check for old convention staked identity
+      ansible.builtin.stat:
+        path: "{{ source_host_keys_dir }}/staked-identity.json"
+      register: old_staked_identity
+      when: inventory_hostname == source_host
+
+    - name: Set source host staked identity path
+      set_fact:
+        source_host_staked_identity_path: >-
+          {% if new_staked_identity.stat.exists %}
+          {{ source_host_keys_dir }}/primary-target-identity.json
+          {% elif old_staked_identity.stat.exists %}
+          {{ source_host_keys_dir }}/staked-identity.json
+          {% else %}
+          {{ '' }}
+          {% endif %}
+      when: inventory_hostname == source_host
+
+    - name: Fail if no primary identity found on source host
+      ansible.builtin.fail:
+        msg: "No primary identity file found on source host. Neither primary-target-identity.json nor staked-identity.json exists in {{ source_host_keys_dir }}"
+      when:
+        - inventory_hostname == source_host
+        - source_host_staked_identity_path == ''
+
+    - name: Check for new convention unstaked identity
+      ansible.builtin.stat:
+        path: "{{ source_host_keys_dir }}/hot-spare-identity.json"
+      register: new_unstaked_identity
+      when: inventory_hostname == source_host
+
+    - name: Check for old convention unstaked identity
+      ansible.builtin.stat:
+        path: "{{ source_host_keys_dir }}/unstaked-identity.json"
+      register: old_unstaked_identity
+      when: inventory_hostname == source_host
+
+    - name: Set source host unstaked identity path
+      set_fact:
+        source_host_unstaked_identity_path: >-
+          {% if new_unstaked_identity.stat.exists %}
+          {{ source_host_keys_dir }}/hot-spare-identity.json
+          {% elif old_unstaked_identity.stat.exists %}
+          {{ source_host_keys_dir }}/unstaked-identity.json
+          {% else %}
+          {{ '' }}
+          {% endif %}
+      when: inventory_hostname == source_host
+
+    - name: Fail if no hot-spare identity found on source host
+      ansible.builtin.fail:
+        msg: "No hot-spare identity file found on source host. Neither hot-spare-identity.json nor unstaked-identity.json exists in {{ source_host_keys_dir }}"
+      when:
+        - inventory_hostname == source_host
+        - source_host_unstaked_identity_path == ''
+
+# Determine staked identity keypair on destination host
+# and set resolved file path as fact
+- name: Check for staked identity file on destination host
+  block:
+    - name: Check for new convention staked identity
+      ansible.builtin.stat:
+        path: "{{ destination_host_keys_dir }}/primary-target-identity.json"
+      register: new_staked_identity
+      when: inventory_hostname == destination_host
+
+    - name: Check for old convention staked identity
+      ansible.builtin.stat:
+        path: "{{ destination_host_keys_dir }}/staked-identity.json"
+      register: old_staked_identity
+      when: inventory_hostname == destination_host
+
+    - name: Set destination host staked identity path
+      set_fact:
+        destination_host_staked_identity_path: >-
+          {% if new_staked_identity.stat.exists %}
+          {{ destination_host_keys_dir }}/primary-target-identity.json
+          {% elif old_staked_identity.stat.exists %}
+          {{ destination_host_keys_dir }}/staked-identity.json
+          {% else %}
+          {{ '' }}
+          {% endif %}
+      when: inventory_hostname == destination_host
+
+    - name: Fail if no primary identity found on destination host
+      ansible.builtin.fail:
+        msg: "No primary identity file found on destination host. Neither primary-target-identity.json nor staked-identity.json exists in {{ destination_host_keys_dir }}"
+      when:
+        - inventory_hostname == destination_host
+        - destination_host_staked_identity_path == ''

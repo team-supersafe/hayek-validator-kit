@@ -1,0 +1,28 @@
+---
+# Pre-check tasks for the solana_swap_server role
+
+- name: Verify source validator directory exists
+  ansible.builtin.stat:
+    path: "{{ keys_dir }}/{{ source_validator_name }}"
+  register: source_validator_dir
+  when: inventory_hostname == source_host
+
+- name: Fail if source validator directory does not exist
+  ansible.builtin.fail:
+    msg: "Source validator directory '{{ keys_dir }}/{{ source_validator_name }}' does not exist on {{ source_host }}"
+  when:
+    - inventory_hostname == source_host
+    - not source_validator_dir.stat.exists
+
+- name: Verify destination validator directory exists
+  ansible.builtin.stat:
+    path: "{{ keys_dir }}/{{ destination_validator_name }}"
+  register: destination_validator_dir
+  when: inventory_hostname == destination_host
+
+- name: Fail if destination validator directory does not exist
+  ansible.builtin.fail:
+    msg: "Destination validator directory '{{ keys_dir }}/{{ destination_validator_name }}' does not exist on {{ destination_host }}"
+  when:
+    - inventory_hostname == destination_host
+    - not destination_validator_dir.stat.exists

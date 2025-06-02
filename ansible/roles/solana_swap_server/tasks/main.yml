@@ -1,0 +1,11 @@
+---
+# Define tasks for the solana_swap_server role
+
+- name: Import precheck tasks
+  ansible.builtin.import_tasks: precheck.yml
+
+- name: Import prepare tasks
+  ansible.builtin.import_tasks: prepare.yml
+
+- name: Import swap tasks
+  ansible.builtin.import_tasks: swap.yml
