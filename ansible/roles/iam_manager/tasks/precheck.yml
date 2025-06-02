@@ -1,0 +1,30 @@
+---
+# Read users from CSV file
+- name: Read users from CSV
+  ansible.builtin.read_csv:
+    path: "{{ users_file }}"
+    key: user
+  register: users_csv
+  delegate_to: localhost
+  run_once: true
+
+- name: Debug CSV content
+  ansible.builtin.debug:
+    var: users_csv
+  delegate_to: localhost
+  run_once: true
+
+- name: Verify CSV data structure
+  ansible.builtin.fail:
+    msg: "Invalid CSV structure. Required fields: user, email, sent_email, key"
+  when: >
+    not (users_csv is defined and
+    users_csv | length > 0)
+  delegate_to: localhost
+  run_once: true
+
+- name: Display message in console
+  ansible.builtin.debug:
+    msg: "{{ inventory_dir }}"
+  delegate_to: localhost
+  run_once: true

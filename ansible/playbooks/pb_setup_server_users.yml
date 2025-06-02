@@ -1,0 +1,15 @@
+---
+# Setup users for a new metal box
+# --------------------
+# Usage:
+# ------
+# Run from /ansible directory:
+#
+# ansible-playbook -i hosts.yml playbooks/pb_setup_server_users.yml
+
+- name: Setup users for a new metal box
+  hosts: new_metal_box
+  user: root
+  roles:
+    - role: iam_manager
+
