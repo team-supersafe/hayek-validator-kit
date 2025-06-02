@@ -24,6 +24,33 @@
         force: true
       when: inventory_hostname == source_host
 
+- name: Copy Identity and Vote Account Files
+  block:
+    - name: Copy staked identity file to destination
+      ansible.posix.synchronize:
+        src: "{{ source_host_staked_identity_path }}"
+        dest: "{{ destination_host_staked_identity_path }}"
+        mode: push
+        compress: false
+        rsync_opts:
+          - "--delete"
+      delegate_to: "{{ source_host }}"
+      ignore_errors: "{{ ansible_check_mode }}"
+      when: inventory_hostname == destination_host
+
+    - name: Copy vote account file to destination
+      ansible.posix.synchronize:
+        src: "{{ source_vote_account_path }}"
+        dest: "{{ destination_host_keys_dir }}/vote-account.json"
+        mode: push
+        compress: false
+        rsync_opts:
+          - "--delete"
+      delegate_to: "{{ source_host }}"
+      ignore_errors: "{{ ansible_check_mode }}"
+      when: inventory_hostname == destination_host
+    become: false
+
 - name: Transfer Tower File from Source to Destination
   block:
     - name: Get tower filename
@@ -49,8 +76,7 @@
         rsync_opts:
           - "--delete"
       delegate_to: "{{ source_host }}"
-      vars:
-        ansible_become: false
+      become: false
       ignore_errors: "{{ ansible_check_mode }}"
       when: inventory_hostname == destination_host
 
