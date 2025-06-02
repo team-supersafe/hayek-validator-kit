@@ -7,5 +7,8 @@
 - name: Import prepare tasks
   ansible.builtin.import_tasks: prepare.yml
 
+- name: Import confirmation tasks
+  ansible.builtin.import_tasks: confirm_swap.yml
+
 - name: Import swap tasks
   ansible.builtin.import_tasks: swap.yml
