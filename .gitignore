@@ -557,3 +557,6 @@ solana-localnet/validator-keys/*
 *.pass
 .vault_pass
 *.vault_pass
+
+# Ignoring initial-setup until migrated
+ansible/initial-setup

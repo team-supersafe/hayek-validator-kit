@@ -78,7 +78,7 @@ LABEL maintainer="eydel.rivero@gmail.com"
 RUN locale-gen en_US.UTF-8
 
 # Install Ansible via Pip.
-ENV PIP_PACKAGES="ansible"
+ENV PIP_PACKAGES="ansible passlib"
 RUN pip3 install $PIP_PACKAGES
 
 # Set workdir
