@@ -1,0 +1,70 @@
+---
+# Create users from CSV data
+- name: Create users from CSV
+  ansible.builtin.user:
+    name: "{{ item.key }}"
+    shell: /bin/bash
+    state: present
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: item.value.create_user | default(true)
+
+# Get unique groups from CSV
+- name: Get unique groups
+  ansible.builtin.set_fact:
+    unique_groups: "{{ (users_csv.dict.values() | map(attribute='group_a') | list + users_csv.dict.values() | map(attribute='group_b') | list) | select('string') | unique | list }}"
+
+# Create groups from CSV
+- name: Create groups from CSV
+  ansible.builtin.group:
+    name: "{{ item | lower }}"
+    state: present
+  loop: "{{ unique_groups }}"
+  when: item != ""
+
+# Add users to groups
+- name: Add users to groups
+  ansible.builtin.user:
+    name: "{{ item.key }}"
+    groups: "{{ (item.value.group_a | default('') | lower + ',' + item.value.group_b | default('') | lower) | regex_replace('^,|,$', '') | regex_replace(',,', ',') | regex_replace('^$', '') }}"
+    append: true
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: item.value.create_user | default(true) and ((item.value.group_a | default('') != '') or (item.value.group_b | default('') != ''))
+
+# Set passwords for users
+- name: Set passwords for users
+  ansible.builtin.user:
+    name: "{{ item.key }}"
+    password: "{{ user_passwords[item.key] | password_hash('sha512') }}"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: item.value.create_user | default(true)
+
+# Configure password expiration for users
+- name: Configure password expiration for users
+  ansible.builtin.command: "chage -d 0 {{ item.key }}"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: item.value.create_user | default(true)
+  changed_when: false
+
+# Create ssh directories for users
+- name: Ensure .ssh directories exist
+  ansible.builtin.file:
+    path: "/home/{{ item.key }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: "{{ item.key }}"
+    group: "{{ item.key }}"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: item.value.create_user | default(true)
+
+# Add SSH authorized keys
+- name: Add authorized keys
+  ansible.posix.authorized_key:
+    user: "{{ item.key }}"
+    key: "{{ item.value.key }}"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: item.value.create_user | default(true) and item.value.key is defined and item.value.key != ""
+
+# Set ubuntu user password expiration
+- name: Set password expiration for ubuntu user
+  ansible.builtin.command: chage -M 1 ubuntu
+  changed_when: false

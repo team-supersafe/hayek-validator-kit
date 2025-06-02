@@ -1,2 +1,14 @@
 ---
-# Perform cleanup here
+# Delete the vault file - this is to avoid issues.
+
+- name: Delete temporal vault file if it exists
+  ansible.builtin.file:
+    path: "{{ generated_pass_file }}"
+    state: absent
+  delegate_to: localhost
+
+- name: Delete temporal vault file if it exists
+  ansible.builtin.file:
+    path: "{{ generated_pass_file }}.bak"
+    state: absent
+  delegate_to: localhost

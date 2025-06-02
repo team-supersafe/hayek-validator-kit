@@ -1,0 +1,96 @@
+---
+# Read vault file for SMTP variables
+- name: Read vault file
+  ansible.builtin.command: ansible-vault view "{{ vault_file }}"
+  register: vault_content
+  delegate_to: localhost
+  run_once: true
+  no_log: true
+
+# Parse email variables
+- name: Parse email variables
+  ansible.builtin.set_fact:
+    smtp_host: "{{ vault_content.stdout | regex_search('smtp_host: (.*)', '\\1') | first }}"
+    smtp_port: "{{ vault_content.stdout | regex_search('smtp_port: (.*)', '\\1') | first }}"
+    smtp_username: "{{ vault_content.stdout | regex_search('smtp_username: \"(.*?)\"', '\\1') | first }}"
+    smtp_password: "{{ vault_content.stdout | regex_search('smtp_password: \"(.*?)\"', '\\1') | first }}"
+    smtp_from: "{{ vault_content.stdout | regex_search('smtp_from: \"(.*?)\"', '\\1') | first }}"
+    smtp_from_name: "{{ vault_content.stdout | regex_search('smtp_from_name: \"(.*?)\"', '\\1') | first }}"
+  delegate_to: localhost
+  run_once: true
+  no_log: true
+
+# Read CSV file
+- name: Read users from CSV
+  ansible.builtin.read_csv:
+    path: "{{ users_file }}"
+    key: user
+  register: users_csv
+  delegate_to: localhost
+  run_once: true
+
+# Send passwords via email
+- name: Send passwords via email
+  community.general.mail:
+    host: "{{ smtp_host | default('smtp.gmail.com') }}"
+    port: "{{ smtp_port | default(587) }}"
+    username: "{{ smtp_username }}"
+    password: "{{ smtp_password }}"
+    to: "{{ item.value.email }}"
+    subject: "Your server access credentials"
+    body: |
+      Hello {{ item.value.user }},
+
+      Your server access credentials have been encrypted with your SSH public key.
+      For decrypt the password, you need to have the private key of the user.
+
+      Server IP: {{ ansible_default_ipv4.address }}
+      Username: {{ item.value.user }}
+
+      The encrypted password file is attached to this email.
+
+      To decrypt your password:
+      1. Install age if not already installed:
+         - On Ubuntu/Debian: apt install age
+         - On macOS: brew install age
+      2. Save the attachment and run:
+         age -d -i ~/.ssh/private_key {{ item.value.user }}_password.age
+
+      Connection command:
+      ssh -p 2522 {{ item.value.user }}@{{ ansible_default_ipv4.address }}
+
+      Please change your password upon first login.
+
+      Best regards,
+      {{ smtp_from_name | default('System Administrator') }}
+    from: "{{ smtp_from | default('system@example.com') }}"
+    secure: starttls
+    attach:
+      - "/tmp/{{ item.value.user }}_password.age"
+  loop: "{{ users_csv.dict | dict2items }}"
+  delegate_to: localhost
+  run_once: true
+  when:
+    - smtp_username is defined
+    - smtp_password is defined
+    - item.value.sent_email | upper == 'TRUE'
+
+# Clean up temporary files
+- name: Clean up encrypted password files
+  ansible.builtin.file:
+    path: "/tmp/{{ item }}_password.age"
+    state: absent
+  loop: "{{ users_csv.dict.keys() | list }}"
+  delegate_to: localhost
+  run_once: true
+
+# Notify before disabling ubuntu user
+- name: Notify about upcoming ubuntu user disablement
+  ansible.builtin.debug:
+    msg: |
+      IMPORTANT WARNING: The ubuntu user will now be disabled.
+      After this task completes, you will LOSE CONNECTION to this server.
+      Please ensure you can connect with one of the newly created users:
+      {% for user in users_csv.dict.keys() %}
+      - {{ user }}
+      {% endfor %}
