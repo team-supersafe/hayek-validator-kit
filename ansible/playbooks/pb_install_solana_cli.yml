@@ -8,7 +8,6 @@
 # Run from /ansible directory:
 #
 # ansible-playbook playbooks/pb_install_solana_cli.yml \
-#   -i hosts.yml \
 #   --limit host-charlie \
 #   -e "agave_version=2.2.14" \
 #   -e "target_host=host-charlie"

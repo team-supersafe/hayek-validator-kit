@@ -1,0 +1,7 @@
+---
+# These are constants that rarely change and are specific to the swap operation
+ssh_key_path: "{{ solana_user_dir }}/.ssh/id_rsa"
+ssh_key_type: "rsa"
+ssh_key_size: 2048
+tower_file_prefix: "tower-1_9-"
+tower_file_suffix: ".bin"

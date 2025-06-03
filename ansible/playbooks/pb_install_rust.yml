@@ -1,7 +1,7 @@
 ---
 # Run from /ansible folder:
-# ansible-playbook -i hosts.yml playbooks/pb_install_rust.yml --diff --check
-# ansible-playbook -i hosts.yml playbooks/pb_install_rust.yml --diff
+# ansible-playbook playbooks/pb_install_rust.yml --diff --check
+# ansible-playbook playbooks/pb_install_rust.yml --diff
 - name: Runs install_rust task from rust_env role
   hosts: host-charlie # host-alpha or host-bravo
   user: "{{ solana_user }}"
