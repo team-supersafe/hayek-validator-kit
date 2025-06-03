@@ -11,7 +11,7 @@
 #   -e "source_host=host-alpha" \
 #   -e "destination_host=host-bravo" \
 #   -e "source_validator_name=canopy" \
-#   -e "destination_validator_name=penny" \
+#   -e "destination_validator_name=penny"
 
 - name: Install Jito Client with Co-Hosted Relayer
   hosts: "{{ source_host }},{{ destination_host }}"

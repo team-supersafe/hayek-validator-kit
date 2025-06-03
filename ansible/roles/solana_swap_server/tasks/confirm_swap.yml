@@ -1,10 +1,31 @@
 ---
+- name: Check if source vote account exists
+  ansible.builtin.stat:
+    path: "{{ source_vote_account_path }}"
+  register: source_vote_account_file
+  when: inventory_hostname == source_host
+
 - name: Get source primary target identity pubkey
   ansible.builtin.command: solana-keygen pubkey {{ source_host_staked_identity_path }}
   register: source_primary_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == source_host
+
+- name: Debug source primary pubkey raw output
+  ansible.builtin.debug:
+    msg: "Source primary pubkey raw output: {{ source_primary_pubkey }}"
+  when: inventory_hostname == source_host
+
+- name: Make source primary pubkey available globally
+  set_fact:
+    source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'].stdout_lines[0] }}"
+  run_once: true
+
+- name: Debug source primary pubkey global value
+  ansible.builtin.debug:
+    msg: "Source primary pubkey global value: {{ source_primary_pubkey }}"
+  run_once: true
 
 - name: Get source hot-spare identity pubkey
   ansible.builtin.command: solana-keygen pubkey {{ source_host_unstaked_identity_path }}
@@ -13,12 +34,64 @@
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == source_host
 
+- name: Debug source hotspare pubkey raw output
+  ansible.builtin.debug:
+    msg: "Source hotspare pubkey raw output: {{ source_hotspare_pubkey }}"
+  when: inventory_hostname == source_host
+
+- name: Make source hotspare pubkey available globally
+  set_fact:
+    source_hotspare_pubkey: "{{ hostvars[source_host]['source_hotspare_pubkey'].stdout_lines[0] }}"
+  run_once: true
+
+- name: Debug source hotspare pubkey global value
+  ansible.builtin.debug:
+    msg: "Source hotspare pubkey global value: {{ source_hotspare_pubkey }}"
+  run_once: true
+
+- name: Debug source vote account file
+  ansible.builtin.debug:
+    msg: "Source vote account file: {{ source_vote_account_file }}"
+  when: inventory_hostname == source_host
+
 - name: Get source vote account pubkey
   ansible.builtin.command: solana-keygen pubkey {{ source_vote_account_path }}
   register: source_vote_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
-  when: inventory_hostname == source_host
+  when: 
+    - inventory_hostname == source_host
+    - source_vote_account_file.stat.exists
+
+- name: Debug source vote pubkey raw output
+  ansible.builtin.debug:
+    msg: "Source vote pubkey raw output: {{ source_vote_pubkey }}"
+  when: 
+    - inventory_hostname == source_host
+    - source_vote_account_file.stat.exists
+
+- name: Make source vote pubkey available globally
+  set_fact:
+    source_vote_pubkey: "{{ hostvars[source_host]['source_vote_pubkey'].stdout_lines[0] }}"
+  when: hostvars[source_host]['source_vote_account_file'].stat.exists
+  run_once: true
+
+- name: Debug source vote pubkey global value
+  ansible.builtin.debug:
+    msg: "Source vote pubkey global value: {{ source_vote_pubkey }}"
+  when: hostvars[source_host]['source_vote_account_file'].stat.exists
+  run_once: true
+
+- name: Check if destination vote account exists
+  ansible.builtin.stat:
+    path: "{{ destination_host_keys_dir }}/vote-account.json"
+  register: destination_vote_account_file
+  when: inventory_hostname == destination_host
+
+- name: Debug destination vote account file
+  ansible.builtin.debug:
+    msg: "Destination vote account file: {{ destination_vote_account_file }}"
+  when: inventory_hostname == destination_host
 
 - name: Get destination primary target identity pubkey
   ansible.builtin.command: solana-keygen pubkey {{ destination_host_staked_identity_path }}
@@ -27,6 +100,21 @@
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == destination_host
 
+- name: Debug destination primary pubkey raw output
+  ansible.builtin.debug:
+    msg: "Destination primary pubkey raw output: {{ destination_primary_pubkey }}"
+  when: inventory_hostname == destination_host
+
+- name: Make destination primary pubkey available globally
+  set_fact:
+    destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'].stdout_lines[0] }}"
+  run_once: true
+
+- name: Debug destination primary pubkey global value
+  ansible.builtin.debug:
+    msg: "Destination primary pubkey global value: {{ destination_primary_pubkey }}"
+  run_once: true
+
 - name: Get destination hot-spare identity pubkey
   ansible.builtin.command: solana-keygen pubkey "{{ destination_host_keys_dir }}/hot-spare-identity.json"
   register: destination_hotspare_pubkey
@@ -34,12 +122,60 @@
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == destination_host
 
+- name: Debug destination hotspare pubkey raw output
+  ansible.builtin.debug:
+    msg: "Destination hotspare pubkey raw output: {{ destination_hotspare_pubkey }}"
+  when: inventory_hostname == destination_host
+
+- name: Make destination hotspare pubkey available globally
+  set_fact:
+    destination_hotspare_pubkey: "{{ hostvars[destination_host]['destination_hotspare_pubkey'].stdout_lines[0] }}"
+  run_once: true
+
+- name: Debug destination hotspare pubkey global value
+  ansible.builtin.debug:
+    msg: "Destination hotspare pubkey global value: {{ destination_hotspare_pubkey }}"
+  run_once: true
+
 - name: Get destination vote account pubkey
   ansible.builtin.command: solana-keygen pubkey "{{ destination_host_keys_dir }}/vote-account.json"
   register: destination_vote_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
-  when: inventory_hostname == destination_host
+  when:
+    - inventory_hostname == destination_host
+    - destination_vote_account_file.stat.exists
+
+- name: Debug destination vote pubkey raw output
+  ansible.builtin.debug:
+    msg: "Destination vote pubkey raw output: {{ destination_vote_pubkey }}"
+  when:
+    - inventory_hostname == destination_host
+    - destination_vote_account_file.stat.exists
+
+- name: Make destination vote pubkey available globally
+  set_fact:
+    destination_vote_pubkey: "{{ hostvars[destination_host]['destination_vote_pubkey'].stdout_lines[0] }}"
+  when: hostvars[destination_host]['destination_vote_account_file'].stat.exists
+  run_once: true
+
+- name: Debug destination vote pubkey global value
+  ansible.builtin.debug:
+    msg: "Destination vote pubkey global value: {{ destination_vote_pubkey }}"
+  when: hostvars[destination_host]['destination_vote_account_file'].stat.exists
+  run_once: true
+
+- name: Debug all variables before summary
+  ansible.builtin.debug:
+    msg: |
+      Variables before summary:
+      - source_host_staked_identity_path: {{ source_host_staked_identity_path }}
+      - source_host_unstaked_identity_path: {{ source_host_unstaked_identity_path }}
+      - source_vote_account_path: {{ source_vote_account_path }}
+      - source_vote_account_file: {{ source_vote_account_file }}
+      - destination_host_staked_identity_path: {{ destination_host_staked_identity_path }}
+      - destination_vote_account_file: {{ destination_vote_account_file }}
+  run_once: true
 
 - name: Display Swap Operation Summary
   ansible.builtin.debug:
@@ -51,20 +187,28 @@
       Source Validator:
       - Host: {{ source_host }} ({{ source_validator_name }})
       - Primary Target Identity: {{ source_host_staked_identity_path }}
-        Pubkey: {{ source_primary_pubkey.stdout }}
+        Pubkey: {{ source_primary_pubkey }}
       - Hot-spare Identity: {{ source_host_unstaked_identity_path }}
-        Pubkey: {{ source_hotspare_pubkey.stdout }}
+        Pubkey: {{ source_hotspare_pubkey }}
       - Vote Account: {{ source_vote_account_path }}
-        Pubkey: {{ source_vote_pubkey.stdout }}
+        {% if source_vote_account_file is defined and source_vote_account_file.stat is defined and source_vote_account_file.stat.exists %}
+        Pubkey: {{ source_vote_pubkey }}
+        {% else %}
+        Status: Keypair was not found
+        {% endif %}
 
       Destination Validator:
       - Host: {{ destination_host }} ({{ destination_validator_name }})
       - Primary Target Identity: {{ destination_host_staked_identity_path }}
-        Pubkey: {{ destination_primary_pubkey.stdout }}
+        Pubkey: {{ destination_primary_pubkey }}
       - Hot-spare Identity: {{ destination_host_keys_dir }}/hot-spare-identity.json
-        Pubkey: {{ destination_hotspare_pubkey.stdout }}
+        Pubkey: {{ destination_hotspare_pubkey }}
       - Vote Account: {{ destination_host_keys_dir }}/vote-account.json
-        Pubkey: {{ destination_vote_pubkey.stdout }}
+        {% if destination_vote_account_file is defined and destination_vote_account_file.stat is defined and destination_vote_account_file.stat.exists %}
+        Pubkey: {{ destination_vote_pubkey }}
+        {% else %}
+        Status: Keypair was not found
+        {% endif %}
 
       Operation Steps:
       1. Wait for safe restart window on source validator
@@ -85,4 +229,4 @@
 - name: Fail if swap not confirmed
   ansible.builtin.fail:
     msg: "Validator swap operation cancelled by user"
-  when: swap_confirmation.user_input | lower != 'yes' 
+  when: swap_confirmation.user_input | lower != 'yes'
