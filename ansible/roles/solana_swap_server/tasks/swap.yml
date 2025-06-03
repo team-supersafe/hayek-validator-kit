@@ -11,14 +11,14 @@
       when: inventory_hostname == source_host
 
     - name: Switch to unstaked identity on source
-      ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_unstaked_identity_path }}
+      ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_hot_spare_identity_path }}
       environment:
         PATH: "{{ solana_install_dir }}"
       when: inventory_hostname == source_host
 
     - name: Update symlink to unstaked identity
       ansible.builtin.file:
-        src: "{{ source_host_unstaked_identity_path }}"
+        src: "{{ source_host_hot_spare_identity_path }}"
         dest: "{{ source_host_identity_link_path }}"
         state: link
         force: true
@@ -29,8 +29,8 @@
   block:
     - name: Copy primary target identity keypair to destination
       ansible.posix.synchronize:
-        src: "{{ source_host_staked_identity_path }}"
-        dest: "{{ destination_host_staked_identity_path }}"
+        src: "{{ source_host_primary_target_identity_path }}"
+        dest: "{{ destination_host_primary_target_identity_path }}"
         mode: push
         compress: false
         rsync_opts:
@@ -43,14 +43,14 @@
   block:
     - name: Get tower filename
       check_mode: false
-      ansible.builtin.command: solana-keygen pubkey {{ source_host_staked_identity_path }}
+      ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path }}
       register: staked_identity_pubkey_stdout
       environment:
         PATH: "{{ solana_install_dir }}"
       when: inventory_hostname == destination_host
 
     - name: Save tower filename
-      set_fact:
+      ansible.builtin.set_fact:
         tower_file_src: "{{ ledger_path }}/{{ tower_file_prefix }}{{ staked_identity_pubkey_stdout.stdout }}{{ tower_file_suffix }}"
         tower_file_dest: "{{ ledger_path }}/{{ tower_file_prefix }}{{ staked_identity_pubkey_stdout.stdout }}{{ tower_file_suffix }}"
       when: inventory_hostname == destination_host
@@ -71,14 +71,14 @@
 - name: Promote Destination to Primary Target Validator
   block:
     - name: Switch to staked identity on destination
-      ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity --require-tower {{ destination_host_staked_identity_path }}
+      ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity --require-tower {{ destination_host_primary_target_identity_path }}
       environment:
         PATH: "{{ solana_install_dir }}"
       when: inventory_hostname == destination_host
 
     - name: Update symlink to staked identity
       ansible.builtin.file:
-        src: "{{ destination_host_staked_identity_path }}"
+        src: "{{ destination_host_primary_target_identity_path }}"
         dest: "{{ destination_host_identity_link_path }}"
         state: link
         force: true

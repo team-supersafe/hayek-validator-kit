@@ -5,27 +5,15 @@
   register: source_vote_account_file
   when: inventory_hostname == source_host
 
-- name: Get source primary target identity pubkey
-  ansible.builtin.command: solana-keygen pubkey {{ source_host_staked_identity_path }}
-  register: source_primary_pubkey
-  environment:
-    PATH: "{{ solana_install_dir }}"
-  when: inventory_hostname == source_host
-
-- name: Make source primary pubkey available globally
-  set_fact:
-    source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'].stdout_lines[0] }}"
-  run_once: true
-
 - name: Get source hot-spare identity pubkey
-  ansible.builtin.command: solana-keygen pubkey {{ source_host_unstaked_identity_path }}
+  ansible.builtin.command: solana-keygen pubkey {{ source_host_hot_spare_identity_path }}
   register: source_hotspare_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == source_host
 
 - name: Make source hotspare pubkey available globally
-  set_fact:
+  ansible.builtin.set_fact:
     source_hotspare_pubkey: "{{ hostvars[source_host]['source_hotspare_pubkey'].stdout_lines[0] }}"
   run_once: true
 
@@ -39,7 +27,7 @@
     - source_vote_account_file.stat.exists
 
 - name: Make source vote pubkey available globally
-  set_fact:
+  ansible.builtin.set_fact:
     source_vote_pubkey: "{{ hostvars[source_host]['source_vote_pubkey'].stdout_lines[0] }}"
   when: hostvars[source_host]['source_vote_account_file'].stat.exists
   run_once: true
@@ -50,18 +38,6 @@
   register: destination_vote_account_file
   when: inventory_hostname == destination_host
 
-- name: Get destination primary target identity pubkey
-  ansible.builtin.command: solana-keygen pubkey {{ destination_host_staked_identity_path }}
-  register: destination_primary_pubkey
-  environment:
-    PATH: "{{ solana_install_dir }}"
-  when: inventory_hostname == destination_host
-
-- name: Make destination primary pubkey available globally
-  set_fact:
-    destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'].stdout_lines[0] }}"
-  run_once: true
-
 - name: Get destination hot-spare identity pubkey
   ansible.builtin.command: solana-keygen pubkey "{{ destination_host_keys_dir }}/hot-spare-identity.json"
   register: destination_hotspare_pubkey
@@ -70,7 +46,7 @@
   when: inventory_hostname == destination_host
 
 - name: Make destination hotspare pubkey available globally
-  set_fact:
+  ansible.builtin.set_fact:
     destination_hotspare_pubkey: "{{ hostvars[destination_host]['destination_hotspare_pubkey'].stdout_lines[0] }}"
   run_once: true
 
@@ -84,7 +60,7 @@
     - destination_vote_account_file.stat.exists
 
 - name: Make destination vote pubkey available globally
-  set_fact:
+  ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ hostvars[destination_host]['destination_vote_pubkey'].stdout_lines[0] }}"
   when: hostvars[destination_host]['destination_vote_account_file'].stat.exists
   run_once: true
@@ -98,9 +74,9 @@
 
       Source Validator:
       - Host: {{ source_host }} ({{ source_validator_name }})
-      - Primary Target Identity: {{ source_host_staked_identity_path }}
+      - Primary Target Identity: {{ source_host_primary_target_identity_path }}
         Pubkey: {{ source_primary_pubkey }}
-      - Hot-spare Identity: {{ source_host_unstaked_identity_path }}
+      - Hot-spare Identity: {{ source_host_hot_spare_identity_path }}
         Pubkey: {{ source_hotspare_pubkey }}
       - Vote Account: {{ source_vote_account_path }}
         {% if source_vote_account_file is defined and source_vote_account_file.stat is defined and source_vote_account_file.stat.exists %}
@@ -111,7 +87,7 @@
 
       Destination Validator:
       - Host: {{ destination_host }} ({{ destination_validator_name }})
-      - Primary Target Identity: {{ destination_host_staked_identity_path }}
+      - Primary Target Identity: {{ destination_host_primary_target_identity_path }}
         Pubkey: {{ destination_primary_pubkey }}
       - Hot-spare Identity: {{ destination_host_keys_dir }}/hot-spare-identity.json
         Pubkey: {{ destination_hotspare_pubkey }}

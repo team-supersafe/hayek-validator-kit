@@ -28,14 +28,13 @@
   ansible.builtin.apt:
     name: rsync
     state: present
+    update_cache: true
   delegate_to: "{{ item }}"
   loop: "{{ [source_host, destination_host] }}"
 
-# Determine staked/unstaked identity keypairs on source host
-# and set resolved file path as fact
-- name: Check for staked identity file on source host
+- name: Check for primary target identity file on source host
   block:
-    - name: Check for new convention staked identity
+    - name: Check for new convention primary target identity
       ansible.builtin.stat:
         path: "{{ source_host_keys_dir }}/primary-target-identity.json"
       register: new_staked_identity
@@ -47,9 +46,9 @@
       register: old_staked_identity
       when: inventory_hostname == source_host
 
-    - name: Set source host staked identity path
-      set_fact:
-        source_host_staked_identity_path: >-
+    - name: Set source host primary target identity path
+      ansible.builtin.set_fact:
+        source_host_primary_target_identity_path: >-
           {% if new_staked_identity.stat.exists %}
           {{ source_host_keys_dir }}/primary-target-identity.json
           {% elif old_staked_identity.stat.exists %}
@@ -59,9 +58,9 @@
           {% endif %}
       when: inventory_hostname == source_host
 
-    - name: Make source host staked identity path available globally
-      set_fact:
-        source_host_staked_identity_path: "{{ hostvars[source_host]['source_host_staked_identity_path'] }}"
+    - name: Make source host primary target identity path available globally
+      ansible.builtin.set_fact:
+        source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] }}"
       run_once: true
 
     - name: Fail if no primary identity found on source host
@@ -69,9 +68,9 @@
         msg: "No primary identity file found on source host. Neither primary-target-identity.json nor staked-identity.json exists in {{ source_host_keys_dir }}"
       when:
         - inventory_hostname == source_host
-        - source_host_staked_identity_path == ''
+        - source_host_primary_target_identity_path == ''
 
-    - name: Check for new convention unstaked identity
+    - name: Check for new convention hot-spare identity
       ansible.builtin.stat:
         path: "{{ source_host_keys_dir }}/hot-spare-identity.json"
       register: new_unstaked_identity
@@ -83,9 +82,9 @@
       register: old_unstaked_identity
       when: inventory_hostname == source_host
 
-    - name: Set source host unstaked identity path
-      set_fact:
-        source_host_unstaked_identity_path: >-
+    - name: Set source host hot-spare identity path
+      ansible.builtin.set_fact:
+        source_host_hot_spare_identity_path: >-
           {% if new_unstaked_identity.stat.exists %}
           {{ source_host_keys_dir }}/hot-spare-identity.json
           {% elif old_unstaked_identity.stat.exists %}
@@ -95,13 +94,13 @@
           {% endif %}
       when: inventory_hostname == source_host
 
-    - name: Make source host unstaked identity path available globally
-      set_fact:
-        source_host_unstaked_identity_path: "{{ hostvars[source_host]['source_host_unstaked_identity_path'] }}"
+    - name: Make source host hot-spare identity path available globally
+      ansible.builtin.set_fact:
+        source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] }}"
       run_once: true
 
     - name: Generate hot-spare identity if it doesn't exist
-      ansible.builtin.command: solana-keygen new --no-bip39-passphrase -o {{ source_host_unstaked_identity_path }}
+      ansible.builtin.command: solana-keygen new --no-bip39-passphrase -o {{ source_host_hot_spare_identity_path }}
       environment:
         PATH: "{{ solana_install_dir }}"
       when:
@@ -118,11 +117,9 @@
         - generated_hotspare is defined
         - generated_hotspare.changed
 
-# Determine staked identity keypair on destination host
-# and set resolved file path as fact
-- name: Check for staked identity file on destination host
+- name: Check for primary target identity file on destination host
   block:
-    - name: Check for new convention staked identity
+    - name: Check for new convention primary target identity
       ansible.builtin.stat:
         path: "{{ destination_host_keys_dir }}/primary-target-identity.json"
       register: new_staked_identity
@@ -134,9 +131,9 @@
       register: old_staked_identity
       when: inventory_hostname == destination_host
 
-    - name: Set destination host staked identity path
-      set_fact:
-        destination_host_staked_identity_path: >-
+    - name: Set destination host primary target identity path
+      ansible.builtin.set_fact:
+        destination_host_primary_target_identity_path: >-
           {% if new_staked_identity.stat.exists %}
           {{ destination_host_keys_dir }}/primary-target-identity.json
           {% elif old_staked_identity.stat.exists %}
@@ -146,9 +143,9 @@
           {% endif %}
       when: inventory_hostname == destination_host
 
-    - name: Make destination host staked identity path available globally
-      set_fact:
-        destination_host_staked_identity_path: "{{ hostvars[destination_host]['destination_host_staked_identity_path'] }}"
+    - name: Make destination host primary target identity path available globally
+      ansible.builtin.set_fact:
+        destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] }}"
       run_once: true
 
     - name: Fail if no primary identity found on destination host
@@ -156,45 +153,60 @@
         msg: "No primary identity file found on destination host. Neither primary-target-identity.json nor staked-identity.json exists in {{ destination_host_keys_dir }}"
       when:
         - inventory_hostname == destination_host
-        - destination_host_staked_identity_path == ''
+        - destination_host_primary_target_identity_path == ''
 
-# Verify that the public key from keypair destination_host_staked_identity_path and source_host_staked_identity_path match
-- name: Get source staked identity pubkey
-  ansible.builtin.command: solana-keygen pubkey {{ source_host_staked_identity_path }}
+- name: Get source primary target identity pubkey
+  ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path }}
   register: source_staked_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == source_host
   changed_when: false
 
-- name: Get destination staked identity pubkey
-  ansible.builtin.command: solana-keygen pubkey {{ destination_host_staked_identity_path }}
+- name: Get destination primary target identity pubkey
+  ansible.builtin.command: solana-keygen pubkey {{ destination_host_primary_target_identity_path }}
   register: destination_staked_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == destination_host
   changed_when: false
 
-- name: Set pubkey comparison facts
+- name: Set source host pubkey fact
   ansible.builtin.set_fact:
-    source_pubkey: "{{ source_staked_pubkey.stdout_lines[0] }}"
-    destination_pubkey: "{{ destination_staked_pubkey.stdout_lines[0] }}"
+    source_primary_pubkey: "{{ source_staked_pubkey.stdout_lines[0] }}"
   when: 
     - inventory_hostname == source_host
     - source_staked_pubkey.stdout_lines is defined
+
+- name: Set destination host pubkey fact
+  ansible.builtin.set_fact:
+    destination_primary_pubkey: "{{ destination_staked_pubkey.stdout_lines[0] }}"
+  when: 
+    - inventory_hostname == destination_host
     - destination_staked_pubkey.stdout_lines is defined
 
-- name: Verify staked identity pubkeys match
-  ansible.builtin.fail:
+- name: Make pubkey facts available globally
+  ansible.builtin.set_fact:
+    source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] }}"
+    destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] }}"
+  run_once: true
+
+# Verify if the public key from keypair destination_host_primary_target_identity_path and source_host_primary_target_identity_path match
+- name: Verify primary identity pubkeys match
+  ansible.builtin.debug:
     msg: >-
-      Staked identity pubkeys do not match!
-      Source: {{ source_pubkey }}
-      Destination: {{ destination_pubkey }}
+      Primary identity pubkeys do not match!
+      
+      Source: {{ source_primary_pubkey }}
+      Destination: {{ destination_primary_pubkey }}
+      
       This indicates you are attempting to swap between different validator identities.
-      Please ensure both hosts are using the same validator identity.
+      We do not recommend to continue but you can do so if you know what you are doing!
   when: 
     - inventory_hostname == source_host
-    - source_pubkey is defined
-    - destination_pubkey is defined
-    - source_pubkey != destination_pubkey
+    - source_primary_pubkey is defined
+    - destination_primary_pubkey is defined
+    - source_primary_pubkey != destination_primary_pubkey
   run_once: true
+  changed_when: false
+  failed_when: false
