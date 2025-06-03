@@ -32,6 +32,7 @@
       register: staked_identity_pubkey_stdout
       environment:
         PATH: "{{ solana_install_dir }}"
+      delegate_to: "{{ source_host }}"
       when: inventory_hostname == destination_host
 
     - name: Save tower filename
