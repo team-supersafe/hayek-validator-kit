@@ -15,6 +15,7 @@
   ansible.builtin.debug:
     var: users_csv
   delegate_to: localhost
+  no_log: true
   run_once: true
 
 # Precheck 3: Validate CSV structure
@@ -37,15 +38,15 @@
   register: existing_users
   changed_when: false
 
-# # Precheck 5: Fail if users exist
-# # Compares users from CSV with existing system users
-# # If any users already exist, the playbook will fail for security reasons
-# - name: Check for existing users
-#   ansible.builtin.fail:
-#     msg: "It appears this server has already been installed (existing users: {{ existing_users_list | join(', ') }}). For security reasons, this configuration will not continue."
-#   when: existing_users_list | length > 0
-#   vars:
-#     existing_users_list: "{{ users_csv.dict.keys() | select('in', existing_users.stdout_lines) | list }}"
+# Precheck 5: Fail if users exist
+# Compares users from CSV with existing system users
+# If any users already exist, the playbook will fail for security reasons
+- name: Check for existing users
+  ansible.builtin.fail:
+    msg: "It appears this server has already been installed (existing users: {{ existing_users_list | join(', ') }}). For security reasons, this configuration will not continue."
+  when: existing_users_list | length > 0
+  vars:
+    existing_users_list: "{{ users_csv.dict.keys() | select('in', existing_users.stdout_lines) | list }}"
 
 # Precheck 6: Display inventory directory
 # Shows the inventory directory path for verification

@@ -27,6 +27,10 @@
 - name: Cleanup
   import_tasks: cleanup.yml
 
-
+# Send credentials via email to users marked for email notification
 - name: Send credentials via email
   import_tasks: send_emails.yml
+
+# Disable ubuntu user and block SSH access
+- name: Disable ubuntu user
+  import_tasks: disable_ubuntu.yml

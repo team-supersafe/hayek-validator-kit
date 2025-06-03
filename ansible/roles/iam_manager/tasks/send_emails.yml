@@ -1,4 +1,11 @@
 ---
+# Show message about vault password
+- name: Inform about vault password
+  ansible.builtin.debug:
+    msg: |
+      Please enter the password for the SMTP vault file ({{ vault_file }})
+      This password is needed to access the email configuration.
+
 # Read vault file for SMTP variables
 - name: Read vault file
   ansible.builtin.command: ansible-vault view "{{ vault_file }}"
@@ -28,6 +35,7 @@
   register: users_csv
   delegate_to: localhost
   run_once: true
+  no_log: true
 
 # Send passwords via email
 - name: Send passwords via email
@@ -38,31 +46,7 @@
     password: "{{ smtp_password }}"
     to: "{{ item.value.email }}"
     subject: "Your server access credentials"
-    body: |
-      Hello {{ item.value.user }},
-
-      Your server access credentials have been encrypted with your SSH public key.
-      For decrypt the password, you need to have the private key of the user.
-
-      Server IP: {{ ansible_default_ipv4.address }}
-      Username: {{ item.value.user }}
-
-      The encrypted password file is attached to this email.
-
-      To decrypt your password:
-      1. Install age if not already installed:
-         - On Ubuntu/Debian: apt install age
-         - On macOS: brew install age
-      2. Save the attachment and run:
-         age -d -i ~/.ssh/private_key {{ item.value.user }}_password.age
-
-      Connection command:
-      ssh -p 2522 {{ item.value.user }}@{{ ansible_default_ipv4.address }}
-
-      Please change your password upon first login.
-
-      Best regards,
-      {{ smtp_from_name | default('System Administrator') }}
+    body: "{{ lookup('template', 'email_credentials.j2') }}"
     from: "{{ smtp_from | default('system@example.com') }}"
     secure: starttls
     attach:
@@ -70,6 +54,7 @@
   loop: "{{ users_csv.dict | dict2items }}"
   delegate_to: localhost
   run_once: true
+  no_log: true
   when:
     - smtp_username is defined
     - smtp_password is defined
@@ -83,14 +68,5 @@
   loop: "{{ users_csv.dict.keys() | list }}"
   delegate_to: localhost
   run_once: true
+  no_log: true
 
-# Notify before disabling ubuntu user
-- name: Notify about upcoming ubuntu user disablement
-  ansible.builtin.debug:
-    msg: |
-      IMPORTANT WARNING: The ubuntu user will now be disabled.
-      After this task completes, you will LOSE CONNECTION to this server.
-      Please ensure you can connect with one of the newly created users:
-      {% for user in users_csv.dict.keys() %}
-      - {{ user }}
-      {% endfor %}

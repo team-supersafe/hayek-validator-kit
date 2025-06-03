@@ -7,11 +7,13 @@
     state: present
   loop: "{{ users_csv.dict | dict2items }}"
   when: item.value.create_user | default(true)
+  no_log: true
 
 # Get unique groups from CSV
 - name: Get unique groups
   ansible.builtin.set_fact:
     unique_groups: "{{ (users_csv.dict.values() | map(attribute='group_a') | list + users_csv.dict.values() | map(attribute='group_b') | list) | select('string') | unique | list }}"
+  no_log: true
 
 # Create groups from CSV
 - name: Create groups from CSV
@@ -20,6 +22,7 @@
     state: present
   loop: "{{ unique_groups }}"
   when: item != ""
+  no_log: true
 
 # Add users to groups
 - name: Add users to groups
@@ -29,14 +32,17 @@
     append: true
   loop: "{{ users_csv.dict | dict2items }}"
   when: item.value.create_user | default(true) and ((item.value.group_a | default('') != '') or (item.value.group_b | default('') != ''))
+  no_log: true
 
 # Set passwords for users
 - name: Set passwords for users
   ansible.builtin.user:
     name: "{{ item.key }}"
     password: "{{ user_passwords[item.key] | password_hash('sha512') }}"
+    update_password: always
   loop: "{{ users_csv.dict | dict2items }}"
   when: item.value.create_user | default(true)
+  no_log: true
 
 # Configure password expiration for users
 - name: Configure password expiration for users
@@ -44,6 +50,7 @@
   loop: "{{ users_csv.dict | dict2items }}"
   when: item.value.create_user | default(true)
   changed_when: false
+  no_log: true
 
 # Create ssh directories for users
 - name: Ensure .ssh directories exist
@@ -55,6 +62,7 @@
     group: "{{ item.key }}"
   loop: "{{ users_csv.dict | dict2items }}"
   when: item.value.create_user | default(true)
+  no_log: true
 
 # Add SSH authorized keys
 - name: Add authorized keys
@@ -63,8 +71,10 @@
     key: "{{ item.value.key }}"
   loop: "{{ users_csv.dict | dict2items }}"
   when: item.value.create_user | default(true) and item.value.key is defined and item.value.key != ""
+  no_log: true
 
 # Set ubuntu user password expiration
 - name: Set password expiration for ubuntu user
   ansible.builtin.command: chage -M 1 ubuntu
   changed_when: false
+  no_log: true
