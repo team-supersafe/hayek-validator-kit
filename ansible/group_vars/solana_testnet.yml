@@ -18,6 +18,9 @@ solana_metrics_url: 'https://metrics.solana.com:8086,db=tds,u=testnet_write,p=c4
 poh_pinned_cpu_core_enabled: true
 poh_pinned_cpu_core: 2
 
+restart_max_delinquent_stake: 10
+restart_min_idle_time: 5
+
 solana_gossip_entrypoints:
   - entrypoint.testnet.solana.com:8001
   - entrypoint2.testnet.solana.com:8001

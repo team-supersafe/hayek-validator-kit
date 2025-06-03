@@ -106,15 +106,35 @@
       5. Switch destination to primary target identity
          (Make destination host the new primary validator)
 
+      {% if inventory_hostname == source_host and source_primary_pubkey is defined and destination_primary_pubkey is defined and source_primary_pubkey != destination_primary_pubkey %}
+      ===============================================
+      WARNING: Primary identity pubkeys do not match!
+      
+      Source: {{ source_primary_pubkey }}
+      Destination: {{ destination_primary_pubkey }}
+      
+      This indicates you are attempting to swap between different validator identities.
+      We do not recommend to continue but you can do so if you know what you are doing!
+      {% endif %}
+
       Please review the above information carefully.
       ===============================================
+  delegate_to: localhost
+  run_once: true
 
 - name: Confirm Swap Operation
   ansible.builtin.pause:
     prompt: "Do you want to proceed with the validator swap? (yes/no)"
   register: swap_confirmation
+  run_once: true
+
+- name: Make swap confirmation available globally
+  ansible.builtin.set_fact:
+    swap_confirmation: "{{ hostvars[source_host]['swap_confirmation'] }}"
+  run_once: true
 
 - name: Fail if swap not confirmed
   ansible.builtin.fail:
     msg: "Validator swap operation cancelled by user"
   when: swap_confirmation.user_input | lower != 'yes'
+  run_once: true

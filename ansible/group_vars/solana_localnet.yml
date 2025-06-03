@@ -18,6 +18,9 @@ limit_ledger_size: 50000000
 poh_pinned_cpu_core_enabled: false
 poh_pinned_cpu_core: 2
 
+restart_max_delinquent_stake: 10
+restart_min_idle_time: 0
+
 solana_gossip_entrypoints:
   - gossip-entrypoint:8001
 

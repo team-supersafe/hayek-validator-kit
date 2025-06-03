@@ -38,6 +38,9 @@ solana_metrics_url: 'https://metrics.solana.com:8086,db=mainnet-beta,u=mainnet-b
 poh_pinned_cpu_core_enabled: true
 poh_pinned_cpu_core: 2
 
+restart_max_delinquent_stake: 5
+restart_min_idle_time: 30
+
 solana_gossip_entrypoints:
   - entrypoint.mainnet-beta.solana.com:8001
   - entrypoint2.mainnet-beta.solana.com:8001

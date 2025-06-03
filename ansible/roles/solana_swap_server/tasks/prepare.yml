@@ -190,23 +190,3 @@
     source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] }}"
     destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] }}"
   run_once: true
-
-# Verify if the public key from keypair destination_host_primary_target_identity_path and source_host_primary_target_identity_path match
-- name: Verify primary identity pubkeys match
-  ansible.builtin.debug:
-    msg: >-
-      Primary identity pubkeys do not match!
-      
-      Source: {{ source_primary_pubkey }}
-      Destination: {{ destination_primary_pubkey }}
-      
-      This indicates you are attempting to swap between different validator identities.
-      We do not recommend to continue but you can do so if you know what you are doing!
-  when: 
-    - inventory_hostname == source_host
-    - source_primary_pubkey is defined
-    - destination_primary_pubkey is defined
-    - source_primary_pubkey != destination_primary_pubkey
-  run_once: true
-  changed_when: false
-  failed_when: false
