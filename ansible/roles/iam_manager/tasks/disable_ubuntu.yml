@@ -31,6 +31,7 @@
     state: present
   register: ssh_config_changed
   no_log: true
+  ignore_errors: true
 
 - name: Restart SSH service
   ansible.builtin.service:
@@ -38,3 +39,4 @@
     state: restarted
   when: ssh_config_changed.changed
   no_log: true
+  ignore_errors: true
