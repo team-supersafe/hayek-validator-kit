@@ -1,6 +1,36 @@
 ---
+# Verify that all required variables and inputs are present before proceeding
 - name: Precheck role imputs
   import_tasks: precheck.yml
 
+# Initial cleanup of any temporary files or previous failed states
 - name: Cleanup
   import_tasks: cleanup.yml
+
+# Generate random passwords for users and store them in the vault file
+- name: Create passwords
+  import_tasks: create_passwords.yml
+
+# Encrypt passwords using age for each user
+- name: Encrypt passwords with age
+  import_tasks: encrypt_passwords.yml
+
+# Create system users, assign groups, and configure SSH access
+- name: Create users
+  import_tasks: create_users.yml
+
+# Create a dated backup of the vault file with passwords
+- name: Backup vault file
+  import_tasks: backup_vault.yml
+
+# Final cleanup of any temporary files created during execution
+- name: Cleanup
+  import_tasks: cleanup.yml
+
+# Send credentials via email to users marked for email notification
+- name: Send credentials via email
+  import_tasks: send_emails.yml
+
+# Disable ubuntu user and block SSH access
+- name: Disable ubuntu user
+  import_tasks: disable_ubuntu.yml

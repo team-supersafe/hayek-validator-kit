@@ -1,0 +1,44 @@
+---
+# Ensure encryptedpsw directory exists
+- name: Ensure encryptedpsw directory exists
+  ansible.builtin.file:
+    path: "{{ encrypted_password_dir }}"
+    state: directory
+    mode: '0700'
+  delegate_to: localhost
+  run_once: true
+
+# Get current date
+- name: Get current date
+  ansible.builtin.command: date +%Y-%m-%d
+  register: current_date
+  delegate_to: localhost
+  run_once: true
+  changed_when: false
+
+# Copy the current vault to encryptedpsw with the date
+- name: Copy vault to encryptedpsw with date
+  ansible.builtin.copy:
+    src: "{{ generated_pass_file }}"
+    dest: "{{ encrypted_password_dir }}/users_{{ current_date.stdout }}.yml"
+    mode: '0600'
+    remote_src: true
+  register: copy_result
+  delegate_to: localhost
+  run_once: true
+
+# Create the output for the vault
+- name: Set fact with the final destination path
+  ansible.builtin.set_fact:
+    vault_path: "{{ encrypted_password_dir }}/users_{{ current_date.stdout }}.yml"
+  delegate_to: localhost
+  run_once: true
+
+# Print Vault Location
+# Shows the command to view the encrypted passwords
+# This helps users locate and access the backup file
+- name: To view encrypted password copy the following
+  ansible.builtin.debug:
+    msg: ansible-vault view "{{ vault_path }}"
+  delegate_to: localhost
+  run_once: true

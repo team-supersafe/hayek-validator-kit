@@ -1,4 +1,12 @@
 ---
-# iam variables
-vault_file: "{{ inventory_dir }}/vault/group_vars/email_vars.yml"
+# CSV file containing user information (username, groups, email, etc.)
 users_file: "~/.new-metal-box-secrets/users.csv"
+
+# Vault file containing email-related variables and configurations
+vault_file: "{{ inventory_dir }}/vault/group_vars/email_vars.yml"
+
+# Vault file where generated passwords will be stored
+generated_pass_file: "{{ inventory_dir }}/vault/group_vars/generated_pass.yml"
+
+# Directory for storing encrypted password backups with timestamps
+encrypted_password_dir: "~/.encryptedpsw"

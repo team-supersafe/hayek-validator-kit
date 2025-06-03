@@ -7,9 +7,34 @@
 #
 # ansible-playbook -i hosts.yml playbooks/pb_setup_server_users.yml
 
-- name: Setup users for a new metal box
+- name: Setup server users
   hosts: new_metal_box
   user: root
+  become: true
+  pre_tasks:
+    # Gather system facts to get server information
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    # Show server IP and request explicit confirmation
+    - name: Show server IP and request confirmation
+      ansible.builtin.pause:
+        prompt: |
+          IMPORTANT: You are about to run this playbook on the server with IP: {{ ansible_default_ipv4.address }}
+
+          To continue, please type exactly this IP: {{ ansible_default_ipv4.address }}
+
+          If you are not sure, press Ctrl+C to cancel.
+
+          Type IP here
+      register: ip_confirmation
+
+    # Validate that the user typed the correct IP
+    - name: Validate IP input
+      ansible.builtin.fail:
+        msg: "Incorrect IP. Please run the playbook again and type the correct IP."
+      when: ip_confirmation.user_input != ansible_default_ipv4.address
+
   roles:
-    - role: iam_manager
+    - iam_manager
 

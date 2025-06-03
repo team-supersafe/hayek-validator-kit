@@ -1,5 +1,6 @@
 ---
-# Read users from CSV file
+# Precheck 1: Read and validate CSV file
+# This task reads the CSV file containing user information and validates its structure
 - name: Read users from CSV
   ansible.builtin.read_csv:
     path: "{{ users_file }}"
@@ -8,12 +9,18 @@
   delegate_to: localhost
   run_once: true
 
+# Precheck 2: Debug output
+# Displays the contents of the CSV file for verification purposes
 - name: Debug CSV content
   ansible.builtin.debug:
     var: users_csv
   delegate_to: localhost
+  no_log: true
   run_once: true
 
+# Precheck 3: Validate CSV structure
+# Ensures the CSV file has the required fields (user, email, sent_email, key)
+# Fails if the CSV is empty or missing required fields
 - name: Verify CSV data structure
   ansible.builtin.fail:
     msg: "Invalid CSV structure. Required fields: user, email, sent_email, key"
@@ -23,6 +30,26 @@
   delegate_to: localhost
   run_once: true
 
+# Precheck 4: Check for existing users
+# Uses cut command to get a list of existing users from /etc/passwd
+# This is a security check to prevent overwriting existing users
+- name: Get list of existing users
+  ansible.builtin.shell: "cut -d: -f1 /etc/passwd"
+  register: existing_users
+  changed_when: false
+
+# Precheck 5: Fail if users exist
+# Compares users from CSV with existing system users
+# If any users already exist, the playbook will fail for security reasons
+- name: Check for existing users
+  ansible.builtin.fail:
+    msg: "It appears this server has already been installed (existing users: {{ existing_users_list | join(', ') }}). For security reasons, this configuration will not continue."
+  when: existing_users_list | length > 0
+  vars:
+    existing_users_list: "{{ users_csv.dict.keys() | select('in', existing_users.stdout_lines) | list }}"
+
+# Precheck 6: Display inventory directory
+# Shows the inventory directory path for verification
 - name: Display message in console
   ansible.builtin.debug:
     msg: "{{ inventory_dir }}"
