@@ -75,11 +75,7 @@
   ansible.builtin.debug:
     msg: |
       ===============================================
-      {% if verify_only %}
-      VALIDATOR HOSTS VERIFICATION
-      {% else %}
       VALIDATOR SWAP FINAL STATE VERIFICATION
-      {% endif %}
       ===============================================
 
       Source Validator:
@@ -92,11 +88,9 @@
       - Running Identity: {{ destination_host_identity_link_path }}
         Pubkey: {{ destination_running_pubkey | default('Not found') }}
 
-      {% if not verify_only %}
       Please review that:
       1. The running identity on {{ source_host }} ({{ source_validator_name }}) is the hot-spare identity
       2. Primary Target Identity is running only in {{ destination_host }} ({{ destination_validator_name }})
-      {% endif %}
       ===============================================
   delegate_to: localhost
   run_once: true
@@ -108,7 +102,6 @@
       Expected: {{ source_hotspare_pubkey | default('Not found') }}
       Actual: {{ source_running_pubkey | default('Not found') }}
   when:
-    - not verify_only
     - inventory_hostname == source_host
     - source_running_pubkey != source_hotspare_pubkey
     - source_running_pubkey != ''

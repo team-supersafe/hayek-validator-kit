@@ -1,6 +1,4 @@
 ---
-# Pre-check tasks for the solana_swap_server role
-
 - name: precheck - Validate source host validator directory
   block:
     - name: precheck - Get stats of source validator directory

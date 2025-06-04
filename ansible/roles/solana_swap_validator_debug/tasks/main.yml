@@ -1,0 +1,6 @@
+---
+- name: Import precheck tasks
+  ansible.builtin.import_tasks: precheck.yml
+
+- name: Import verify tasks
+  ansible.builtin.import_tasks: verify.yml

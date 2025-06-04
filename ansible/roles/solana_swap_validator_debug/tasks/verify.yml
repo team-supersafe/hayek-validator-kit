@@ -1,0 +1,117 @@
+---
+- name: verify - Verify source validator identity files
+  block:
+    - name: verify - Check source running identity file
+      ansible.builtin.stat:
+        path: "{{ source_host_identity_link_path }}"
+      register: source_running_identity
+      when: inventory_hostname == source_host
+
+    - name: verify - Check source hot-spare identity file
+      ansible.builtin.stat:
+        path: "{{ source_host_keys_dir }}/hot-spare-identity.json"
+      register: source_hotspare_identity
+      when: inventory_hostname == source_host
+
+    - name: verify - Check source primary target identity file
+      ansible.builtin.stat:
+        path: "{{ source_host_keys_dir }}/primary-target-identity.json"
+      register: source_primary_identity
+      when: inventory_hostname == source_host
+
+    - name: verify - Get source validator running identity pubkey
+      ansible.builtin.command: solana-keygen pubkey {{ source_host_identity_link_path }}
+      register: source_running_pubkey
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: 
+        - inventory_hostname == source_host
+        - source_running_identity.stat.exists
+
+    - name: verify - Get source hot-spare identity pubkey
+      ansible.builtin.command: solana-keygen pubkey {{ source_host_keys_dir }}/hot-spare-identity.json
+      register: source_hotspare_pubkey
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: 
+        - inventory_hostname == source_host
+        - source_hotspare_identity.stat.exists
+
+    - name: verify - Get source primary target identity pubkey
+      ansible.builtin.command: solana-keygen pubkey {{ source_host_keys_dir }}/primary-target-identity.json
+      register: source_primary_pubkey
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: 
+        - inventory_hostname == source_host
+        - source_primary_identity.stat.exists
+
+- name: verify - Verify destination validator identity files
+  block:
+    - name: verify - Check destination running identity file
+      ansible.builtin.stat:
+        path: "{{ destination_host_identity_link_path }}"
+      register: destination_running_identity
+      when: inventory_hostname == destination_host
+
+    - name: verify - Get destination validator running identity pubkey
+      ansible.builtin.command: solana-keygen pubkey {{ destination_host_identity_link_path }}
+      register: destination_running_pubkey
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: 
+        - inventory_hostname == destination_host
+        - destination_running_identity.stat.exists
+
+- name: verify - Make identity pubkeys available globally
+  ansible.builtin.set_fact:
+    source_running_pubkey: "{{ hostvars[source_host]['source_running_pubkey'].stdout_lines[0] | default('') }}"
+    destination_running_pubkey: "{{ hostvars[destination_host]['destination_running_pubkey'].stdout_lines[0] | default('') }}"
+    source_hotspare_pubkey: "{{ hostvars[source_host]['source_hotspare_pubkey'].stdout_lines[0] | default('') }}"
+    source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'].stdout_lines[0] | default('') }}"
+  run_once: true
+
+- name: verify - Display Final State Summary
+  ansible.builtin.debug:
+    msg: |
+      ===============================================
+      VALIDATOR HOSTS VERIFICATION
+      ===============================================
+
+      Source Validator:
+      - Host: {{ source_host }} ({{ source_validator_name }})
+      - Running Identity: {{ source_host_identity_link_path }}
+        Pubkey: {{ source_running_pubkey | default('Not found') }}
+
+      Destination Validator:
+      - Host: {{ destination_host }} ({{ destination_validator_name }})
+      - Running Identity: {{ destination_host_identity_link_path }}
+        Pubkey: {{ destination_running_pubkey | default('Not found') }}
+  delegate_to: localhost
+  run_once: true
+
+- name: verify - Verify source validator is using hot-spare identity
+  ansible.builtin.fail:
+    msg: |
+      Source validator is not using the hot-spare identity!
+      Expected: {{ source_hotspare_pubkey | default('Not found') }}
+      Actual: {{ source_running_pubkey | default('Not found') }}
+  when:
+    - inventory_hostname == source_host
+    - source_running_pubkey != source_hotspare_pubkey
+    - source_running_pubkey != ''
+    - source_hotspare_pubkey != ''
+  run_once: true
+
+- name: verify - Verify destination validator is using primary target identity
+  ansible.builtin.fail:
+    msg: |
+      Destination validator is not using the primary target identity!
+      Expected: {{ source_primary_pubkey | default('Not found') }}
+      Actual: {{ destination_running_pubkey | default('Not found') }}
+  when:
+    - inventory_hostname == destination_host
+    - destination_running_pubkey != source_primary_pubkey
+    - destination_running_pubkey != ''
+    - source_primary_pubkey != ''
+  run_once: true

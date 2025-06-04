@@ -1,19 +1,18 @@
 ---
-# Hot Swap Validator hosts
+# Shows Info for hot swap validator hosts
 # -------------------
-# Performs a Validator Hot Swap operation between two hosts holding the same key set.
-# Destination host will acquire the primary target identity
-# Source host will acquire a hot-spare identity
+# Runs a keypair status check on hosts planned for a hot swap
+# Can be run before and/or after a hot swap
 #
 # Usage:
 # ------
 # Run from /ansible directory:
 #
-# ansible-playbook playbooks/pb_hot_swap_validator_hosts.yml \
+# ansible-playbook playbooks/pb_hot_swap_validator_debug.yml \
 #   -e "source_host=host-alpha" \
 #   -e "destination_host=host-bravo"
 
-- name: Perform Hot Swap Validator hosts
+- name: Shows Info for hot swap validator hosts
   hosts: "{{ source_host }},{{ destination_host }}"
   user: "{{ solana_user }}"
   become: false
@@ -61,7 +60,7 @@
           Destination validator: {{ destination_validator_name }}
 
   roles:
-    - role: solana_swap_validator_hosts
+    - role: solana_swap_validator_debug
       when: source_validator_name is defined and destination_validator_name is defined
       vars:
         source_host: "{{ source_host }}"
