@@ -1,23 +1,23 @@
 ---
-- name: Check if source vote account exists
+- name: confirm_swap - Check if source vote account exists
   ansible.builtin.stat:
     path: "{{ source_vote_account_path }}"
   register: source_vote_account_file
   when: inventory_hostname == source_host
 
-- name: Get source hot-spare identity pubkey
+- name: confirm_swap - Get source hot-spare identity pubkey
   ansible.builtin.command: solana-keygen pubkey {{ source_host_hot_spare_identity_path }}
   register: source_hotspare_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == source_host
 
-- name: Make source hotspare pubkey available globally
+- name: confirm_swap - Make source hotspare pubkey available globally
   ansible.builtin.set_fact:
     source_hotspare_pubkey: "{{ hostvars[source_host]['source_hotspare_pubkey'].stdout_lines[0] }}"
   run_once: true
 
-- name: Get source vote account pubkey
+- name: confirm_swap - Get source vote account pubkey
   ansible.builtin.command: solana-keygen pubkey {{ source_vote_account_path }}
   register: source_vote_pubkey
   environment:
@@ -26,31 +26,31 @@
     - inventory_hostname == source_host
     - source_vote_account_file.stat.exists
 
-- name: Make source vote pubkey available globally
+- name: confirm_swap - Make source vote pubkey available globally
   ansible.builtin.set_fact:
     source_vote_pubkey: "{{ hostvars[source_host]['source_vote_pubkey'].stdout_lines[0] }}"
   when: hostvars[source_host]['source_vote_account_file'].stat.exists
   run_once: true
 
-- name: Check if destination vote account exists
+- name: confirm_swap - Check if destination vote account exists
   ansible.builtin.stat:
     path: "{{ destination_host_keys_dir }}/vote-account.json"
   register: destination_vote_account_file
   when: inventory_hostname == destination_host
 
-- name: Get destination hot-spare identity pubkey
+- name: confirm_swap - Get destination hot-spare identity pubkey
   ansible.builtin.command: solana-keygen pubkey "{{ destination_host_keys_dir }}/hot-spare-identity.json"
   register: destination_hotspare_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == destination_host
 
-- name: Make destination hotspare pubkey available globally
+- name: confirm_swap - Make destination hotspare pubkey available globally
   ansible.builtin.set_fact:
     destination_hotspare_pubkey: "{{ hostvars[destination_host]['destination_hotspare_pubkey'].stdout_lines[0] }}"
   run_once: true
 
-- name: Get destination vote account pubkey
+- name: confirm_swap - Get destination vote account pubkey
   ansible.builtin.command: solana-keygen pubkey "{{ destination_host_keys_dir }}/vote-account.json"
   register: destination_vote_pubkey
   environment:
@@ -59,13 +59,13 @@
     - inventory_hostname == destination_host
     - destination_vote_account_file.stat.exists
 
-- name: Make destination vote pubkey available globally
+- name: confirm_swap - Make destination vote pubkey available globally
   ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ hostvars[destination_host]['destination_vote_pubkey'].stdout_lines[0] }}"
   when: hostvars[destination_host]['destination_vote_account_file'].stat.exists
   run_once: true
 
-- name: Display Swap Operation Summary
+- name: confirm_swap - Display Swap Operation Summary
   ansible.builtin.debug:
     msg: |
       ===============================================
@@ -110,7 +110,7 @@
   delegate_to: localhost
   run_once: true
 
-- name: Fail if attempting to swap between different validator identities
+- name: confirm_swap - Fail if attempting to swap between different validator identities
   ansible.builtin.fail:
     msg: |
       Cannot proceed with validator swap: Primary identity pubkeys do not match!
@@ -127,18 +127,18 @@
     - source_primary_pubkey != destination_primary_pubkey
   run_once: true
 
-- name: Confirm Swap Operation
+- name: confirm_swap - Confirm Swap Operation
   ansible.builtin.pause:
     prompt: "Do you want to proceed with the validator swap? (yes/no)"
   register: swap_confirmation
   run_once: true
 
-- name: Make swap confirmation available globally
+- name: confirm_swap - Make swap confirmation available globally
   ansible.builtin.set_fact:
     swap_confirmation: "{{ hostvars[source_host]['swap_confirmation'] }}"
   run_once: true
 
-- name: Fail if swap not confirmed
+- name: confirm_swap - Fail if swap not confirmed
   ansible.builtin.fail:
     msg: "Validator swap operation cancelled by user"
   when: swap_confirmation.user_input | lower != 'yes'

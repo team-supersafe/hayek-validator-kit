@@ -1,7 +1,7 @@
 ---
 # Tasks to prepare both source and destination hosts for the swap operation
 
-- name: Generate SSH key for sol user if not present
+- name: prepare - Generate SSH key for sol user if not present
   community.crypto.openssh_keypair:
     path: "{{ ssh_key_path }}"
     type: "{{ ssh_key_type }}"
@@ -9,13 +9,13 @@
   register: ssh_key
   when: not (ssh_key_path is exists)
 
-- name: Get public key content
+- name: prepare - Get public key content
   ansible.builtin.slurp:
     src: "{{ ssh_key_path }}.pub"
   register: pubkey
   ignore_errors: "{{ ansible_check_mode }}"
 
-- name: Authorize key on both hosts
+- name: prepare - Authorize key on both hosts
   delegate_to: "{{ item }}"
   ansible.posix.authorized_key:
     user: sol
@@ -23,83 +23,80 @@
   loop: "{{ [source_host, destination_host] }}"
   ignore_errors: "{{ ansible_check_mode }}"
 
-- name: Ensure rsync is installed on both hosts
+- name: prepare - Install prerequisites
   become: true
   ansible.builtin.apt:
     name: rsync
-    state: present
     update_cache: true
-  delegate_to: "{{ item }}"
-  loop: "{{ [source_host, destination_host] }}"
 
-- name: Check for primary target identity file on source host
+- name: prepare - Check for primary target identity file on source host
   block:
-    - name: Check for new convention primary target identity
+    - name: prepare - Check for new convention primary target identity
       ansible.builtin.stat:
         path: "{{ source_host_keys_dir }}/primary-target-identity.json"
       register: new_staked_identity
       when: inventory_hostname == source_host
 
-    - name: Check for old convention staked identity
+    - name: prepare - Check for old convention staked identity
       ansible.builtin.stat:
         path: "{{ source_host_keys_dir }}/staked-identity.json"
       register: old_staked_identity
       when: inventory_hostname == source_host
 
-    - name: Set source host primary target identity path
+    - name: prepare - Set source host primary target identity path
       ansible.builtin.set_fact:
         source_host_primary_target_identity_path: >-
           {% if new_staked_identity.stat.exists %}
-          {{ source_host_keys_dir }}/primary-target-identity.json
+          {{ source_host_keys_dir }}/primary-target-identity.json | trim
           {% elif old_staked_identity.stat.exists %}
-          {{ source_host_keys_dir }}/staked-identity.json
+          {{ source_host_keys_dir }}/staked-identity.json | trim
           {% else %}
-          {{ '' }}
+          {{ '' | trim }}
           {% endif %}
       when: inventory_hostname == source_host
 
-    - name: Make source host primary target identity path available globally
+    - name: prepare - Make source host primary target identity path available globally
       ansible.builtin.set_fact:
         source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] }}"
       run_once: true
 
-    - name: Fail if no primary identity found on source host
+    - name: prepare - Fail if no primary identity found on source host
       ansible.builtin.fail:
         msg: "No primary identity file found on source host. Neither primary-target-identity.json nor staked-identity.json exists in {{ source_host_keys_dir }}"
       when:
         - inventory_hostname == source_host
         - source_host_primary_target_identity_path == ''
 
-    - name: Check for new convention hot-spare identity
+    - name: prepare - Check for new convention hot-spare identity
       ansible.builtin.stat:
         path: "{{ source_host_keys_dir }}/hot-spare-identity.json"
       register: new_unstaked_identity
       when: inventory_hostname == source_host
 
-    - name: Check for old convention unstaked identity
+    - name: prepare - Check for old convention unstaked identity
       ansible.builtin.stat:
         path: "{{ source_host_keys_dir }}/unstaked-identity.json"
       register: old_unstaked_identity
       when: inventory_hostname == source_host
 
-    - name: Set source host hot-spare identity path
+    - name: prepare - Set source host hot-spare identity path
       ansible.builtin.set_fact:
         source_host_hot_spare_identity_path: >-
           {% if new_unstaked_identity.stat.exists %}
-          {{ source_host_keys_dir }}/hot-spare-identity.json
+          {{ source_host_keys_dir }}/hot-spare-identity.json | trim
           {% elif old_unstaked_identity.stat.exists %}
-          {{ source_host_keys_dir }}/unstaked-identity.json
+          {{ source_host_keys_dir }}/unstaked-identity.json | trim
           {% else %}
-          {{ source_host_keys_dir }}/hot-spare-identity.json
+          {{ source_host_keys_dir }}/hot-spare-identity.json | trim
           {% endif %}
       when: inventory_hostname == source_host
 
-    - name: Make source host hot-spare identity path available globally
+    - name: prepare - Make source host hot-spare identity path available globally
       ansible.builtin.set_fact:
         source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] }}"
       run_once: true
 
-    - name: Generate hot-spare identity if it doesn't exist
+    - name: prepare - Generate hot-spare identity if it doesn't exist
       ansible.builtin.command: solana-keygen new --no-bip39-passphrase -o {{ source_host_hot_spare_identity_path }}
       environment:
         PATH: "{{ solana_install_dir }}"
@@ -109,7 +106,7 @@
         - not old_unstaked_identity.stat.exists
       register: generated_hotspare
 
-    - name: Display generated hot-spare pubkey
+    - name: prepare - Display generated hot-spare pubkey
       ansible.builtin.debug:
         msg: "Generated new hot-spare identity with pubkey: {{ generated_hotspare.stdout_lines | select('match', '^pubkey:') | first | regex_replace('^pubkey: ', '') }}"
       when:
@@ -117,45 +114,45 @@
         - generated_hotspare is defined
         - generated_hotspare.changed
 
-- name: Check for primary target identity file on destination host
+- name: prepare - Check for primary target identity file on destination host
   block:
-    - name: Check for new convention primary target identity
+    - name: prepare - Check for new convention primary target identity
       ansible.builtin.stat:
         path: "{{ destination_host_keys_dir }}/primary-target-identity.json"
       register: new_staked_identity
       when: inventory_hostname == destination_host
 
-    - name: Check for old convention staked identity
+    - name: prepare - Check for old convention staked identity
       ansible.builtin.stat:
         path: "{{ destination_host_keys_dir }}/staked-identity.json"
       register: old_staked_identity
       when: inventory_hostname == destination_host
 
-    - name: Set destination host primary target identity path
+    - name: prepare - Set destination host primary target identity path
       ansible.builtin.set_fact:
         destination_host_primary_target_identity_path: >-
           {% if new_staked_identity.stat.exists %}
-          {{ destination_host_keys_dir }}/primary-target-identity.json
+          {{ destination_host_keys_dir }}/primary-target-identity.json | trim
           {% elif old_staked_identity.stat.exists %}
-          {{ destination_host_keys_dir }}/staked-identity.json
+          {{ destination_host_keys_dir }}/staked-identity.json | trim
           {% else %}
-          {{ '' }}
+          {{ '' | trim }}
           {% endif %}
       when: inventory_hostname == destination_host
 
-    - name: Make destination host primary target identity path available globally
+    - name: prepare - Make destination host primary target identity path available globally
       ansible.builtin.set_fact:
         destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] }}"
       run_once: true
 
-    - name: Fail if no primary identity found on destination host
+    - name: prepare - Fail if no primary identity found on destination host
       ansible.builtin.fail:
         msg: "No primary identity file found on destination host. Neither primary-target-identity.json nor staked-identity.json exists in {{ destination_host_keys_dir }}"
       when:
         - inventory_hostname == destination_host
         - destination_host_primary_target_identity_path == ''
 
-- name: Get source primary target identity pubkey
+- name: prepare - Get source primary target identity pubkey
   ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path }}
   register: source_staked_pubkey
   environment:
@@ -163,7 +160,7 @@
   when: inventory_hostname == source_host
   changed_when: false
 
-- name: Get destination primary target identity pubkey
+- name: prepare - Get destination primary target identity pubkey
   ansible.builtin.command: solana-keygen pubkey {{ destination_host_primary_target_identity_path }}
   register: destination_staked_pubkey
   environment:
@@ -171,21 +168,21 @@
   when: inventory_hostname == destination_host
   changed_when: false
 
-- name: Set source host pubkey fact
+- name: prepare - Set source host pubkey fact
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ source_staked_pubkey.stdout_lines[0] }}"
   when: 
     - inventory_hostname == source_host
     - source_staked_pubkey.stdout_lines is defined
 
-- name: Set destination host pubkey fact
+- name: prepare - Set destination host pubkey fact
   ansible.builtin.set_fact:
     destination_primary_pubkey: "{{ destination_staked_pubkey.stdout_lines[0] }}"
   when: 
     - inventory_hostname == destination_host
     - destination_staked_pubkey.stdout_lines is defined
 
-- name: Make pubkey facts available globally
+- name: prepare - Make pubkey facts available globally
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] }}"
     destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] }}"

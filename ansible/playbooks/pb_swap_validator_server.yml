@@ -7,11 +7,20 @@
 # ------
 # Run from /ansible directory:
 #
+# Full swap operation:
 # ansible-playbook playbooks/pb_swap_validator_server.yml \
 #   -e "source_host=host-alpha" \
 #   -e "destination_host=host-bravo" \
 #   -e "source_validator_name=canopy" \
 #   -e "destination_validator_name=penny"
+#
+# Verify only mode:
+# ansible-playbook playbooks/pb_swap_validator_server.yml \
+#   -e "source_host=host-alpha" \
+#   -e "destination_host=host-bravo" \
+#   -e "source_validator_name=canopy" \
+#   -e "destination_validator_name=penny" \
+#   -e "verify_only=true"
 
 - name: Install Jito Client with Co-Hosted Relayer
   hosts: "{{ source_host }},{{ destination_host }}"
@@ -34,6 +43,10 @@
             - source_validator_name
             - destination_validator_name
 
+    - name: Set default value for verify_only
+      ansible.builtin.set_fact:
+        verify_only: "{{ verify_only | default(false) | bool }}"
+
   roles:
     - role: solana_swap_server
       vars:
@@ -41,3 +54,4 @@
         destination_host: "{{ destination_host }}"
         source_validator_name: "{{ source_validator_name }}"
         destination_validator_name: "{{ destination_validator_name }}"
+        verify_only: "{{ verify_only }}"
