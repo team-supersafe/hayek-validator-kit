@@ -1,0 +1,168 @@
+---
+# This role performs CPU configuration checks and stops the playbook if any check fails
+
+# - name: Check CPU configuration for Solana servers
+#   block:
+#     # Check CPU governor setting
+#     - name: Check if CPU governor is set to performance mode
+#       ansible.builtin.shell: |
+#         for gov_file in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+#           if [ -f "$gov_file" ]; then
+#             cat "$gov_file"
+#           fi
+#         done | sort | uniq
+#       register: cpu_governor_check
+#       changed_when: false
+#       check_mode: false
+
+#     # Check CPU scaling driver
+#     - name: Check if p-state driver is active
+#       ansible.builtin.shell: |
+#         if [ -f "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver" ]; then
+#           cat "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver"
+#         else
+#           echo "scaling_driver file not found"
+#           exit 1
+#         fi
+#       register: pstate_check
+#       changed_when: false
+#       check_mode: false
+
+#     # Check AMD SMT/Hyperthreading status
+#     - name: Check if AMD SMT/Hyperthreading is enabled
+#       ansible.builtin.shell: |
+#         # Method 1: Check through SMT directory (modern kernels)
+#         if [ -d "/sys/devices/system/cpu/smt" ] && [ -f "/sys/devices/system/cpu/smt/control" ]; then
+#           cat "/sys/devices/system/cpu/smt/control"
+#           exit $?
+#         fi
+
+#         # Method 2: Check by counting siblings per core
+#         siblings_count=$(cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list | tr ',' ' ' | wc -w)
+#         if [ "$siblings_count" -gt 1 ]; then
+#           echo "on"
+#           exit 0
+#         else
+#           echo "off"
+#           exit 1
+#         fi
+#       register: smt_check
+#       changed_when: false
+#       check_mode: false
+
+#     # Display verification results
+#     - name: Display CPU configuration status
+#       ansible.builtin.debug:
+#         msg: |
+#           CPU Configuration Status:
+#             - CPU Governor: {{ cpu_governor_check.stdout }}
+#             - CPU Scaling Driver: {{ pstate_check.stdout }}
+#             - AMD SMT/Hyperthreading: {{ smt_check.stdout }}
+
+#     # Assertions that will stop the playbook if they fail
+#     - name: Verify CPU governor is set to performance mode
+#       ansible.builtin.assert:
+#         that: cpu_governor_check.stdout == "performance"
+#         fail_msg: "ERROR! CPU governor is not set to performance mode. Current value: {{ cpu_governor_check.stdout }}"
+#         success_msg: "CPU governor correctly set to performance mode"
+
+#     - name: Verify CPU is using p-state driver
+#       ansible.builtin.assert:
+#         that: "'pstate' in pstate_check.stdout"
+#         fail_msg: "ERROR! CPU is not using p-state driver. Current driver: {{ pstate_check.stdout }}"
+#         success_msg: "CPU correctly using p-state driver: {{ pstate_check.stdout }}"
+
+#     - name: Verify AMD SMT/Hyperthreading is enabled
+#       ansible.builtin.assert:
+#         that: smt_check.stdout == "on"
+#         fail_msg: "ERROR! AMD SMT/Hyperthreading is not enabled. Current status: {{ smt_check.stdout }}"
+#         success_msg: "AMD SMT/Hyperthreading correctly enabled"
+
+- name: Check disk configuration for Solana servers
+  block:
+    # Get system disk information
+    - name: Get system disk
+      ansible.builtin.shell: |
+        root_disk=$(mount | grep ' / ' | awk '{print $1}' | sed 's/[0-9]*$//')
+        echo "$root_disk"
+      register: system_disk
+      changed_when: false
+      check_mode: false
+
+    # Check available disks
+    - name: Get disk information
+      ansible.builtin.shell: |
+        echo "=== Disk Information (sorted by size) ==="
+        printf "%-10s %-10s %-10s %-20s %-10s %-30s %s\n" "DEVICE" "SIZE" "TYPE" "MOUNTPOINT" "FSTYPE" "MODEL" "SERIAL"
+        echo "--------------------------------------------------------------------------------------------------------"
+        # Get disk information and sort by size
+        lsblk -b -d -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE,MODEL,SERIAL | \
+        awk 'NR>1 {print $0}' | \
+        sort -k2 -nr | \
+        while read name size type mount fs model serial; do
+          size_human=$(numfmt --to=iec-i --suffix=B $size)
+          printf "%-10s %-10s %-10s %-20s %-10s %-30s %s\n" "$name" "$size_human" "$type" "$mount" "$fs" "$model" "$serial"
+        done
+      register: disk_info
+      changed_when: false
+      check_mode: false
+
+    # Display disk information
+    - name: Show disk information
+      ansible.builtin.debug:
+        msg: "{{ disk_info.stdout_lines }}"
+
+    # Get available disks (excluding system disk)
+    - name: Get available disks
+      ansible.builtin.shell: |
+        # Get disks sorted by size (excluding system disk)
+        lsblk -b -d -o NAME,SIZE | grep -v "NAME" | sort -k2 -nr | while read name size; do
+          if [ "$name" != "{{ system_disk.stdout | basename }}" ]; then
+            echo "$name"
+          fi
+        done
+      register: available_disks
+      changed_when: false
+      check_mode: false
+
+    # Store disk information for later use
+    - name: Store disk information
+      ansible.builtin.set_fact:
+        system_disk_name: "{{ system_disk.stdout | basename }}"
+        available_disks_list: "{{ available_disks.stdout_lines }}"
+        disk_info_detailed: "{{ disk_info.stdout_lines }}"
+
+    # Display verification results
+    - name: Display disk configuration status
+      ansible.builtin.debug:
+        msg: |
+          Disk Configuration Status:
+            System Disk: {{ system_disk_name }}
+
+            Available Disks:
+            {{ available_disks_list | join('\n') }}
+
+            Required Configuration:
+            - Ledger: {{ mount_points.ledger }} ({{ filesystem_formats.ledger }})
+            - Accounts: {{ mount_points.accounts }} ({{ filesystem_formats.accounts }})
+            - Snapshots: {{ mount_points.snapshots }} ({{ filesystem_formats.snapshots }})
+
+    # Assertions that will stop the playbook if they fail
+    - name: Verify minimum number of disks
+      ansible.builtin.assert:
+        that: available_disks_list | length >= min_required_disks
+        fail_msg: "ERROR! Insufficient number of disks. Need at least {{ min_required_disks }} disks for ledger, accounts, and snapshots."
+        success_msg: "Sufficient number of disks available (found {{ available_disks_list | length }}, required {{ min_required_disks }})"
+
+    - name: Verify mount points are NOT mounted
+      ansible.builtin.shell: |
+        mount | grep -E '{{ mount_points.ledger }}|{{ mount_points.accounts }}|{{ mount_points.snapshots }}' || true
+      register: mount_points_check
+      changed_when: false
+      check_mode: false
+
+    - name: Verify no existing mounts
+      ansible.builtin.assert:
+        that: mount_points_check.stdout_lines | length == 0
+        fail_msg: "ERROR! Found existing mounts for {{ mount_points.ledger }}, {{ mount_points.accounts }}, or {{ mount_points.snapshots }}. Please unmount these directories before proceeding."
+        success_msg: "No existing mounts found for required directories"

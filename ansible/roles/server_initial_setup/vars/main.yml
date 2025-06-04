@@ -1,0 +1,42 @@
+# Timezone configuration for the server
+timezone: "America/New_York"
+
+# User configuration for Solana validator
+sol_owner: "sol"
+
+# Directory permissions
+directory_permissions:
+  mode: '0755'
+  owner: "{{ sol_owner }}"
+  group: "{{ sol_owner }}"
+
+# Mount directories list
+mount_directories:
+  - ledger
+  - accounts
+  - snapshots
+
+# Disk configuration
+# Minimum number of disks required for validator setup
+min_required_disks: 3
+
+# Mount points
+mount_points:
+  ledger: "/mnt/ledger"      # For ledger data (largest disk)
+  accounts: "/mnt/accounts"  # For accounts data (second largest)
+  snapshots: "/mnt/snapshots" # For snapshots (third largest)
+
+# Filesystem formats for each component
+filesystem_formats:
+  ledger: "xfs"    # High-performance filesystem for ledger
+  accounts: "xfs"  # High-performance filesystem for accounts
+  snapshots: "ext4" # Standard filesystem for snapshots
+
+# Health check configuration
+# Script to monitor validator health
+health_check:
+  script_name: "health_check.sh"
+  dest_path: "/home/{{ sol_owner }}/{{ health_check.script_name }}"
+  owner: "{{ sol_owner }}"
+  group: "{{ sol_owner }}"
+  mode: "0750"

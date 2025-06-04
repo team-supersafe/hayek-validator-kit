@@ -1,0 +1,52 @@
+---
+# This role performs initial system setup including package installation and basic configuration
+
+# Update and upgrade packages
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: true
+    autoclean: true
+    autoremove: true
+
+# Disable unattended upgrades
+- name: Stop unattended-upgrades service
+  ansible.builtin.systemd:
+    name: unattended-upgrades
+    state: stopped
+    enabled: false
+
+- name: Reconfigure unattended-upgrades to disable
+  ansible.builtin.expect:
+    command: dpkg-reconfigure unattended-upgrades
+    responses:
+      '^No automatic updates.$': '\n'
+    timeout: 30
+  register: dpkg_result
+  failed_when: "'rejected' in dpkg_result.stdout"
+  ignore_errors: true  # May not work in all environments
+
+- name: Configure auto-upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "0";
+      APT::Periodic::Unattended-Upgrade "0";
+    mode: '0644'
+
+- name: Install essential packages
+  ansible.builtin.apt:
+    name:
+      - htop
+      - fail2ban
+      - hwloc
+      - xfsprogs  # For XFS filesystem operations
+    state: present
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
