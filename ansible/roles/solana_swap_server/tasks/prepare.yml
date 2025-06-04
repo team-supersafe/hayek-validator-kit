@@ -46,13 +46,13 @@
     - name: prepare - Set source host primary target identity path
       ansible.builtin.set_fact:
         source_host_primary_target_identity_path: >-
-          {% if new_staked_identity.stat.exists %}
-          {{ source_host_keys_dir }}/primary-target-identity.json | trim
-          {% elif old_staked_identity.stat.exists %}
-          {{ source_host_keys_dir }}/staked-identity.json | trim
-          {% else %}
-          {{ '' | trim }}
-          {% endif %}
+          {%- if new_staked_identity.stat.exists -%}
+          {{ source_host_keys_dir }}/primary-target-identity.json
+          {%- elif old_staked_identity.stat.exists -%}
+          {{ source_host_keys_dir }}/staked-identity.json
+          {%- else -%}
+          {{ '' }}
+          {%- endif -%}
       when: inventory_hostname == source_host
 
     - name: prepare - Make source host primary target identity path available globally
@@ -82,13 +82,13 @@
     - name: prepare - Set source host hot-spare identity path
       ansible.builtin.set_fact:
         source_host_hot_spare_identity_path: >-
-          {% if new_unstaked_identity.stat.exists %}
-          {{ source_host_keys_dir }}/hot-spare-identity.json | trim
-          {% elif old_unstaked_identity.stat.exists %}
-          {{ source_host_keys_dir }}/unstaked-identity.json | trim
-          {% else %}
-          {{ source_host_keys_dir }}/hot-spare-identity.json | trim
-          {% endif %}
+          {%- if new_unstaked_identity.stat.exists -%}
+          {{ source_host_keys_dir }}/hot-spare-identity.json
+          {%- elif old_unstaked_identity.stat.exists -%}
+          {{ source_host_keys_dir }}/unstaked-identity.json
+          {%- else -%}
+          {{ source_host_keys_dir }}/hot-spare-identity.json
+          {%- endif -%}
       when: inventory_hostname == source_host
 
     - name: prepare - Make source host hot-spare identity path available globally
@@ -131,13 +131,13 @@
     - name: prepare - Set destination host primary target identity path
       ansible.builtin.set_fact:
         destination_host_primary_target_identity_path: >-
-          {% if new_staked_identity.stat.exists %}
-          {{ destination_host_keys_dir }}/primary-target-identity.json | trim
-          {% elif old_staked_identity.stat.exists %}
-          {{ destination_host_keys_dir }}/staked-identity.json | trim
-          {% else %}
-          {{ '' | trim }}
-          {% endif %}
+          {%- if new_staked_identity.stat.exists -%}
+          {{ destination_host_keys_dir }}/primary-target-identity.json
+          {%- elif old_staked_identity.stat.exists -%}
+          {{ destination_host_keys_dir }}/staked-identity.json
+          {%- else -%}
+          {{ '' }}
+          {%- endif -%}
       when: inventory_hostname == destination_host
 
     - name: prepare - Make destination host primary target identity path available globally
@@ -153,7 +153,7 @@
         - destination_host_primary_target_identity_path == ''
 
 - name: prepare - Get source primary target identity pubkey
-  ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path }}
+  ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path | trim }}
   register: source_staked_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
@@ -161,7 +161,7 @@
   changed_when: false
 
 - name: prepare - Get destination primary target identity pubkey
-  ansible.builtin.command: solana-keygen pubkey {{ destination_host_primary_target_identity_path }}
+  ansible.builtin.command: solana-keygen pubkey {{ destination_host_primary_target_identity_path | trim }}
   register: destination_staked_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
