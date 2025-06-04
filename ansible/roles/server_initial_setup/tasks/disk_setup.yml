@@ -1,0 +1,129 @@
+---
+# This role performs disk setup and configuration for Solana validator
+# This role uses disk information collected by precheck.yml
+
+# Assign disks by size using information from precheck
+- name: Assign disks by size
+  ansible.builtin.set_fact:
+    ledger_disk: "{{ available_disks_list[0] if available_disks_list | length > 0 else '' }}"
+    account_disk: "{{ available_disks_list[1] if available_disks_list | length > 1 else '' }}"
+    snapshots_disk: "{{ available_disks_list[2] if available_disks_list | length > 2 else '' }}"
+
+# Display disk assignments for verification
+- name: Show disk assignments
+  ansible.builtin.debug:
+    msg: |
+      Detected disk assignments:
+      - Ledger: /dev/{{ ledger_disk }} ({{ ansible_devices[ledger_disk].size if ledger_disk != '' else 'Not available' }})
+      - Accounts: /dev/{{ account_disk }} ({{ ansible_devices[account_disk].size if account_disk != '' else 'Not available' }})
+      - Snapshots: /dev/{{ snapshots_disk }} ({{ ansible_devices[snapshots_disk].size if snapshots_disk != '' else 'Not available' }})
+
+# Disable swap to prevent performance issues
+- name: Disable swap
+  ansible.builtin.command: swapoff -a
+  changed_when: false
+
+- name: Comment out swap in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].+swap.+)'
+    replace: '# \1'
+
+# Format drives with appropriate filesystems
+- name: Format ledger drive
+  community.general.filesystem:
+    fstype: "{{ filesystem_formats.ledger }}"
+    dev: "/dev/{{ ledger_disk }}"
+    force: true
+  when: ledger_disk != '' and ansible_devices[ledger_disk] is defined
+
+- name: Format accounts drive
+  community.general.filesystem:
+    fstype: "{{ filesystem_formats.accounts }}"
+    dev: "/dev/{{ account_disk }}"
+    force: true
+  when: account_disk != '' and ansible_devices[account_disk] is defined
+
+- name: Format snapshots drive
+  community.general.filesystem:
+    fstype: "{{ filesystem_formats.snapshots }}"
+    dev: "/dev/{{ snapshots_disk }}"
+    force: true
+  when: snapshots_disk != '' and ansible_devices[snapshots_disk] is defined
+
+# Create mount point directories
+- name: Create mount directories
+  ansible.builtin.file:
+    path: "{{ mount_points[item] }}"
+    state: directory
+    mode: "{{ directory_permissions.mode }}"
+    owner: "{{ directory_permissions.owner }}"
+    group: "{{ directory_permissions.group }}"
+  loop: "{{ mount_directories }}"
+
+# Get UUIDs for fstab configuration
+- name: Get UUID for ledger drive
+  ansible.builtin.command: blkid -s UUID -o value "/dev/{{ ledger_disk }}"
+  register: ledger_uuid
+  changed_when: false
+  when: ledger_disk != '' and ansible_devices[ledger_disk] is defined
+
+- name: Get UUID for accounts drive
+  ansible.builtin.command: blkid -s UUID -o value "/dev/{{ account_disk }}"
+  register: accounts_uuid
+  changed_when: false
+  when: account_disk != '' and ansible_devices[account_disk] is defined
+
+- name: Get UUID for snapshots drive
+  ansible.builtin.command: blkid -s UUID -o value "/dev/{{ snapshots_disk }}"
+  register: snapshots_uuid
+  changed_when: false
+  when: snapshots_disk != '' and ansible_devices[snapshots_disk] is defined
+
+# Configure fstab for automatic mounting
+- name: Configure fstab for ledger drive
+  ansible.posix.mount:
+    path: "{{ mount_points.ledger }}"
+    src: "UUID={{ ledger_uuid.stdout }}"
+    fstype: "{{ filesystem_formats.ledger }}"
+    opts: defaults,noatime,logbufs=8,logbsize=32k
+    dump: 0
+    passno: 2
+    state: present
+  when: ledger_uuid.stdout is defined and ledger_uuid.stdout != ""
+
+- name: Configure fstab for accounts drive
+  ansible.posix.mount:
+    path: "{{ mount_points.accounts }}"
+    src: "UUID={{ accounts_uuid.stdout }}"
+    fstype: "{{ filesystem_formats.accounts }}"
+    opts: defaults,noatime
+    dump: 0
+    passno: 2
+    state: present
+  when: accounts_uuid.stdout is defined and accounts_uuid.stdout != ""
+
+- name: Configure fstab for snapshots drive
+  ansible.posix.mount:
+    path: "{{ mount_points.snapshots }}"
+    src: "UUID={{ snapshots_uuid.stdout }}"
+    fstype: "{{ filesystem_formats.snapshots }}"
+    opts: defaults,noatime
+    dump: 0
+    passno: 2
+    state: present
+  when: snapshots_uuid.stdout is defined and snapshots_uuid.stdout != ""
+
+# Mount all configured filesystems
+- name: Mount all filesystems
+  ansible.builtin.command: mount -a
+  changed_when: false
+
+# Set correct ownership and permissions
+- name: Set ownership of mount points
+  ansible.builtin.file:
+    path: "{{ mount_points[item] }}"
+    owner: "{{ directory_permissions.owner }}"
+    group: "{{ directory_permissions.group }}"
+    recurse: true
+  loop: "{{ mount_directories }}"

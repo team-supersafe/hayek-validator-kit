@@ -1,0 +1,15 @@
+---
+# Main task file for server initial setup
+# This file includes all other task files in the correct order
+
+- name: Include precheck tasks
+  ansible.builtin.import_tasks: precheck.yml
+
+- name: Include initial setup tasks
+  ansible.builtin.import_tasks: initial_setup.yml
+
+# - name: Include system tuning tasks
+#   ansible.builtin.import_tasks: system_tuning.yml
+
+- name: Include disk setup tasks
+  ansible.builtin.import_tasks: disk_setup.yml
