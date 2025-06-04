@@ -1,0 +1,134 @@
+---
+# This role performs system tuning and optimization for Solana validator
+
+# CPU governor configuration
+- name: Upload CPU governor service
+  ansible.builtin.copy:
+    src: cpu-governor.service
+    dest: /etc/systemd/system/cpu-governor.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable and start CPU governor service
+  ansible.builtin.systemd:
+    name: cpu-governor
+    state: started
+    enabled: true
+    daemon_reload: true
+
+# File limits configuration
+- name: Upload sysctl file limits configuration
+  ansible.builtin.copy:
+    src: 21-agave-validator.conf
+    dest: /etc/sysctl.d/21-agave-validator.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Apply sysctl file limits configuration
+  ansible.builtin.command: sysctl -p /etc/sysctl.d/21-agave-validator.conf
+  changed_when: false
+
+- name: Configure system.conf file limits
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^#?DefaultLimitNOFILE=', line: 'DefaultLimitNOFILE=1000000' }
+    - { regexp: '^#?LimitNOFILE=', line: 'LimitNOFILE=1000000' }
+
+- name: Upload security limits configuration
+  ansible.builtin.copy:
+    src: 90-solana-nofiles.conf
+    dest: /etc/security/limits.d/90-solana-nofiles.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+# IPv6 deactivation
+- name: Upload IPv6 disable configuration
+  ansible.builtin.copy:
+    src: 99-disable-ipv6.conf
+    dest: /etc/sysctl.d/99-disable-ipv6.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Apply IPv6 disable configuration
+  ansible.builtin.command: sysctl -p /etc/sysctl.d/99-disable-ipv6.conf
+  changed_when: false
+
+# System Tuning Parameters
+- name: Update sysctl parameters
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+    sysctl_set: true
+    sysctl_file: /etc/sysctl.d/99-system-tuning.conf
+  with_items:
+    # TCP Buffer Sizes
+    - { name: 'net.ipv4.tcp_rmem', value: '10240 87380 12582912' }
+    - { name: 'net.ipv4.tcp_wmem', value: '10240 87380 12582912' }
+    # Kernel Optimization
+    - { name: 'kernel.timer_migration', value: '0' }
+    - { name: 'kernel.hung_task_timeout_secs', value: '30' }
+    # Virtual Memory Settings
+    - { name: 'vm.swappiness', value: '30' }
+    - { name: 'vm.max_map_count', value: '2000000' }
+    - { name: 'vm.stat_interval', value: '10' }
+    - { name: 'vm.dirty_ratio', value: '40' }
+    - { name: 'vm.min_free_kbytes', value: '3000000' }
+    - { name: 'vm.dirty_expire_centisecs', value: '36000' }
+    - { name: 'vm.dirty_writeback_centisecs', value: '3000' }
+    # TCP Optimization
+    - { name: 'net.ipv4.tcp_congestion_control', value: 'westwood' }
+    - { name: 'net.ipv4.tcp_fastopen', value: '3' }
+    - { name: 'net.ipv4.tcp_timestamps', value: '0' }
+    - { name: 'net.ipv4.tcp_low_latency', value: '1' }
+    - { name: 'net.ipv4.tcp_tw_reuse', value: '1' }
+    - { name: 'net.ipv4.tcp_no_metrics_save', value: '1' }
+  register: sysctl_result
+
+- name: Verify that sysctl changes were applied
+  ansible.builtin.debug:
+    msg: "Updated sysctl parameters: {{ sysctl_result }}"
+
+# TCP Westwood Configuration
+- name: Check if congestion control algorithm is available
+  ansible.builtin.shell: "cat /proc/sys/net/ipv4/tcp_available_congestion_control | grep westwood"
+  register: check_westwood
+  changed_when: false
+
+- name: Load westwood module if needed
+  community.general.modprobe:
+    name: tcp_westwood
+    state: present
+  when: check_westwood.rc != 0
+
+- name: Ensure tcp_westwood loads at startup
+  ansible.builtin.lineinfile:
+    path: /etc/modules-load.d/westwood.conf
+    line: tcp_westwood
+    create: true
+    state: present
+    mode: '0644'
+    owner: root
+    group: root
+  when: check_westwood.rc != 0
+
+# Health Check Script
+- name: Copy health_check.sh to sol's home directory
+  ansible.builtin.copy:
+    src: "{{ health_check.script_name }}"
+    dest: "{{ health_check.dest_path }}"
+    owner: "{{ health_check.owner }}"
+    group: "{{ health_check.group }}"
+    mode: "{{ health_check.mode }}"

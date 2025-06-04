@@ -1,13 +1,14 @@
 ---
-# Setup users for a new metal box
+# Playbook for initial setup of metal box server
+# This playbook configures a new metal box for validator operations
 # --------------------
 # Usage:
 # ------
 # Run from /ansible directory:
 #
-# ansible-playbook playbooks/pb_setup_server_users.yml
+# ansible-playbook -i hosts.yml playbooks/pb_setup_metal_box.yml
 
-- name: Setup server users
+- name: Setup Metal Box Server
   hosts: new_metal_box
   user: ubuntu
   become: true
@@ -36,5 +37,4 @@
       when: ip_confirmation.user_input != ansible_default_ipv4.address
 
   roles:
-    - iam_manager
-
+    - server_initial_setup
