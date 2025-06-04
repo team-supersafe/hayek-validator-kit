@@ -1,0 +1,190 @@
+---
+# Configure SSH.SOCKET port
+- name: Check if ssh.socket is active
+  ansible.builtin.shell: systemctl is-active ssh.socket
+  register: ssh_socket_active
+  changed_when: false
+  # Some metal providers don't use ssh.socket, so we ignore errors if it's not active
+  ignore_errors: true
+
+- name: Find ssh.socket file location
+  ansible.builtin.find:
+    paths:
+      - /lib/systemd/system
+      - /usr/lib/systemd/system
+    patterns: "ssh.socket"
+  register: ssh_socket_file
+  when: ssh_socket_active.stdout == "active"
+
+# Check and activate ssh.service if not active
+- name: Check if ssh.service is active
+  ansible.builtin.shell: systemctl is-active ssh.service
+  register: ssh_service_active
+  changed_when: false
+
+- name: Start and enable ssh.service if not active
+  ansible.builtin.systemd:
+    name: ssh.service
+    state: started
+    enabled: true
+  when: ssh_service_active.stdout != "active"
+
+- name: Change ListenStream to {{ ssh_config.port }} in ssh.socket if active
+  ansible.builtin.lineinfile:
+    path: "{{ ssh_socket_file.files[0].path }}"
+    regexp: '^\s*ListenStream='
+    line: 'ListenStream={{ ssh_config.port }}'
+  when:
+    - ssh_socket_active.stdout == "active"
+    - ssh_socket_file.files | length > 0
+  notify:
+    - Reload systemd
+    - Restart ssh socket
+
+# Configure SSH port
+- name: Change SSH port to {{ ssh_config.port }}
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port '
+    line: 'Port {{ ssh_config.port }}'
+  notify: Restart ssh
+
+# Configure firewall
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Allow SSH on port {{ firewall.ssh_port }}
+  community.general.ufw:
+    rule: allow
+    port: '{{ firewall.ssh_port }}'
+    proto: tcp
+
+- name: Allow TCP port ranges
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ firewall.tcp_ranges }}"
+
+- name: Remove rule that allow TCP port 22
+  community.general.ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+    delete: true
+
+- name: Remove rule that allow UDP port 22
+  community.general.ufw:
+    rule: allow
+    port: '22'
+    proto: udp
+    delete: true
+
+- name: Deny RPC ports
+  community.general.ufw:
+    rule: deny
+    port: "{{ item }}"
+    proto: "{{ proto }}"
+  loop: "{{ firewall.denied_ports }}"
+  loop_control:
+    loop_var: item
+  vars:
+    proto: tcp
+
+- name: Deny RPC ports UDP
+  community.general.ufw:
+    rule: deny
+    port: "{{ item }}"
+    proto: udp
+  loop: "{{ firewall.denied_ports }}"
+
+- name: Allow UDP port ranges
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: udp
+  loop: "{{ firewall.udp_ranges }}"
+
+- name: Allow specific TCP ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ firewall.tcp_ports }}"
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+    policy: reject  # Continue if it's already enabled
+
+# Install fail2ban
+- name: Ensure fail2ban is installed
+  ansible.builtin.apt:
+    name: fail2ban
+    state: present
+
+# Configure specific SSH security settings only
+- name: Configure SSH security - PermitRootLogin
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin {{ ssh_config.permit_root_login | string | lower }}'
+  notify: Restart ssh
+
+- name: Configure SSH security - PubkeyAuthentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PubkeyAuthentication'
+    line: 'PubkeyAuthentication {{ ssh_config.pubkey_authentication | string | lower }}'
+  notify: Restart ssh
+
+- name: Configure SSH security - PasswordAuthentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication {{ ssh_config.password_authentication | string | lower }}'
+  notify: Restart ssh
+
+- name: Configure SSH security - KbdInteractiveAuthentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?KbdInteractiveAuthentication'
+    line: 'KbdInteractiveAuthentication {{ ssh_config.kbd_interactive_authentication | string | lower }}'
+  notify: Restart ssh
+
+- name: Configure SSH security - ChallengeResponseAuthentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?ChallengeResponseAuthentication'
+    line: 'ChallengeResponseAuthentication {{ ssh_config.challenge_response_authentication | string | lower }}'
+  notify: Restart ssh
+
+# Find and update all files in sshd_config.d directory
+- name: Find all files in sshd_config.d directory
+  ansible.builtin.find:
+    paths: /etc/ssh/sshd_config.d
+    patterns: "*.conf"
+  register: ssh_config_files
+
+- name: Configure PasswordAuthentication in all sshd_config.d files
+  ansible.builtin.lineinfile:
+    path: "{{ item.path }}"
+    regexp: '^PasswordAuthentication'
+    line: 'PasswordAuthentication {{ ssh_config.password_authentication | string | lower }}'
+  with_items: "{{ ssh_config_files.files }}"
+  notify: Restart ssh
+  when: ssh_config_files.files | length > 0
+
+# Restart UFW firewall
+- name: Restart UFW service
+  ansible.builtin.service:
+    name: ufw
+    state: restarted
+  become: true
+
+- name: Ensure UFW is enabled and started
+  community.general.ufw:
+    state: enabled
+  become: true

@@ -4,6 +4,35 @@ timezone: "America/New_York"
 # User configuration for Solana validator
 sol_owner: "sol"
 
+# CPU configuration
+cpu_config:
+  isolated_cores: "2,26"
+  irq_cores: "0-1,3-25,27-47"
+  pstate: "active"
+
+# SSH Configuration
+ssh_config:
+  port: 2522
+  permit_root_login: no
+  pubkey_authentication: yes
+  password_authentication: no
+  kbd_interactive_authentication: no
+  challenge_response_authentication: no
+
+# Firewall Configuration
+firewall:
+  ssh_port: 2522
+  tcp_ports:
+    - 1234
+    - 9090
+  tcp_ranges:
+    - 8000:8020
+  udp_ranges:
+    - 8000:8020
+  denied_ports:
+    - 8899
+    - 8900
+
 # Directory permissions
 directory_permissions:
   mode: '0755'
