@@ -18,7 +18,9 @@ limit_ledger_size: 50000000
 poh_pinned_cpu_core_enabled: false
 poh_pinned_cpu_core: 2
 
+# Maximum percentage of network delinquent stake allowed before validator can restart
 restart_max_delinquent_stake: 10
+# Minimum time (in seconds) validator must be idle before allowing restart (0 = no delay)
 restart_min_idle_time: 0
 
 solana_gossip_entrypoints:
