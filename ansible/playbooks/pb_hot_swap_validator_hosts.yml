@@ -1,0 +1,70 @@
+---
+# Hot Swap Validator hosts
+# -------------------
+# Performs a Validator Hot Swap operation between two hosts holding the same key set.
+# Destination host will acquire the primary target identity
+# Source host will acquire a hot-spare identity
+#
+# Usage:
+# ------
+# Run from /ansible directory:
+#
+# ansible-playbook playbooks/pb_hot_swap_validator_hosts.yml \
+#   -e "source_host=host-alpha" \
+#   -e "destination_host=host-bravo"
+
+- name: Perform Hot Swap Validator hosts
+  hosts: "{{ source_host }},{{ destination_host }}"
+  user: "{{ solana_user }}"
+  become: false
+
+  pre_tasks:
+    - name: Assert required parameters are defined
+      ansible.builtin.assert:
+        that:
+          - source_host is defined
+          - destination_host is defined
+        fail_msg: >
+          Missing required variables.
+          Must provide:
+            - source_host
+            - destination_host
+
+    - name: Find validator name on source host
+      ansible.builtin.find:
+        paths: "{{ keys_dir }}"
+        file_type: directory
+      register: source_keys
+      delegate_to: "{{ source_host }}"
+
+    - name: Set source validator name fact
+      ansible.builtin.set_fact:
+        source_validator_name: "{{ source_keys.files[0].path | basename }}"
+      delegate_to: "{{ source_host }}"
+
+    - name: Find validator name on destination host
+      ansible.builtin.find:
+        paths: "{{ keys_dir }}"
+        file_type: directory
+      register: destination_keys
+      delegate_to: "{{ destination_host }}"
+
+    - name: Set destination validator name fact
+      ansible.builtin.set_fact:
+        destination_validator_name: "{{ destination_keys.files[0].path | basename }}"
+      delegate_to: "{{ destination_host }}"
+
+    - name: Debug validator names
+      ansible.builtin.debug:
+        msg: >
+          Source validator: {{ source_validator_name }}
+          Destination validator: {{ destination_validator_name }}
+
+  roles:
+    - role: solana_swap_validator_hosts
+      when: source_validator_name is defined and destination_validator_name is defined
+      vars:
+        source_host: "{{ source_host }}"
+        destination_host: "{{ destination_host }}"
+        source_validator_name: "{{ source_validator_name }}"
+        destination_validator_name: "{{ destination_validator_name }}"

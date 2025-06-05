@@ -3,7 +3,7 @@
     msg: "Available groups: {{ group_names }}"
 
 - name: Set Jito target city
-  set_fact:
+  ansible.builtin.set_fact:
     jito_target_city: "{{ group_names | select('match', '^city_') | first | regex_replace('^city_', '') }}"
 
 - name: Verify Jito target city is set
@@ -12,7 +12,7 @@
   when: jito_target_city == ''
 
 - name: Set Jito URLs
-  set_fact:
+  ansible.builtin.set_fact:
     jito_relayer_url: "{{ 'http://127.0.0.1:11226' if jito_relayer_type == 'co-hosted' else jito_urls[jito_target_city].relayer }}"
     jito_block_engine_url: "{{ jito_urls[jito_target_city].block_engine }}"
     jito_shred_receiver_addr: "{{ jito_urls[jito_target_city].shred_receiver_addr }}"

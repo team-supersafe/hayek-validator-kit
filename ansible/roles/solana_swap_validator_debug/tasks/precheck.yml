@@ -1,0 +1,64 @@
+---
+- name: precheck - Validate source host validator directory
+  block:
+    - name: precheck - Get stats of source validator directory
+      ansible.builtin.stat:
+        path: "{{ source_host_keys_dir }}"
+      register: source_validator_keys_dir
+      when: inventory_hostname == source_host
+
+    - name: precheck - Debug source directory status
+      ansible.builtin.debug:
+        msg: "Source validator directory '{{ source_host_keys_dir }}' exists and is a directory"
+      when: 
+        - inventory_hostname == source_host
+        - source_validator_keys_dir.stat.isdir is defined 
+        - source_validator_keys_dir.stat.isdir
+
+    - name: precheck - Set source directory validation fact
+      ansible.builtin.set_fact:
+        source_dir_valid: >-
+          {{ 
+            source_validator_keys_dir.stat.isdir is defined and 
+            source_validator_keys_dir.stat.isdir 
+          }}
+      when: inventory_hostname == source_host
+
+- name: precheck - Validate destination host validator directory
+  block:
+    - name: precheck - Get stats of destination validator directory
+      ansible.builtin.stat:
+        path: "{{ destination_host_keys_dir }}"
+      register: destination_validator_keys_dir
+      when: inventory_hostname == destination_host
+
+    - name: precheck - Debug destination directory status
+      ansible.builtin.debug:
+        msg: "Destination validator directory '{{ destination_host_keys_dir }}' exists and is a directory"
+      when: 
+        - inventory_hostname == destination_host
+        - destination_validator_keys_dir.stat.isdir is defined 
+        - destination_validator_keys_dir.stat.isdir
+
+    - name: precheck - Set destination directory validation fact
+      ansible.builtin.set_fact:
+        destination_dir_valid: >-
+          {{ 
+            destination_validator_keys_dir.stat.isdir is defined and 
+            destination_validator_keys_dir.stat.isdir 
+          }}
+      when: inventory_hostname == destination_host
+
+- name: precheck - Set validation facts for all hosts
+  ansible.builtin.set_fact:
+    source_validation: "{{ hostvars[source_host].source_dir_valid | default(false) }}"
+    destination_validation: "{{ hostvars[destination_host].destination_dir_valid | default(false) }}"
+
+- name: precheck - Fail if either directory validation failed
+  ansible.builtin.fail:
+    msg: >-
+      Directory validation failed:
+      {% if not source_validation %}Source directory '{{ source_host_keys_dir }}' is invalid on {{ source_host }}{% endif %}
+      {% if not destination_validation %}Destination directory '{{ destination_host_keys_dir }}' is invalid on {{ destination_host }}{% endif %}
+  when: not (source_validation and destination_validation)
+  run_once: true

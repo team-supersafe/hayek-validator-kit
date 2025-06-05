@@ -236,7 +236,7 @@ configure-canopy-in-host() {
     mkdir -p $ALPHA_CANOPY_KEYS_DIR && chmod 755 $ALPHA_CANOPY_KEYS_DIR
     mkdir -p ~/logs && chmod 755 ~/logs
     mv ~/primary-target-identity.json $ALPHA_CANOPY_KEYS_DIR/primary-target-identity.json
-    ln -sf $ALPHA_CANOPY_KEYS_DIR/primary-target-identity.json $ALPHA_CANOPY_KEYS_DIR/identity.json
+    ln -sf "$ALPHA_CANOPY_KEYS_DIR/primary-target-identity.json" "$ALPHA_CANOPY_KEYS_DIR/identity.json"
 
     if [ ! -f "$ALPHA_CANOPY_KEYS_DIR/hot-spare-identity.json" ]; then
       echo "Generating hot-spare-identity.json..."
