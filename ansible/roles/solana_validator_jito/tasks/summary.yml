@@ -50,9 +50,9 @@
       solana -ul catchup --our-localhost 8899 --url http://172.25.0.10:8899
 
       🔍 Inspect logs:
-      tail -f logs/agave-validator.log
+      tail -f ~/logs/agave-validator.log
       Exclude metrics bloating your debug process
-      tail -f logs/agave-validator.log | grep -v 'solana_metrics::metrics'
+      tail -f ~/logs/agave-validator.log | grep -v 'solana_metrics::metrics'
       Inspect Jito Relayer logs
       journalctl -u jito-relayer -f | cat
 
