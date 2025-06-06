@@ -4,7 +4,7 @@
 
 - name: Set Jito target city
   ansible.builtin.set_fact:
-    jito_target_city: "{{ group_names | select('match', '^city_') | first | regex_replace('^city_', '') }}"
+    jito_target_city: "{{ hostvars[inventory_hostname]['jito_mainnet_block_engine_city'] }}"
 
 - name: Verify Jito target city is set
   ansible.builtin.fail:
