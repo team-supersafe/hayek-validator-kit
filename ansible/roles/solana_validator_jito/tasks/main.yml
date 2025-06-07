@@ -7,10 +7,14 @@
   import_tasks: prepare.yml
   tags: [solana_validator_jito, prepare]
 
-- name: Debug force_host_cleanup value
+- name: Debug should_cleanup_host_data value
   ansible.builtin.debug:
-    msg: "force_host_cleanup value is: {{ force_host_cleanup | default('not defined') }}"
+    msg: "should_cleanup_host_data value: {{ should_cleanup_host_data }}"
   tags: [solana_validator_jito, cleanup]
+
+- name: Fail for debugging purposes
+  ansible.builtin.fail:
+    msg: "Debugging stop - check the values above"
 
 - name: Cleanup the host from existing validator data
   import_tasks: host_cleanup.yml

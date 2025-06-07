@@ -1,0 +1,34 @@
+---
+all:
+  hosts:
+    hyk-lat-dal:
+      ansible_host: 67.213.118.77
+      ansible_port: 2522
+    hyk-lat-dal2:
+      ansible_host: 72.46.85.173
+      ansible_port: 2522
+
+  children:
+    # ───── Data Center Grouping ─────
+    dc_latitude:
+      hosts:
+        hyk-lat-dal:
+        hyk-lat-dal2:
+
+    # ───── City Grouping ─────
+    city_dallas:
+      hosts:
+        hyk-lat-dal:
+        hyk-lat-dal2:
+
+    # ───── Network Grouping ─────
+    solana:
+      hosts:
+        hyk-lat-dal:
+        hyk-lat-dal2:
+
+    # ───── Solana Cluster Grouping ─────
+    solana_testnet:
+      hosts:
+        hyk-lat-dal:
+        hyk-lat-dal2:
