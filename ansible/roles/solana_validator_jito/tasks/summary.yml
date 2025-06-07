@@ -54,6 +54,6 @@
       Exclude metrics bloating your debug process
       tail -f ~/logs/agave-validator.log | grep -v 'solana_metrics::metrics'
       Inspect Jito Relayer logs
-      journalctl -u jito-relayer -f | cat
+      journalctl -u jito-relayer -f
 
       ====================================================
