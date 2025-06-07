@@ -1,33 +1,5 @@
 ---
-
-# Startup script
-
-- name: Set Jito relayer startup script path
-  ansible.builtin.set_fact:
-    jito_relayer_startup_script: "{{ scripts_dir }}/run-{{ jito_relayer_service_name }}.sh"
-  tags: [jito_relayer.config, jito_relayer.startup_script]
-
-- name: Ensure scripts_dir exists
-  ansible.builtin.file:
-    path: "{{ scripts_dir }}"
-    state: directory
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-    mode: "0754"
-  tags: [jito_relayer.config, jito_relayer.startup_script]
-
-- name: Create Jito Relayer startup script
-  when: not ansible_check_mode
-  ansible.builtin.template:
-    src: jito-relayer.startup.j2
-    dest: "{{ jito_relayer_startup_script }}"
-    mode: "0754"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-  tags: [jito_relayer.config, jito_relayer.startup_script]
-
 # Service
-
 - name: Template Jito relayer systemd service file
   become: true
   ansible.builtin.template:

@@ -12,15 +12,15 @@
 #
 # ansible-playbook playbooks/pb_setup_validator_jito.yml \
 #   --limit host-charlie \
-#   -e "validator_name=penny" \
 #   -e "target_host=host-charlie" \
+#   -e "validator_name=penny" \
+#   -e "validator_type=hot-spare" \
 #   -e "solana_cluster=localnet" \
-#   -e "jito_version=2.2.14" \
+#   -e "jito_version=2.2.15" \
 #   -e "jito_relayer_type=shared" \
 #   -e "jito_relayer_version=0.3.1" \
 #   -e "jito_force_build=true" \ # Optional: Force build Jito regardless of architecture
-#   -e "force_stop_service=true" \ # Optional: Use this if a validator service is already running
-#   -e "setup_voting_validator=true"  # Optional: Set to true to use primary-target-identity.json as identity.json
+#   -e "force_host_cleanup=true" \ # Optional: Use this if a validator service is already running
 
 - name: Install Jito Client with Co-Hosted Relayer
   hosts: "{{ target_host }}"
@@ -33,6 +33,7 @@
         that:
           - target_host is defined
           - validator_name is defined
+          - validator_type is defined
           - solana_cluster is defined
           - jito_version is defined
           - jito_relayer_type is defined
@@ -42,13 +43,13 @@
           Must provide:
             - target_host
             - validator_name
+            - validator_type
             - solana_cluster
             - jito_version
             - jito_relayer_type
             - jito_relayer_version
           Optional:
-            - force_stop_service (set to true to force stop existing validator service)
-            - setup_voting_validator (set to true to use primary-target-identity.json as identity.json)
+            - force_host_cleanup (set to true to force stop existing validator service)
             - jito_force_build (set to true to force build Jito regardless of architecture)
 
     - name: Debug ansible_limit and target_host
@@ -74,6 +75,12 @@
           - jito_relayer_type in ['co-hosted', 'shared']
         fail_msg: "Invalid jito_relayer_type '{{ jito_relayer_type }}'. Must be 'co-hosted' or 'shared'."
 
+    - name: Validate validator_type value
+      ansible.builtin.assert:
+        that:
+          - validator_type in ['primary', 'hot-spare']
+        fail_msg: "Invalid validator_type '{{ validator_type }}'. Must be 'primary' or 'hot-spare'."
+
     - name: Validate solana_cluster value
       ansible.builtin.assert:
         that:
@@ -92,21 +99,5 @@
           - jito_relayer_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
         fail_msg: "Invalid jito_relayer_version '{{ jito_relayer_version }}'. Must follow semantic versioning pattern (e.g. 1.2.3)."
 
-    - name: Set default value for setup_voting_validator
-      ansible.builtin.set_fact:
-        setup_voting_validator: "{{ setup_voting_validator | default(false) | bool }}"
-
-    - name: Set default value for jito_force_build
-      ansible.builtin.set_fact:
-        jito_force_build: "{{ jito_force_build | default(false) | bool }}"
-
   roles:
     - role: solana_validator_jito
-      vars:
-        solana_cluster: "{{ solana_cluster }}"
-        validator_name: "{{ validator_name }}"
-        jito_version: "{{ jito_version }}"
-        jito_relayer_type: "{{ jito_relayer_type }}"
-        jito_relayer_version: "{{ jito_relayer_version }}"
-        setup_voting_validator: "{{ setup_voting_validator }}"
-        jito_force_build: "{{ jito_force_build }}"

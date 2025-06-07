@@ -13,22 +13,15 @@
   debug:
     msg: "Start Solana CLI setup for version {{ agave_version }}"
 
-- name: Precheck - Refresh shell environment and verify PATH
-  ansible.builtin.shell: |
-    . "$HOME/.bashrc"
-    echo $PATH
-  register: solana_cli_env_path
+- name: Precheck - Try solana --version
+  ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
+  register: solana_check
   changed_when: false
-
-- name: Precheck - Check if solana is available
-  ansible.builtin.shell: |
-    solana --version
-  environment:
-    PATH: "{{ solana_cli_env_path.stdout }}"
-  register: solana_version
-  changed_when: false
-  ignore_errors: true
 
 - name: Precheck - Set solana_cli_already_installed fact
   ansible.builtin.set_fact:
-    solana_cli_already_installed: "{{ solana_version.rc == 0 }}"
+    solana_cli_already_installed: "{{ solana_check.rc == 0 | bool }}"
+
+- name: Debug solana_cli_already_installed
+  ansible.builtin.debug:
+    msg: "solana_cli_already_installed: {{ solana_cli_already_installed }}"

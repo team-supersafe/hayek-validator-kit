@@ -22,5 +22,5 @@
 
 - name: Fail if validator service is already running
   ansible.builtin.fail:
-    msg: "Validator service is already running. To force stop the existing service and proceed with installation, run the playbook with: -e \"force_stop_service=true\""
-  when: (force_stop_service is not defined or not force_stop_service|bool) and validator_service_status.status.ActiveState == "active"
+    msg: "Validator service is already running. To force stop the existing service and proceed with installation, run the playbook with: -e \"force_host_cleanup=true\""
+  when: (force_host_cleanup is not defined or not force_host_cleanup|bool) and validator_service_status.status.ActiveState == "active"
