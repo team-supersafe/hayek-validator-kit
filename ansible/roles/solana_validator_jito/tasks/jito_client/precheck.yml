@@ -24,3 +24,32 @@
   ansible.builtin.fail:
     msg: "Validator service is already running. To force stop the existing service and proceed with installation, run the playbook with: -e \"force_host_cleanup=true\""
   when: (force_host_cleanup is not defined or not force_host_cleanup|bool) and validator_service_status.status.ActiveState == "active"
+
+# Check if the desired version of jito client is already installed
+- name: Check if Jito-Solana binary exists
+  ansible.builtin.stat:
+    path: "{{ solana_install_dir }}/solana"
+  register: solana_binary
+  tags: [jito_client.precheck]
+
+- name: Precheck - Get installed Jito-Solana version
+  ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
+  register: installed_version
+  changed_when: false
+  failed_when: false
+  when: solana_binary.stat.exists
+  tags: [jito_client.precheck]
+
+- name: Precheck - Extract installed version number
+  ansible.builtin.set_fact:
+    installed_jito_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
+  when: solana_binary.stat.exists and installed_version.stdout is defined
+  tags: [jito_client.precheck]
+
+- name: Precheck - Set fact for Jito-Solana installation needed
+  ansible.builtin.set_fact:
+    jito_installation_needed: >-
+      {{ not solana_binary.stat.exists or 
+         not installed_jito_version is defined or 
+         installed_jito_version != jito_version }}
+  tags: [jito_client.precheck]
