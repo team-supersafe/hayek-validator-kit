@@ -1,23 +1,4 @@
 ---
-- name: Check if validator service exists and is running
-  ansible.builtin.systemd:
-    name: "{{ validator_service_name }}"
-  register: service_status
-  changed_when: false
-  failed_when: false
-
-- name: Stop validator service if running
-  ansible.builtin.systemd:
-    name: "{{ validator_service_name }}"
-    state: stopped
-    enabled: false
-  register: stop_result
-  retries: 3
-  delay: 10
-  until: stop_result is success
-  when: service_status.status.ActiveState == "active"
-  become: true
-
 - name: Clean validator data before start
   ansible.builtin.shell: |
     #!/bin/bash
@@ -32,15 +13,6 @@
 
     echo "Cleaning snapshots directory..."
     rm -rf {{ snapshots_path }}/*
-
-    echo "Cleaning logs directory..."
-    rm -rf {{ logs_dir }}/*
-
-    echo "Cleaning scripts directory..."
-    rm -rf {{ scripts_dir }}/*
-
-    echo "Cleaning keys directory..."
-    rm -rf {{ keys_dir }}/*
 
 - name: Ensure ledger directory exists
   ansible.builtin.file:
@@ -67,61 +39,4 @@
     mode: "0755"
     owner: "{{ solana_user }}"
     group: "{{ solana_user }}"
-  become: true
-
-- name: Ensure logs directory exists
-  ansible.builtin.file:
-    path: "{{ logs_dir }}"
-    state: directory
-    mode: "0755"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-  become: true
-
-- name: Ensure keys directory exists
-  ansible.builtin.file:
-    path: "{{ keys_dir }}"
-    state: directory
-    mode: "0755"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-  become: true
-
-- name: Ensure scripts directory exists
-  ansible.builtin.file:
-    path: "{{ scripts_dir }}"
-    state: directory
-    mode: "0755"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-  become: true
-
-- name: Check the jito-relayer service status
-  ansible.builtin.systemd:
-    name: "jito-relayer"
-  register: relayer_service_status
-  changed_when: false
-  failed_when: false
-
-- name: Stop jito-relayer service if running
-  ansible.builtin.systemd:
-    name: "jito-relayer"
-    state: stopped
-    enabled: false
-  register: relayer_stop_result
-  retries: 3
-  delay: 10
-  until: relayer_stop_result is success
-  when: relayer_service_status.status.ActiveState == "active"
-  become: true
-
-- name: Remove jito-relayer service unit file
-  ansible.builtin.file:
-    path: "/etc/systemd/system/jito-relayer.service"
-    state: absent
-  become: true
-
-- name: Reload systemd daemon
-  ansible.builtin.systemd:
-    daemon_reload: true
   become: true
