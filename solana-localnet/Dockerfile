@@ -13,7 +13,8 @@ RUN rm -rf /var/lib/apt/lists/* && \
     apt-get clean && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        openssh-server nano curl git openssl tar jq less tree && \
+        openssh-server nano curl git openssl tar jq less tree \
+        bzip2 zstd xz-utils lbzip2 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
