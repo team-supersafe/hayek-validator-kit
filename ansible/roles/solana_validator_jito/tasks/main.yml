@@ -12,9 +12,8 @@
     msg: "should_cleanup_host_data value: {{ should_cleanup_host_data }}"
   tags: [solana_validator_jito, cleanup]
 
-- name: Fail for debugging purposes
-  ansible.builtin.fail:
-    msg: "Debugging stop - check the values above"
+- name: Halt services before install
+  import_tasks: preinstall.yml
 
 - name: Cleanup the host from existing validator data
   import_tasks: host_cleanup.yml
@@ -30,7 +29,7 @@
       import_tasks: jito_relayer_cohosted/config.yml
     - name: Verify Co-hosted Relayer installation and configuration are correct
       import_tasks: jito_relayer_cohosted/verify.yml
-      
+
 # Jito client installation and configuration
 - name: Setup Jito client
   import_tasks: jito_client/main.yml
