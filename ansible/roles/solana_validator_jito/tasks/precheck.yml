@@ -114,8 +114,8 @@
 - name: Convert space to bytes for comparison
   ansible.builtin.set_fact:
     initial_space_bytes: >-
-      {% set size = initial_space.stdout | regex_replace('^([0-9.]+)([KMG])$', '\\1') | float %}
-      {% set unit = initial_space.stdout | regex_replace('^[0-9.]+([KMG])$', '\\1') %}
+      {% set size = initial_space.stdout | regex_replace('^([0-9.]+)\\s*([KMG])$', '\\1') | float %}
+      {% set unit = initial_space.stdout | regex_replace('^[0-9.]+\\s*([KMG])$', '\\1') %}
       {% if unit == 'K' %}
         {{ (size * 1024) | int }}
       {% elif unit == 'M' %}
@@ -124,8 +124,8 @@
         {{ (size * 1024 * 1024 * 1024) | int }}
       {% endif %}
     min_required_bytes: >-
-      {% set size = min_required_space | regex_replace('^([0-9.]+)([KMG])$', '\\1') | float %}
-      {% set unit = min_required_space | regex_replace('^[0-9.]+([KMG])$', '\\1') %}
+      {% set size = min_required_space | regex_replace('^([0-9.]+)\\s*([KMG])$', '\\1') | float %}
+      {% set unit = min_required_space | regex_replace('^[0-9.]+\\s*([KMG])$', '\\1') %}
       {% if unit == 'K' %}
         {{ (size * 1024) | int }}
       {% elif unit == 'M' %}
