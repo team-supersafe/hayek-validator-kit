@@ -1,0 +1,47 @@
+---
+- name: Stop validator service if exists
+  import_tasks: jito_client/stop_service.yml
+
+- name: Stop and remove relayer service if exists
+  import_tasks: jito_relayer_cohosted/stop_service.yml
+
+- name: Clear logs and key store
+  ansible.builtin.shell: |
+    #!/bin/bash
+    set -e
+
+    echo "Cleaning logs directory..."
+    rm -rf {{ logs_dir }}/*
+
+    echo "Cleaning scripts directory..."
+    rm -rf {{ scripts_dir }}/*
+
+    echo "Cleaning keys directory..."
+    rm -rf {{ keys_dir }}/*
+
+- name: Ensure logs directory exists
+  ansible.builtin.file:
+    path: "{{ logs_dir }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  become: true
+
+- name: Ensure keys directory exists
+  ansible.builtin.file:
+    path: "{{ keys_dir }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  become: true
+
+- name: Ensure scripts directory exists
+  ansible.builtin.file:
+    path: "{{ scripts_dir }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  become: true

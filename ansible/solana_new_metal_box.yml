@@ -1,0 +1,8 @@
+---
+all:
+  hosts:
+    # Host for provisioning new servers
+    # Add to apropriate groups before runing playbooks
+    new-metal-box:
+      ansible_host: 155.138.239.63 # Replace with asigned IP
+      ansible_port: 22

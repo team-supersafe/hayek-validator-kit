@@ -8,9 +8,14 @@
 # Run from /ansible directory:
 #
 # syntax check
-# ansible-playbook playbooks/pb_setup_validator_jito.yml --syntax-check -e "target_host=host-charlie" --limit host-charlie
+# ansible-playbook playbooks/pb_setup_validator_jito.yml
+#   -i solana_localnet.yml \
+#   --limit host-charlie \
+#   --syntax-check \
+#   -e "target_host=host-charlie"
 #
 # ansible-playbook playbooks/pb_setup_validator_jito.yml \
+#   -i solana_localnet.yml \
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
 #   -e "validator_name=penny" \

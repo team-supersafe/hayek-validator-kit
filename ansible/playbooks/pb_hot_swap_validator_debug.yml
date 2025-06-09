@@ -9,6 +9,7 @@
 # Run from /ansible directory:
 #
 # ansible-playbook playbooks/pb_hot_swap_validator_debug.yml \
+#   -i solana_localnet.yml \
 #   -e "source_host=host-alpha" \
 #   -e "destination_host=host-bravo"
 

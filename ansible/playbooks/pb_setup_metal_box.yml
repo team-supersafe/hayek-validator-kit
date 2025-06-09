@@ -6,7 +6,7 @@
 # ------
 # Run from /ansible directory:
 #
-# ansible-playbook -i hosts.yml playbooks/pb_setup_metal_box.yml
+# ansible-playbook -i solana_new_metal_box.yml playbooks/pb_setup_metal_box.yml
 
 - name: Setup Metal Box Server
   hosts: new_metal_box
