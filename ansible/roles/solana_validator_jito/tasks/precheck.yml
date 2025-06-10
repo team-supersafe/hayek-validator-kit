@@ -81,7 +81,7 @@
       ansible.builtin.fail:
         msg: >
           A validator with identity {{ primary_target_pubkey.stdout }} is already running in the {{ solana_cluster }} cluster.
-          This would cause delinquency if we proceed. Please ensure no other validator is using this identity before continuing.
+          This would cause slashing if we proceed. Please ensure no other validator is using this identity before continuing.
       when: 
         - validator_type == 'primary'
         - running_validator_check.rc == 0
