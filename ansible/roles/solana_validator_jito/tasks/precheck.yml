@@ -61,6 +61,31 @@
         msg: "primary-target-identity.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
       when: not primary_target_identity_file.stat.exists
 
+    - name: Get primary target identity pubkey
+      ansible.builtin.command: solana-keygen pubkey {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/primary-target-identity.json
+      register: primary_target_pubkey
+      delegate_to: localhost
+      run_once: true
+      when: validator_type == 'primary'
+
+    - name: Check if primary target identity is already running in cluster
+      ansible.builtin.shell: |
+        solana gossip {{ '-ul' if solana_cluster == 'localnet' else '-ut' if solana_cluster == 'testnet' else '-um' }} | grep {{ primary_target_pubkey.stdout }}
+      register: running_validator_check
+      delegate_to: localhost
+      run_once: true
+      when: validator_type == 'primary'
+      ignore_errors: true
+
+    - name: Fail if primary target identity is already running
+      ansible.builtin.fail:
+        msg: >
+          A validator with identity {{ primary_target_pubkey.stdout }} is already running in the {{ solana_cluster }} cluster.
+          This would cause slashing if we proceed. Please ensure no other validator is using this identity before continuing.
+      when: 
+        - validator_type == 'primary'
+        - running_validator_check.rc == 0
+
     - name: Check if vote-account.json exists in ansible_keys_dir
       ansible.builtin.stat:
         path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/vote-account.json"
