@@ -1,4 +1,37 @@
 ---
+- name: swap - Get pre-swap vote account stats
+  block:
+    - name: swap - Get vote account data from source validator
+      ansible.builtin.command: >
+        solana vote-account {{ source_vote_account_path }} --output json
+      register: source_vote_account_before
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: inventory_hostname == source_host
+      changed_when: false
+
+    - name: swap - Parse vote account data before swap
+      ansible.builtin.set_fact:
+        vote_account_before: "{{ source_vote_account_before.stdout | from_json }}"
+      when: inventory_hostname == source_host
+
+    - name: swap - Make vote account data before swap available globally
+      ansible.builtin.set_fact:
+        vote_account_before: "{{ hostvars[source_host]['vote_account_before'] }}"
+      run_once: true
+
+    - name: swap - Store pre-swap stats
+      ansible.builtin.set_fact:
+        pre_swap_stats:
+          epoch: "{{ vote_account_before.epochVotingHistory | last }}"
+          credits_earned: "{{ vote_account_before.epochVotingHistory | last | json_query('creditsEarned') }}"
+          max_possible_credits: >-
+            {{
+              (vote_account_before.epochVotingHistory | last | json_query('slotsInEpoch')) *
+              (vote_account_before.epochVotingHistory | last | json_query('maxCreditsPerSlot'))
+            }}
+      run_once: true
+
 - name: swap - Wait for Restart Window and Unstake Source Validator
   block:
     - name: swap - Wait for safe restart window
