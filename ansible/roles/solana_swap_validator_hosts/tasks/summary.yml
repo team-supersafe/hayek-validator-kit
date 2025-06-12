@@ -32,11 +32,6 @@
       delegate_to: localhost
       changed_when: false
 
-    - name: summary - Debug vote account address result
-      ansible.builtin.debug:
-        msg: "Vote account address result: {{ vote_account_address_result.stdout }}"
-      when: inventory_hostname == destination_host
-
     - name: summary - Get vote account data from destination validator
       ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ vote_account_address_result.stdout }} --output json
       register: source_vote_account_after
