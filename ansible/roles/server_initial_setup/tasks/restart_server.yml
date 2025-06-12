@@ -1,0 +1,38 @@
+---
+# Ask if the server should be restarted
+- name: Ask if you want to restart the server
+  ansible.builtin.pause:
+    prompt: "Do you want to restart the server now? (y/n)"
+  register: restart_response
+  delegate_to: localhost
+  run_once: true
+
+# Display reconnection instructions if restart is requested
+- name: Display reconnection instructions
+  ansible.builtin.debug:
+    msg: |
+      -------------------------------------------------
+      THE SERVER IS NOW RESTARTING
+
+      To reconnect, please use:
+      ssh username@{{ ansible_default_ipv4.address }} -p 2522
+
+      Please allow a few minutes for the server to complete the restart.
+      -------------------------------------------------
+  when: restart_response.user_input | lower == 'y'
+  run_once: true
+  delegate_to: localhost
+
+# Send reboot command (fire and forget)
+- name: Initiate server reboot
+  become: true
+  ansible.builtin.shell: "nohup systemctl reboot >/dev/null 2>&1 &"
+  when: restart_response.user_input | lower == 'y'
+  async: 1
+  poll: 0
+  changed_when: true
+
+# End playbook after reboot initiation
+- name: End playbook - Server is rebooting
+  ansible.builtin.meta: end_play
+  when: restart_response.user_input | lower == 'y'
