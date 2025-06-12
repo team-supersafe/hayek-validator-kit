@@ -15,7 +15,7 @@
           {%- endif -%}
       run_once: true
 
-    - name: summary - Get validator identity pubkey
+    - name: summary - Get validator identity pubkey at destination host
       ansible.builtin.command: >
         solana-keygen pubkey {{ destination_host_primary_target_identity_path }}
       register: validator_identity_pubkey
@@ -23,11 +23,6 @@
         PATH: "{{ solana_install_dir }}"
       when: inventory_hostname == destination_host
       changed_when: false
-
-    - name: summary - Debug validator identity pubkey
-      ansible.builtin.debug:
-        msg: "Validator identity pubkey: {{ validator_identity_pubkey.stdout }}"
-      when: inventory_hostname == destination_host
 
     - name: summary - Get vote account address
       ansible.builtin.shell: |
