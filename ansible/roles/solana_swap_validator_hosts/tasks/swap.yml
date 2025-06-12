@@ -24,11 +24,6 @@
       when: inventory_hostname == source_host
       changed_when: false
 
-    - name: swap - Debug validator identity pubkey
-      ansible.builtin.debug:
-        msg: "Validator identity pubkey: {{ validator_identity_pubkey.stdout }}"
-      when: inventory_hostname == source_host
-
     - name: swap - Get vote account address
       ansible.builtin.shell: |
         solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json | jq -r '.validators[] | select(.identityPubkey == "{{ validator_identity_pubkey.stdout }}") | .voteAccountPubkey'
@@ -36,11 +31,6 @@
       when: inventory_hostname == source_host
       delegate_to: localhost
       changed_when: false
-
-    - name: swap - Debug vote account address result
-      ansible.builtin.debug:
-        msg: "Vote account address result: {{ vote_account_address_result.stdout }}"
-      when: inventory_hostname == source_host
 
     - name: swap - Get vote account data from source validator
       ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ vote_account_address_result.stdout }} --output json
