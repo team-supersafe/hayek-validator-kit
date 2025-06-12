@@ -1,6 +1,4 @@
 ---
-# Define tasks for the solana_swap_server role
-
 - name: Import precheck tasks
   ansible.builtin.import_tasks: precheck.yml
 
@@ -10,6 +8,8 @@
 - name: Import confirmation tasks
   ansible.builtin.import_tasks: confirm_swap.yml
 
-# TODO: Add actual swap operation
-# - name: Import swap tasks
-#   ansible.builtin.import_tasks: swap.yml
+- name: Import swap tasks
+  ansible.builtin.import_tasks: swap.yml
+
+- name: Import verify tasks
+  ansible.builtin.import_tasks: verify.yml

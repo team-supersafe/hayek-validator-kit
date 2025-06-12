@@ -9,10 +9,18 @@ ConditionPathExists={{ validator_keys_dir }}/jito-relayer-comms-pvt.pem
 ConditionPathExists={{ validator_keys_dir }}/jito-relayer-comms-pub.pem
 
 [Service]
-Type=simple
+Type=exec
 User={{ jito_relayer_user }}
 Restart=on-failure
-ExecStart={{ jito_relayer_startup_script }}
+Environment=RUST_LOG=info
+Environment=SOLANA_METRICS_CONFIG="host=http://metrics.jito.wtf:8086,db=relayer,u=relayer-operators,p=jito-relayer-write"
+Environment=BLOCK_ENGINE_URL={{ jito_block_engine_url }}
+Environment=GRPC_BIND_IP=127.0.0.1
+
+ExecStart={{ jito_relayer_install_dir }}/jito-transaction-relayer \
+          --keypair-path={{ validator_keys_dir }}/jito-relayer-block-eng.json \
+          --signing-key-pem-path={{ validator_keys_dir }}/jito-relayer-comms-pvt.pem \
+          --verifying-key-pem-path={{ validator_keys_dir }}/jito-relayer-comms-pub.pem
 
 [Install]
 WantedBy=multi-user.target

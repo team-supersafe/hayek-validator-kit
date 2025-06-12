@@ -2,9 +2,13 @@
   debug:
     msg: "Available groups: {{ group_names }}"
 
+- name: Build Jito block engine city key
+  ansible.builtin.set_fact:
+    jito_block_engine_city_key: "jito_{{ solana_cluster }}_block_engine_city"
+
 - name: Set Jito target city
-  set_fact:
-    jito_target_city: "{{ group_names | select('match', '^city_') | first | regex_replace('^city_', '') }}"
+  ansible.builtin.set_fact:
+    jito_target_city: "{{ hostvars[inventory_hostname][jito_block_engine_city_key] }}"
 
 - name: Verify Jito target city is set
   ansible.builtin.fail:
@@ -12,7 +16,59 @@
   when: jito_target_city == ''
 
 - name: Set Jito URLs
-  set_fact:
+  ansible.builtin.set_fact:
     jito_relayer_url: "{{ 'http://127.0.0.1:11226' if jito_relayer_type == 'co-hosted' else jito_urls[jito_target_city].relayer }}"
     jito_block_engine_url: "{{ jito_urls[jito_target_city].block_engine }}"
     jito_shred_receiver_addr: "{{ jito_urls[jito_target_city].shred_receiver_addr }}"
+
+- name: Determine if we should cleanup the host from existing validator data
+  ansible.builtin.set_fact:
+    should_cleanup_host_data: "{{ force_host_cleanup | default(false) }}"
+
+# Halt services before install and perform cleanup of keys, bin and logs directory
+- name: Stop validator service if exists
+  import_tasks: jito_client/stop_service.yml
+
+- name: Stop and remove relayer service if exists
+  import_tasks: jito_relayer_cohosted/stop_service.yml
+
+- name: Clear logs and key store
+  ansible.builtin.shell: |
+    #!/bin/bash
+    set -e
+
+    echo "Cleaning logs directory..."
+    rm -rf {{ logs_dir }}/*
+
+    echo "Cleaning scripts directory..."
+    rm -rf {{ scripts_dir }}/*
+
+    echo "Cleaning keys directory..."
+    rm -rf {{ keys_dir }}/*
+
+- name: Ensure logs directory exists
+  ansible.builtin.file:
+    path: "{{ logs_dir }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  become: true
+
+- name: Ensure keys directory exists
+  ansible.builtin.file:
+    path: "{{ keys_dir }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  become: true
+
+- name: Ensure scripts directory exists
+  ansible.builtin.file:
+    path: "{{ scripts_dir }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  become: true

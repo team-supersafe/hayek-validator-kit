@@ -8,16 +8,12 @@ Validator host swap operation happens in `tasks/swap.yml`. Here is a step by ste
    - Finally, it updates the identity symlink to point to the hot-spare identity
    - This effectively takes the source validator out of active voting
 
-2. **Copy Identity keypair file**
-   - Copies the primary target identity file from source to destination
-   - Use rsync to ensure exact file synchronization
-
-3. **Transfer Tower File**
+2. **Transfer Tower File**
    - Gets the tower filename by checking the primary target identity's public key
    - Uses rsync to copy the tower file from source to destination
    - The tower file is important for PoH (Proof of History) verification
 
-4. **Promote Destination to Primary Target Validator**
+3. **Promote Destination to Primary Target Validator**
    - Switches the destination validator to use the primary target identity
    - Updates the identity symlink on the destination to point to the primary target identity
    - This effectively makes the destination validator the new primary validator

@@ -69,10 +69,10 @@
       when: keygen_result.rc != 0
       tags: [jito_client, check.keys]
 
-    # Create identity.json symlink based on setup_voting_validator
+    # Create identity.json symlink based on validator_type
     - name: Create identity.json symlink
       ansible.builtin.file:
-        src: "{{ validator_keys_dir }}/{{ 'primary-target-identity.json' if setup_voting_validator else 'hot-spare-identity.json' }}"
+        src: "{{ validator_keys_dir }}/{{ 'primary-target-identity.json' if validator_type == 'primary' else 'hot-spare-identity.json' }}"
         dest: "{{ validator_keys_dir }}/identity.json"
         state: link
         force: true

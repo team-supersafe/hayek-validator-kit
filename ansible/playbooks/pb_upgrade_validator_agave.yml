@@ -1,8 +1,0 @@
----
-- hosts: host-bravo
-  gather_facts: true
-  become: true
-  roles:
-    - role: validator_agave
-      cluster: 'solana-testnet'
-      solana_version: '2.2.14'

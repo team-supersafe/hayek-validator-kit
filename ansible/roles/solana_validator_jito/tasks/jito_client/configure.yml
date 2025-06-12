@@ -4,10 +4,6 @@
     msg: "Starting Jito-Solana validator configuration"
   tags: [jito_client, check.keys]
 
-- name: Cleanup the host from existing validator data
-  ansible.builtin.import_tasks: configure/host_cleanup.yml
-  tags: [jito_client, check.keys]
-
 - name: Provision the validator key set
   ansible.builtin.import_tasks: configure/provision_keys.yml
   tags: [jito_client, check.keys]

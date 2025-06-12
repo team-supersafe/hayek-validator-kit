@@ -9,7 +9,9 @@
 # ------
 # Run from /ansible directory:
 #
-# ansible-playbook playbooks/pb_store_encrypted_keys.yml -e "validator_name=canopy vault_password=guacamole"
+# ansible-playbook playbooks/pb_store_encrypted_keys.yml \
+#   -e "validator_name=canopy" \
+#   -e "vault_password=guacamole"
 
 - name: Manage Ansible Vault for Validator Keypairs
   hosts: localhost

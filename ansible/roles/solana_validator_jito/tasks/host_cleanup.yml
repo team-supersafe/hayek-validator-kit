@@ -1,0 +1,42 @@
+---
+- name: Clean validator data before start
+  ansible.builtin.shell: |
+    #!/bin/bash
+    set -e
+
+    # Clean up the validator data directory
+    echo "Cleaning ledger directory..."
+    rm -rf {{ ledger_path }}/*
+
+    echo "Cleaning accounts directory..."
+    rm -rf {{ accounts_path }}/*
+
+    echo "Cleaning snapshots directory..."
+    rm -rf {{ snapshots_path }}/*
+
+- name: Ensure ledger directory exists
+  ansible.builtin.file:
+    path: "{{ ledger_path }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  become: true
+
+- name: Ensure accounts directory exists
+  ansible.builtin.file:
+    path: "{{ accounts_path }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  become: true
+
+- name: Ensure snapshots directory exists
+  ansible.builtin.file:
+    path: "{{ snapshots_path }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  become: true

@@ -1,0 +1,71 @@
+---
+- name: swap - Wait for Restart Window and Unstake Source Validator
+  block:
+    - name: swap - Wait for safe restart window
+      ansible.builtin.command: >
+        agave-validator --ledger {{ ledger_path }} wait-for-restart-window
+        --max-delinquent-stake {{ restart_max_delinquent_stake }} --min-idle-time {{ restart_min_idle_time }}
+        --skip-new-snapshot-check --skip-health-check
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: inventory_hostname == source_host
+
+    - name: swap - Switch to unstaked identity on source
+      ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_hot_spare_identity_path }}
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: inventory_hostname == source_host
+
+    - name: swap - Update symlink to unstaked identity
+      ansible.builtin.file:
+        src: "{{ source_host_hot_spare_identity_path }}"
+        dest: "{{ source_host_identity_link_path }}"
+        state: link
+        force: true
+      when: inventory_hostname == source_host
+
+- name: swap - Transfer Tower File from Source to Destination
+  block:
+    - name: swap - Get tower filename
+      check_mode: false
+      ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path }}
+      register: staked_identity_pubkey_stdout
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      delegate_to: "{{ source_host }}"
+      when: inventory_hostname == destination_host
+
+    - name: swap - Save tower filename
+      ansible.builtin.set_fact:
+        tower_file_src: "{{ ledger_path }}/{{ tower_file_prefix }}{{ staked_identity_pubkey_stdout.stdout }}{{ tower_file_suffix }}"
+        tower_file_dest: "{{ ledger_path }}/{{ tower_file_prefix }}{{ staked_identity_pubkey_stdout.stdout }}{{ tower_file_suffix }}"
+      when: inventory_hostname == destination_host
+
+    - name: swap - Rsync tower file from source to destination
+      ansible.posix.synchronize:
+        src: "{{ tower_file_src }}"
+        dest: "{{ tower_file_dest }}"
+        mode: push
+        compress: false
+        rsync_opts:
+          - "--delete"
+      delegate_to: "{{ source_host }}"
+      become: false
+      ignore_errors: "{{ ansible_check_mode }}"
+      when: inventory_hostname == destination_host
+
+- name: swap - Promote Destination to Primary Target Validator
+  block:
+    - name: swap - Switch to staked identity on destination
+      ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity --require-tower {{ destination_host_primary_target_identity_path }}
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: inventory_hostname == destination_host
+
+    - name: swap - Update symlink to staked identity
+      ansible.builtin.file:
+        src: "{{ destination_host_primary_target_identity_path }}"
+        dest: "{{ destination_host_identity_link_path }}"
+        state: link
+        force: true
+      when: inventory_hostname == destination_host

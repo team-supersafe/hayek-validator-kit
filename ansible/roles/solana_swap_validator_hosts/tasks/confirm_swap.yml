@@ -1,80 +1,56 @@
 ---
-- name: Check if source vote account exists
+- name: confirm_swap - Check if source vote account exists
   ansible.builtin.stat:
     path: "{{ source_vote_account_path }}"
   register: source_vote_account_file
   when: inventory_hostname == source_host
 
-- name: Get source primary target identity pubkey
-  ansible.builtin.command: solana-keygen pubkey {{ source_host_staked_identity_path }}
-  register: source_primary_pubkey
-  environment:
-    PATH: "{{ solana_install_dir }}"
-  when: inventory_hostname == source_host
-
-- name: Make source primary pubkey available globally
-  set_fact:
-    source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'].stdout_lines[0] }}"
-  run_once: true
-
-- name: Get source hot-spare identity pubkey
-  ansible.builtin.command: solana-keygen pubkey {{ source_host_unstaked_identity_path }}
+- name: confirm_swap - Get source hot-spare identity pubkey
+  ansible.builtin.command: solana-keygen pubkey {{ source_host_hot_spare_identity_path }}
   register: source_hotspare_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == source_host
 
-- name: Make source hotspare pubkey available globally
-  set_fact:
+- name: confirm_swap - Make source hotspare pubkey available globally
+  ansible.builtin.set_fact:
     source_hotspare_pubkey: "{{ hostvars[source_host]['source_hotspare_pubkey'].stdout_lines[0] }}"
   run_once: true
 
-- name: Get source vote account pubkey
+- name: confirm_swap - Get source vote account pubkey
   ansible.builtin.command: solana-keygen pubkey {{ source_vote_account_path }}
   register: source_vote_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
-  when: 
+  when:
     - inventory_hostname == source_host
     - source_vote_account_file.stat.exists
 
-- name: Make source vote pubkey available globally
-  set_fact:
+- name: confirm_swap - Make source vote pubkey available globally
+  ansible.builtin.set_fact:
     source_vote_pubkey: "{{ hostvars[source_host]['source_vote_pubkey'].stdout_lines[0] }}"
   when: hostvars[source_host]['source_vote_account_file'].stat.exists
   run_once: true
 
-- name: Check if destination vote account exists
+- name: confirm_swap - Check if destination vote account exists
   ansible.builtin.stat:
     path: "{{ destination_host_keys_dir }}/vote-account.json"
   register: destination_vote_account_file
   when: inventory_hostname == destination_host
 
-- name: Get destination primary target identity pubkey
-  ansible.builtin.command: solana-keygen pubkey {{ destination_host_staked_identity_path }}
-  register: destination_primary_pubkey
-  environment:
-    PATH: "{{ solana_install_dir }}"
-  when: inventory_hostname == destination_host
-
-- name: Make destination primary pubkey available globally
-  set_fact:
-    destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'].stdout_lines[0] }}"
-  run_once: true
-
-- name: Get destination hot-spare identity pubkey
+- name: confirm_swap - Get destination hot-spare identity pubkey
   ansible.builtin.command: solana-keygen pubkey "{{ destination_host_keys_dir }}/hot-spare-identity.json"
   register: destination_hotspare_pubkey
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == destination_host
 
-- name: Make destination hotspare pubkey available globally
-  set_fact:
+- name: confirm_swap - Make destination hotspare pubkey available globally
+  ansible.builtin.set_fact:
     destination_hotspare_pubkey: "{{ hostvars[destination_host]['destination_hotspare_pubkey'].stdout_lines[0] }}"
   run_once: true
 
-- name: Get destination vote account pubkey
+- name: confirm_swap - Get destination vote account pubkey
   ansible.builtin.command: solana-keygen pubkey "{{ destination_host_keys_dir }}/vote-account.json"
   register: destination_vote_pubkey
   environment:
@@ -83,13 +59,13 @@
     - inventory_hostname == destination_host
     - destination_vote_account_file.stat.exists
 
-- name: Make destination vote pubkey available globally
-  set_fact:
+- name: confirm_swap - Make destination vote pubkey available globally
+  ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ hostvars[destination_host]['destination_vote_pubkey'].stdout_lines[0] }}"
   when: hostvars[destination_host]['destination_vote_account_file'].stat.exists
   run_once: true
 
-- name: Display Swap Operation Summary
+- name: confirm_swap - Display Swap Operation Summary
   ansible.builtin.debug:
     msg: |
       ===============================================
@@ -98,9 +74,9 @@
 
       Source Validator:
       - Host: {{ source_host }} ({{ source_validator_name }})
-      - Primary Target Identity: {{ source_host_staked_identity_path }}
+      - Primary Target Identity: {{ source_host_primary_target_identity_path }}
         Pubkey: {{ source_primary_pubkey }}
-      - Hot-spare Identity: {{ source_host_unstaked_identity_path }}
+      - Hot-spare Identity: {{ source_host_hot_spare_identity_path }}
         Pubkey: {{ source_hotspare_pubkey }}
       - Vote Account: {{ source_vote_account_path }}
         {% if source_vote_account_file is defined and source_vote_account_file.stat is defined and source_vote_account_file.stat.exists %}
@@ -111,7 +87,7 @@
 
       Destination Validator:
       - Host: {{ destination_host }} ({{ destination_validator_name }})
-      - Primary Target Identity: {{ destination_host_staked_identity_path }}
+      - Primary Target Identity: {{ destination_host_primary_target_identity_path }}
         Pubkey: {{ destination_primary_pubkey }}
       - Hot-spare Identity: {{ destination_host_keys_dir }}/hot-spare-identity.json
         Pubkey: {{ destination_hotspare_pubkey }}
@@ -125,20 +101,45 @@
       Operation Steps:
       1. Wait for safe restart window on source validator
       2. Switch source validator to hot-spare
-      3. Copy primary target identity to destination and vote account
-      4. Transfer tower file to destination
-      5. Switch destination to primary target identity
+      3. Transfer tower file to destination
+      4. Switch destination to primary target identity
          (Make destination host the new primary validator)
 
       Please review the above information carefully.
       ===============================================
+  delegate_to: localhost
+  run_once: true
 
-- name: Confirm Swap Operation
+- name: confirm_swap - Fail if attempting to swap between different validator identities
+  ansible.builtin.fail:
+    msg: |
+      Cannot proceed with validator swap: Primary identity pubkeys do not match!
+
+      Source: {{ source_primary_pubkey }}
+      Destination: {{ destination_primary_pubkey }}
+
+      This operation is not supported as it would result in an invalid tower file configuration.
+      The tower file is tied to the validator's identity and cannot be transferred between different identities.
+  when:
+    - inventory_hostname == source_host
+    - source_primary_pubkey is defined
+    - destination_primary_pubkey is defined
+    - source_primary_pubkey != destination_primary_pubkey
+  run_once: true
+
+- name: confirm_swap - Confirm Swap Operation
   ansible.builtin.pause:
     prompt: "Do you want to proceed with the validator swap? (yes/no)"
   register: swap_confirmation
+  run_once: true
 
-- name: Fail if swap not confirmed
+- name: confirm_swap - Make swap confirmation available globally
+  ansible.builtin.set_fact:
+    swap_confirmation: "{{ hostvars[source_host]['swap_confirmation'] }}"
+  run_once: true
+
+- name: confirm_swap - Fail if swap not confirmed
   ansible.builtin.fail:
     msg: "Validator swap operation cancelled by user"
   when: swap_confirmation.user_input | lower != 'yes'
+  run_once: true

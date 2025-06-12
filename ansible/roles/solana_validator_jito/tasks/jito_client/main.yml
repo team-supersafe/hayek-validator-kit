@@ -4,6 +4,7 @@
 
 - name: Install Jito client
   import_tasks: install.yml
+  when: jito_installation_needed | default(true)
 
 - name: Configure Jito client
   import_tasks: configure.yml
