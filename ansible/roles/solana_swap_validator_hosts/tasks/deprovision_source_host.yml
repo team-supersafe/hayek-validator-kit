@@ -161,13 +161,37 @@
         state: absent
       become: true
 
-    # Step 5 - Remove SSH access
-    - name: Step 5 - SSH - Remove SSH authorized key for sol user
-      ansible.posix.authorized_key:
-        user: sol
-        key: "{{ pubkey.content | b64decode }}"
+    # Step 5 - Remove Rust/Cargo related files and configurations
+    - name: Step 5 - Rust - Remove Rust and Cargo directories
+      ansible.builtin.file:
+        path: "{{ item }}"
         state: absent
       become: true
+      with_items:
+        - "{{ solana_user_dir }}/.rustup"
+        - "{{ solana_user_dir }}/.cargo"
+
+    - name: Step 5 - Rust - Remove Cargo environment line from .profile
+      ansible.builtin.replace:
+        path: "{{ solana_user_dir }}/.profile"
+        regexp: '^\s*\.\s*"\$HOME/\.cargo/env"\s*$'
+        state: absent
+      become: true
+
+    - name: Step 5 - Rust - Remove Cargo environment line from .bashrc
+      ansible.builtin.replace:
+        path: "{{ solana_user_dir }}/.bashrc"
+        regexp: '^\s*\.\s*"\$HOME/\.cargo/env"\s*$'
+        state: absent
+      become: true
+
+    # Step 6 - Remove SSH access (commented out for verification purposes)
+    # - name: Step 6 - SSH - Remove SSH authorized key for sol user
+    #   ansible.posix.authorized_key:
+    #     user: sol
+    #     key: "{{ pubkey.content | b64decode }}"
+    #     state: absent
+    #   become: true
 
     - name: Debug message for cleanup completion
       debug:
