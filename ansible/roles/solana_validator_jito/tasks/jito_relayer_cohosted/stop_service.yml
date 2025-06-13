@@ -1,14 +1,14 @@
 ---
 - name: Check the jito-relayer service status
   ansible.builtin.systemd:
-    name: "jito-relayer"
+    name: "{{ jito_relayer_service_name }}"
   register: relayer_service_status
   changed_when: false
   failed_when: false
 
 - name: Stop jito-relayer service if running
   ansible.builtin.systemd:
-    name: "jito-relayer"
+    name: "{{ jito_relayer_service_name }}"
     state: stopped
     enabled: false
   register: relayer_stop_result
@@ -18,10 +18,11 @@
   when: relayer_service_status.status.ActiveState == "active"
   become: true
 
-- name: Remove jito-relayer service unit file
-  ansible.builtin.file:
-    path: "/etc/systemd/system/jito-relayer.service"
+- name: Remove jito-relayer service
+  ansible.builtin.systemd:
+    name: "{{ jito_relayer_service_name }}"
     state: absent
+    enabled: false
   become: true
 
 - name: Reload systemd daemon
