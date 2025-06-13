@@ -12,7 +12,8 @@
 # ansible-playbook playbooks/pb_hot_swap_validator_hosts.yml \
 #   -i solana_localnet.yml \
 #   -e "source_host=host-alpha" \
-#   -e "destination_host=host-bravo"
+#   -e "destination_host=host-bravo" \
+#   -e "deprovision_source_host=true" # Optional: Use this to deprovision all validator-related files, folders, services, and keys from the source host
 
 - name: Perform Hot Swap Validator hosts
   hosts: "{{ source_host }},{{ destination_host }}"
@@ -30,6 +31,8 @@
           Must provide:
             - source_host
             - destination_host
+          Optional:
+            - deprovision_source_host (set to true to deprovision all validator-related files, folders, services, and keys from the source host)
 
     - name: Find validator name on source host
       ansible.builtin.find:
@@ -63,9 +66,3 @@
 
   roles:
     - role: solana_swap_validator_hosts
-      when: source_validator_name is defined and destination_validator_name is defined
-      vars:
-        source_host: "{{ source_host }}"
-        destination_host: "{{ destination_host }}"
-        source_validator_name: "{{ source_validator_name }}"
-        destination_validator_name: "{{ destination_validator_name }}"
