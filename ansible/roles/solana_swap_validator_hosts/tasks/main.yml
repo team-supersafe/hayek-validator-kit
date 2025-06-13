@@ -13,3 +13,6 @@
 
 - name: Import verify tasks
   ansible.builtin.import_tasks: verify.yml
+
+- name: Import summary tasks
+  ansible.builtin.import_tasks: summary.yml

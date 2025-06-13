@@ -162,4 +162,4 @@
 - name: Check if available space is sufficient
   ansible.builtin.fail:
     msg: "Insufficient disk space. Available: {{ initial_space.stdout }}, Minimum required: {{ min_required_space }}"
-  when: initial_space_bytes < min_required_bytes
+  when: initial_space_bytes | int < min_required_bytes | int
