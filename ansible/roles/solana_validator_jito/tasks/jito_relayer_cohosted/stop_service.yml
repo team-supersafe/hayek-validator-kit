@@ -18,11 +18,10 @@
   when: relayer_service_status.status.ActiveState == "active"
   become: true
 
-- name: Remove jito-relayer service
-  ansible.builtin.systemd:
-    name: "{{ jito_relayer_service_name }}"
+- name: Remove jito-relayer service file
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ jito_relayer_service_name }}.service"
     state: absent
-    enabled: false
   become: true
 
 - name: Reload systemd daemon
