@@ -1,0 +1,175 @@
+---
+# Tasks for deprovisioning the source host after a successful validator swap
+# This file will contain tasks to clean up validator-related data, services, and keys
+# from the source host after confirming the swap was successful
+
+- name: Automatic deprovisioning for low credits loss
+  block:
+    - name: Debug message for automatic deprovisioning
+      debug:
+        msg: "Credits loss is below 4% ({{ credits_loss_percentage }}%). Proceeding with automatic deprovisioning."
+  when: credits_loss_percentage < 4
+  hosts: "{{ source_host }}"
+
+- name: Manual confirmation for high credits loss
+  block:
+    - name: Show warning about high credits loss
+      debug:
+        msg: |
+          Credits loss is {{ credits_loss_percentage }}% which is above the 4% threshold.
+          The swap operation was not smooth and cleaning the source host immediately could be risky,
+          especially if the destination host does not show steady voting performance.
+          You might want to:
+          1. Watch the voting performance of the destination host for 2-5 minutes
+          2. Consider a reverse identity swap if performance is not stable
+
+          Do you want to proceed with deprovisioning the source host anyway?
+
+    - name: Prompt for confirmation
+      ansible.builtin.pause:
+        prompt: "Type 'yes' to proceed with deprovisioning or 'no' to abort"
+
+    - name: Check confirmation response
+      ansible.builtin.fail:
+        msg: "Deprovisioning aborted by user due to high credits loss"
+      when: confirm_deprovision != "yes"
+
+    - name: Debug message for manual deprovisioning
+      debug:
+        msg: "Proceeding with manual deprovisioning after user confirmation."
+  when: credits_loss_percentage >= 4
+  hosts: "{{ source_host }}"
+
+- name: Execute deprovisioning tasks
+  block:
+    - name: Debug message for starting cleanup
+      debug:
+        msg: "Starting cleanup of validator-related data, services, and keys from source host"
+
+    # Step 1 - Stop validator service
+    - name: Step 1 - Service - Check if validator service exists and is running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+      register: service_status
+      changed_when: false
+      failed_when: false
+
+    - name: Step 1 - Service - Stop validator service if running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        state: stopped
+        enabled: false
+      register: stop_result
+      retries: 3
+      delay: 10
+      until: stop_result is success
+      when: service_status.status.ActiveState == "active"
+      become: true
+
+    - name: Step 1 - Service - Remove validator service
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        state: absent
+        enabled: false
+      become: true
+
+    - name: Step 1 - Service - Check the jito-relayer service status
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+      register: relayer_service_status
+      changed_when: false
+      failed_when: false
+
+    - name: Step 1 - Service - Stop jito-relayer service if running
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+        state: stopped
+        enabled: false
+      register: relayer_stop_result
+      retries: 3
+      delay: 10
+      until: relayer_stop_result is success
+      when: relayer_service_status.status.ActiveState == "active"
+      become: true
+
+    - name: Step 1 - Service - Remove jito-relayer service
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+        state: absent
+        enabled: false
+      become: true
+
+    # Step 2 - Reload systemd daemon
+    - name: Step 2 - Service - Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+      become: true
+
+    # Step 3 - Remove validator data
+    - name: Step 3 - Data - Remove validator data directory
+      ansible.builtin.file:
+        path: "{{ ledger_path }}"
+        state: absent
+      become: true
+
+    - name: Step 3 - Data - Remove validator keys directory
+      ansible.builtin.file:
+        path: "{{ source_host_keys_dir }}"
+        state: absent
+      become: true
+
+    - name: Step 3 - Data - Remove validator identity symlink
+      ansible.builtin.file:
+        path: "{{ source_host_identity_link_path }}"
+        state: absent
+      become: true
+
+    # Step 4 - Remove related directories
+    - name: Step 4 - Directories - Remove logs directory
+      ansible.builtin.file:
+        path: "{{ logs_dir }}"
+        state: absent
+      become: true
+
+    - name: Step 4 - Directories - Remove scripts directory
+      ansible.builtin.file:
+        path: "{{ scripts_dir }}"
+        state: absent
+      become: true
+
+    - name: Step 4 - Directories - Remove keys directory
+      ansible.builtin.file:
+        path: "{{ keys_dir }}"
+        state: absent
+      become: true
+
+    - name: Step 4 - Directories - Remove build directory
+      ansible.builtin.file:
+        path: "{{ build_dir }}"
+        state: absent
+      become: true
+
+    - name: Step 4 - Directories - Remove jito-relayer local share directory
+      ansible.builtin.file:
+        path: "{{ solana_user_dir }}/.local/share/jito-relayer"
+        state: absent
+      become: true
+
+    - name: Step 4 - Directories - Remove solana local share directory
+      ansible.builtin.file:
+        path: "{{ solana_user_dir }}/.local/share/solana"
+        state: absent
+      become: true
+
+    # Step 5 - Remove SSH access
+    - name: Step 5 - SSH - Remove SSH authorized key for sol user
+      ansible.posix.authorized_key:
+        user: sol
+        key: "{{ pubkey.content | b64decode }}"
+        state: absent
+      become: true
+
+    - name: Debug message for cleanup completion
+      debug:
+        msg: "Successfully cleaned up all validator-related data, services, and keys from source host"
+  hosts: "{{ source_host }}"
