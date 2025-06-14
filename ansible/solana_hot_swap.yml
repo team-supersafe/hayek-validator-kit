@@ -1,5 +1,9 @@
+---
 all:
   hosts:
+    hyk-edg-tlv:
+      ansible_host: 64.176.171.107
+      ansible_port: 2522
     hyk-edg-mia:
       ansible_host: 45.77.74.20
       ansible_port: 2522
@@ -8,9 +12,14 @@ all:
     # ───── Data Center Grouping ─────
     dc_edgevana:
       hosts:
+        hyk-edg-tlv:
         hyk-edg-mia:
 
     # ───── City Grouping ─────
+    city_telaviv:
+      hosts:
+        hyk-edg-tlv:
+
     city_miami:
       hosts:
         hyk-edg-mia:
@@ -18,9 +27,11 @@ all:
     # ───── Network Grouping ─────
     solana:
       hosts:
+        hyk-edg-tlv:
         hyk-edg-mia:
 
     # ───── Solana Cluster Grouping ─────
     solana_mainnet:
       hosts:
+        hyk-edg-tlv:
         hyk-edg-mia:
