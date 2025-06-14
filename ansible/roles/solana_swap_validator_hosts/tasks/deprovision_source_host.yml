@@ -1,7 +1,35 @@
 ---
-# Tasks for deprovisioning the source host after a successful validator swap
-# This file will contain tasks to clean up validator-related data, services, and keys
-# from the source host after confirming the swap was successful
+- name: Determine value of should_deprovision_host from deprovision_source_host
+  ansible.builtin.set_fact:
+    should_deprovision_host: "{{ deprovision_source_host | default(false) }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Debug should_deprovision_host
+  ansible.builtin.debug:
+    msg: "Value of should_deprovision_host: {{ should_deprovision_host }}"
+  delegate_to: localhost
+  run_once: true
+  when: should_deprovision_host
+
+- name: Convert credits loss percentage to float
+  ansible.builtin.set_fact:
+    credits_loss_percentage_float: "{{ credits_loss_percentage | float }}"
+  delegate_to: localhost
+  run_once: true
+  when: should_deprovision_host
+
+- name: Debug credits_loss_percentage
+  ansible.builtin.debug:
+    msg: "Value of credits_loss_percentage: {{ credits_loss_percentage }}"
+  delegate_to: localhost
+  run_once: true
+  when: should_deprovision_host
+
+# - name: Stop playbook
+#   ansible.builtin.fail:
+#     msg: "Deprovisioning aborted for debugging"
+
 
 - name: Automatic deprovisioning for low credits loss
   block:
@@ -9,7 +37,7 @@
       ansible.builtin.debug:
         msg: "Credits loss is below 4% ({{ credits_loss_percentage }}%). Proceeding with automatic deprovisioning."
       delegate_to: localhost
-  when: credits_loss_percentage < 4
+  when: should_deprovision_host and credits_loss_percentage_float < 4
 
 - name: Manual confirmation for high credits loss
   block:
@@ -41,7 +69,7 @@
       ansible.builtin.debug:
         msg: "Proceeding with manual deprovisioning after user confirmation."
       delegate_to: localhost
-  when: credits_loss_percentage >= 4
+  when: should_deprovision_host and credits_loss_percentage_float >= 4
 
 - name: Execute deprovisioning tasks
   block:
@@ -219,3 +247,4 @@
       ansible.builtin.debug:
         msg: "Successfully cleaned up all validator-related data, services, and keys from source host"
       delegate_to: localhost
+  when: should_deprovision_host

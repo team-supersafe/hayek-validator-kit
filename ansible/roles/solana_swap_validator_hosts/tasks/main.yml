@@ -19,4 +19,4 @@
 
 - name: Import deprovision tasks if requested
   ansible.builtin.import_tasks: deprovision_source_host.yml
-  when: deprovision_source_host | bool
+  when: deprovision_source_host is defined and deprovision_source_host == "true"
