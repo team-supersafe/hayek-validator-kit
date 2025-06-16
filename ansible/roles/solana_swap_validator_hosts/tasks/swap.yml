@@ -1,4 +1,78 @@
 ---
+- name: swap - Get pre-swap vote account stats
+  block:
+    - name: swap - Determine Solana cluster parameter
+      ansible.builtin.set_fact:
+        solana_cluster_param: >-
+          {%- if 'solana_mainnet' in group_names -%}
+          -um
+          {%- elif 'solana_testnet' in group_names -%}
+          -ut
+          {%- elif 'solana_localnet' in group_names -%}
+          -ul
+          {%- else -%}
+          -ul
+          {%- endif -%}
+      run_once: true
+
+    - name: swap - Get validator identity pubkey
+      ansible.builtin.command: >
+        solana-keygen pubkey {{ source_host_primary_target_identity_path }}
+      register: validator_identity_pubkey
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: inventory_hostname == source_host
+      changed_when: false
+
+    - name: swap - Get vote account address
+      ansible.builtin.shell: |
+        solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json | jq -r '.validators[] | select(.identityPubkey == "{{ validator_identity_pubkey.stdout }}") | .voteAccountPubkey'
+      register: vote_account_address_result
+      when: inventory_hostname == source_host
+      delegate_to: localhost
+      changed_when: false
+
+    - name: swap - Get vote account data from source validator
+      ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ vote_account_address_result.stdout }} --output json
+      register: source_vote_account_before
+      when: inventory_hostname == source_host
+      delegate_to: localhost
+      changed_when: false
+
+    - name: swap - Parse vote account data before swap
+      ansible.builtin.set_fact:
+        vote_account_before: "{{ source_vote_account_before.stdout | from_json }}"
+      when: inventory_hostname == source_host
+
+    - name: swap - Make vote account data before swap available globally
+      ansible.builtin.set_fact:
+        vote_account_before: "{{ hostvars[source_host]['vote_account_before'] }}"
+      run_once: true
+
+    - name: swap - Store pre-swap stats
+      ansible.builtin.set_fact:
+        pre_swap_stats:
+          epoch: "{{ vote_account_before.epochVotingHistory[-1] }}"
+          credits_earned: "{{ vote_account_before.epochVotingHistory[-1].creditsEarned }}"
+          max_possible_credits: >-
+            {{
+              vote_account_before.epochVotingHistory[-1].slotsInEpoch *
+              vote_account_before.epochVotingHistory[-1].maxCreditsPerSlot
+            }}
+      run_once: true
+
+    - name: swap - Display pre-swap stats
+      ansible.builtin.debug:
+        msg: |
+          ===============================================
+          PRE-SWAP STATS
+          ===============================================
+          Epoch: {{ pre_swap_stats.epoch }}
+          Credits Earned: {{ pre_swap_stats.credits_earned }}
+          Max Possible Credits: {{ pre_swap_stats.max_possible_credits }}
+          ===============================================
+      run_once: true
+
 - name: swap - Wait for Restart Window and Unstake Source Validator
   block:
     - name: swap - Wait for safe restart window
