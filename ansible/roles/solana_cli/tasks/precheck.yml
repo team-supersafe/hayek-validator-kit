@@ -17,6 +17,7 @@
   ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
   register: solana_check
   changed_when: false
+  failed_when: false
 
 - name: Precheck - Set solana_cli_already_installed fact
   ansible.builtin.set_fact:
