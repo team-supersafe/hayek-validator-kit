@@ -1,14 +1,14 @@
 # Solana Localnet
 
-Solana has three public clusters: `Mainnet`, `Testnet` and `Devnet`. All of these require coordination with other parties in one way or another, and it becomes hard for devs to reset state when developing locally.&#x20;
+Solana has three public clusters: `Mainnet`, `Testnet` and `Devnet`. All of these require coordination with other parties in one way or another, and it becomes hard for devs to reset state when developing locally.
 
-The Hayek Validator Toolkit includes a fourth cluster named `Localnet`, which runs 100% inside a Docker container, and spins up a fully functioning Solana network with multiple coordinating validators in seconds.&#x20;
+The Hayek Validator Toolkit includes a fourth cluster named `Localnet`, which runs 100% inside a Docker container, and spins up a fully functioning Solana network with multiple coordinating validators in seconds.
 
 ## Benefits
 
 **Exploration**: The main benefit of the Solana Localnet is that it promotes exploration without fear. It is a disposable environment that is easy to setup, take down, change, and break as much as you want.
 
-**Speed**: Launching the Solana Localnet in your workstation takes seconds. Coordinating between nodes is instant.&#x20;
+**Speed**: Launching the Solana Localnet in your workstation takes seconds. Coordinating between nodes is instant.
 
 **State**: Resetting state of a validator node, spining a new validator that can join Localnet, or turning off validators is near instant. Even better, you can completely delete the docker localnet cluster, and spin it again if you feel you corrupted the state doing something.
 
@@ -16,9 +16,9 @@ The Hayek Validator Toolkit includes a fourth cluster named `Localnet`, which ru
 
 ## Workstation Setup
 
-Before running the Hayek Validator Kit Solana Localnet, you must [setup your workstation](workstation-setup.md) for success.&#x20;
+Before running the Hayek Validator Kit Solana Localnet, you must [setup your workstation](workstation-setup.md) for success.
 
-All the configurations related to the Hayek Validator Kit are in this [GitHub repo](github-repo.md), which you will have to clone locally if you have not done so already:&#x20;
+All the configurations related to the Hayek Validator Kit are in this [GitHub repo](github-repo.md), which you will have to clone locally if you have not done so already:
 
 ```bash
 git clone https://github.com/team-supersafe/hayek-validator-kit.git
@@ -32,18 +32,16 @@ You should [get familiar with the contents of the repo](github-repo.md#navigatin
 
 The Localnet cluster consist of the following containers:
 
-<table><thead><tr><th width="260.39453125">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>gossip-entrypoint</code><br>- Maps to localhost:9022</td><td><p>The cluster's Gossip protocol entry point node. Any validator can use this to join the network and synchronize with other validators.</p><ul><li>It provides Genesis block for Solana Localnet</li><li>Kick-starts POH</li><li>Epoch = 750 slots (~5 min) </li><li>Mostly for cluster boilerplate and not meant to be modified </li></ul></td></tr><tr><td><code>host-alpha</code><br>- Maps to localhost:9122</td><td><p>Running a validator named <code>Canopy</code> with:</p><ul><li>200K delegated SOL (~16% of all cluster stake)</li><li>See how to view the <code>Canopy</code> validator keys in the <a href="ansible-control.md#validator-keys">Validator Keys section</a>.</li></ul></td></tr><tr><td><code>host-bravo</code><br>- Maps to localhost:9222<br></td><td>A validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.</td></tr><tr><td><code>host-charlie</code><br>- Maps to localhost:9322</td><td>A naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.</td></tr><tr><td><p><code>ansible-control</code><br>- Not mapped</p><p>- See <a href="ansible-control.md#connecting-to-ansible-control">how to connect</a></p></td><td><p>Your official sysadmin automation environment:</p><ul><li>Solana CLI and Ansible installed</li><li>Access Solana Mainnet, Testnet and Localnet</li></ul><pre><code># For Mainnet Connectivity
+<table><thead><tr><th width="260.39453125">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>gossip-entrypoint</code><br>- Maps to localhost:9022</td><td><p>The cluster's Gossip protocol entry point node. Any validator can use this to join the network and synchronize with other validators.</p><ul><li>It provides Genesis block for Solana Localnet</li><li>Kick-starts POH</li><li>Epoch = 750 slots (~5 min)</li><li>Mostly for cluster boilerplate and not meant to be modified</li></ul></td></tr><tr><td><code>host-alpha</code><br>- Maps to localhost:9122</td><td><p>Running a validator named <code>Canopy</code> with:</p><ul><li>200K delegated SOL (~16% of all cluster stake)</li><li>See how to view the <code>Canopy</code> validator keys in the <a href="ansible-control.md#validator-keys">Validator Keys section</a>.</li></ul></td></tr><tr><td><code>host-bravo</code><br>- Maps to localhost:9222<br></td><td>A validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.</td></tr><tr><td><code>host-charlie</code><br>- Maps to localhost:9322</td><td>A naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.</td></tr><tr><td><p><code>ansible-control</code><br>- Not mapped</p><p>- See <a href="ansible-control.md#connecting-to-ansible-control">how to connect</a></p></td><td><p>Your official sysadmin automation environment:</p><ul><li>Solana CLI and Ansible installed</li><li>Access Solana Mainnet, Testnet and Localnet</li></ul><pre><code># For Mainnet Connectivity
 solana -um ***
-
 #For Testnet Connectivity
 solana -ut ***
-
-# For Localnet Connectivity
+For Localnet Connectivity
 solana -ul ***
-# or also "solana -url localhost (-ul)"
+or also "solana -url localhost (-ul)"
 </code></pre><ul><li>Connect to any Localnet container <a href="ansible-control.md#connecting-to-localnet-nodes">via SSH</a>.</li></ul></td></tr></tbody></table>
 
-After the cluster is provisioned, the staked SOL delegated to the `Canopy` node will be active at the beginning of Epoch 1 (after \~5 minutes). Then the `Canopy` validator will start voting and move from delinquent to not-delinquent at the beginning of Epoch 2.&#x20;
+After the cluster is provisioned, the staked SOL delegated to the `Canopy` node will be active at the beginning of Epoch 1 (after \~5 minutes). Then the `Canopy` validator will start voting and move from delinquent to not-delinquent at the beginning of Epoch 2.
 
 ### Using Explorers
 
@@ -56,10 +54,10 @@ You can use the Solana Explorer and Solscan apps to explore any accounts in your
 
 To run Localnet you must run it in Docker
 
-1. **IDE Option (recommended)** \
+1. **IDE Option (recommended)**\
    Open the repo in VSCode. This will automatically run the `docker-compose.yml` with `docker compose up` and trigger the build process of the images in the `Dockerfile`
 2.  **Docker Option**\
-    Another option, for those VSCode haters, is the run Localnet directly from Docker by running:&#x20;
+    Another option, for those VSCode haters, is the run Localnet directly from Docker by running:
 
     ```bash
     cd solana-localnet
@@ -74,7 +72,7 @@ At times, and as you corrupt the state of your docker containers running in Loca
 
 <figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
 
-You can also stop the cluster from docker with&#x20;
+You can also stop the cluster from docker with
 
 ```bash
 cd solana-local-cluster
@@ -98,17 +96,17 @@ Ports are mapped from your localhost to each container:
 ### From Ansible Control
 
 ```sh
-ssh sol@primary # ssh into primary node
-ssh sol@secondary # ssh into secondary node
+ssh sol@host-alpha # ssh into host-alpha node
+ssh sol@host-bravo # ssh into host-bravo node
 ```
 
 ## Validator CLI Commands
 
-After the first login to a validator that was just setup, you'll need to have it join Localnet by setting its entrypoint, like so:&#x20;
+After the first login to a validator that was just setup, you'll need to have it join Localnet by setting its entrypoint, like so:
 
 ```bash
 # After login, set the RPC url to point to the entrypoint node
-RPC_URL=http://entrypoint:8899
+RPC_URL=http://gossip-entrypoint:8899
 ```
 
 Other common validator CLI commands can be found [HERE](../validator-operations/deploying-a-validator-client/agave.md#common-commands).
@@ -206,7 +204,7 @@ agave-validator --entrypoint entrypoint:8001 \
 
 ## Troubleshooting <a href="#troubleshuting" id="troubleshuting"></a>
 
-If your validator doesn't show up as a running process or the process is running but it never catches up of falls behind, make sure to check the logs before anything else:&#x20;
+If your validator doesn't show up as a running process or the process is running but it never catches up of falls behind, make sure to check the logs before anything else:
 
 ```sh
 tail ~/logs/agave-validator.log
@@ -214,6 +212,6 @@ tail ~/logs/agave-validator.log
 
 ## References
 
-Reference credits for the Dockerfile for ubuntu-ansible:&#x20;
+Reference credits for the Dockerfile for ubuntu-ansible:
 
 * [https://github.com/geerlingguy/docker-ubuntu2404-ansible/blob/master/Dockerfile](https://github.com/geerlingguy/docker-ubuntu2404-ansible/blob/master/Dockerfile)
