@@ -8,7 +8,7 @@
 # ansible-playbook -i solana_new_metal_box.yml playbooks/pb_setup_server_users.yml
 
 - name: Setup server users
-  hosts: new_metal_box
+  hosts: new-metal-box
   user: ubuntu
   become: true
   pre_tasks:

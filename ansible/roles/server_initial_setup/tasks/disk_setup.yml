@@ -2,12 +2,25 @@
 # This role performs disk setup and configuration for Solana validator
 # This role uses disk information collected by precheck.yml
 
-# Assign disks by size using information from precheck
+# Get available disks excluding those in use by the system
+- name: Get available disks
+  ansible.builtin.shell: |
+    # Get disks sorted by size and check if they are in use
+    lsblk -b -d -o NAME,SIZE | grep -v "NAME" | sort -k2 -nr | while read name size; do
+      # Skip if disk is mounted or in use
+      if ! mount | grep -q "/dev/$name" && ! lsof | grep -q "/dev/$name"; then
+        echo "$name"
+      fi
+    done
+  register: available_disks_list
+  changed_when: false
+
+# Assign disks by size using information from available disks
 - name: Assign disks by size
   ansible.builtin.set_fact:
-    ledger_disk: "{{ available_disks_list[0] if available_disks_list | length > 0 else '' }}"
-    account_disk: "{{ available_disks_list[1] if available_disks_list | length > 1 else '' }}"
-    snapshots_disk: "{{ available_disks_list[2] if available_disks_list | length > 2 else '' }}"
+    ledger_disk: "{{ available_disks_list.stdout_lines[0] if available_disks_list.stdout_lines | length > 0 else '' }}"
+    account_disk: "{{ available_disks_list.stdout_lines[1] if available_disks_list.stdout_lines | length > 1 else '' }}"
+    snapshots_disk: "{{ available_disks_list.stdout_lines[2] if available_disks_list.stdout_lines | length > 2 else '' }}"
 
 # Display disk assignments for verification
 - name: Show disk assignments

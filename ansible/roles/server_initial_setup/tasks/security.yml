@@ -130,35 +130,35 @@
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?PermitRootLogin'
-    line: 'PermitRootLogin {{ ssh_config.permit_root_login | string | lower }}'
+    line: 'PermitRootLogin {{ ssh_config.permit_root_login }}'
   notify: Restart ssh
 
 - name: Configure SSH security - PubkeyAuthentication
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?PubkeyAuthentication'
-    line: 'PubkeyAuthentication {{ ssh_config.pubkey_authentication | string | lower }}'
+    line: 'PubkeyAuthentication {{ ssh_config.pubkey_authentication }}'
   notify: Restart ssh
 
 - name: Configure SSH security - PasswordAuthentication
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?PasswordAuthentication'
-    line: 'PasswordAuthentication {{ ssh_config.password_authentication | string | lower }}'
+    line: 'PasswordAuthentication {{ ssh_config.password_authentication }}'
   notify: Restart ssh
 
 - name: Configure SSH security - KbdInteractiveAuthentication
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?KbdInteractiveAuthentication'
-    line: 'KbdInteractiveAuthentication {{ ssh_config.kbd_interactive_authentication | string | lower }}'
+    line: 'KbdInteractiveAuthentication {{ ssh_config.kbd_interactive_authentication }}'
   notify: Restart ssh
 
 - name: Configure SSH security - ChallengeResponseAuthentication
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?ChallengeResponseAuthentication'
-    line: 'ChallengeResponseAuthentication {{ ssh_config.challenge_response_authentication | string | lower }}'
+    line: 'ChallengeResponseAuthentication {{ ssh_config.challenge_response_authentication }}'
   notify: Restart ssh
 
 # Find and update all files in sshd_config.d directory
@@ -172,7 +172,7 @@
   ansible.builtin.lineinfile:
     path: "{{ item.path }}"
     regexp: '^PasswordAuthentication'
-    line: 'PasswordAuthentication {{ ssh_config.password_authentication | string | lower }}'
+    line: 'PasswordAuthentication {{ ssh_config.password_authentication }}'
   with_items: "{{ ssh_config_files.files }}"
   notify: Restart ssh
   when: ssh_config_files.files | length > 0
