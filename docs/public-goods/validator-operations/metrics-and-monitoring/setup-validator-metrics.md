@@ -1,16 +1,15 @@
----
-description: All this configuration was implemented in a separate Box
----
 # Setup Validator Metrics
+
+## Setup Validator Metrics - InfluxDB.
 
 ## Hayek Monitoring Environment
 
 For monitoring our validator, we use **Telegraf**, a lightweight metrics collection agent. It runs directly on the validator nodes and gathers various hardware metrics such as:
 
-- CPU performance
-- NVMe health and usage
-- Network traffic
-- RAM usage
+* CPU performance
+* NVMe health and usage
+* Network traffic
+* RAM usage
 
 For validator-specific metrics (such as block production, vote credits, identity balance, etc.), we rely on the **Stakeconomy scripts**. All collected metrics are sent to an external time-series database powered by **InfluxDB**.
 
@@ -18,30 +17,31 @@ For validator-specific metrics (such as block production, vote credits, identity
 
 We use **Watchtower** for monitoring the validator's health across the Solana cluster. Watchtower runs on a separate machine and continuously checks validator status. If it detects any issues (delinquency, low balance), it sends alerts through multiple channels such as:
 
-- Telegraf
-- Discord
+* Telegraf
+* Discord
 
 ### Hardware Alerts
 
 For hardware-related alerts, we rely on **Grafana Alerts**. These are configured to notify us when metrics exceed defined thresholds, including:
 
-- High CPU usage
-- High memory usage
-- NVMe disks reaching critical usage levels
+* High CPU usage
+* High memory usage
+* NVMe disks reaching critical usage levels
 
 This setup ensures both the performance and reliability of our validator are actively monitored and issues are promptly addressed.
 
 ### Setup Grafana
 
-You can install it yourself or you can use a provider template such as ***Vultr***, which is easy by ***selecting the server, operating system and at the marketplace center find Grafana***.
-If you prefer to install Grafana you can use the official guide at
-https://grafana.com/docs/grafana/latest/setup-grafana/installation/
-else you can use Grafana Cloud if you don't want to pay for a private server, you have to be aware Grafana Cloud has some retention metrics limitations
+You can install it yourself or you can use a provider template such as _**Vultr**_, which is easy by _**selecting the server, operating system and at the marketplace center find Grafana**_.\
+If you prefer to install Grafana you can use the official guide at\
+https://grafana.com/docs/grafana/latest/setup-grafana/installation/\
+else you can use Grafana Cloud if you don't want to pay for a private server, you have to be aware Grafana Cloud has some retention metrics limitations\
 https://grafana.com/docs/grafana-cloud/
 
 Once your Grafana is running you need to open port 3000 in your firewall
 
 UFW
+
 ```bash
 ufw allow 3000/tcp
 ufw reload
@@ -51,14 +51,15 @@ Else for proper monitoring system you need to add an SSL certificate to your Gra
 
 You can use an auto-signed certificate or much better you can use a free certificate through Let's Encrypt
 
-### Enable SSL 
+### Enable SSL
 
 Install Certbot
+
 ```bash
 apt install certbot
 ```
 
-***For NGINX***
+_**For NGINX**_
 
 ```bash
 apt install python3-certbot-nginx
@@ -70,7 +71,7 @@ Get Certificate
 certbot --nginx -d your-domain.com -d www.yourdomain.com --email your@email.com --agree-tos --no-eff-email
 ```
 
-***For Apache***
+_**For Apache**_
 
 ```bash
 apt install python3-certbot-apache
@@ -112,7 +113,7 @@ Restart Grafana Service
 systemctl restart grafana-server
 ```
 
-Check your Grafana
+Check your Grafana\
 https://yourdomain.com:3000
 
 If you install Grafana through provider templates such as Vultr they will provide you the credentials.
@@ -277,7 +278,7 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-This script is charged to send the alert to DISCORD and TELEGRAM Channels.
+This script is charged to send the alert to DISCORD and TELEGRAM Channels.\
 Inside this script we have some variables we need to be aware of:
 
 ```bash
@@ -372,7 +373,7 @@ User=root
 WantedBy=multi-user.target
 ```
 
-The script "send_block_metrics_v6.sh" will send the metrics to a separate database which is only dedicated for block production metrics.
+The script "send\_block\_metrics\_v6.sh" will send the metrics to a separate database which is only dedicated for block production metrics.\
 This script collects the metrics for block production through Solana CLI and also collects epoch information:
 
 ```bash
@@ -406,7 +407,7 @@ INFLUX_PASS="<DB_PASSWORD>"
 SOLANA_BIN="/root/.local/share/solana/install/active_release/bin/solana"
 ```
 
-This script "/usr/local/bin/send_validator_metrics.sh" obtains metrics from Solana clusters API and Solana CLI, else pulls metrics from stakewiz API.
+This script "/usr/local/bin/send\_validator\_metrics.sh" obtains metrics from Solana clusters API and Solana CLI, else pulls metrics from stakewiz API.
 
 Here are some variables you should be aware of for this script:
 
