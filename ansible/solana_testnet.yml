@@ -16,7 +16,7 @@ all:
         hyk-lat-lax:
 
     # ───── City Grouping ─────
-    city_dallas:
+    city_dal:
       hosts:
         hyk-lat-dal:
         hyk-lat-lax:
