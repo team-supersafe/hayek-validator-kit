@@ -1,26 +1,26 @@
 all:
   hosts:
-    hyk-edg-mia:
-      ansible_host: 45.77.74.20
+    hyk-lat-dal:
+      ansible_host: 67.213.118.77
       ansible_port: 2522
 
   children:
     # ───── Data Center Grouping ─────
-    dc_edgevana:
+    dc_latitude:
       hosts:
-        hyk-edg-mia:
+        hyk-lat-dal:
 
     # ───── City Grouping ─────
-    city_miami:
+    city_dal:
       hosts:
-        hyk-edg-mia:
+        hyk-lat-dal:
 
     # ───── Network Grouping ─────
     solana:
       hosts:
-        hyk-edg-mia:
+        hyk-lat-dal:
 
     # ───── Solana Cluster Grouping ─────
-    solana_mainnet:
+    solana_testnet:
       hosts:
-        hyk-edg-mia:
+        hyk-lat-dal:
