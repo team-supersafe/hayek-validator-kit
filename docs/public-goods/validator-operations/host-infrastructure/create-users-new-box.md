@@ -241,3 +241,55 @@ The generated password is temporary. Users must change their password immediatel
 ```sh
 chage -d 0 {{ user }}
 ```
+
+### Sending Encrypted Passwords via Email
+
+To send the passwords via email, the playbook needs access to the encrypted file containing the SMTP configurations, `email_vars.yml`. The passwords are encrypted using the `age` tool with each user's public key, which must be included in the CSV.
+
+Below is an example of the email sent to users:
+
+```
+Hello dave,
+
+Your server access credentials have been encrypted with your SSH public key.
+For decrypt the password, you need to have the private key of the user.
+
+Server IP: 192.168.1.100
+Username: dave
+
+The encrypted password file is attached to this email.
+
+To decrypt your password:
+1. Install age if not already installed:
+   - On Ubuntu/Debian: apt install age
+   - On macOS: brew install age
+2. Save the attachment and run:
+   age -d -i ~/.ssh/private_key dave_password.age
+
+Connection command:
+ssh -p 2522 dave@192.168.1.100
+
+Please change your password upon first login.
+
+Best regards,
+System Administrator
+```
+
+### Cleanup
+
+The playbook includes cleanup tasks to ensure that temporary vault files are removed after use. This is done to prevent potential issues with leftover files. The following tasks are executed:
+
+- **Delete temporal vault file if it exists**: This task removes the temporary vault file specified by `generated_pass_file` to avoid any issues with leftover files.
+- **Delete temporal vault file backup if it exists**: This task removes any backup of the temporary vault file, ensuring that no sensitive information is left behind.
+
+These tasks are delegated to the localhost to ensure they are executed on the control machine.
+
+### Disabling the Ubuntu User
+
+The playbook includes tasks to disable the `ubuntu` user after the new users are created. This is a security measure to prevent unauthorized access. The following tasks are executed:
+
+- **Disable ubuntu user**: This task disables the `ubuntu` user by locking the password and changing the shell to `/usr/sbin/nologin`.
+- **Block SSH login for ubuntu user**: This task modifies the SSH configuration to deny login for the `ubuntu` user.
+- **Restart SSH service**: This task restarts the SSH service to apply the changes.
+
+These tasks ensure that the `ubuntu` user is completely disabled, and you must use one of the newly created users to access the server.
