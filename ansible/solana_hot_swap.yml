@@ -16,11 +16,11 @@ all:
         hyk-edg-mia:
 
     # ───── City Grouping ─────
-    city_telaviv:
+    city_tlv:
       hosts:
         hyk-edg-tlv:
 
-    city_miami:
+    city_mia:
       hosts:
         hyk-edg-mia:
 

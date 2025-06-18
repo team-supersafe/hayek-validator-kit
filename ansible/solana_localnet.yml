@@ -13,7 +13,7 @@ all:
 
   children:
     # ───── City Grouping ─────
-    city_dallas:
+    city_dal:
       hosts:
         host-alpha:
         host-bravo:
