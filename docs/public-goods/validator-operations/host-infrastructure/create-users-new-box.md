@@ -117,7 +117,7 @@ To edit the file, use:
 ansible-vault edit group_vars/all/email_vars.yml
 ```
 
-### Variables in `ansible/roles/iam_manager/vars/main.yml`
+### Configuration Variables
 
 The following variables are defined in the `ansible/roles/iam_manager/vars/main.yml` file:
 
