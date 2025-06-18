@@ -137,4 +137,49 @@ ansible-playbook -i solana_new_metal_box.yml playbooks/pb_setup_metal_box.yml -K
 
 > **Note:** The `-K` flag is used to request sudo access. You will need the password of the user with which the playbook will be executed (e.g., `dave`).
 
+### Confirmation Step
+
+After you run the playbook, you will see a confirmation message similar to the following:
+
+```
+TASK [Show server IP and request confirmation] ******************************************************
+[Show server IP and request confirmation]
+IMPORTANT: You are about to run this playbook on the server with IP: 192.168.1.100
+
+To continue, please type exactly this IP: 192.168.1.100
+
+If you are not sure, press Ctrl+C to cancel.
+
+Type IP here
+```
+
+This step is a safety measure to ensure you are provisioning the correct server.
+
+- Type the IP address shown to continue.
+- If you are not sure, press Ctrl+C to cancel the process.
+
+### Prechecks Executed by the Playbook
+
+After confirming the IP, the playbook runs a series of prechecks to validate various aspects of the setup:
+
+#### CPU Configuration Checks
+
+- **Check CPU Governor**: Verifies that the CPU governor is set to performance mode.
+- **Check CPU Scaling Driver**: Ensures that the CPU is using the p-state driver.
+- **Check AMD SMT/Hyperthreading**: Confirms that AMD SMT/Hyperthreading is enabled.
+
+#### Disk Configuration Checks
+
+- **Get System Disk**: Identifies the system disk.
+- **Check Available Disks**: Lists available disks, sorted by size, and excludes the system disk.
+- **Verify Minimum Number of Disks**: Ensures that there are at least the required number of disks for ledger, accounts, and snapshots.
+- **Verify Mount Points**: Checks that the required mount points are not already mounted.
+
+> **Note:** If the playbook detects that the disks are already mounted in `/mnt/account`, `/mnt/ledger`, or `/mnt/snapshots`, it will throw an error to prevent execution on a production server. If you need to run this on a production server, you must manually unmount the disks using the following command:
+>
+> ```sh
+> umount /mnt/ledger /mnt/account /mnt/snapshots
+> ```
+
+These checks are crucial for ensuring that the server meets the necessary hardware and configuration requirements before proceeding with the setup.
 
