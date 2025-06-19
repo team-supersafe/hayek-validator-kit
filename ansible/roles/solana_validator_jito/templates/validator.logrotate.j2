@@ -1,7 +1,7 @@
 {{ logs_dir }}/agave-validator.log {
   rotate 1
   {% if solana_cluster == 'localnet' %}
-  size 10M
+  size 100M
   {% else %}
   size 1G
   {% endif %}
