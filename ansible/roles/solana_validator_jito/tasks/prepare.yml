@@ -12,7 +12,7 @@
 
 - name: Verify Jito target city is set
   ansible.builtin.fail:
-    msg: "Host {{ inventory_hostname }} must be assigned to a city group (city_dallas, city_manchester, etc.) in the inventory"
+    msg: "Host {{ inventory_hostname }} must be assigned to a city group (city_dal, city_man, etc.) in the inventory"
   when: jito_target_city == ''
 
 - name: Set Jito URLs

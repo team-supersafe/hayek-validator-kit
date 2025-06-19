@@ -48,7 +48,7 @@ all:
         hyk-edg-tlv:
 
     # ───── City Grouping ─────
-    city_dallas:
+    city_dal:
       hosts:
         hyk-edg-dal:
         hyk-lat-dal:
@@ -56,17 +56,9 @@ all:
         host-alpha:
         host-bravo:
         host-charlie:
-    city_manchester:
+    city_man:
       hosts:
         hyk-edg-man:
-
-    # ───── Jito deployment City Grouping ─────
-    city_frankfurt:
-      hosts:
-        hyk-edg-tlv:
-    city_amsterdam:
-      hosts:
-        hyk-edg-waw:
 
     # ───── Network Grouping ─────
     solana:
