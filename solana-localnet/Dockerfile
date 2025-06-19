@@ -23,7 +23,9 @@ RUN rm -rf /var/lib/apt/lists/* && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
        apt-utils \
+       cron \
        locales \
+       logrotate \
        python3-dev \
        python3-setuptools \
        python3-pip \
