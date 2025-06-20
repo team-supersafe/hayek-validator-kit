@@ -18,7 +18,7 @@
   * [Moving your metal](validator-operations/host-infrastructure/moving-your-metal.md)
   * [Hardware tuning](validator-operations/host-infrastructure/hardware-tunning-info.md)
   * [System Tuning](validator-operations/host-infrastructure/system-tuning.md)
-  * [New Page](validator-operations/host-infrastructure/new-page.md)
+  * [User Access](validator-operations/host-infrastructure/new-page.md)
 * [Validator clients](validator-operations/deploying-a-validator-client/README.md)
   * [Agave](validator-operations/deploying-a-validator-client/agave.md)
   * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
