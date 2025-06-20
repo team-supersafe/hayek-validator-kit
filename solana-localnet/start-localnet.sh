@@ -91,7 +91,7 @@ ENTRYPOINT_IDENTITY_PUBKEY=$(solana -ul validators --keep-unstaked-delinquents -
 
 ANSIBLE_VALIDATORS_KEYS_DIR=/hayek-validator-kit/solana-localnet/validator-keys
 ANSIBLE_CANOPY_KEYS_DIR="$ANSIBLE_VALIDATORS_KEYS_DIR/canopy"
-ALPHA_CANOPY_KEYS_DIR="/home/sol/keys/canopy-localnet"
+ALPHA_CANOPY_KEYS_DIR="/home/sol/keys/canopy"
 # We have the CANOPY SERVER BOX
 # We have the CANOPY VALIDATOR KEY SET
 # We could have the SEED VALIDATOR KEY SET deployed on the CANOPY SERVER BOX
