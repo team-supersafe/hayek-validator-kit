@@ -13,12 +13,12 @@
 
 ## Validator Operations
 
-* [New Page](validator-operations/new-page.md)
 * [Host infrastructure](validator-operations/host-infrastructure/README.md)
   * [Choosing your metal](validator-operations/host-infrastructure/choosing-your-metal.md)
   * [Moving your metal](validator-operations/host-infrastructure/moving-your-metal.md)
   * [Hardware tuning](validator-operations/host-infrastructure/hardware-tunning-info.md)
   * [System Tuning](validator-operations/host-infrastructure/system-tuning.md)
+  * [New Page](validator-operations/host-infrastructure/new-page.md)
 * [Validator clients](validator-operations/deploying-a-validator-client/README.md)
   * [Agave](validator-operations/deploying-a-validator-client/agave.md)
   * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
