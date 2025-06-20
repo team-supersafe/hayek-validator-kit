@@ -7,19 +7,19 @@
   ansible.builtin.import_tasks: precheck.yml
 
 # Sets up basic system configuration and timezone
-- name: Include initial setup tasks
-  ansible.builtin.import_tasks: initial_setup.yml
+# - name: Include initial setup tasks
+#   ansible.builtin.import_tasks: initial_setup.yml
 
 # - name: Include system tuning tasks
 #   ansible.builtin.import_tasks: system_tuning.yml
 
 # Configures storage devices and mount points for validator data
-- name: Include disk setup tasks
-  ansible.builtin.import_tasks: disk_setup.yml
+# - name: Include disk setup tasks
+#   ansible.builtin.import_tasks: disk_setup.yml
 
 # Sets up CPU isolation for optimal validator performance
-- name: Include CPU isolation tasks
-  ansible.builtin.import_tasks: set_cpu_isolation.yml
+# - name: Include CPU isolation tasks
+#   ansible.builtin.import_tasks: set_cpu_isolation.yml
 
 # Configures SSH, firewall and security settings
 - name: Include security tasks

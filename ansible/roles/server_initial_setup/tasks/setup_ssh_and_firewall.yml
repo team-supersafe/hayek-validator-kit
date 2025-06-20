@@ -126,11 +126,18 @@
     state: present
 
 # Configure specific SSH security settings only
-- name: Configure SSH security - PermitRootLogin
+- name: Remove all PermitRootLogin lines
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
-    regexp: '^#?PermitRootLogin'
+    regexp: '^#?\s*PermitRootLogin'
+    state: absent
+  notify: Restart ssh
+
+- name: Add PermitRootLogin configuration
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
     line: 'PermitRootLogin {{ ssh_config.permit_root_login }}'
+    insertafter: '^# Authentication:'
   notify: Restart ssh
 
 - name: Configure SSH security - PubkeyAuthentication
