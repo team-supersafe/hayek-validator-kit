@@ -13,6 +13,7 @@
 
 ## Validator Operations
 
+* [New Page](validator-operations/new-page.md)
 * [Host infrastructure](validator-operations/host-infrastructure/README.md)
   * [Choosing your metal](validator-operations/host-infrastructure/choosing-your-metal.md)
   * [Moving your metal](validator-operations/host-infrastructure/moving-your-metal.md)
