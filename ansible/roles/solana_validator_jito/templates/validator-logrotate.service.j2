@@ -1,0 +1,6 @@
+[Unit]
+Description=Logrotate for validator logs
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/logrotate -f /etc/logrotate.d/validator.logrotate

@@ -13,6 +13,7 @@
 
     echo "Cleaning snapshots directory..."
     rm -rf {{ snapshots_path }}/*
+  delegate_to: "{{ target_host }}"
 
 - name: Ensure ledger directory exists
   ansible.builtin.file:
@@ -22,6 +23,7 @@
     owner: "{{ solana_user }}"
     group: "{{ solana_user }}"
   become: true
+  delegate_to: "{{ target_host }}"
 
 - name: Ensure accounts directory exists
   ansible.builtin.file:
@@ -31,6 +33,7 @@
     owner: "{{ solana_user }}"
     group: "{{ solana_user }}"
   become: true
+  delegate_to: "{{ target_host }}"
 
 - name: Ensure snapshots directory exists
   ansible.builtin.file:
@@ -40,3 +43,4 @@
     owner: "{{ solana_user }}"
     group: "{{ solana_user }}"
   become: true
+  delegate_to: "{{ target_host }}"
