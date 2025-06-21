@@ -34,16 +34,41 @@
           Optional:
             - deprovision_source_host (set to true to deprovision all validator-related files, folders, services, and keys from the source host)
 
+    - name: Check if source host keys directory exists
+      ansible.builtin.stat:
+        path: "{{ keys_dir }}"
+      register: source_keys_dir_stat
+      delegate_to: "{{ source_host }}"
+
+    - name: Check if destination host keys directory exists
+      ansible.builtin.stat:
+        path: "{{ keys_dir }}"
+      register: destination_keys_dir_stat
+      delegate_to: "{{ destination_host }}"
+
+    - name: Validate source host keys directory exists
+      ansible.builtin.fail:
+        msg: >
+          Source host '{{ source_host }}' does not have a validator keys directory at '{{ keys_dir }}'.
+          This indicates no validator is installed on this host.
+          Please ensure a validator is properly installed before attempting a hot swap.
+      when: not source_keys_dir_stat.stat.exists
+      run_once: true
+
+    - name: Validate destination host keys directory exists
+      ansible.builtin.fail:
+        msg: >
+          Destination host '{{ destination_host }}' does not have a validator keys directory at '{{ keys_dir }}'.
+          This indicates no validator is installed on this host.
+          Please ensure a validator is properly installed before attempting a hot swap.
+      when: not destination_keys_dir_stat.stat.exists
+      run_once: true
+
     - name: Find validator name on source host
       ansible.builtin.find:
         paths: "{{ keys_dir }}"
         file_type: directory
       register: source_keys
-      delegate_to: "{{ source_host }}"
-
-    - name: Set source validator name fact
-      ansible.builtin.set_fact:
-        source_validator_name: "{{ source_keys.files[0].path | basename }}"
       delegate_to: "{{ source_host }}"
 
     - name: Find validator name on destination host
@@ -52,6 +77,39 @@
         file_type: directory
       register: destination_keys
       delegate_to: "{{ destination_host }}"
+
+    - name: Validate source host has validator subdirectories
+      ansible.builtin.debug:
+        msg: "Validating source host '{{ source_host }}' has validator subdirectories"
+      run_once: true
+
+    - name: Validate source host has validator subdirectories
+      ansible.builtin.fail:
+        msg: >
+          VALIDATION FAILED: Source host '{{ source_host }}' keys directory '{{ keys_dir }}' exists but contains no validator subdirectories.
+          This indicates the validator installation is incomplete or corrupted.
+          Please ensure a validator is properly installed on '{{ source_host }}' before attempting a hot swap.
+      when: source_keys.files | length == 0
+      run_once: true
+
+    - name: Validate destination host has validator subdirectories
+      ansible.builtin.debug:
+        msg: "Validating destination host '{{ destination_host }}' has validator subdirectories"
+      run_once: true
+
+    - name: Validate destination host has validator subdirectories
+      ansible.builtin.fail:
+        msg: >
+          VALIDATION FAILED: Destination host '{{ destination_host }}' keys directory '{{ keys_dir }}' exists but contains no validator subdirectories.
+          This indicates the validator installation is incomplete or corrupted.
+          Please ensure a validator is properly installed on '{{ destination_host }}' before attempting a hot swap.
+      when: destination_keys.files | length == 0
+      run_once: true
+
+    - name: Set source validator name fact
+      ansible.builtin.set_fact:
+        source_validator_name: "{{ source_keys.files[0].path | basename }}"
+      delegate_to: "{{ source_host }}"
 
     - name: Set destination validator name fact
       ansible.builtin.set_fact:
