@@ -5,13 +5,6 @@
   delegate_to: localhost
   run_once: true
 
-- name: Debug should_deprovision_host
-  ansible.builtin.debug:
-    msg: "Value of should_deprovision_host: {{ should_deprovision_host }}"
-  delegate_to: localhost
-  run_once: true
-  when: should_deprovision_host
-
 - name: Convert credits loss percentage to float
   ansible.builtin.set_fact:
     credits_loss_percentage_float: "{{ credits_loss_percentage | float }}"
@@ -19,25 +12,13 @@
   run_once: true
   when: should_deprovision_host
 
-- name: Debug credits_loss_percentage
-  ansible.builtin.debug:
-    msg: "Value of credits_loss_percentage: {{ credits_loss_percentage }}"
-  delegate_to: localhost
-  run_once: true
-  when: should_deprovision_host
-
-# - name: Stop playbook
-#   ansible.builtin.fail:
-#     msg: "Deprovisioning aborted for debugging"
-
-
 - name: Automatic deprovisioning for low credits loss
   block:
     - name: Debug message for automatic deprovisioning
       ansible.builtin.debug:
         msg: "Credits loss is below 4% ({{ credits_loss_percentage }}%). Proceeding with automatic deprovisioning."
       delegate_to: localhost
-  when: should_deprovision_host and credits_loss_percentage_float < 4
+  when: should_deprovision_host and (credits_loss_percentage | float) < 4
 
 - name: Manual confirmation for high credits loss
   block:
@@ -69,7 +50,7 @@
       ansible.builtin.debug:
         msg: "Proceeding with manual deprovisioning after user confirmation."
       delegate_to: localhost
-  when: should_deprovision_host and credits_loss_percentage_float >= 4
+  when: should_deprovision_host and (credits_loss_percentage | float) >= 4
 
 - name: Execute deprovisioning tasks
   block:
@@ -143,25 +124,20 @@
       delegate_to: "{{ source_host }}"
 
     # Step 3 - Remove validator data
-    - name: Step 3 - Data - Remove validator data directory
-      ansible.builtin.file:
-        path: "{{ ledger_path }}"
-        state: absent
-      become: true
-      delegate_to: "{{ source_host }}"
+    - name: Step 3 - Data - Clean validator data
+      ansible.builtin.shell: |
+        #!/bin/bash
+        set -e
 
-    - name: Step 3 - Data - Remove validator keys directory
-      ansible.builtin.file:
-        path: "{{ source_host_keys_dir }}"
-        state: absent
-      become: true
-      delegate_to: "{{ source_host }}"
+        # Clean up the validator data directory
+        echo "Cleaning ledger directory..."
+        rm -rf {{ ledger_path }}/*
 
-    - name: Step 3 - Data - Remove validator identity symlink
-      ansible.builtin.file:
-        path: "{{ source_host_identity_link_path }}"
-        state: absent
-      become: true
+        echo "Cleaning accounts directory..."
+        rm -rf {{ accounts_path }}/*
+
+        echo "Cleaning snapshots directory..."
+        rm -rf {{ snapshots_path }}/*
       delegate_to: "{{ source_host }}"
 
     # Step 4 - Remove related directories
@@ -170,6 +146,7 @@
         path: "{{ logs_dir }}"
         state: absent
       become: true
+      failed_when: false
       delegate_to: "{{ source_host }}"
 
     - name: Step 4 - Directories - Remove scripts directory
@@ -177,13 +154,44 @@
         path: "{{ scripts_dir }}"
         state: absent
       become: true
+      failed_when: false
       delegate_to: "{{ source_host }}"
 
-    - name: Step 4 - Directories - Remove keys directory
+    - name: Step 4 - Directories - Securely overwrite primary identity file
+      ansible.builtin.command: >
+        solana-keygen new --no-bip39-passphrase --force -o {{ source_host_keys_dir }}/primary-target-identity.json
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      register: overwrite_result
+      loop: "{{ range(10) | list }}"
+      loop_control:
+        label: "Overwrite pass {{ item }}/10"
+      become: true
+      delegate_to: "{{ source_host }}"
+      when: 
+        - source_host_keys_dir is defined
+        - source_host_keys_dir != ''
+
+    - name: Step 4 - Directories - Remove validator identity symlink
+      ansible.builtin.file:
+        path: "{{ source_host_identity_link_path }}"
+        state: absent
+      become: true
+      delegate_to: "{{ source_host }}"
+
+    - name: Step 4 - Directories - Remove validator keys directory
+      ansible.builtin.file:
+        path: "{{ source_host_keys_dir }}"
+        state: absent
+      become: true
+      delegate_to: "{{ source_host }}"
+
+    - name: Step 4 - Directories - Remove host keys directory
       ansible.builtin.file:
         path: "{{ keys_dir }}"
         state: absent
       become: true
+      failed_when: false
       delegate_to: "{{ source_host }}"
 
     - name: Step 4 - Directories - Remove build directory
@@ -219,7 +227,7 @@
         - "{{ solana_user_dir }}/.cargo"
 
     - name: Step 5 - Rust - Remove Cargo environment line from .profile
-      ansible.builtin.replace:
+      ansible.builtin.lineinfile:
         path: "{{ solana_user_dir }}/.profile"
         regexp: '^\s*\.\s*"\$HOME/\.cargo/env"\s*$'
         state: absent
@@ -227,7 +235,7 @@
       delegate_to: "{{ source_host }}"
 
     - name: Step 5 - Rust - Remove Cargo environment line from .bashrc
-      ansible.builtin.replace:
+      ansible.builtin.lineinfile:
         path: "{{ solana_user_dir }}/.bashrc"
         regexp: '^\s*\.\s*"\$HOME/\.cargo/env"\s*$'
         state: absent
@@ -235,13 +243,13 @@
       delegate_to: "{{ source_host }}"
 
     # Step 6 - Remove SSH access (commented out for verification purposes)
-    # - name: Step 6 - SSH - Remove SSH authorized key for sol user
-    #   ansible.posix.authorized_key:
-    #     user: sol
-    #     key: "{{ pubkey.content | b64decode }}"
-    #     state: absent
-    #   become: true
-    #   delegate_to: "{{ source_host }}"
+    - name: Step 6 - SSH - Remove SSH authorized key for sol user
+      ansible.posix.authorized_key:
+        user: sol
+        key: "{{ pubkey.content | b64decode }}"
+        state: absent
+      become: true
+      delegate_to: "{{ source_host }}"
 
     - name: Debug message for cleanup completion
       ansible.builtin.debug:

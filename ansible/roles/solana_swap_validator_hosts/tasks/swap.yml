@@ -15,39 +15,46 @@
           {%- endif -%}
       run_once: true
 
-    - name: swap - Get validator identity pubkey
-      ansible.builtin.command: >
-        solana-keygen pubkey {{ source_host_primary_target_identity_path }}
-      register: validator_identity_pubkey
-      environment:
-        PATH: "{{ solana_install_dir }}"
-      when: inventory_hostname == source_host
-      changed_when: false
-
-    - name: swap - Get vote account address
-      ansible.builtin.shell: |
-        solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json | jq -r '.validators[] | select(.identityPubkey == "{{ validator_identity_pubkey.stdout }}") | .voteAccountPubkey'
-      register: vote_account_address_result
-      when: inventory_hostname == source_host
+    - name: summary - Debug var source_primary_pubkey
+      ansible.builtin.debug:
+        msg: "Value of source_primary_pubkey: {{ source_primary_pubkey }}"
       delegate_to: localhost
-      changed_when: false
+      run_once: true
+
+    - name: summary - Debug var source_vote_pubkey
+      ansible.builtin.debug:
+        msg: "Value of source_vote_pubkey: {{ source_vote_pubkey }}"
+      delegate_to: localhost
+      run_once: true
 
     - name: swap - Get vote account data from source validator
-      ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ vote_account_address_result.stdout }} --output json
+      ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ source_vote_pubkey }} --output json
       register: source_vote_account_before
       when: inventory_hostname == source_host
       delegate_to: localhost
       changed_when: false
+      check_mode: false
+
+    - name: summary - Debug var source_vote_account_before
+      ansible.builtin.debug:
+        msg: "Value of source_vote_account_before: {{ source_vote_account_before.stdout }}"
+      delegate_to: localhost
+      run_once: true
 
     - name: swap - Parse vote account data before swap
       ansible.builtin.set_fact:
         vote_account_before: "{{ source_vote_account_before.stdout | from_json }}"
-      when: inventory_hostname == source_host
+      when: 
+        - inventory_hostname == source_host
+        - source_vote_account_before.stdout is defined
+        - source_vote_account_before.stdout != ''
 
     - name: swap - Make vote account data before swap available globally
       ansible.builtin.set_fact:
         vote_account_before: "{{ hostvars[source_host]['vote_account_before'] }}"
       run_once: true
+      when:
+        - hostvars[source_host]['vote_account_before'] is defined
 
     - name: swap - Store pre-swap stats
       ansible.builtin.set_fact:
@@ -60,6 +67,10 @@
               vote_account_before.epochVotingHistory[-1].maxCreditsPerSlot
             }}
       run_once: true
+      when:
+        - vote_account_before is defined
+        - vote_account_before.epochVotingHistory is defined
+        - vote_account_before.epochVotingHistory | length > 0
 
     - name: swap - Display pre-swap stats
       ansible.builtin.debug:
@@ -67,11 +78,21 @@
           ===============================================
           PRE-SWAP STATS
           ===============================================
+          {% if pre_swap_stats is defined %}
           Epoch: {{ pre_swap_stats.epoch }}
           Credits Earned: {{ pre_swap_stats.credits_earned }}
           Max Possible Credits: {{ pre_swap_stats.max_possible_credits }}
+          {% else %}
+          Pre-swap stats could not be retrieved.
+          This may be due to network connectivity issues or the validator not being active.
+          {% endif %}
           ===============================================
       run_once: true
+  when:
+    - source_primary_pubkey is defined
+    - source_primary_pubkey != ''
+    - source_vote_pubkey is defined
+    - source_vote_pubkey != ''
 
 - name: swap - Wait for Restart Window and Unstake Source Validator
   block:

@@ -33,7 +33,7 @@
   tags: [jito_client.precheck]
 
 - name: Precheck - Get installed Jito-Solana version
-  ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
+  ansible.builtin.command: "{{ solana_install_dir }}/agave-validator --version"
   register: installed_version
   changed_when: false
   failed_when: false
@@ -42,7 +42,17 @@
 
 - name: Precheck - Extract installed version number
   ansible.builtin.set_fact:
-    installed_jito_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
+    installed_jito_version: "{{ installed_version.stdout | regex_search('agave-validator ([0-9.]+)', '\\1') | first }}"
+  when: solana_binary.stat.exists and installed_version.stdout is defined
+  tags: [jito_client.precheck]
+
+# Take into account client as well as version number
+# agave-validator 2.2.14 (src:e2b57760; feat:798020478, client:Agave)
+# agave-validator 2.2.16 (src:90240211; feat:3073396398, client:JitoLabs)
+# Matching both we ensure jito client installation is needed or not
+- name: Precheck - Extract installed client identifier
+  ansible.builtin.set_fact:
+    installed_jito_client: "{{ installed_version.stdout | regex_search('client:([A-Za-z0-9]+)', '\\1') | first }}"
   when: solana_binary.stat.exists and installed_version.stdout is defined
   tags: [jito_client.precheck]
 
@@ -51,5 +61,6 @@
     jito_installation_needed: >-
       {{ not solana_binary.stat.exists or 
          not installed_jito_version is defined or 
-         installed_jito_version != jito_version }}
+         installed_jito_version != jito_version or
+         installed_jito_client != 'JitoLabs' }}
   tags: [jito_client.precheck]

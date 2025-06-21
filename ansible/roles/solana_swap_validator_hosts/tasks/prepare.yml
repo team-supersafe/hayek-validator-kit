@@ -159,6 +159,7 @@
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == source_host
   changed_when: false
+  check_mode: false
 
 - name: prepare - Get destination primary target identity pubkey
   ansible.builtin.command: solana-keygen pubkey {{ destination_host_primary_target_identity_path | trim }}
@@ -167,23 +168,47 @@
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == destination_host
   changed_when: false
+  check_mode: false
 
 - name: prepare - Set source host pubkey fact
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ source_staked_pubkey.stdout_lines[0] }}"
   when: 
     - inventory_hostname == source_host
+    - source_staked_pubkey is defined
     - source_staked_pubkey.stdout_lines is defined
+    - source_staked_pubkey.stdout_lines | length > 0
 
 - name: prepare - Set destination host pubkey fact
   ansible.builtin.set_fact:
     destination_primary_pubkey: "{{ destination_staked_pubkey.stdout_lines[0] }}"
   when: 
     - inventory_hostname == destination_host
+    - destination_staked_pubkey is defined
     - destination_staked_pubkey.stdout_lines is defined
+    - destination_staked_pubkey.stdout_lines | length > 0
 
 - name: prepare - Make pubkey facts available globally
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] }}"
     destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] }}"
+  run_once: true
+  when:
+    - hostvars[source_host]['source_primary_pubkey'] is defined
+    - hostvars[destination_host]['destination_primary_pubkey'] is defined
+
+- name: prepare - Assert that both primary pubkeys are available
+  ansible.builtin.fail:
+    msg: |
+      Critical error: Primary pubkeys are not properly set.
+      
+      Source primary pubkey: {{ source_primary_pubkey | default('NOT SET') }}
+      Destination primary pubkey: {{ destination_primary_pubkey | default('NOT SET') }}
+      
+      This indicates that the solana-keygen commands failed to execute properly
+      or the identity files are missing/corrupted.
+  when:
+    - not ansible_check_mode
+    - (source_primary_pubkey is not defined or source_primary_pubkey == '') or
+      (destination_primary_pubkey is not defined or destination_primary_pubkey == '')
   run_once: true

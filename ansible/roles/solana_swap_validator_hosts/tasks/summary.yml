@@ -23,6 +23,7 @@
         PATH: "{{ solana_install_dir }}"
       when: inventory_hostname == destination_host
       changed_when: false
+      check_mode: false
 
     - name: summary - Get vote account address
       ansible.builtin.shell: |
@@ -31,6 +32,7 @@
       when: inventory_hostname == destination_host
       delegate_to: localhost
       changed_when: false
+      check_mode: false
 
     - name: summary - Get vote account data from destination validator
       ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ vote_account_address_result.stdout }} --output json
@@ -38,16 +40,22 @@
       when: inventory_hostname == destination_host
       delegate_to: localhost
       changed_when: false
+      check_mode: false
 
     - name: summary - Parse vote account data after swap
       ansible.builtin.set_fact:
         vote_account_after: "{{ source_vote_account_after.stdout | from_json }}"
-      when: inventory_hostname == destination_host
+      when: 
+        - inventory_hostname == destination_host
+        - source_vote_account_after.stdout is defined
+        - source_vote_account_after.stdout != ''
 
     - name: summary - Make vote account data after swap available globally
       ansible.builtin.set_fact:
         vote_account_after: "{{ hostvars[destination_host]['vote_account_after'] }}"
       run_once: true
+      when:
+        - hostvars[destination_host]['vote_account_after'] is defined
 
     - name: summary - Store post-swap stats
       ansible.builtin.set_fact:
@@ -60,6 +68,10 @@
               vote_account_after.epochVotingHistory[-1].maxCreditsPerSlot
             }}
       run_once: true
+      when:
+        - vote_account_after is defined
+        - vote_account_after.epochVotingHistory is defined
+        - vote_account_after.epochVotingHistory | length > 0
 
 - name: summary - Calculate TVC impact
   block:
@@ -69,7 +81,10 @@
           Cannot calculate impact: Vote account data is from different epochs!
           Pre-swap epoch: {{ pre_swap_stats.epoch.epoch }}
           Post-swap epoch: {{ post_swap_stats.epoch.epoch }}
-      when: pre_swap_stats.epoch.epoch != post_swap_stats.epoch.epoch
+      when: 
+        - pre_swap_stats is defined
+        - post_swap_stats is defined
+        - pre_swap_stats.epoch.epoch != post_swap_stats.epoch.epoch
       run_once: true
 
     - name: summary - Calculate missed credits
@@ -80,6 +95,9 @@
           }}
         max_possible_credits: "{{ pre_swap_stats.max_possible_credits }}"
       run_once: true
+      when:
+        - pre_swap_stats is defined
+        - post_swap_stats is defined
 
     - name: summary - Calculate credits loss percentage
       ansible.builtin.set_fact:
@@ -88,6 +106,9 @@
             (missed_credits | int / pre_swap_stats.max_possible_credits | int * 100) | round(2)
           }}
       run_once: true
+      when:
+        - pre_swap_stats is defined
+        - missed_credits is defined
 
 - name: summary - Display Impact Report
   ansible.builtin.debug:
@@ -95,7 +116,7 @@
       ===============================================
       VALIDATOR SWAP IMPACT REPORT
       ===============================================
-
+      {% if pre_swap_stats is defined and post_swap_stats is defined %}
       Epoch Information:
       - Current Epoch: {{ pre_swap_stats.epoch.epoch }}
       - Slots in Epoch: {{ pre_swap_stats.epoch.slotsInEpoch }}
@@ -111,6 +132,10 @@
       Note: Impact is calculated by comparing the difference in vote credits
       to the maximum possible credits in the epoch, showing what percentage
       of potential credits were missed during the swap.
+      {% else %}
+      Impact analysis could not be completed.
+      This may be due to network connectivity issues or the validator not being active.
+      {% endif %}
       ===============================================
   delegate_to: localhost
   run_once: true

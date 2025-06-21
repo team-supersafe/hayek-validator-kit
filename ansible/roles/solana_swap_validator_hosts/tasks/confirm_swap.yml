@@ -11,11 +11,17 @@
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == source_host
+  changed_when: false
+  check_mode: false
 
 - name: confirm_swap - Make source hotspare pubkey available globally
   ansible.builtin.set_fact:
     source_hotspare_pubkey: "{{ hostvars[source_host]['source_hotspare_pubkey'].stdout_lines[0] }}"
   run_once: true
+  when:
+    - hostvars[source_host]['source_hotspare_pubkey'] is defined
+    - hostvars[source_host]['source_hotspare_pubkey'].stdout_lines is defined
+    - hostvars[source_host]['source_hotspare_pubkey'].stdout_lines | length > 0
 
 - name: confirm_swap - Get source vote account pubkey
   ansible.builtin.command: solana-keygen pubkey {{ source_vote_account_path }}
@@ -25,11 +31,17 @@
   when:
     - inventory_hostname == source_host
     - source_vote_account_file.stat.exists
+  changed_when: false
+  check_mode: false
 
 - name: confirm_swap - Make source vote pubkey available globally
   ansible.builtin.set_fact:
     source_vote_pubkey: "{{ hostvars[source_host]['source_vote_pubkey'].stdout_lines[0] }}"
-  when: hostvars[source_host]['source_vote_account_file'].stat.exists
+  when: 
+    - hostvars[source_host]['source_vote_account_file'].stat.exists
+    - hostvars[source_host]['source_vote_pubkey'] is defined
+    - hostvars[source_host]['source_vote_pubkey'].stdout_lines is defined
+    - hostvars[source_host]['source_vote_pubkey'].stdout_lines | length > 0
   run_once: true
 
 - name: confirm_swap - Check if destination vote account exists
@@ -44,11 +56,17 @@
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == destination_host
+  changed_when: false
+  check_mode: false
 
 - name: confirm_swap - Make destination hotspare pubkey available globally
   ansible.builtin.set_fact:
     destination_hotspare_pubkey: "{{ hostvars[destination_host]['destination_hotspare_pubkey'].stdout_lines[0] }}"
   run_once: true
+  when:
+    - hostvars[destination_host]['destination_hotspare_pubkey'] is defined
+    - hostvars[destination_host]['destination_hotspare_pubkey'].stdout_lines is defined
+    - hostvars[destination_host]['destination_hotspare_pubkey'].stdout_lines | length > 0
 
 - name: confirm_swap - Get destination vote account pubkey
   ansible.builtin.command: solana-keygen pubkey "{{ destination_host_keys_dir }}/vote-account.json"
@@ -58,11 +76,17 @@
   when:
     - inventory_hostname == destination_host
     - destination_vote_account_file.stat.exists
+  changed_when: false
+  check_mode: false
 
 - name: confirm_swap - Make destination vote pubkey available globally
   ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ hostvars[destination_host]['destination_vote_pubkey'].stdout_lines[0] }}"
-  when: hostvars[destination_host]['destination_vote_account_file'].stat.exists
+  when: 
+    - hostvars[destination_host]['destination_vote_account_file'].stat.exists
+    - hostvars[destination_host]['destination_vote_pubkey'] is defined
+    - hostvars[destination_host]['destination_vote_pubkey'].stdout_lines is defined
+    - hostvars[destination_host]['destination_vote_pubkey'].stdout_lines | length > 0
   run_once: true
 
 - name: confirm_swap - Display Swap Operation Summary
@@ -75,12 +99,24 @@
       Source Validator:
       - Host: {{ source_host }} ({{ source_validator_name }})
       - Primary Target Identity: {{ source_host_primary_target_identity_path }}
+        {% if source_primary_pubkey is defined and source_primary_pubkey != '' %}
         Pubkey: {{ source_primary_pubkey }}
+        {% else %}
+        Pubkey: NOT SET
+        {% endif %}
       - Hot-spare Identity: {{ source_host_hot_spare_identity_path }}
+        {% if source_hotspare_pubkey is defined and source_hotspare_pubkey != '' %}
         Pubkey: {{ source_hotspare_pubkey }}
+        {% else %}
+        Pubkey: NOT SET
+        {% endif %}
       - Vote Account: {{ source_vote_account_path }}
         {% if source_vote_account_file is defined and source_vote_account_file.stat is defined and source_vote_account_file.stat.exists %}
-        Pubkey: {{ source_vote_pubkey }}
+          {% if source_vote_pubkey is defined and source_vote_pubkey != '' %}
+          Pubkey: {{ source_vote_pubkey }}
+          {% else %}
+          Pubkey: NOT SET
+          {% endif %}
         {% else %}
         Status: Keypair was not found
         {% endif %}
@@ -88,12 +124,24 @@
       Destination Validator:
       - Host: {{ destination_host }} ({{ destination_validator_name }})
       - Primary Target Identity: {{ destination_host_primary_target_identity_path }}
+        {% if destination_primary_pubkey is defined and destination_primary_pubkey != '' %}
         Pubkey: {{ destination_primary_pubkey }}
+        {% else %}
+        Pubkey: NOT SET
+        {% endif %}
       - Hot-spare Identity: {{ destination_host_keys_dir }}/hot-spare-identity.json
+        {% if destination_hotspare_pubkey is defined and destination_hotspare_pubkey != '' %}
         Pubkey: {{ destination_hotspare_pubkey }}
+        {% else %}
+        Pubkey: NOT SET
+        {% endif %}
       - Vote Account: {{ destination_host_keys_dir }}/vote-account.json
         {% if destination_vote_account_file is defined and destination_vote_account_file.stat is defined and destination_vote_account_file.stat.exists %}
-        Pubkey: {{ destination_vote_pubkey }}
+          {% if destination_vote_pubkey is defined and destination_vote_pubkey != '' %}
+          Pubkey: {{ destination_vote_pubkey }}
+          {% else %}
+          Pubkey: NOT SET
+          {% endif %}
         {% else %}
         Status: Keypair was not found
         {% endif %}
