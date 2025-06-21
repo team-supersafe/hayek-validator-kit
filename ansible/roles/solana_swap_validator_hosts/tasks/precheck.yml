@@ -1,4 +1,14 @@
 ---
+- name: precheck - Validate source and destination hosts are different
+  ansible.builtin.fail:
+    msg: >-
+      Source and destination hosts must be different!
+      Source host: {{ source_host }}
+      Destination host: {{ destination_host }}
+      Using the same host for both source and destination can cause data loss and unexpected behavior.
+  when: source_host == destination_host
+  run_once: true
+
 - name: precheck - Validate source host validator directory
   block:
     - name: precheck - Get stats of source validator directory
