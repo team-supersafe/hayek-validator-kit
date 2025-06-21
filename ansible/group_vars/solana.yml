@@ -1,6 +1,6 @@
 # Variables that apply to all hosts in the solana group
 
-solana_user: "sol"
+solana_user: 'sol'
 solana_user_dir: "/home/{{ solana_user }}"
 validator_service_name: "sol"
 jito_relayer_service_name: "jito-relayer"
