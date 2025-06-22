@@ -16,16 +16,16 @@
   block:
     - name: Debug message for automatic deprovisioning
       ansible.builtin.debug:
-        msg: "Credits loss is below 4% ({{ credits_loss_percentage }}%). Proceeding with automatic deprovisioning."
+        msg: "Credits loss is below {{ credits_loss_threshold }}% ({{ credits_loss_percentage }}%). Proceeding with automatic deprovisioning."
       delegate_to: localhost
-  when: should_deprovision_host and (credits_loss_percentage | float) < 4
+  when: should_deprovision_host and (credits_loss_percentage | float) < (credits_loss_threshold | float)
 
 - name: Manual confirmation for high credits loss
   block:
     - name: Show warning about high credits loss
       ansible.builtin.debug:
         msg: |
-          Credits loss is {{ credits_loss_percentage }}% which is above the 4% threshold.
+          Credits loss is {{ credits_loss_percentage }}% which is above the {{ credits_loss_threshold }}% threshold.
           The swap operation was not smooth and cleaning the source host immediately could be risky,
           especially if the destination host does not show steady voting performance.
           You might want to:
@@ -50,7 +50,7 @@
       ansible.builtin.debug:
         msg: "Proceeding with manual deprovisioning after user confirmation."
       delegate_to: localhost
-  when: should_deprovision_host and (credits_loss_percentage | float) >= 4
+  when: should_deprovision_host and (credits_loss_percentage | float) >= (credits_loss_threshold | float)
 
 - name: Execute deprovisioning tasks
   block:
