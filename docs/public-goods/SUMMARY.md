@@ -31,6 +31,7 @@
   * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
   * [SFDP](validator-operations/validator-stake/sfdp.md)
   * [Liquid Staking](validator-operations/validator-stake/liquid-staking.md)
+* [Performance](validator-operations/performance.md)
 
 ## Security Infrastructure
 
