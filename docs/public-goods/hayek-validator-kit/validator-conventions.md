@@ -65,7 +65,7 @@ Important notes on this structure:
 
 ## Cities and Countries
 
-By convention, we are using 3-letter [IATA Airport Codes](https://en.wikipedia.org/wiki/IATA_airport_code) to refer to cities in file names, city codes, and other code-level variable names. &#x20;
+By convention, we are using 3-letter [IATA Airport Codes](https://en.wikipedia.org/wiki/IATA_airport_code) to refer to locations in file names, city codes, and other code-level variable names. &#x20;
 
 ## Services
 
