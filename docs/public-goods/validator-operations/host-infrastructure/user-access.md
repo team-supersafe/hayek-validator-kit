@@ -4,19 +4,52 @@ description: How to create and manage access for users on a new server
 
 # User Access
 
-Once a raw metal is created to host a Solana validator, the sysadmin must provision access for operators to access the server.&#x20;
+Once your raw metal server is ready to host a Solana validator, the system administrator must provision access for the validator operators. This guide walks you through the process of running the Ansible script to provision users on a Solana Validator.
+
+## Best Practices
+
+By default, most ASN providers provision bare metal machines with the `ubuntu` user as the primary sudo user to manage the server.
+
+Beyond `ubuntu` , our approach when it comes to security is that of lest privileges, where:
+
+<table><thead><tr><th width="177.41796875">User / Group</th><th width="294.82421875">Description</th><th>Usage</th></tr></thead><tbody><tr><td>⚙️ <strong>ubuntu</strong></td><td>Provisioned by ASN with a server. Disabled after secure user setup.</td><td>To provision server users.</td></tr><tr><td>⚙️ <strong>sol</strong></td><td>Primary validator service runner and owner of the validator files and data.</td><td>Runs the validator service.</td></tr><tr><td>🧍operator user:<br>>>> <strong>alice</strong>, <strong>bob</strong>, etc.</td><td>Each human operator has his/her dedicated Ubuntu user.</td><td>Access the server via SSH and run Ansible scripts from the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>.</td></tr><tr><td>📂 playbook group:<br>>>> <strong>grp_pb_one</strong>, <strong>grp_pb_two</strong>, etc.</td><td>Ubuntu Groups with specific permissions for each playbook that can be run on this server.</td><td>To limit the participation of operator users per playbook groups.</td></tr></tbody></table>
+
+
+
+
+
+
+
+
 
 ## Prerequisites
 
-To follow these steps, make sure you have one of the following environments:
+Since the user provisioning is done via an Ansible script, you must have:
 
-1. **Hayek .devcontainer**: This environment comes preconfigured with an `ansible-control` node and all necessary dependencies for management and automation.
-2. **Visual Studio Code or Cursor Terminal**: Recommended for working with the devcontainer.
-3. **Public SSH key configured on the provisioned server**: Ensure your public SSH key is added to the server you are provisioning. The steps to add your public key may vary depending on your hosting provider.
-4. **age encryption tool installed**: This tool must be installed on each operator's workstation, as it will be used to decrypt the password, which will be encrypted using each user's public key. See the [official documentation](https://github.com/FiloSottile/age) for more details.
+1. A running [Ansible Control](../../hayek-validator-kit/ansible-control.md)
+2. Access to the user `ubuntu` on the provisioned server. See how [HERE](choosing-your-metal.md#provisioning).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+To follow these steps, make sure you have **one of** the following environments:&#x20;
+
+1.
+2. **age encryption tool installed**: This tool must be installed on each operator's workstation, as it will be used to decrypt the password, which will be encrypted using each user's public key. See the [official documentation](https://github.com/FiloSottile/age) for more details.
    * On Ubuntu/Debian: `apt install age`
    * On macOS: `brew install age`
-5.  **Create the secrets folder**: Create the folder `~/.new-metal-box-secrets` on your workstation. This folder must contain the file `users.csv`, which will hold all the information for the users to be created.
+3.  **Create the secrets folder**: Create the folder `~/.new-metal-box-secrets` on your workstation. This folder must contain the file `users.csv`, which will hold all the information for the users to be created.
 
     **Example: users.csv**
 
@@ -90,7 +123,7 @@ ansible/
 ├── solana_new_metal_box.yml
 ```
 
-#### About `email_vars.yml`
+### About `email_vars.yml`
 
 The `email_vars.yml` file is encrypted with Ansible Vault because it contains the necessary variables to send access credentials to end users via email.
 
@@ -106,7 +139,7 @@ smtp_from: "admin@example.com"
 smtp_from_name: "System Administrator"
 ```
 
-#### Managing `email_vars.yml`
+### Managing `email_vars.yml`
 
 To view the contents of the encrypted `email_vars.yml` file, use:
 
@@ -120,7 +153,7 @@ To edit the file, use:
 ansible-vault edit group_vars/all/email_vars.yml
 ```
 
-#### Configuration Variables
+### Configuration Variables
 
 The following variables are defined in the `ansible/roles/iam_manager/vars/main.yml` file:
 
@@ -135,7 +168,7 @@ vault_file: "{{ inventory_dir }}/vault/group_vars/email_vars.yml"
 encrypted_password_dir: "~/.encryptedpsw"
 ```
 
-#### Executing the Playbook
+### Executing the Playbook
 
 Before running the playbook, ensure that your inventory file (`solana_new_metal_box.yml`) is updated with the IP address of the target server where you will install the users.
 
@@ -161,7 +194,7 @@ ansible-playbook -i solana_new_metal_box.yml playbooks/pb_setup_server_users.yml
 
 **Note:** The playbook is configured to run with the user `ubuntu`. This is because providers like Vultr, Edgevana, and Latitude provision the server with the `ubuntu` user.
 
-#### Confirmation Step
+### Confirmation Step
 
 After you run the playbook, you will see a confirmation message similar to the following:
 
@@ -182,7 +215,7 @@ This step is a safety measure to ensure you are provisioning the correct server.
 * Type the IP address shown to continue.
 * If you are not sure, press Ctrl+C to cancel the process.
 
-#### Prechecks Executed by the Playbook
+### Prechecks Executed by the Playbook
 
 After confirming the IP, the playbook runs a series of prechecks to validate various aspects of the setup:
 
