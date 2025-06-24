@@ -14,14 +14,6 @@ Beyond `ubuntu` , our approach when it comes to security is that of lest privile
 
 <table><thead><tr><th width="177.41796875">User / Group</th><th width="294.82421875">Description</th><th>Usage</th></tr></thead><tbody><tr><td>⚙️ <strong>ubuntu</strong></td><td>Provisioned by ASN with a server. Disabled after secure user setup.</td><td>To provision server users.</td></tr><tr><td>⚙️ <strong>sol</strong></td><td>Primary validator service runner and owner of the validator files and data.</td><td>Runs the validator service.</td></tr><tr><td>🧍Operator User:<br>>>> <strong>alice</strong>, <strong>bob</strong>, etc.</td><td>Each human operator has his/her dedicated Ubuntu user.</td><td>Access the server via SSH and run Ansible scripts from the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>.</td></tr><tr><td><p>📂 Role Groups:<br>>>> <strong>val_admin</strong>, </p><p><strong>val_operator, val_viewer</strong>, etc.</p></td><td>Ubuntu Groups with specific validator permissions for each type of user, like Validator Logs/Metrics Viewer, Validator Operators, and Validator Administrators.</td><td>To pre-set the permissions needed for each of the different roles played by operators.</td></tr><tr><td><mark style="background-color:orange;">Alt to Role Groups</mark>:<br>---------------------<br>📂 Playbook Group:<br>>>> <strong>grp_pb_one</strong>, <strong>grp_pb_two</strong>, etc.</td><td>Ubuntu Groups with specific permissions for each playbook that can be run on this server.</td><td>To limit the participation of operator users per playbook groups.</td></tr></tbody></table>
 
-
-
-
-
-
-
-
-
 ## Prerequisites
 
 Since the user provisioning is done via an Ansible script, you must have:
@@ -29,54 +21,24 @@ Since the user provisioning is done via an Ansible script, you must have:
 1. A running [Ansible Control](../../hayek-validator-kit/ansible-control.md)
 2. Access to the user `ubuntu` on the provisioned server. See how [HERE](choosing-your-metal.md#provisioning).
 
+## User Passwords
 
+Only users who require sudo (elevated) privileges are provisioned with passwords. These passwords are securely generated and encrypted using the age tool with each user’s public key. Users with sudo access must decrypt their password locally using their private SSH key to perform privileged actions.
 
+These users will receive an email with their temp password and should use [age tool](https://github.com/FiloSottile/age) like so:
 
+* On Ubuntu/Debian: `apt install age`
+* On macOS: `brew install age`
 
+For all other users, no password is set. These users access the server exclusively via SSH key-based authentication, and cannot escalate privileges. This approach minimizes the attack surface while maintaining secure administrative access for authorized operators.
 
+## Setup Users CSV
 
+The `pb_setup_server_users.yml` expects a CSV with users and groups meta that will be used for the identity and access management provisioning.
 
+You can use the template below as a starting point and modify as needed. Once you are happy with the setup, put in your local workstation in a short and accessible path, like `~/Desktop` or `~/Setup`. You'll be using this path as a parameter when running the script.
 
-
-
-
-
-
-
-To follow these steps, make sure you have **one of** the following environments:&#x20;
-
-1.
-2. **age encryption tool installed**: This tool must be installed on each operator's workstation, as it will be used to decrypt the password, which will be encrypted using each user's public key. See the [official documentation](https://github.com/FiloSottile/age) for more details.
-   * On Ubuntu/Debian: `apt install age`
-   * On macOS: `brew install age`
-3.  **Create the secrets folder**: Create the folder `~/.new-metal-box-secrets` on your workstation. This folder must contain the file `users.csv`, which will hold all the information for the users to be created.
-
-    **Example: users.csv**
-
-    Below is an example of how the `users.csv` file should be structured (replace with your actual user data):
-
-    | user  | email             | sent\_email | key                                                                    | group\_a | group\_b |
-    | ----- | ----------------- | ----------- | ---------------------------------------------------------------------- | -------- | -------- |
-    | alice | alice@example.com | TRUE        | ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAAExampleKeyAlice alice@example.com | Sol      | Sudo     |
-    | bob   | bob@example.com   | FALSE       | ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAAExampleKeyBob bob@example.com     | Sol      | Sudo     |
-    | carol | carol@example.com | FALSE       | ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAAExampleKeyCarol carol@example.com | Sol      | Sudo     |
-    | dave  | dave@example.com  | FALSE       | ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAAExampleKeyDave dave@example.com   | Sol      | Sudo     |
-
-    > **Note:**\
-    > This CSV solution was implemented to avoid publishing sensitive information in the configuration repository.\
-    > It is recommended to keep a copy of this file in a secure location where it can be downloaded when needed, such as 1Password, Keeper, or your preferred password manager. This file will **not** contain user passwords.
-
-If you choose **not** to use the devcontainer, you must manually install the following dependencies on your system:
-
-* Ansible
-* Python
-* passlib
-
-You can install them on Debian/Ubuntu-based systems with the following command:
-
-```sh
-sudo apt update && sudo apt install -y ansible python3 python3-pip && pip3 install passlib
-```
+{% file src="../../.gitbook/assets/iam_setup.csv" %}
 
 ## Creating users
 
