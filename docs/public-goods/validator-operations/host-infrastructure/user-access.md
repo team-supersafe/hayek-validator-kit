@@ -27,17 +27,6 @@ Since the user provisioning is done via an Ansible script, you must have:
 1. A running [Ansible Control](../../hayek-validator-kit/ansible-control.md)
 2. Access to the user `ubuntu` on the provisioned server. See how [HERE](choosing-your-metal.md#provisioning).
 
-## User Passwords
-
-Only users who require sudo (elevated) privileges are provisioned with passwords. These passwords are securely generated and encrypted using the age tool with each user’s public key. Users with sudo access must decrypt their password locally using their private SSH key to perform privileged actions.
-
-These users will receive an email with their temp password and should use [age tool](https://github.com/FiloSottile/age) like so:
-
-* On Ubuntu/Debian: `apt install age`
-* On macOS: `brew install age`
-
-For all other users, no password is set. These users access the server exclusively via SSH key-based authentication, and cannot escalate privileges. This approach minimizes the attack surface while maintaining secure administrative access for authorized operators.
-
 ## Setup Users CSV
 
 The `pb_setup_server_users.yml` expects a CSV with users and groups meta that will be used for the identity and access management provisioning.
@@ -46,125 +35,33 @@ You can use the template below as a starting point and modify as needed. Once yo
 
 {% file src="../../.gitbook/assets/iam_setup.csv" %}
 
-## Creating users
+## Executing the Playbook
 
-Once you have completed all prerequisites, follow these steps from the `ansible-control` node:
-
-1.  Change to the Ansible directory:
-
-    ```sh
-    cd ansible
-    ```
-
-### Relevant Ansible Structure
-
-For the user creation process, you will only need the following files and directories from the `hayek-validator-kit/ansible` repository:
-
-```
-ansible/
-├── playbooks/
-│   └── pb_setup_server_users.yml
-├── roles/
-│   └── iam_manager/
-│       ├── defaults/
-│       │   └── main.yml
-│       ├── files/
-│       ├── tasks/
-│       │   ├── backup_vault.yml
-│       │   ├── cleanup.yml
-│       │   ├── configure.yml
-│       │   ├── create_passwords.yml
-│       │   ├── create_users.yml
-│       │   ├── disable_ubuntu.yml
-│       │   ├── encrypt_passwords.yml
-│       │   ├── main.yml
-│       │   ├── precheck.yml
-│       │   └── send_emails.yml
-│       ├── templates/
-│       │   ├── README.md
-│       │   └── email_credentials.j2
-│       └── vars/
-│           └── main.yml
-├── vault/
-│   └── group_vars/
-│       └── email_vars.yml
-├── solana_new_metal_box.yml
-```
-
-### About `email_vars.yml`
-
-The `email_vars.yml` file is encrypted with Ansible Vault because it contains the necessary variables to send access credentials to end users via email.
-
-Below is an example of what this file might contain (replace with your actual SMTP configuration):
-
-```yaml
-# SMTP Server Configuration
-smtp_host: smtp.example.com
-smtp_port: 587
-smtp_username: "admin@example.com"
-smtp_password: "example-app-password"
-smtp_from: "admin@example.com"
-smtp_from_name: "System Administrator"
-```
-
-### Managing `email_vars.yml`
-
-To view the contents of the encrypted `email_vars.yml` file, use:
-
-```sh
-ansible-vault view group_vars/all/email_vars.yml
-```
-
-To edit the file, use:
-
-```sh
-ansible-vault edit group_vars/all/email_vars.yml
-```
-
-### Configuration Variables
-
-The following variables are defined in the `ansible/roles/iam_manager/vars/main.yml` file:
-
-```yaml
-# CSV file containing user information (username, groups, email, etc.)
-users_file: "~/.new-metal-box-secrets/users.csv"
-
-# Vault file containing email-related variables and configurations
-vault_file: "{{ inventory_dir }}/vault/group_vars/email_vars.yml"
-
-# Directory for storing encrypted password backups with timestamps
-encrypted_password_dir: "~/.encryptedpsw"
-```
-
-### Executing the Playbook
-
-Before running the playbook, ensure that your inventory file (`solana_new_metal_box.yml`) is updated with the IP address of the target server where you will install the users.
-
-For example, your inventory file should look something like this:
+Before running the playbook, ensure that your inventory file (`target_one_host.yml`) is updated with the IP address of the target server where you will install the users. Your inventory file should look like this:
 
 ```yaml
 all:
   hosts:
-    # Host for provisioning new servers
-    # Add to appropriate groups before running playbooks
     new-metal-box:
       ansible_host: 192.168.1.100
       ansible_port: 22
 ```
 
-Replace `<target_ip_address>` with your actual values.
-
-Once the inventory is updated, you can run the playbook using:
+Replace `<target_ip_address>` with your actual values. Once the inventory is updated, you can run the playbook using:
 
 ```sh
-ansible-playbook -i solana_new_metal_box.yml playbooks/pb_setup_server_users.yml
+ansible-playbook -i solana_new_metal_box.yml playbooks/pb_setup_server_users.yml \
+  -e "target_host_name=new-metal-box" \
+  -e "user_list=~/Desktop/iam_setup.csv"
 ```
 
-**Note:** The playbook is configured to run with the user `ubuntu`. This is because providers like Vultr, Edgevana, and Latitude provision the server with the `ubuntu` user.
+{% hint style="danger" %}
+**Note:** The playbook is configured to run with the user `ubuntu` which is the only user in the newly provisioned server.
+{% endhint %}
 
-### Confirmation Step
+## Confirmation Step
 
-After you run the playbook, you will see a confirmation message similar to the following:
+Upon running the playbook, you will see a confirmation asking you to verify the IP of the host you are about to change:
 
 ```
 TASK [Show server IP and request confirmation] ******************************************************
@@ -178,28 +75,22 @@ If you are not sure, press Ctrl+C to cancel.
 Type IP here
 ```
 
-This step is a safety measure to ensure you are provisioning the correct server.
+This step is a safety measure to ensure you are provisioning the correct server. Type the IP address shown to continue. If you are not sure, press Ctrl+C to cancel the process.
 
-* Type the IP address shown to continue.
-* If you are not sure, press Ctrl+C to cancel the process.
+## User Passwords
 
-### Prechecks Executed by the Playbook
+Only users who require sudo (elevated) privileges are provisioned with passwords. These passwords are securely generated and encrypted using the age tool with each user’s public key. Users with sudo access must decrypt their password locally using their private SSH key to perform privileged actions.
 
-After confirming the IP, the playbook runs a series of prechecks to validate various aspects of the setup:
+These users with elevated privileges [will receive an email](user-access.md#password-generation) with their temp password and should use [age tool](https://github.com/FiloSottile/age) like so:
 
-* **Validate CSV Structure**
-  * Ensures the CSV file has the required fields (user, email, sent\_email, key).
-  * Fails if the CSV is empty or missing required fields.
-* **Check for Existing Users**
-  * Uses the `cut` command to get a list of existing users from `/etc/passwd`.
-  * This is a security check to prevent overwriting existing users.
-* **Fail if Users Exist**
-  * Compares users from the CSV with existing system users.
-  * If any users already exist, the playbook will fail for security reasons.
+* On Ubuntu/Debian: `apt install age`
+* On macOS: `brew install age`
 
-#### Password Generation and Encryption
+For all other users, no password is set. These users access the server exclusively via SSH key-based authentication, and cannot escalate privileges. This approach minimizes the attack surface while maintaining secure administrative access for authorized operators.
 
-The playbook will extract user information from the CSV file and generate a password for each user. These passwords will be encrypted using Ansible Vault and stored in a local directory on the operator's computer.
+### Password Generation
+
+<mark style="background-color:red;">The playbook will extract user information from the CSV file and generate a password for each user. These passwords will be encrypted using Ansible Vault and stored in a local directory on the operator's computer.</mark>
 
 During the execution, you will be prompted to enter a password to encrypt the vault file. This password is crucial as it will be needed later to view all the generated user credentials.
 
