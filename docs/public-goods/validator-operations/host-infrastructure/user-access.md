@@ -10,7 +10,7 @@ Once your raw metal server is ready to host a Solana validator, the system admin
 
 By default, most ASN providers provision bare metal machines with the `ubuntu` user as the primary sudo user to manage the server.
 
-Beyond `ubuntu` , our approach when it comes to security is that of lest privileges, where:
+Beyond `ubuntu` , our approach when it comes to security is that of lest privileges, where we define these identity and access management users and groups:
 
 <table><thead><tr><th width="177.41796875">User / Group</th><th width="294.82421875">Description</th><th>Usage</th></tr></thead><tbody><tr><td>⚙️ <strong>ubuntu</strong></td><td>Provisioned by ASN with a server. Disabled after secure user setup.</td><td>To provision server users.</td></tr><tr><td>⚙️ <strong>sol</strong></td><td>Primary validator service runner and owner of the validator files and data.</td><td>Runs the validator service.</td></tr><tr><td>🧍operator user:<br>>>> <strong>alice</strong>, <strong>bob</strong>, etc.</td><td>Each human operator has his/her dedicated Ubuntu user.</td><td>Access the server via SSH and run Ansible scripts from the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>.</td></tr><tr><td>📂 playbook group:<br>>>> <strong>grp_pb_one</strong>, <strong>grp_pb_two</strong>, etc.</td><td>Ubuntu Groups with specific permissions for each playbook that can be run on this server.</td><td>To limit the participation of operator users per playbook groups.</td></tr></tbody></table>
 
