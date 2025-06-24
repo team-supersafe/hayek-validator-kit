@@ -63,6 +63,10 @@ Important notes on this structure:
    1. If Host-A is running Validator-X, then only the files, keys and config for Validator-X should be present in Host-A, and no other.
    2. If Validator-X is moved from Host-A to Host-B, Host-A should end up with none of Validator-X's files from its file system, and Host-B should end up with only Validator-X files in its file system.
 
+## Cities and Countries
+
+By convention, we are using [IATA Airport Codes](https://en.wikipedia.org/wiki/IATA_airport_code) to refer to cities in file names, city codes, and other code-level variable names. &#x20;
+
 ## Services
 
 ???
