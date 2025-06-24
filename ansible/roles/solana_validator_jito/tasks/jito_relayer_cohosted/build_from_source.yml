@@ -1,11 +1,17 @@
 ---
-- name: DEBUG
+- name: Create Jito Relayer build
   ansible.builtin.debug:
     msg: "Creating Jito Relayer build"
 
 - name: Set local variable for jito_relayer_build_dir
   ansible.builtin.set_fact:
     jito_relayer_build_dir: "{{ build_dir }}/jito_relayer"
+
+- name: Remove build directory if exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ jito_relayer_build_dir }}"
+    state: absent
 
 - name: Ensure jito_relayer_build_dir directory exists
   ansible.builtin.file:
@@ -127,31 +133,23 @@
   debug:
     msg: "PATH after sourcing: {{ updated_path.stdout }}"
 
-- name: Verify jito-transaction-relayer installation
-  ansible.builtin.shell: |
-    which jito-transaction-relayer
+- name: jito_relayer_cohosted - buold_from_source - Verify jito-transaction-relayer installation
+  ansible.builtin.shell: jito-transaction-relayer --version
   environment:
     PATH: "{{ updated_path.stdout }}"
-  register: relayer_path_check
+  register: installed_version
 
-- name: Check jito-transaction-relayer version
-  ansible.builtin.shell: |
-    jito-transaction-relayer --version
-  environment:
-    PATH: "{{ updated_path.stdout }}"
-  register: relayer_version_check
-  failed_when: jito_relayer_version not in relayer_version_check.stdout
+- name: jito_relayer_cohosted - buold_from_source - Extract installed version number
+  ansible.builtin.set_fact:
+    installed_relayer_version: "{{ installed_version.stdout | regex_search('jito-transaction-relayer ([0-9.]+)', '\\1') | first }}"
+  when: installed_version.stdout is defined
 
-- name: Debug relayer path
+- name: Debug installed_relayer_version
   ansible.builtin.debug:
-    msg: "{{ relayer_path_check.stdout }}"
+    msg: "installed_relayer_version: {{ installed_relayer_version }}"
 
-- name: Debug relayer version
-  ansible.builtin.debug:
-    msg: "{{ relayer_version_check.stdout }}"
-
-# Now that the build is complete, we can remove the build directory
-# - name: Remove build directory after copy
-#   ansible.builtin.file:
-#     path: "{{ jito_relayer_build_dir }}"
-#     state: absent
+- name: Fail if installed Jito relayer version is not {{ jito_relayer_version }}
+  ansible.builtin.fail:
+    msg: "Jito relayer version not satisfied -> installed: {{ installed_relayer_version }}, required: {{ jito_relayer_version }}"
+  when: not installed_relayer_version is defined or installed_relayer_version != jito_relayer_version
+  tags: [jito_relayer.verify]

@@ -1,7 +1,6 @@
 ---
 # Check final disk space usage
 - name: Check final disk space usage
-  when: jito_relayer_verify | default(true)
   block:
     - name: Get current disk space
       ansible.builtin.shell: |

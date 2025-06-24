@@ -4,17 +4,16 @@
 
 - name: Install Jito relayer cohosted
   import_tasks: install.yml
-  when: relayer_installation_needed | default(true)
+  when: relayer_installation_needed | default(false)
 
 - name: Configure Jito relayer cohosted
   import_tasks: config.yml
 
-- when: jito_relayer_verify | default(true)
-  name: Verify Jito relayer cohosted setup
+- name: Verify Jito relayer cohosted setup
   import_tasks: verify.yml
 
 - name: Jito Relayer Co-hosted setup complete
   debug:
     msg: >-
-      Jito Relayer Co-hosted has been installed, configured{{ ' and verified' if jito_relayer_verify | default(true) else '' }}.
+      Jito Relayer Co-hosted has been installed, configured and verified.
   tags: [rust, done]
