@@ -88,7 +88,7 @@ These users with elevated privileges [will receive an email](user-access.md#pass
 
 For all other users, no password is set. These users access the server exclusively via SSH key-based authentication, and cannot escalate privileges. This approach minimizes the attack surface while maintaining secure administrative access for authorized operators.
 
-### Password Generation
+### Password Generation - Pending below&#x20;
 
 <mark style="background-color:red;">The playbook will extract user information from the CSV file and generate a password for each user. These passwords will be encrypted using Ansible Vault and stored in a local directory on the operator's computer.</mark>
 
