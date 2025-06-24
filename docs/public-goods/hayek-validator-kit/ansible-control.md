@@ -4,9 +4,9 @@ description: What is the Ansible Control server inside the Localnet cluster
 
 # Ansible Control
 
-With your [Localnet running](solana-localnet.md#running-localnet), you'll have your default node be set as the `ansible-control` container. This node has [Ansible](https://docs.ansible.com/) installed and the goal is to run and automate all sysadmin ops through ansible scripts.&#x20;
+With your [Localnet running](solana-localnet.md#running-localnet), you'll have your default node be set as the `ansible-control` container. This node has [Ansible](https://docs.ansible.com/) installed and the goal is to run and automate all sysadmin ops through ansible scripts.
 
-Having one of the nodes of the Localnet as the `ansible-control` allows all operators to control remote hosts from an identical environment, rather than having individually setup Ansible configurations on each workstation.&#x20;
+Having one of the nodes of the Localnet as the `ansible-control` allows all operators to control remote hosts from an identical environment, rather than having individually setup Ansible configurations on each workstation.
 
 ## Pre-Provisioned Assets
 
@@ -18,15 +18,15 @@ We have pre-provisioned a sets of keys for the `Canopy` validator that will be r
 
 Under the Ansible Control node you will find this script:
 
-&#x20;`/hayek-validator-kit/validator-keys/_gen-validator-keys.sh`&#x20;
+`/hayek-validator-kit/validator-keys/_gen-validator-keys.sh`
 
 This script generates a new set of validator keys. These will be needed when provisioning a new validator on any of the containers in the Localnet cluster. A set of keys contains the following:
 
 1. **Staked Identity Key**: It will always start with the characters `Z1`
 2. **Vote Account Key**: It will always start with the characters `Z2`
 3. **Stake Account Key**: It will always start with the characters `Z3`
-4. **Authorized Withdrawer Account Key**: It will always start with the characters `Z4` &#x20;
-5. **Jito Relayer Block Engine Key**: It will always start with the characters `Z5`&#x20;
+4. **Authorized Withdrawer Account Key**: It will always start with the characters `Z4`
+5. **Jito Relayer Block Engine Key**: It will always start with the characters `Z5`
 6. **Jito Relayer Comms Key**: RSA keys in the `jito-relayer-comms-private.pem` and `jito-relayer-comms-public.pem` files.
 
 {% hint style="info" %}
@@ -56,7 +56,7 @@ You can view the public keys of any of these respective private keys like this:
 solana-keygen pubkey staked-identity.json
 ```
 
-For convenience, we have also generated the public keys as a separate empty file for each of the keys. Each file-pair should look like this:&#x20;
+For convenience, we have also generated the public keys as a separate empty file for each of the keys. Each file-pair should look like this:
 
 ```
 staked-identity-Z1RtExJVeFskxLD1D6RCPHH9NBpLHvcqKW8iXZfkMEK
@@ -67,10 +67,10 @@ You can view the full accounts by pasting their respective public keys in the [L
 
 ### Packages and Software
 
-The Ansible Control container is provisioned with the following&#x20;
+The Ansible Control container is provisioned with the following
 
 1. Solana CLI
-2. Ansible&#x20;
+2. Ansible
 3. Python3
 4. These packages: rsyslog, sudo, iproute2, openssh-client, git, curl, nano, openssl, tar, jq, less, tree
 
@@ -140,6 +140,22 @@ Another issue when running your containers NOT within the [Ansible Control withi
 docker compose down
 ```
 
+## Email Sender
+
+Sending emails using the [community.general.mail](https://docs.ansible.com/ansible/latest/collections/community/general/mail_module.html) module requires the configuration of an SMTP server to send the messages. We have a shared role, named `email_sender` to configure these variables.
+
+The `email_vars.yml` file is encrypted with [Ansible Vault](../security-infrastructure/ansible-vault.md) since it contains sensitive information to the SMTP server. Open the file from the vault, and replace with your actual SMTP configuration:
+
+```yaml
+# SMTP Server Configuration
+smtp_host: smtp.example.com
+smtp_port: 587
+smtp_username: "admin@example.com"
+smtp_password: "example-app-password"
+smtp_from: "admin@example.com"
+smtp_from_name: "System Administrator"
+```
+
 ## Common CLI Commands
 
 ```sh
@@ -152,4 +168,3 @@ solana -ul validators --keep-unstaked-delinquents
 # Verify your validators' ip addresses via Solana gossip 
 solana -ul gossip | grep demoneTKvfN3Bx2jhZoAHhNbJAzt2rom61xyqMe5Fcw
 ```
-
