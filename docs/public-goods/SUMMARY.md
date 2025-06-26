@@ -27,6 +27,7 @@
 * [Metrics & Monitoring](validator-operations/metrics-and-monitoring/README.md)
   * [Community Dashboards](validator-operations/metrics-and-monitoring/community-dashboards.md)
   * [Setup Validator Metrics](validator-operations/metrics-and-monitoring/setup-validator-metrics.md)
+  * [Inspecting Logs](validator-operations/metrics-and-monitoring/inspecting-logs.md)
 * [Stake Management](validator-operations/validator-stake/README.md)
   * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
   * [SFDP](validator-operations/validator-stake/sfdp.md)
