@@ -38,7 +38,27 @@
 - name: jito_relayer_cohosted - Precheck - Set fact for relayer installation needed
   ansible.builtin.set_fact:
     relayer_installation_needed: >-
-      {{ not relayer_binary.stat.exists or 
-         not installed_relayer_version is defined or 
+      {{ not relayer_binary.stat.exists or
+         not installed_relayer_version is defined or
          installed_relayer_version != jito_relayer_version }}
   tags: [jito_relayer.precheck]
+
+- name: jito_relayer_cohosted - Precheck - Check if UDP port 11228 is open in firewall
+  ansible.builtin.command: "ss -lun | grep ':11228 '\n"
+  register: udp_11228_check
+  changed_when: false
+  failed_when: false
+  tags: [jito_relayer.precheck, jito_relayer.firewall]
+
+- name: jito_relayer_cohosted - Precheck - Check if UDP port 11229 is open in firewall
+  ansible.builtin.command: "ss -lun | grep ':11229 '\n"
+  register: udp_11229_check
+  changed_when: false
+  failed_when: false
+  tags: [jito_relayer.precheck, jito_relayer.firewall]
+
+- name: jito_relayer_cohosted - Precheck - Set fact if UDP ports 11228 or 11229 need to be opened
+  ansible.builtin.set_fact:
+    jito_relayer_open_ports_needed: >-
+      {{ (udp_11228_check.rc != 0) or (udp_11229_check.rc != 0) }}
+  tags: [jito_relayer.precheck, jito_relayer.firewall]

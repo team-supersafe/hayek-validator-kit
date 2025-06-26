@@ -26,6 +26,11 @@ jito_urls:
     relayer: "http://slc.mainnet.relayer.jito.wtf:8100"
     shred_receiver_addr: "64.130.53.8:1002"
     ntp_server: "ntp.slc.jito.wtf"
+  singapore:
+    block_engine: "https://singapore.mainnet.block-engine.jito.wtf"
+    relayer: "http://singapore.mainnet.relayer.jito.wtf:8100"
+    shred_receiver_addr: "202.8.11.224:1002"
+    ntp_server: "ntp.singapore.jito.wtf"
   tokyo:
     block_engine: "https://tokyo.mainnet.block-engine.jito.wtf"
     relayer: "http://tokyo.mainnet.relayer.jito.wtf:8100"
