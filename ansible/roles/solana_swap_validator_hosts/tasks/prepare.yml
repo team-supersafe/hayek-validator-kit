@@ -21,6 +21,9 @@
     user: sol
     key: "{{ pubkey.content | b64decode }}"
   loop: "{{ [source_host, destination_host] }}"
+  when:
+    - pubkey is defined
+    - pubkey.content is defined
   ignore_errors: "{{ ansible_check_mode }}"
 
 - name: prepare - Install prerequisites

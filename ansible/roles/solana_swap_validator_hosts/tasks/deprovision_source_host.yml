@@ -59,7 +59,7 @@
         msg: "Starting cleanup of validator-related data, services, and keys from source host"
       delegate_to: localhost
 
-    # Step 1 - Stop validator service
+    # Step 1 - Stop and remove services
     - name: Step 1 - Service - Check if validator service exists and is running
       ansible.builtin.systemd:
         name: "{{ validator_service_name }}"
@@ -123,25 +123,8 @@
       become: true
       delegate_to: "{{ source_host }}"
 
-    # Step 3 - Remove validator data
-    - name: Step 3 - Data - Clean validator data
-      ansible.builtin.shell: |
-        #!/bin/bash
-        set -e
-
-        # Clean up the validator data directory
-        echo "Cleaning ledger directory..."
-        rm -rf {{ ledger_path }}/*
-
-        echo "Cleaning accounts directory..."
-        rm -rf {{ accounts_path }}/*
-
-        echo "Cleaning snapshots directory..."
-        rm -rf {{ snapshots_path }}/*
-      delegate_to: "{{ source_host }}"
-
-    # Step 4 - Remove related directories
-    - name: Step 4 - Directories - Remove logs directory
+    # Step 3 - Remove related directories
+    - name: Step 3 - Directories - Remove logs directory
       ansible.builtin.file:
         path: "{{ logs_dir }}"
         state: absent
@@ -149,7 +132,7 @@
       failed_when: false
       delegate_to: "{{ source_host }}"
 
-    - name: Step 4 - Directories - Remove scripts directory
+    - name: Step 3 - Directories - Remove scripts directory
       ansible.builtin.file:
         path: "{{ scripts_dir }}"
         state: absent
@@ -157,7 +140,7 @@
       failed_when: false
       delegate_to: "{{ source_host }}"
 
-    - name: Step 4 - Directories - Securely overwrite primary identity file
+    - name: Step 3 - Directories - Securely overwrite primary identity file
       ansible.builtin.command: >
         solana-keygen new --no-bip39-passphrase --force -o {{ source_host_keys_dir }}/primary-target-identity.json
       environment:
@@ -168,25 +151,25 @@
         label: "Overwrite pass {{ item }}/10"
       become: true
       delegate_to: "{{ source_host }}"
-      when: 
+      when:
         - source_host_keys_dir is defined
         - source_host_keys_dir != ''
 
-    - name: Step 4 - Directories - Remove validator identity symlink
+    - name: Step 3 - Directories - Remove validator identity symlink
       ansible.builtin.file:
         path: "{{ source_host_identity_link_path }}"
         state: absent
       become: true
       delegate_to: "{{ source_host }}"
 
-    - name: Step 4 - Directories - Remove validator keys directory
+    - name: Step 3 - Directories - Remove validator keys directory
       ansible.builtin.file:
         path: "{{ source_host_keys_dir }}"
         state: absent
       become: true
       delegate_to: "{{ source_host }}"
 
-    - name: Step 4 - Directories - Remove host keys directory
+    - name: Step 3 - Directories - Remove host keys directory
       ansible.builtin.file:
         path: "{{ keys_dir }}"
         state: absent
@@ -194,56 +177,14 @@
       failed_when: false
       delegate_to: "{{ source_host }}"
 
-    - name: Step 4 - Directories - Remove build directory
-      ansible.builtin.file:
-        path: "{{ build_dir }}"
-        state: absent
-      become: true
+    # Step 4 - Remove SSH access (commented out for verification purposes)
+    - name: Step 4 - SSH - Slurp sol user's public key
+      ansible.builtin.slurp:
+        src: "{{ solana_user_dir }}/.ssh/authorized_keys"
+      register: pubkey
       delegate_to: "{{ source_host }}"
 
-    - name: Step 4 - Directories - Remove jito-relayer local share directory
-      ansible.builtin.file:
-        path: "{{ solana_user_dir }}/.local/share/jito-relayer"
-        state: absent
-      become: true
-      delegate_to: "{{ source_host }}"
-
-    - name: Step 4 - Directories - Remove solana local share directory
-      ansible.builtin.file:
-        path: "{{ solana_user_dir }}/.local/share/solana"
-        state: absent
-      become: true
-      delegate_to: "{{ source_host }}"
-
-    # Step 5 - Remove Rust/Cargo related files and configurations
-    - name: Step 5 - Rust - Remove Rust and Cargo directories
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      become: true
-      delegate_to: "{{ source_host }}"
-      with_items:
-        - "{{ solana_user_dir }}/.rustup"
-        - "{{ solana_user_dir }}/.cargo"
-
-    - name: Step 5 - Rust - Remove Cargo environment line from .profile
-      ansible.builtin.lineinfile:
-        path: "{{ solana_user_dir }}/.profile"
-        regexp: '^\s*\.\s*"\$HOME/\.cargo/env"\s*$'
-        state: absent
-      become: true
-      delegate_to: "{{ source_host }}"
-
-    - name: Step 5 - Rust - Remove Cargo environment line from .bashrc
-      ansible.builtin.lineinfile:
-        path: "{{ solana_user_dir }}/.bashrc"
-        regexp: '^\s*\.\s*"\$HOME/\.cargo/env"\s*$'
-        state: absent
-      become: true
-      delegate_to: "{{ source_host }}"
-
-    # Step 6 - Remove SSH access (commented out for verification purposes)
-    - name: Step 6 - SSH - Remove SSH authorized key for sol user
+    - name: Step 4 - SSH - Remove SSH authorized key for sol user
       ansible.posix.authorized_key:
         user: sol
         key: "{{ pubkey.content | b64decode }}"
@@ -253,6 +194,6 @@
 
     - name: Debug message for cleanup completion
       ansible.builtin.debug:
-        msg: "Successfully cleaned up all validator-related data, services, and keys from source host"
+        msg: "Successfully cleaned sensitive data from source host"
       delegate_to: localhost
   when: should_deprovision_host

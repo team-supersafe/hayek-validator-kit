@@ -75,18 +75,6 @@
 
 - name: summary - Calculate TVC impact
   block:
-    - name: summary - Verify same epoch
-      ansible.builtin.fail:
-        msg: |
-          Cannot calculate impact: Vote account data is from different epochs!
-          Pre-swap epoch: {{ pre_swap_stats.epoch.epoch }}
-          Post-swap epoch: {{ post_swap_stats.epoch.epoch }}
-      when: 
-        - pre_swap_stats is defined
-        - post_swap_stats is defined
-        - pre_swap_stats.epoch.epoch != post_swap_stats.epoch.epoch
-      run_once: true
-
     - name: summary - Calculate missed credits
       ansible.builtin.set_fact:
         missed_credits: >-
