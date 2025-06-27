@@ -41,10 +41,8 @@ exec agave-validator \
 --merkle-root-upload-authority {{ jito_merkle_root_upload_authority }} \
 --commission-bps {{ jito_commission_bps }} \
 --relayer-url {{ jito_relayer_url }} \
-{% if jito_relayer_type == 'shared' %}
 --block-engine-url {{ jito_block_engine_url }} \
 --shred-receiver-address {{ jito_shred_receiver_addr }} \
-{% endif %}
 {% if jito_relayer_type == 'co-hosted' %}
 --full-rpc-api \
 --account-index program-id \
