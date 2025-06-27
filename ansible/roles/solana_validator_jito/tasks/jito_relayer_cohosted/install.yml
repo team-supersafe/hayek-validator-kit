@@ -6,6 +6,7 @@
 - name: jito_relayer_cohosted - install - Gather package facts
   ansible.builtin.package_facts:
     manager: apt
+  when: relayer_installation_needed | default(false)
 
 - name: jito_relayer_cohosted - install - Set required packages
   ansible.builtin.set_fact:
@@ -22,10 +23,12 @@
       - make
       - libprotobuf-dev
       - protobuf-compiler
+  when: relayer_installation_needed | default(false)
 
 - name: jito_relayer_cohosted - install - Check which packages need to be installed
   ansible.builtin.set_fact:
     packages_to_install: "{{ required_packages | difference(ansible_facts.packages.keys() | list) }}"
+  when: relayer_installation_needed | default(false)
 
 - name: jito_relayer_cohosted - install - Install prerequisites
   become: true
@@ -40,6 +43,7 @@
         name: "{{ packages_to_install }}"
         update_cache: true
       when: packages_to_install | length > 0
+  when: relayer_installation_needed | default(false)
 
 - name: jito_relayer_cohosted - install - Generate Jito relayer Auth keys
   import_tasks: gen_relayer_keys.yml
@@ -50,3 +54,4 @@
   import_tasks: build_from_source.yml
   tags:
     - jito_relayer.build
+  when: relayer_installation_needed | default(false)
