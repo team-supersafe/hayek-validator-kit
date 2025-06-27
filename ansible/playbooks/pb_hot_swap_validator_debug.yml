@@ -75,22 +75,12 @@
       delegate_to: "{{ destination_host }}"
 
     - name: Validate source host has validator subdirectories
-      ansible.builtin.debug:
-        msg: "Validating source host '{{ source_host }}' has validator subdirectories"
-      run_once: true
-
-    - name: Validate source host has validator subdirectories
       ansible.builtin.fail:
         msg: >
           VALIDATION FAILED: Source host '{{ source_host }}' keys directory '{{ keys_dir }}' exists but contains no validator subdirectories.
           This indicates the validator installation is incomplete or corrupted.
           Please ensure a validator is properly installed on '{{ source_host }}' before attempting to debug.
       when: source_keys.files | length == 0
-      run_once: true
-
-    - name: Validate destination host has validator subdirectories
-      ansible.builtin.debug:
-        msg: "Validating destination host '{{ destination_host }}' has validator subdirectories"
       run_once: true
 
     - name: Validate destination host has validator subdirectories
@@ -111,12 +101,6 @@
       ansible.builtin.set_fact:
         destination_validator_name: "{{ destination_keys.files[0].path | basename }}"
       delegate_to: "{{ destination_host }}"
-
-    - name: Debug validator names
-      ansible.builtin.debug:
-        msg: >
-          Source validator: {{ source_validator_name }}
-          Destination validator: {{ destination_validator_name }}
 
   roles:
     - role: solana_swap_validator_debug

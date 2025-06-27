@@ -62,8 +62,8 @@
 
 # destination
 - name: confirm_swap - Get destination hot-spare identity pubkey
-  ansible.builtin.command: solana-keygen pubkey "{{ destination_host_keys_dir }}/hot-spare-identity.json"
-  register: destination_hotspare_pubkey
+  ansible.builtin.shell: "solana-keygen pubkey {{ destination_host_keys_dir }}/hot-spare-identity.json"
+  register: destination_hotspare_pubkey_result
   environment:
     PATH: "{{ solana_install_dir }}"
   when: inventory_hostname == destination_host
@@ -72,12 +72,12 @@
 
 - name: confirm_swap - Make destination hotspare pubkey available globally
   ansible.builtin.set_fact:
-    destination_hotspare_pubkey: "{{ destination_hotspare_pubkey.stdout_lines[0] }}"
-  run_once: true
+    destination_hotspare_pubkey: "{{ destination_hotspare_pubkey_result.stdout_lines[0] }}"
   when:
-    - destination_hotspare_pubkey is defined
-    - destination_hotspare_pubkey.stdout_lines is defined
-    - destination_hotspare_pubkey.stdout_lines | length > 0
+    - inventory_hostname == destination_host
+    - destination_hotspare_pubkey_result is defined
+    - destination_hotspare_pubkey_result.stdout_lines is defined
+    - destination_hotspare_pubkey_result.stdout_lines | length > 0
 
 - name: confirm_swap - Check if destination vote account exists
   ansible.builtin.stat:
