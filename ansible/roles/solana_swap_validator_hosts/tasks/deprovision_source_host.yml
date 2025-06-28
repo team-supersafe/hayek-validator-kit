@@ -81,13 +81,6 @@
       become: true
       delegate_to: "{{ source_host }}"
 
-    - name: Step 1 - Service - Remove validator service file
-      ansible.builtin.file:
-        path: "/etc/systemd/system/{{ validator_service_name }}.service"
-        state: absent
-      become: true
-      delegate_to: "{{ source_host }}"
-
     - name: Step 1 - Service - Check the jito-relayer service status
       ansible.builtin.systemd:
         name: "{{ jito_relayer_service_name }}"
@@ -109,13 +102,6 @@
       become: true
       delegate_to: "{{ source_host }}"
 
-    - name: Step 1 - Service - Remove jito-relayer service file
-      ansible.builtin.file:
-        path: "/etc/systemd/system/{{ jito_relayer_service_name }}.service"
-        state: absent
-      become: true
-      delegate_to: "{{ source_host }}"
-
     # Step 2 - Reload systemd daemon
     - name: Step 2 - Service - Reload systemd daemon
       ansible.builtin.systemd:
@@ -127,14 +113,6 @@
     - name: Step 3 - Directories - Remove logs directory
       ansible.builtin.file:
         path: "{{ logs_dir }}"
-        state: absent
-      become: true
-      failed_when: false
-      delegate_to: "{{ source_host }}"
-
-    - name: Step 3 - Directories - Remove scripts directory
-      ansible.builtin.file:
-        path: "{{ scripts_dir }}"
         state: absent
       become: true
       failed_when: false
