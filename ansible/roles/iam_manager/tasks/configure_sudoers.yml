@@ -1,0 +1,39 @@
+---
+# Configure RBAC sudoers files
+# This task configures sudo access for all RBAC groups using templates
+
+# Configure sudo access for sysadmin group
+- name: Configure sudo access for sysadmin group
+  ansible.builtin.template:
+    src: 10-sysadmin.j2
+    dest: /etc/sudoers.d/10-sysadmin
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  no_log: false
+
+# Configure sudo access for validator_admins group
+- name: Configure sudo access for validator_admins group
+  ansible.builtin.template:
+    src: 20-validator-admins.j2
+    dest: /etc/sudoers.d/20-validator-admins
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  no_log: false
+
+# Configure sudo access for validator_operators group
+- name: Configure sudo access for validator_operators group
+  ansible.builtin.template:
+    src: 30-validator-operators.j2
+    dest: /etc/sudoers.d/30-validator-operators
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  no_log: false
+
+# Configure sudo access for validator_viewers group
+- name: Configure sudo access for validator_viewers group
+  ansible.builtin.template:
+    src: 40-validator-viewers.j2
+    dest: /etc/sudoers.d/40-validator-viewers
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  no_log: false

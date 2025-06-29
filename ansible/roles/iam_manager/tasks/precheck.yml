@@ -19,18 +19,33 @@
   run_once: true
 
 # Precheck 3: Validate CSV structure
-# Ensures the CSV file has the required fields (user, email, sent_email, key)
+# Ensures the CSV file has the required fields for RBAC
 # Fails if the CSV is empty or missing required fields
 - name: Verify CSV data structure
   ansible.builtin.fail:
-    msg: "Invalid CSV structure. Required fields: user, email, sent_email, key"
+    msg: "Invalid CSV structure. Required fields: user, key, group_a, group_b, group_c"
   when: >
     not (users_csv is defined and
     users_csv | length > 0)
   delegate_to: localhost
   run_once: true
 
-# Precheck 4: Check for existing users
+# Precheck 4: Validate required fields exist
+- name: Validate CSV has required fields
+  ansible.builtin.fail:
+    msg: "CSV missing required field: {{ item }}"
+  when: >
+    not (users_csv.dict.values() | map(attribute=item) | list | first is defined)
+  loop:
+    - user
+    - key
+    - group_a
+    - group_b
+    - group_c
+  delegate_to: localhost
+  run_once: true
+
+# Precheck 5: Check for existing users
 # Uses cut command to get a list of existing users from /etc/passwd
 # This is a security check to prevent overwriting existing users
 - name: Get list of existing users
@@ -38,7 +53,7 @@
   register: existing_users
   changed_when: false
 
-# Precheck 5: Fail if users exist
+# Precheck 6: Fail if users exist
 # Compares users from CSV with existing system users
 # If any users already exist, the playbook will fail for security reasons
 - name: Check for existing users
@@ -48,10 +63,67 @@
   vars:
     existing_users_list: "{{ users_csv.dict.keys() | select('in', existing_users.stdout_lines) | list }}"
 
-# Precheck 6: Display inventory directory
+# Precheck 7: Display inventory directory
 # Shows the inventory directory path for verification
 - name: Display message in console
   ansible.builtin.debug:
     msg: "{{ inventory_dir }}"
+  delegate_to: localhost
+  run_once: true
+
+# Precheck 8: Display CSV summary with access control information
+- name: Display CSV summary with access control
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      CSV SUMMARY & ACCESS CONTROL PLAN
+      ========================================
+
+      Total users: {{ users_csv.dict | length }}
+      Users: {{ users_csv.dict.keys() | list | join(', ') }}
+
+      Access Control Configuration:
+
+      🔧 SYSADMIN USERS (Password + SSH Key + Sudo):
+      {% for user, data in users_csv.dict.items() %}
+      {% if 'sysadmin' in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('')).split(',') %}
+      - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}
+      {% endif %}
+      {% endfor %}
+
+      🔑 SSH KEY ONLY USERS (No Password, No Sudo):
+      {% for user, data in users_csv.dict.items() %}
+      {% if 'sysadmin' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('')).split(',') %}
+      - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}
+      {% endif %}
+      {% endfor %}
+
+      ========================================
+  delegate_to: localhost
+  run_once: true
+
+# Precheck 9: Validate SSH key format
+- name: Validate SSH key format
+  ansible.builtin.fail:
+    msg: "Invalid SSH key format for user {{ item.key }}. Expected format: ssh-ed25519 [key] [email] or ssh-rsa [key] [email]"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: >
+    item.value.key is defined and
+    item.value.key != "" and
+    item.value.key is not none and
+    not item.value.key.startswith('ssh-ed25519 ') and
+    not item.value.key.startswith('ssh-rsa ') and
+    not item.value.key.startswith('ecdsa-sha2-nistp256 ') and
+    not item.value.key.startswith('ecdsa-sha2-nistp384 ') and
+    not item.value.key.startswith('ecdsa-sha2-nistp521 ')
+  delegate_to: localhost
+  run_once: true
+
+# Precheck 10: Debug users without SSH keys
+- name: Debug users without SSH keys
+  ansible.builtin.debug:
+    msg: "User {{ item.key }} has no SSH key configured"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: item.value.key is not defined or item.value.key == "" or item.value.key is none
   delegate_to: localhost
   run_once: true

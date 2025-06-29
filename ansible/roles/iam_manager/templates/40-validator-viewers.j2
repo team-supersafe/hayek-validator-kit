@@ -1,0 +1,51 @@
+# Validator Viewers - Read-only access for monitoring and status checking
+# This file is managed by Ansible - DO NOT EDIT MANUALLY
+
+# Service status commands (read-only)
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/systemctl status {{ validator_service | default('sol.service') }}
+
+# Package management (read-only)
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+
+# Log viewing commands (read-only)
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u {{ validator_service | default('sol.service') }} --no-pager
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/tail -f {{ validator_log_file | default('/var/log/solana/validator.log') }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/tail -n 50 {{ validator_log_file | default('/var/log/solana/validator.log') }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/less {{ validator_log_file | default('/var/log/solana/validator.log') }}
+
+# Configuration viewing (read-only)
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/cat {{ validator_config_dir | default('/home/sol/.solana') }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ validator_config_dir | default('/home/sol/.solana') }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/find {{ validator_config_dir | default('/home/sol/.solana') }}
+
+# Process monitoring (read-only)
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ps aux
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/pgrep -f {{ validator_service | default('sol.service') }}
+
+# Disk space monitoring (read-only)
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/df -h
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_data_dir | default('/mnt/ledger') }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_accounts_dir | default('/mnt/accounts') }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -lah {{ validator_data_dir | default('/mnt/ledger') }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -lah {{ validator_accounts_dir | default('/mnt/accounts') }}
+
+# Network monitoring (read-only)
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/netstat -tulpn
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ss -tulpn
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/curl
+
+# System resource monitoring (read-only)
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/free -h
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/uptime
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/who
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/last
+
+# Performance monitoring (read-only)
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/iostat
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/vmstat
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/mpstat
+
+# File system monitoring (read-only)
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ validator_snapshots_dir | default('/mnt/snapshots') }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_snapshots_dir | default('/mnt/snapshots') }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/find {{ validator_snapshots_dir | default('/mnt/snapshots') }}

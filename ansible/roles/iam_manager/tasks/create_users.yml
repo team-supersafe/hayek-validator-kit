@@ -1,55 +1,77 @@
 ---
-# Create users from CSV data
-- name: Create users from CSV
+# Create the dedicated 'sol' user for validator service
+- name: Create sol user for validator service
   ansible.builtin.user:
-    name: "{{ item.key }}"
+    name: sol
     shell: /bin/bash
     state: present
-  loop: "{{ users_csv.dict | dict2items }}"
-  when: item.value.create_user | default(true)
+    system: true
+    create_home: true
+    home: /home/sol
+  no_log: true
+
+# Create validator directories and set ownership to sol user
+- name: Create validator directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: sol
+    group: sol
+    mode: '0755'
+  loop:
+    - /mnt/ledger
+    - /mnt/accounts
+    - /mnt/snapshots
+    - /home/sol/.solana
+    - /home/sol/.ssh
+  no_log: true
+
+# Set SSH directory permissions for sol user
+- name: Set SSH directory permissions for sol user
+  ansible.builtin.file:
+    path: /home/sol/.ssh
+    mode: '0700'
+    owner: sol
+    group: sol
   no_log: true
 
 # Get unique groups from CSV
 - name: Get unique groups
   ansible.builtin.set_fact:
-    unique_groups: "{{ (users_csv.dict.values() | map(attribute='group_a') | list + users_csv.dict.values() | map(attribute='group_b') | list) | select('string') | unique | list }}"
+    unique_groups: "{{ (users_csv.dict.values() | map(attribute='group_a') | list + users_csv.dict.values() | map(attribute='group_b') | list + users_csv.dict.values() | map(attribute='group_c') | list) | select('string') | unique | list }}"
   no_log: true
 
-# Create groups from CSV
-- name: Create groups from CSV
+# Debug unique groups
+- name: Debug unique groups
+  ansible.builtin.debug:
+    msg: "Unique groups found: {{ unique_groups }}"
+  no_log: true
+
+# Create RBAC groups from CSV
+- name: Create RBAC groups from CSV
   ansible.builtin.group:
     name: "{{ item | lower }}"
     state: present
   loop: "{{ unique_groups }}"
-  when: item != ""
+  when: item != "" and item is not none and item | length > 0
   no_log: true
 
-# Add users to groups
-- name: Add users to groups
+# Create users from CSV data with RBAC groups
+- name: Create users from CSV
   ansible.builtin.user:
     name: "{{ item.key }}"
-    groups: "{{ (item.value.group_a | default('') | lower + ',' + item.value.group_b | default('') | lower) | regex_replace('^,|,$', '') | regex_replace(',,', ',') | regex_replace('^$', '') }}"
+    shell: /bin/bash
+    state: present
+    groups: "{{ (item.value.group_a | default('') + ',' + item.value.group_b | default('') + ',' + item.value.group_c | default('')) | regex_replace('^,|,$', '') | regex_replace(',,', ',') | regex_replace('^$', '') }}"
     append: true
   loop: "{{ users_csv.dict | dict2items }}"
-  when: item.value.create_user | default(true) and ((item.value.group_a | default('') != '') or (item.value.group_b | default('') != ''))
   no_log: true
 
-# Set passwords for users
-- name: Set passwords for users
-  ansible.builtin.user:
-    name: "{{ item.key }}"
-    password: "{{ user_passwords[item.key] | password_hash('sha512') }}"
-    update_password: always
+# Debug user group assignments
+- name: Debug user group assignments
+  ansible.builtin.debug:
+    msg: "User {{ item.key }} assigned to groups: {{ (item.value.group_a | default('') + ',' + item.value.group_b | default('') + ',' + item.value.group_c | default('')) | regex_replace('^,|,$', '') | regex_replace(',,', ',') | regex_replace('^$', '') }}"
   loop: "{{ users_csv.dict | dict2items }}"
-  when: item.value.create_user | default(true)
-  no_log: true
-
-# Configure password expiration for users
-- name: Configure password expiration for users
-  ansible.builtin.command: "chage -d 0 {{ item.key }}"
-  loop: "{{ users_csv.dict | dict2items }}"
-  when: item.value.create_user | default(true)
-  changed_when: false
   no_log: true
 
 # Create ssh directories for users
@@ -61,20 +83,108 @@
     owner: "{{ item.key }}"
     group: "{{ item.key }}"
   loop: "{{ users_csv.dict | dict2items }}"
-  when: item.value.create_user | default(true)
   no_log: true
 
-# Add SSH authorized keys
+# Add SSH authorized keys (extract key from format with email)
+- name: Debug SSH key processing
+  ansible.builtin.debug:
+    msg: "Processing SSH key for user {{ item.key }}: {{ item.value.key }}"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: item.value.key is defined and item.value.key != "" and item.value.key is not none and item.value.key | length > 0
+  no_log: false
+
+- name: Extract SSH key part
+  ansible.builtin.set_fact:
+    ssh_keys: "{{ ssh_keys | default({}) | combine({item.key: (item.value.key.split(' ')[:2] | join(' '))}) }}"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: >
+    item.value.key is defined and
+    item.value.key != "" and
+    item.value.key is not none and
+    item.value.key | length > 0 and
+    (item.value.key.startswith('ssh-ed25519 ') or
+     item.value.key.startswith('ssh-rsa ') or
+     item.value.key.startswith('ecdsa-sha2-nistp256 ') or
+     item.value.key.startswith('ecdsa-sha2-nistp384 ') or
+     item.value.key.startswith('ecdsa-sha2-nistp521 '))
+  no_log: false
+
+- name: Debug extracted SSH keys
+  ansible.builtin.debug:
+    msg: "Extracted SSH key for {{ item.key }}: {{ ssh_keys[item.key] }}"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: >
+    item.value.key is defined and
+    item.value.key != "" and
+    item.value.key is not none and
+    item.value.key | length > 0 and
+    (item.value.key.startswith('ssh-ed25519 ') or
+     item.value.key.startswith('ssh-rsa ') or
+     item.value.key.startswith('ecdsa-sha2-nistp256 ') or
+     item.value.key.startswith('ecdsa-sha2-nistp384 ') or
+     item.value.key.startswith('ecdsa-sha2-nistp521 '))
+  no_log: false
+
 - name: Add authorized keys
   ansible.posix.authorized_key:
     user: "{{ item.key }}"
-    key: "{{ item.value.key }}"
+    key: "{{ ssh_keys[item.key] }}"
+    state: present
   loop: "{{ users_csv.dict | dict2items }}"
-  when: item.value.create_user | default(true) and item.value.key is defined and item.value.key != ""
-  no_log: true
+  when: >
+    item.value.key is defined and
+    item.value.key != "" and
+    item.value.key is not none and
+    item.value.key | length > 0 and
+    (item.value.key.startswith('ssh-ed25519 ') or
+     item.value.key.startswith('ssh-rsa ') or
+     item.value.key.startswith('ecdsa-sha2-nistp256 ') or
+     item.value.key.startswith('ecdsa-sha2-nistp384 ') or
+     item.value.key.startswith('ecdsa-sha2-nistp521 '))
+  no_log: false
+  register: ssh_key_result
+  ignore_errors: true
 
-# Set ubuntu user password expiration
-- name: Set password expiration for ubuntu user
-  ansible.builtin.command: chage -M 1 ubuntu
-  changed_when: false
+- name: Debug SSH key results
+  ansible.builtin.debug:
+    var: ssh_key_result
+  when: ssh_key_result is defined
+  no_log: false
+
+- name: Debug users skipped due to invalid SSH keys
+  ansible.builtin.debug:
+    msg: "Skipping SSH key for user {{ item.key }} - invalid or empty key: '{{ item.value.key }}'"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: >
+    not (item.value.key is defined and
+    item.value.key != "" and
+    item.value.key is not none and
+    item.value.key | length > 0 and
+    (item.value.key.startswith('ssh-ed25519 ') or
+     item.value.key.startswith('ssh-rsa ') or
+     item.value.key.startswith('ecdsa-sha2-nistp256 ') or
+     item.value.key.startswith('ecdsa-sha2-nistp384 ') or
+     item.value.key.startswith('ecdsa-sha2-nistp521 ')))
+  no_log: false
+
+# Set proper permissions for authorized_keys files
+- name: Set authorized_keys permissions
+  ansible.builtin.file:
+    path: "/home/{{ item.key }}/.ssh/authorized_keys"
+    mode: '0600'
+    owner: "{{ item.key }}"
+    group: "{{ item.key }}"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: >
+    item.value.key is defined and
+    item.value.key != "" and
+    item.value.key is not none and
+    item.value.key | length > 0 and
+    (item.value.key.startswith('ssh-ed25519 ') or
+     item.value.key.startswith('ssh-rsa ') or
+     item.value.key.startswith('ecdsa-sha2-nistp256 ') or
+     item.value.key.startswith('ecdsa-sha2-nistp384 ') or
+     item.value.key.startswith('ecdsa-sha2-nistp521 ')) and
+    ssh_keys is defined and
+    ssh_keys[item.key] is defined
   no_log: true

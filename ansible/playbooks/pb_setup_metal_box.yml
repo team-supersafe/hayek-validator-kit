@@ -9,8 +9,8 @@
 # ansible-playbook -i solana_new_metal_box.yml playbooks/pb_setup_metal_box.yml
 
 - name: Setup Metal Box Server
-  hosts: new_metal_box
-  user: ubuntu
+  hosts: new-metal-box
+  user: root
   become: true
   pre_tasks:
     # Gather system facts to get server information

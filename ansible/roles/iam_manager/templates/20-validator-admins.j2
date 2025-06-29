@@ -1,0 +1,86 @@
+# Validator Admins - Complete validator management without system access
+# This file is managed by Ansible - DO NOT EDIT MANUALLY
+
+# Service control commands
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl start {{ validator_service | default('sol.service') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop {{ validator_service | default('sol.service') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart {{ validator_service | default('sol.service') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable {{ validator_service | default('sol.service') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable {{ validator_service | default('sol.service') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl status {{ validator_service | default('sol.service') }}
+
+# Package management commands
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt-get install
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt-get upgrade
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt-get remove
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt-get autoremove
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/snap install
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/snap remove
+
+# Development tools and utilities
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/curl
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/wget
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/git
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/cargo
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/rustup
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/rustc
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/cargo install
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/cargo build
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/cargo update
+
+# Build tools and dependencies
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/make
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/cmake
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/gcc
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/g++
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/clang
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/llvm-as
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/llvm-link
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/llvm-opt
+
+# Protobuf tools
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/protoc
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/protobuf-compiler
+
+# Log management
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u {{ validator_service | default('sol.service') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/tail -f {{ validator_log_file | default('/var/log/solana/validator.log') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/less {{ validator_log_file | default('/var/log/solana/validator.log') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/grep -r {{ validator_log_dir | default('/var/log/solana') }}
+
+# Configuration management
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/cp {{ validator_config_dir | default('/home/sol/.solana') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/mv {{ validator_config_dir | default('/home/sol/.solana') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_config_dir | default('/home/sol/.solana') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_config_dir | default('/home/sol/.solana') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/chown {{ validator_config_dir | default('/home/sol/.solana') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_config_dir | default('/home/sol/.solana') }}
+
+# Key management
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/solana-keygen
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/solana-genesis
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/solana-validator
+
+# Directory management
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_data_dir | default('/mnt/ledger') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_accounts_dir | default('/mnt/accounts') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_snapshots_dir | default('/mnt/snapshots') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_data_dir | default('/mnt/ledger') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_accounts_dir | default('/mnt/accounts') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_snapshots_dir | default('/mnt/snapshots') }}
+
+# Process management
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/pkill -f {{ validator_service | default('sol.service') }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/kill -9
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/renice
+
+# Network configuration (validator-specific)
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/iptables -A INPUT -p tcp --dport {{ validator_rpc_port | default('8899') }} -j ACCEPT
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/iptables -A INPUT -p tcp --dport {{ validator_gossip_port | default('8001') }} -j ACCEPT
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/iptables -A INPUT -p tcp --dport {{ validator_metrics_port | default('8080') }} -j ACCEPT
+
+# Monitoring and debugging
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/strace -p
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/lsof
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/netstat -tulpn

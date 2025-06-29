@@ -1,0 +1,40 @@
+# Validator Operators - Operational tasks without installation/uninstallation capabilities
+# This file is managed by Ansible - DO NOT EDIT MANUALLY
+
+# Service control commands
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl start {{ validator_service | default('sol.service') }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop {{ validator_service | default('sol.service') }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart {{ validator_service | default('sol.service') }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl status {{ validator_service | default('sol.service') }}
+
+# Package management (limited)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+
+# Log viewing commands
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u {{ validator_service | default('sol.service') }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/tail -f {{ validator_log_file | default('/var/log/solana/validator.log') }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/tail -n 100 {{ validator_log_file | default('/var/log/solana/validator.log') }}
+
+# Performance monitoring commands
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ps aux
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/top
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/htop
+
+# Configuration viewing (read-only)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cat {{ validator_config_dir | default('/home/sol/.solana') }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ validator_config_dir | default('/home/sol/.solana') }}
+
+# Disk space monitoring
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/df -h
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_data_dir | default('/mnt/ledger') }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_accounts_dir | default('/mnt/accounts') }}
+
+# Network monitoring
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/netstat -tulpn
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ss -tulpn
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/curl
+
+# System resource monitoring
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/free -h
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/vmstat
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/iostat
