@@ -3,10 +3,6 @@
 - name: Precheck role imputs
   import_tasks: precheck.yml
 
-# Initial cleanup of any temporary files or previous failed states
-- name: Cleanup
-  import_tasks: cleanup.yml
-
 # Create system users, assign groups, and configure SSH access
 - name: Create users
   import_tasks: create_users.yml
@@ -15,9 +11,9 @@
 - name: Configure RBAC sudoers
   import_tasks: configure_sudoers.yml
 
-# Final cleanup of any temporary files created during execution
-- name: Cleanup
-  import_tasks: cleanup.yml
+# Configure password self-service for sysadmin users
+- name: Setup password self-service
+  import_tasks: setup_pss.yml
 
 # Disable ubuntu user and block SSH access
 - name: Disable ubuntu user

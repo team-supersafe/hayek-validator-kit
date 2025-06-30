@@ -5,9 +5,8 @@ iam_groups: []
 # Validator configuration defaults
 solana_user: sol
 validator_service: sol.service
-validator_log_file: /var/log/solana/validator.log
+validator_log_file: /home/sol/logs/agave-validator.log
 validator_config_dir: /home/sol/.solana
 validator_data_dir: /mnt/ledger
 validator_accounts_dir: /mnt/accounts
 validator_snapshots_dir: /mnt/snapshots
-validator_metrics_port: 8899

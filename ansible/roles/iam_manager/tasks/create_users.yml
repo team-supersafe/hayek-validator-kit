@@ -91,7 +91,7 @@
     msg: "Processing SSH key for user {{ item.key }}: {{ item.value.key }}"
   loop: "{{ users_csv.dict | dict2items }}"
   when: item.value.key is defined and item.value.key != "" and item.value.key is not none and item.value.key | length > 0
-  no_log: false
+  no_log: true
 
 - name: Extract SSH key part
   ansible.builtin.set_fact:
@@ -107,7 +107,7 @@
      item.value.key.startswith('ecdsa-sha2-nistp256 ') or
      item.value.key.startswith('ecdsa-sha2-nistp384 ') or
      item.value.key.startswith('ecdsa-sha2-nistp521 '))
-  no_log: false
+  no_log: true
 
 - name: Debug extracted SSH keys
   ansible.builtin.debug:
@@ -123,7 +123,7 @@
      item.value.key.startswith('ecdsa-sha2-nistp256 ') or
      item.value.key.startswith('ecdsa-sha2-nistp384 ') or
      item.value.key.startswith('ecdsa-sha2-nistp521 '))
-  no_log: false
+  no_log: true
 
 - name: Add authorized keys
   ansible.posix.authorized_key:
@@ -149,7 +149,7 @@
   ansible.builtin.debug:
     var: ssh_key_result
   when: ssh_key_result is defined
-  no_log: false
+  no_log: true
 
 - name: Debug users skipped due to invalid SSH keys
   ansible.builtin.debug:
@@ -187,4 +187,11 @@
      item.value.key.startswith('ecdsa-sha2-nistp521 ')) and
     ssh_keys is defined and
     ssh_keys[item.key] is defined
+  no_log: true
+
+# Unlock user accounts by setting a temporary password and then unlocking
+- name: Unlock user accounts
+  ansible.builtin.command: "usermod -p '*' {{ item.key }}"
+  loop: "{{ users_csv.dict | dict2items }}"
+  changed_when: false
   no_log: true

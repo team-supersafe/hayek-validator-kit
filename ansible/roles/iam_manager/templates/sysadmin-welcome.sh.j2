@@ -1,0 +1,17 @@
+#!/bin/bash
+# Sysadmin Welcome Script - Password reset instructions
+# This file is managed by Ansible - DO NOT EDIT MANUALLY
+
+# Check if current user is in sysadmin group
+if groups | grep -q sysadmin; then
+    echo ""
+    echo "==============================================================================="
+    echo "                              PASSWORD MANAGEMENT"
+    echo "==============================================================================="
+    echo "To change your password, use: sudo reset-my-password"
+    echo ""
+    echo "This command allows you to reset your password without entering your current"
+    echo "sudo password. It's a self-service feature for your convenience."
+    echo "==============================================================================="
+    echo ""
+fi

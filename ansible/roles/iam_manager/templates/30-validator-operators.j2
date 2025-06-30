@@ -1,40 +1,48 @@
-# Validator Operators - Operational tasks without installation/uninstallation capabilities
+# Validator Operators - Service management and monitoring
 # This file is managed by Ansible - DO NOT EDIT MANUALLY
 
 # Service control commands
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl start {{ validator_service | default('sol.service') }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop {{ validator_service | default('sol.service') }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart {{ validator_service | default('sol.service') }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl status {{ validator_service | default('sol.service') }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl start {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl status {{ validator_service }}
 
-# Package management (limited)
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+# Process management
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/pkill -f {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/kill -9
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/renice
 
-# Log viewing commands
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u {{ validator_service | default('sol.service') }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/tail -f {{ validator_log_file | default('/var/log/solana/validator.log') }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/tail -n 100 {{ validator_log_file | default('/var/log/solana/validator.log') }}
-
-# Performance monitoring commands
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ps aux
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/top
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/htop
+# Log management
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/tail -f {{ validator_log_file }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/tail -n 100 {{ validator_log_file }}
 
 # Configuration viewing (read-only)
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cat {{ validator_config_dir | default('/home/sol/.solana') }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ validator_config_dir | default('/home/sol/.solana') }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cat {{ validator_config_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ validator_config_dir }}
 
-# Disk space monitoring
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/df -h
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_data_dir | default('/mnt/ledger') }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_accounts_dir | default('/mnt/accounts') }}
+# Directory space monitoring
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_data_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_accounts_dir }}
 
 # Network monitoring
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/netstat -tulpn
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ss -tulpn
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/curl
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/lsof -i
 
-# System resource monitoring
+# System monitoring
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/top -n 1
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/htop
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/free -h
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/vmstat
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/iostat
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/df -h
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/uptime
+
+# Process monitoring
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ps aux
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/pgrep -f {{ validator_service }}
+
+# File monitoring
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ls -lah {{ validator_data_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ls -lah {{ validator_accounts_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/find {{ validator_data_dir }} -name "*.log" -type f
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/find {{ validator_accounts_dir }} -name "*.log" -type f
