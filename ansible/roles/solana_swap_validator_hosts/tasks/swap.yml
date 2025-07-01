@@ -1,53 +1,62 @@
 ---
 - name: swap - Get pre-swap vote account stats
   block:
-    - name: swap - Determine Solana cluster parameter
-      ansible.builtin.set_fact:
-        solana_cluster_param: >-
-          {%- if 'solana_mainnet' in group_names -%}
-          -um
-          {%- elif 'solana_testnet' in group_names -%}
-          -ut
-          {%- elif 'solana_localnet' in group_names -%}
-          -ul
-          {%- else -%}
-          -ul
-          {%- endif -%}
+    - name: summary - Debug var source_primary_pubkey
+      ansible.builtin.debug:
+        msg: "Value of source_primary_pubkey: {{ source_primary_pubkey }}"
+      delegate_to: localhost
       run_once: true
 
-    - name: swap - Get validator identity pubkey
-      ansible.builtin.command: >
-        solana-keygen pubkey {{ source_host_primary_target_identity_path }}
-      register: validator_identity_pubkey
-      environment:
-        PATH: "{{ solana_install_dir }}"
-      when: inventory_hostname == source_host
-      changed_when: false
-
-    - name: swap - Get vote account address
+    - name: swap - Get vote account address from validator identity (fallback)
       ansible.builtin.shell: |
-        solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json | jq -r '.validators[] | select(.identityPubkey == "{{ validator_identity_pubkey.stdout }}") | .voteAccountPubkey'
-      register: vote_account_address_result
-      when: inventory_hostname == source_host
+        solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json | jq -r '.validators[] | select(.identityPubkey == "{{ source_primary_pubkey }}") | .voteAccountPubkey'
+      register: fallback_vote_account_address
+      when:
+        - (source_vote_pubkey is not defined or source_vote_pubkey == '')
+        - source_primary_pubkey is defined
+        - source_primary_pubkey != ''
       delegate_to: localhost
       changed_when: false
+      check_mode: false
+
+    - name: swap - Set source_vote_pubkey from fallback if needed
+      ansible.builtin.set_fact:
+        source_vote_pubkey: "{{ fallback_vote_account_address.stdout }}"
+      when:
+        - (source_vote_pubkey is not defined or source_vote_pubkey == '')
+        - fallback_vote_account_address is defined
+        - fallback_vote_account_address.stdout is defined
+        - fallback_vote_account_address.stdout != ''
+      run_once: true
+
+    - name: summary - Debug var source_vote_pubkey
+      ansible.builtin.debug:
+        msg: "Value of source_vote_pubkey: {{ source_vote_pubkey }}"
+      delegate_to: localhost
+      run_once: true
 
     - name: swap - Get vote account data from source validator
-      ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ vote_account_address_result.stdout }} --output json
+      ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ source_vote_pubkey }} --output json
       register: source_vote_account_before
       when: inventory_hostname == source_host
       delegate_to: localhost
       changed_when: false
+      check_mode: false
 
     - name: swap - Parse vote account data before swap
       ansible.builtin.set_fact:
         vote_account_before: "{{ source_vote_account_before.stdout | from_json }}"
-      when: inventory_hostname == source_host
+      when: 
+        - inventory_hostname == source_host
+        - source_vote_account_before.stdout is defined
+        - source_vote_account_before.stdout != ''
 
     - name: swap - Make vote account data before swap available globally
       ansible.builtin.set_fact:
-        vote_account_before: "{{ hostvars[source_host]['vote_account_before'] }}"
+        vote_account_before: "{{ vote_account_before }}"
       run_once: true
+      when:
+        - vote_account_before is defined
 
     - name: swap - Store pre-swap stats
       ansible.builtin.set_fact:
@@ -60,6 +69,10 @@
               vote_account_before.epochVotingHistory[-1].maxCreditsPerSlot
             }}
       run_once: true
+      when:
+        - vote_account_before is defined
+        - vote_account_before.epochVotingHistory is defined
+        - vote_account_before.epochVotingHistory | length > 0
 
     - name: swap - Display pre-swap stats
       ansible.builtin.debug:
@@ -67,11 +80,19 @@
           ===============================================
           PRE-SWAP STATS
           ===============================================
+          {% if pre_swap_stats is defined %}
           Epoch: {{ pre_swap_stats.epoch }}
           Credits Earned: {{ pre_swap_stats.credits_earned }}
           Max Possible Credits: {{ pre_swap_stats.max_possible_credits }}
+          {% else %}
+          Pre-swap stats could not be retrieved.
+          This may be due to network connectivity issues or the validator not being active.
+          {% endif %}
           ===============================================
       run_once: true
+  when:
+    - source_primary_pubkey is defined
+    - source_primary_pubkey != ''
 
 - name: swap - Wait for Restart Window and Unstake Source Validator
   block:
@@ -83,6 +104,8 @@
       environment:
         PATH: "{{ solana_install_dir }}"
       when: inventory_hostname == source_host
+      register: wait_restart_result
+      failed_when: wait_restart_result.rc != 0
 
     - name: swap - Switch to unstaked identity on source
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_hot_spare_identity_path }}
@@ -97,6 +120,12 @@
         state: link
         force: true
       when: inventory_hostname == source_host
+      register: wait_and_unstake_result
+
+    - name: set fact if Restart Window and Unstake Source succeeded
+      ansible.builtin.set_fact:
+        wait_and_unstake_success: true
+      when: wait_and_unstake_result is not failed
 
 - name: swap - Transfer Tower File from Source to Destination
   block:
@@ -127,6 +156,13 @@
       become: false
       ignore_errors: "{{ ansible_check_mode }}"
       when: inventory_hostname == destination_host
+      register: transfer_tower_result
+
+    - name: set fact if tower transfer succeeded
+      ansible.builtin.set_fact:
+        tower_transfer_success: true
+      when: transfer_tower_result is not failed
+  when: wait_and_unstake_success | default(false)
 
 - name: swap - Promote Destination to Primary Target Validator
   block:
@@ -143,3 +179,4 @@
         state: link
         force: true
       when: inventory_hostname == destination_host
+  when: tower_transfer_success | default(false)

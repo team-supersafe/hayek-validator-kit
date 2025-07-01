@@ -14,5 +14,9 @@
 - name: Import verify tasks
   ansible.builtin.import_tasks: verify.yml
 
+- name: Import deprovision tasks if requested
+  ansible.builtin.import_tasks: deprovision_source_host.yml
+  when: deprovision_source_host is defined and deprovision_source_host == "true"
+
 - name: Import summary tasks
   ansible.builtin.import_tasks: summary.yml

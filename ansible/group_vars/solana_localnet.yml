@@ -23,6 +23,9 @@ restart_max_delinquent_stake: 10
 # Minimum time (in seconds) validator must be idle before allowing restart (0 = no delay)
 restart_min_idle_time: 0
 
+# Maximum percentage of credits loss allowed for automatic deprovisioning of source host
+credits_loss_threshold: 6
+
 solana_gossip_entrypoints:
   - gossip-entrypoint:8001
 
