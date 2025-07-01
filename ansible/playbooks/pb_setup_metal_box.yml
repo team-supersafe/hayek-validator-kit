@@ -6,11 +6,14 @@
 # ------
 # Run from /ansible directory:
 #
-# ansible-playbook -i solana_new_metal_box.yml playbooks/pb_setup_metal_box.yml
+# ansible-playbook playbooks/pb_setup_metal_box.yml \
+#   -i solana_new_metal_box.yml \
+#   -e "target_host=new-metal-box" \
+#   -e "ansible_user=ubuntu"
 
 - name: Setup Metal Box Server
-  hosts: new-metal-box
-  user: root
+  hosts: "{{ target_host }}"
+  user: "{{ ansible_user }}"
   become: true
   pre_tasks:
     # Gather system facts to get server information

@@ -117,6 +117,7 @@
     not item.value.key.startswith('ecdsa-sha2-nistp384 ') and
     not item.value.key.startswith('ecdsa-sha2-nistp521 ')
   delegate_to: localhost
+  no_log: true
   run_once: true
 
 # Precheck 10: Debug users without SSH keys
@@ -126,4 +127,5 @@
   loop: "{{ users_csv.dict | dict2items }}"
   when: item.value.key is not defined or item.value.key == "" or item.value.key is none
   delegate_to: localhost
+  no_log: true
   run_once: true

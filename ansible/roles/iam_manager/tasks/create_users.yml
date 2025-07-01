@@ -2,37 +2,12 @@
 # Create the dedicated 'sol' user for validator service
 - name: Create sol user for validator service
   ansible.builtin.user:
-    name: sol
+    name: "{{ solana_user }}"
     shell: /bin/bash
     state: present
     system: true
     create_home: true
-    home: /home/sol
-  no_log: true
-
-# Create validator directories and set ownership to sol user
-- name: Create validator directories
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: sol
-    group: sol
-    mode: '0755'
-  loop:
-    - "{{ validator_ledger_dir }}"
-    - "{{ validator_accounts_dir }}"
-    - "{{ validator_snapshots_dir }}"
-    - "{{ validator_config_dir }}"
-    - /home/sol/.ssh
-  no_log: true
-
-# Set SSH directory permissions for sol user
-- name: Set SSH directory permissions for sol user
-  ansible.builtin.file:
-    path: /home/sol/.ssh
-    mode: '0700'
-    owner: sol
-    group: sol
+    home: /home/{{ solana_user }}
   no_log: true
 
 # Get unique groups from CSV
@@ -189,9 +164,4 @@
     ssh_keys[item.key] is defined
   no_log: true
 
-# Unlock user accounts by setting a temporary password and then unlocking
-- name: Unlock user accounts
-  ansible.builtin.command: "usermod -p '*' {{ item.key }}"
-  loop: "{{ users_csv.dict | dict2items }}"
-  changed_when: false
-  no_log: true
+
