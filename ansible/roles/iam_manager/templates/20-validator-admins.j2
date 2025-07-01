@@ -63,10 +63,10 @@
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/solana-validator
 
 # Directory management
-%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_data_dir }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_ledger_dir }}
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_accounts_dir }}
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_snapshots_dir }}
-%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_data_dir }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_ledger_dir }}
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_accounts_dir }}
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_snapshots_dir }}
 

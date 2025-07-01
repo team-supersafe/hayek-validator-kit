@@ -9,7 +9,7 @@
 
 - name: Setup server users
   hosts: new-metal-box
-  user: root
+  user: ubuntu
   become: true
   pre_tasks:
     # Gather system facts to get server information

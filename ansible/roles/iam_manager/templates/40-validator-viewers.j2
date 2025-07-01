@@ -19,9 +19,9 @@
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/pgrep -f {{ validator_service }}
 
 # Directory space monitoring
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_data_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_ledger_dir }}
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/du -sh {{ validator_accounts_dir }}
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -lah {{ validator_data_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -lah {{ validator_ledger_dir }}
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -lah {{ validator_accounts_dir }}
 
 # Network monitoring (read-only)
@@ -40,9 +40,9 @@
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/pgrep -f {{ validator_service }}
 
 # File monitoring (read-only)
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -lah {{ validator_data_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -lah {{ validator_ledger_dir }}
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -lah {{ validator_accounts_dir }}
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/find {{ validator_data_dir }} -name "*.log" -type f
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/find {{ validator_ledger_dir }} -name "*.log" -type f
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/find {{ validator_accounts_dir }} -name "*.log" -type f
 
 # Snapshot monitoring (read-only)

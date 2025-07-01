@@ -19,10 +19,10 @@
     group: sol
     mode: '0755'
   loop:
-    - /mnt/ledger
-    - /mnt/accounts
-    - /mnt/snapshots
-    - /home/sol/.solana
+    - "{{ validator_ledger_dir }}"
+    - "{{ validator_accounts_dir }}"
+    - "{{ validator_snapshots_dir }}"
+    - "{{ validator_config_dir }}"
     - /home/sol/.ssh
   no_log: true
 
@@ -45,7 +45,7 @@
 - name: Debug unique groups
   ansible.builtin.debug:
     msg: "Unique groups found: {{ unique_groups }}"
-  no_log: true
+  no_log: false
 
 # Create RBAC groups from CSV
 - name: Create RBAC groups from CSV
@@ -141,7 +141,7 @@
      item.value.key.startswith('ecdsa-sha2-nistp256 ') or
      item.value.key.startswith('ecdsa-sha2-nistp384 ') or
      item.value.key.startswith('ecdsa-sha2-nistp521 '))
-  no_log: false
+  no_log: true
   register: ssh_key_result
   ignore_errors: true
 
@@ -165,7 +165,7 @@
      item.value.key.startswith('ecdsa-sha2-nistp256 ') or
      item.value.key.startswith('ecdsa-sha2-nistp384 ') or
      item.value.key.startswith('ecdsa-sha2-nistp521 ')))
-  no_log: false
+  no_log: true
 
 # Set proper permissions for authorized_keys files
 - name: Set authorized_keys permissions
