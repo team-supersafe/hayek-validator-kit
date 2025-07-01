@@ -180,7 +180,7 @@ services:
     tty: true
     volumes:
       - ..:/hayek-validator-kit
-      - ~/.new-metal-box-secrets:/root/.new-metal-box-secrets
+      - ~/new-metal-box:/root/new-metal-box # Users CSV file
       - ~/.config/solana/id.json:/root/.config/solana/id_maybe.json:ro # Solana default CLI keypair
       - ~/.validator-keys:/root/.validator-keys # TODO: harden permissions
     environment:
