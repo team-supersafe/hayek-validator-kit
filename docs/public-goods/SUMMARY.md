@@ -30,7 +30,7 @@
   * [Inspecting Logs](validator-operations/metrics-and-monitoring/inspecting-logs.md)
 * [Stake Management](validator-operations/validator-stake/README.md)
   * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
-  * [SFDP](validator-operations/validator-stake/sfdp.md)
+  * [Delegation Programs](validator-operations/validator-stake/sfdp.md)
   * [Liquid Staking](validator-operations/validator-stake/liquid-staking.md)
 * [Performance](validator-operations/performance.md)
 
