@@ -103,3 +103,113 @@ Jun 18 00:00:00 node-01-nyc systemd[1]: logrotate.service: Main process exited, 
 Jun 18 00:00:00 node-01-nyc systemd[1]: logrotate.service: Failed with result 'exit-code'.
 Jun 18 00:00:00 node-01-nyc systemd[1]: Failed to start logrotate.service - Rotate log files.
 ```
+
+
+
+## Solana Audit Logs
+
+Solana validators generate comprehensive audit logs that are crucial for monitoring validator performance, detecting anomalies, and maintaining operational security. These logs provide detailed insights into validator operations, consensus participation, and network interactions.\
+
+
+### Initial Startup Monitoring
+
+After starting the validator service, immediately check the logs to verify proper initialization:
+
+```batch
+tail -f /home/sol/logs/solana-validator.log
+```
+
+If the validator is running correctly, you should immediately see snapshot download progress indicating the validator is synchronizing with the network:
+
+<pre class="language-bash"><code class="lang-bash"><strong>[2025-05-12T14:05:19.401330892Z INFO solana_file_download] downloaded 3671850120 bytes 74.9% 51429008.0 bytes/s 
+</strong><strong>[2025-05-12T14:05:19.401330892Z INFO solana_file_download] downloaded 3962403844 bytes 80.9% 48357188.0 bytes/s
+</strong></code></pre>
+
+{% hint style="warning" %}
+The `tail` command will continue to display the output of a file as the file changes. You should see a continuous stream of log output as your validator runs. Keep an eye out for any lines that say `ERROR`.
+{% endhint %}
+
+
+
+## Jito Relayer Logs
+
+To verify correct operation of the validator when connected to the Jito relayer and block engine, monitor these specific metrics in the validator logfile:
+
+```bash
+# Check block engine connection status
+grep "block_engine_stage-stats" /home/sol/logs/agave-validator.log
+
+# Check relayer connection status
+grep "relayer_stage-stats" /home/sol/logs/agave-validator.log
+```
+
+These metrics are emitted once per second when properly connected:
+
+`block_engine_stage-stats`: Indicates active connection to the block engine
+
+```bash
+[2025-06-28T04:00:00.656865431Z INFO solana_metrics::metrics] datapoint: block_engine_stage-stats num_bundles=0i num_bundle_packets=0i num_packets=0i num_empty_packets=0i 
+[2025-06-28T04:00:01.657793890Z INFO solana_metrics::metrics] datapoint: block_engine_stage-stats num_bundles=0i num_bundle_packets=0i num_packets=0i num_empty_packets=0i 
+[2025-06-28T04:00:02.657700858Z INFO solana_metrics::metrics] datapoint: block_engine_stage-stats num_bundles=0i num_bundle_packets=0i num_packets=0i num_empty_packets=0i 
+```
+
+`relayer_stage-stats`: Indicates active connection to the relayer
+
+```bash
+[2025-06-28T04:00:00.082448233Z INFO solana_metrics::metrics] datapoint: relayer_stage-stats num_empty_messages=0i num_packets=0i num_heartbeats=10i 
+[2025-06-28T04:00:01.083020235Z INFO solana_metrics::metrics] datapoint: relayer_stage-stats num_empty_messages=0i num_packets=0i num_heartbeats=10i 
+[2025-06-28T04:00:02.082646345Z INFO solana_metrics::metrics] datapoint: relayer_stage-stats num_empty_messages=0i num_packets=0i num_heartbeats=10i 
+```
+
+
+
+### Additional Verification of Correct Operation
+
+After monitoring the server to identify that it's functioning correctly, in addition to the [Jito documentation](https://jito-foundation.gitbook.io/mev/jito-solana/checking-correct-operation) that indicates when it's running well in Co-hosted relayer, we also capture several lines in the Solana logs that indicate it's functioning correctly:
+
+```bash
+[2025-06-25T23:35:44.137520941Z INFO solana_core::proxy::block_engine_stage] connected to packet and bundle stream 
+[2025-06-25T23:35:44.347979394Z INFO solana_metrics::metrics] datapoint: block_engine_stage-tokens_generated url="https://dallas.testnet.block-engine.jito.wtf" count=1i 
+[2025-06-25T23:35:44.347996934Z INFO solana_metrics::metrics] datapoint: block_engine_stage-stats num_bundles=0i num_bundle_packets=0i num_packets=0i num_empty_packets=0i 
+[2025-06-25T23:35:49.080362644Z INFO solana_metrics::metrics] datapoint: relayer_stage-tokens_generated url="http://127.0.0.1:11226" count=1i 
+[2025-06-25T23:35:49.081398037Z INFO solana_core::proxy::relayer_stage] connected to packet stream 
+[2025-06-25T23:35:49.082514240Z INFO solana_metrics::metrics] datapoint: relayer_stage-stats num_empty_messages=0i num_packets=0i num_heartbeats=0i
+```
+
+### Monitoring Slot Leadership
+
+Another log that we should consider to verify that the relayer is functioning correctly is the validator's behavior when it becomes a leader slot .
+
+```bash
+tail -f /home/sol/logs/agave-validator.log | awk '/LEADER CHANGE/ && /hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ/'
+```
+
+When your validator becomes the slot leader, you should see a message like this:
+
+```bash
+[2025-06-26T04:09:57.211398263Z INFO  solana_core::replay_stage] LEADER CHANGE at slot: 341906872 leader: hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ. I am now the leader
+```
+
+Once the slot is produced, you should see a message indicating that your validator is no longer the leader:
+
+```bash
+[2025-06-26T04:09:59.436728586Z INFO solana_core::replay_stage] LEADER CHANGE at slot: 341906876 leader: ftvrBRwgptfes3AYAX1yMYnZHJsU4FA9d3KsvnXfqZk. I am no longer the leader
+```
+
+### **Authentication Error Handling**
+
+It's also good to check the logs of the jito-relayer service:
+
+```bash
+journalctl -u jito-relayer.service -f
+```
+
+If you encounter this error: `error authenticating and connecting`
+
+```bash
+Jun 04 18:11:19 node-01-nyc run-jito-relayer.sh[337027]: [2025-06-04T22:11:19.744Z 
+ERROR jito_block_engine::block_engine] error authenticating and connecting: 
+AuthServiceFailure("status: PermissionDenied, message: "The supplied pubkey is not authorized to generate a token.", details: [], metadata: MetadataMap { headers: {"content-type": "application/grpc", "server": "jito-block-engine", "x-request-received-at": "2025-06-04T22:11:19.743Z", "content-length": "0", "date": "Wed, 04 Jun 2025 22:11:19 GMT", "x-envoy-upstream-service-time": "0"} }")
+```
+
+You must contact the Jito team and provide them with the pubkey that you will use for the relayer.
