@@ -32,7 +32,8 @@
   * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
   * [Delegation Programs](validator-operations/validator-stake/sfdp.md)
   * [Liquid Staking](validator-operations/validator-stake/liquid-staking.md)
-* [Performance](validator-operations/performance.md)
+* [Performance](validator-operations/performance/README.md)
+  * [Cluster Halting](validator-operations/performance/cluster-halting.md)
 
 ## Security Infrastructure
 
