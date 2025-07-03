@@ -1,0 +1,58 @@
+---
+# Create group-specific users for Ansible become_user operations
+# These users will be used with become_user in playbooks, not for SSH access
+# They will belong to their respective groups and inherit group permissions
+
+# Get unique groups from CSV (same logic as create_users.yml)
+- name: Get unique groups for group users
+  ansible.builtin.set_fact:
+    unique_groups: "{{ (users_csv.dict.values() | map(attribute='group_a') | list + users_csv.dict.values() | map(attribute='group_b') | list + users_csv.dict.values() | map(attribute='group_c') | list) | select('string') | unique | list }}"
+  no_log: true
+
+# Debug unique groups for group users
+- name: Debug unique groups for group users
+  ansible.builtin.debug:
+    msg: "Creating group users for: {{ unique_groups }}"
+  no_log: false
+
+# Create group-specific users (one per group)
+- name: Create group-specific users for Ansible operations
+  ansible.builtin.user:
+    name: "{{ item | lower }}"
+    shell: /usr/sbin/nologin  # No SSH access
+    state: present
+    system: true
+    create_home: false  # No home directory needed
+    groups: "{{ item | lower }}"
+    append: true
+  loop: "{{ unique_groups }}"
+  when: item != "" and item is not none and item | length > 0
+  no_log: true
+
+# Debug created group users
+- name: Debug created group users
+  ansible.builtin.debug:
+    msg: "Created group user: {{ item | lower }} for group: {{ item | lower }}"
+  loop: "{{ unique_groups }}"
+  when: item != "" and item is not none and item | length > 0
+  no_log: false
+
+# Block SSH access for group users in sshd_config
+- name: Block SSH access for group users
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^DenyUsers .*{{ item | lower }}.*'
+    line: 'DenyUsers {{ item | lower }}'
+    state: present
+  loop: "{{ unique_groups }}"
+  when: item != "" and item is not none and item | length > 0
+  register: ssh_config_changed
+  no_log: true
+
+# Restart SSH service if config changed
+- name: Restart SSH service if config changed
+  ansible.builtin.service:
+    name: sshd
+    state: restarted
+  when: ssh_config_changed.changed
+  no_log: true
