@@ -14,6 +14,9 @@ exec agave-validator \
 {% if only_known_rpc is defined and only_known_rpc %}
 --only-known-rpc \
 {% endif %}
+{% if solana_cluster == "testnet" and expected_shred_version is defined %}
+--expected-shred-version {{ expected_shred_version }} \
+{% endif %}
 --ledger {{ ledger_path }} \
 --accounts {{ accounts_path }} \
 --snapshots {{ snapshots_path }} \

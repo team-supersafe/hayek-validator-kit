@@ -26,6 +26,8 @@ restart_min_idle_time: 5
 # Maximum percentage of credits loss allowed for automatic deprovisioning of source host
 credits_loss_threshold: 4
 
+expected_shred_version: 9065
+
 solana_gossip_entrypoints:
   - entrypoint.testnet.solana.com:8001
   - entrypoint2.testnet.solana.com:8001
