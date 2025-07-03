@@ -15,6 +15,10 @@
 - name: Setup password self-service
   import_tasks: setup_pss.yml
 
+# Configure ISO 27001 compliant audit logging
+- name: Setup audit logging
+  import_tasks: setup_audit_logs.yml
+
 # Disable ubuntu user and block SSH access
 - name: Disable ubuntu user
   import_tasks: disable_ubuntu.yml
