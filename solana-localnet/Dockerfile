@@ -23,6 +23,7 @@ RUN rm -rf /var/lib/apt/lists/* && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
        apt-utils \
+       at \
        cron \
        locales \
        logrotate \
