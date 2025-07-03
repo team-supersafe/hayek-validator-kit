@@ -1,60 +1,26 @@
 ---
 # Configure password self-service for sysadmin users
-# This implements the self-service password reset pattern for sudo users
+# This implements the self-service password reset pattern for sudo users with enhanced security
 
-# Create the password reset wrapper script with security questions
-- name: Create password reset wrapper script
-  ansible.builtin.copy:
-    dest: /usr/local/sbin/reset-my-password
-    content: |
-      #!/usr/bin/env bash
-      # Change the *calling* user's password only, protected by a per‑user security question.
-      set -euo pipefail
-
-      SEC_DIR=/etc/password-security
-      FILE="$SEC_DIR/$SUDO_USER"
-
-      # Ensure the directory exists (root‑only, 700).
-      sudo mkdir -p "$SEC_DIR"
-      sudo chmod 700 "$SEC_DIR"
-
-      sha256() { printf %s "$1" | sha256sum | awk '{print $1}'; }
-
-      # ------------------------------------------------------------------------------
-      # ❶ First‑time run – ask user to create a question + answer
-      # ------------------------------------------------------------------------------
-      if [[ ! -f "$FILE" ]]; then
-        echo "🔐  First‑time setup: create your personal security question."
-        read -rp " Question: " question
-        while true; do
-          read -srp " Answer (will not echo): " answer1 && echo
-          read -srp " Repeat answer: "          answer2 && echo
-          [[ "$answer1" == "$answer2" ]] && break
-          echo "Answers don't match. Try again."
-        done
-        salt=$(openssl rand -hex 8)
-        hash=$(sha256 "$answer1$salt")
-        printf '%s,%s,%s\n' "$question" "$salt" "$hash" | sudo tee "$FILE" > /dev/null
-        sudo chmod 600 "$FILE"
-        echo "✔️  Security question saved."
-      else
-        # ---------------------------------------------------------------------------
-        # ❷ Validate answer
-        # ---------------------------------------------------------------------------
-        IFS=',' read -r question salt hash < "$FILE"
-        echo "Security check ➜  $question"
-        read -srp " Answer: " answer && echo
-        [[ $(sha256 "$answer$salt") == "$hash" ]] || { echo "❌  Incorrect answer."; exit 1; }
-      fi
-
-      # ---------------------------------------------------------------------------
-      # ❸ Change the password (no old‑pw prompt because we run as root)
-      # ---------------------------------------------------------------------------
-      exec /usr/bin/passwd "$SUDO_USER"
-    mode: '0755'
+# Create the password security directory
+- name: Create password security directory
+  ansible.builtin.file:
+    path: "{{ password_security_dir | default('/etc/password-security') }}"
+    state: directory
+    mode: '0700'
     owner: root
     group: root
   no_log: true
+
+# Create the password reset wrapper script using Jinja2 template
+- name: Create password reset wrapper script
+  ansible.builtin.template:
+    src: reset-my-password.j2
+    dest: /usr/local/sbin/reset-my-password
+    mode: '0755'
+    owner: root
+    group: root
+  no_log: false
 
 # Set immutability on the script to prevent modifications
 - name: Set script immutability
@@ -71,12 +37,4 @@
     validate: 'visudo -cf %s'
   no_log: true
 
-# Note: The sysadmin sudoers template now uses:
-# - NOPASSWD: PASSWD_SELF (allows password reset without password)
-# - ALL (requires password for all other sudo commands)
-#
-# This means:
-# 1. Users can run 'sudo reset-my-password' without password
-# 2. All other sudo commands require the user's password
-# 3. Users can create their password when they want using the reset script
-# 4. Additional security with personal security questions
+
