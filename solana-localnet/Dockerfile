@@ -23,6 +23,7 @@ RUN rm -rf /var/lib/apt/lists/* && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
        apt-utils \
+       at \
        cron \
        locales \
        logrotate \
@@ -83,6 +84,14 @@ RUN locale-gen en_US.UTF-8
 # Install Ansible via Pip.
 ENV PIP_PACKAGES="ansible passlib"
 RUN pip3 install $PIP_PACKAGES
+
+# Install dependencies with proper lock handling
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        bc \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set workdir
 RUN mkdir -p /opt/code/tools
