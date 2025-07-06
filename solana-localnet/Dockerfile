@@ -25,6 +25,8 @@ RUN rm -rf /var/lib/apt/lists/* && \
        apt-utils \
        at \
        cron \
+       clang \
+       libclang-dev \
        locales \
        logrotate \
        python3-dev \
