@@ -1,3 +1,3 @@
 ---
 # CSV file containing user information (username, groups, email, etc.)
-users_file: "~/new-metal-box/users.csv"
+users_file: "~/new-metal-box/{{ csv_file }}"

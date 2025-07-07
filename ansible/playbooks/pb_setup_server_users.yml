@@ -9,7 +9,8 @@
 # ansible-playbook playbooks/pb_setup_server_users.yml \
 #   -i solana_new_metal_box.yml \
 #   -e "target_host=new-metal-box" \
-#   -e "ansible_user=ubuntu"
+#   -e "ansible_user=ubuntu" \
+#   -e "csv_file=users2.csv"  # REQUIRED: specify the CSV filename
 
 - name: Setup server users
   hosts: "{{ target_host }}"
