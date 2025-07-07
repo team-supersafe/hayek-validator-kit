@@ -25,8 +25,6 @@ KEYS_BASE_DIR="$HOME/keys"
 LEDGER_PATH="/mnt/ledger"
 
 # Ensure log output directory exists early
-mkdir -p "$HOME/logs"
-chmod 700 "$HOME/logs"
 touch "$LOG_FILE" "$OUTPUT_FILE"
 chmod 600 "$LOG_FILE" "$OUTPUT_FILE"
 
