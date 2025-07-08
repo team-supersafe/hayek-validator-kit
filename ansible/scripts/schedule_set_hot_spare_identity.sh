@@ -214,6 +214,7 @@ main() {
 #!/bin/bash
 export PATH=${SOLANA_INSTALL_DIR}/active_release/bin:\$PATH
 agave-validator --ledger $LEDGER_PATH set-identity $IDENTITY_FILE > $OUTPUT_FILE 2>&1
+rm -- "\$0"
 EOF
     chmod +x "$JOB_SCRIPT"
 
