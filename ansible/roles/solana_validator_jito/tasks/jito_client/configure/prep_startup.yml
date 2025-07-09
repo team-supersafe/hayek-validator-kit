@@ -63,6 +63,15 @@
         group: "{{ solana_user }}"
       ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode
 
+    - name: Copy schedule_set_hot_spare_identity.sh script to remote
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../scripts/schedule_set_hot_spare_identity.sh"
+        dest: "{{ scripts_dir }}"
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      ignore_errors: "{{ ansible_check_mode }}"
+
   rescue:
     - name: Fail with error message
       ansible.builtin.fail:
