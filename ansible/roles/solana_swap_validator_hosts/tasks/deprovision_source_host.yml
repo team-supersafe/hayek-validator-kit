@@ -1,0 +1,177 @@
+---
+- name: Determine value of should_deprovision_host from deprovision_source_host
+  ansible.builtin.set_fact:
+    should_deprovision_host: "{{ deprovision_source_host | default(false) }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Convert credits loss percentage to float
+  ansible.builtin.set_fact:
+    credits_loss_percentage_float: "{{ credits_loss_percentage | float }}"
+  delegate_to: localhost
+  run_once: true
+  when: should_deprovision_host
+
+- name: Automatic deprovisioning for low credits loss
+  block:
+    - name: Debug message for automatic deprovisioning
+      ansible.builtin.debug:
+        msg: "Credits loss is below {{ credits_loss_threshold }}% ({{ credits_loss_percentage }}%). Proceeding with automatic deprovisioning."
+      delegate_to: localhost
+  when: should_deprovision_host and (credits_loss_percentage | float) < (credits_loss_threshold | float)
+
+- name: Manual confirmation for high credits loss
+  block:
+    - name: Show warning about high credits loss
+      ansible.builtin.debug:
+        msg: |
+          Credits loss is {{ credits_loss_percentage }}% which is above the {{ credits_loss_threshold }}% threshold.
+          The swap operation was not smooth and cleaning the source host immediately could be risky,
+          especially if the destination host does not show steady voting performance.
+          You might want to:
+          1. Watch the voting performance of the destination host for 2-5 minutes
+          2. Consider a reverse identity swap if performance is not stable
+
+          Do you want to proceed with deprovisioning the source host anyway?
+      delegate_to: localhost
+
+    - name: Prompt for confirmation
+      ansible.builtin.pause:
+        prompt: "Type 'yes' to proceed with deprovisioning or 'no' to abort"
+      delegate_to: localhost
+
+    - name: Check confirmation response
+      ansible.builtin.fail:
+        msg: "Deprovisioning aborted by user due to high credits loss"
+      when: confirm_deprovision != "yes"
+      delegate_to: localhost
+
+    - name: Debug message for manual deprovisioning
+      ansible.builtin.debug:
+        msg: "Proceeding with manual deprovisioning after user confirmation."
+      delegate_to: localhost
+  when: should_deprovision_host and (credits_loss_percentage | float) >= (credits_loss_threshold | float)
+
+- name: Execute deprovisioning tasks
+  block:
+    - name: Debug message for starting cleanup
+      ansible.builtin.debug:
+        msg: "Starting cleanup of validator-related data, services, and keys from source host"
+      delegate_to: localhost
+
+    # Step 1 - Stop and remove services
+    - name: Step 1 - Service - Check if validator service exists and is running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+      register: service_status
+      changed_when: false
+      failed_when: false
+      delegate_to: "{{ source_host }}"
+
+    - name: Step 1 - Service - Stop validator service if running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        state: stopped
+        enabled: false
+      register: stop_result
+      retries: 3
+      delay: 10
+      until: stop_result is success
+      when: service_status.status.ActiveState == "active"
+      become: true
+      delegate_to: "{{ source_host }}"
+
+    - name: Step 1 - Service - Check the jito-relayer service status
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+      register: relayer_service_status
+      changed_when: false
+      failed_when: false
+      delegate_to: "{{ source_host }}"
+
+    - name: Step 1 - Service - Stop jito-relayer service if running
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+        state: stopped
+        enabled: false
+      register: relayer_stop_result
+      retries: 3
+      delay: 10
+      until: relayer_stop_result is success
+      when: relayer_service_status.status.ActiveState == "active"
+      become: true
+      delegate_to: "{{ source_host }}"
+
+    # Step 2 - Reload systemd daemon
+    - name: Step 2 - Service - Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+      become: true
+      delegate_to: "{{ source_host }}"
+
+    # Step 3 - Remove related directories
+    - name: Step 3 - Directories - Remove logs directory
+      ansible.builtin.file:
+        path: "{{ logs_dir }}"
+        state: absent
+      become: true
+      failed_when: false
+      delegate_to: "{{ source_host }}"
+
+    - name: Step 3 - Directories - Securely overwrite primary identity file
+      ansible.builtin.command: >
+        solana-keygen new --no-bip39-passphrase --force -o {{ source_host_keys_dir }}/primary-target-identity.json
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      register: overwrite_result
+      loop: "{{ range(10) | list }}"
+      loop_control:
+        label: "Overwrite pass {{ item }}/10"
+      become: true
+      delegate_to: "{{ source_host }}"
+      when:
+        - source_host_keys_dir is defined
+        - source_host_keys_dir != ''
+
+    - name: Step 3 - Directories - Remove validator identity symlink
+      ansible.builtin.file:
+        path: "{{ source_host_identity_link_path }}"
+        state: absent
+      become: true
+      delegate_to: "{{ source_host }}"
+
+    - name: Step 3 - Directories - Remove validator keys directory
+      ansible.builtin.file:
+        path: "{{ source_host_keys_dir }}"
+        state: absent
+      become: true
+      delegate_to: "{{ source_host }}"
+
+    - name: Step 3 - Directories - Remove host keys directory
+      ansible.builtin.file:
+        path: "{{ keys_dir }}"
+        state: absent
+      become: true
+      failed_when: false
+      delegate_to: "{{ source_host }}"
+
+    # Step 4 - Remove SSH access (commented out for verification purposes)
+    - name: Step 4 - SSH - Slurp sol user's public key
+      ansible.builtin.slurp:
+        src: "{{ solana_user_dir }}/.ssh/authorized_keys"
+      register: pubkey
+      delegate_to: "{{ source_host }}"
+
+    - name: Step 4 - SSH - Remove SSH authorized key for sol user
+      ansible.posix.authorized_key:
+        user: sol
+        key: "{{ pubkey.content | b64decode }}"
+        state: absent
+      become: true
+      delegate_to: "{{ source_host }}"
+
+    - name: Debug message for cleanup completion
+      ansible.builtin.debug:
+        msg: "Successfully cleaned sensitive data from source host"
+      delegate_to: localhost
+  when: should_deprovision_host
