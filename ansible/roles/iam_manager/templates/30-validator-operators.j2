@@ -1,12 +1,22 @@
 # Validator Operators - Service management and monitoring
 # This file is managed by Ansible - DO NOT EDIT MANUALLY
 
+# Allow group members to become validator_operators without password
+# This is required for Ansible to use become_user: validator_operators
+
+# Allow Ansible to execute temporary modules (required for become)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/python3
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/python
+%validator_operators ALL=(ALL) NOPASSWD: /tmp/*
+%validator_operators ALL=(ALL) NOPASSWD: /var/tmp/*
+
 # Service control commands
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl start {{ validator_service }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop {{ validator_service }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart {{ validator_service }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl status {{ validator_service }}
-
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop cron
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl start cron
 # Process management
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/pkill -f {{ validator_service }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/kill -9

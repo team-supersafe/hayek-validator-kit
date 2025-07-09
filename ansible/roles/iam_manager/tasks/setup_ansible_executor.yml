@@ -1,0 +1,106 @@
+---
+# Setup dedicated ansible_executor user for Ansible automation
+# This user has full sudo access but no SSH or shell access
+
+- name: Create ansible_executor user
+  ansible.builtin.user:
+    name: ansible_executor
+    system: yes
+    shell: /usr/sbin/nologin
+    home: /home/ansible_executor
+    create_home: yes
+    groups:
+      - ansible_executor
+    password: "!"
+    state: present
+
+- name: Create ansible_executor group
+  ansible.builtin.group:
+    name: ansible_executor
+    system: yes
+    state: present
+
+- name: Set secure permissions on ansible_executor home directory
+  ansible.builtin.file:
+    path: /home/ansible_executor
+    owner: ansible_executor
+    group: ansible_executor
+    mode: '0700'
+    state: directory
+
+- name: Create .ssh directory for ansible_executor
+  ansible.builtin.file:
+    path: /home/ansible_executor/.ssh
+    owner: ansible_executor
+    group: ansible_executor
+    mode: '0700'
+    state: directory
+
+- name: Disable SSH access for ansible_executor
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "DenyUsers ansible_executor"
+    state: present
+    insertafter: "^#.*DenyUsers"
+  notify: restart ssh
+
+- name: Create authorized_keys file for ansible_executor (empty)
+  ansible.builtin.file:
+    path: /home/ansible_executor/.ssh/authorized_keys
+    owner: ansible_executor
+    group: ansible_executor
+    mode: '0600'
+    state: touch
+
+- name: Set immutable flag on authorized_keys to prevent modifications
+  ansible.builtin.command: chattr +i /home/ansible_executor/.ssh/authorized_keys
+  changed_when: false
+
+- name: Create audit log directory for ansible_executor
+  ansible.builtin.file:
+    path: /var/log/ansible-executor
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Create audit log file for ansible_executor
+  ansible.builtin.file:
+    path: /var/log/ansible-executor/audit.log
+    state: touch
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Add audit log rotation for ansible_executor
+  ansible.builtin.lineinfile:
+    path: /etc/logrotate.d/ansible-executor
+    line: |
+      /var/log/ansible-executor/audit.log {
+          daily
+          rotate 30
+          compress
+          delaycompress
+          missingok
+          notifempty
+          create 644 root root
+      }
+    create: yes
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Test ansible_executor user creation
+  ansible.builtin.command: id ansible_executor
+  register: ansible_executor_test
+  changed_when: false
+
+- name: Display ansible_executor user info
+  ansible.builtin.debug:
+    msg:
+      - "Ansible executor user created successfully"
+      - "User ID: {{ ansible_executor_test.stdout }}"
+      - "Shell: /usr/sbin/nologin (no shell access)"
+      - "SSH: Disabled via DenyUsers"
+      - "Sudo: Full access for Ansible automation"
+      - "Audit log: /var/log/ansible-executor/audit.log"

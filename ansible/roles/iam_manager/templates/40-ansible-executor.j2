@@ -1,0 +1,11 @@
+# Ansible Executor - Dedicated user for Ansible playbook execution
+# This file is managed by Ansible - DO NOT EDIT MANUALLY
+
+# Allow ansible_executor to execute all commands without password
+# This user is specifically designed for Ansible automation only
+# No SSH access, no shell access - only Ansible execution
+ansible_executor ALL=(ALL) NOPASSWD: ALL
+
+# Note: This user should only be used for Ansible automation
+# SSH access is disabled and shell is set to /usr/sbin/nologin
+# All operations are logged and audited
