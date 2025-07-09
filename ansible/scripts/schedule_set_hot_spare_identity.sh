@@ -62,14 +62,15 @@ validate_datetime() {
     local datetime
     datetime="$1"
 
-    # Basic validation - check if 'at' command can parse it
-    if ! echo "echo 'test'" | at "$datetime" 2>/dev/null; then
+    # Schedule a test job and get the job ID in one step
+    job_output=$(echo "echo 'test'" | at "$datetime" 2>&1)
+    if [ $? -ne 0 ]; then
         log_message "ERROR" "Invalid date/time format: '$datetime'. Please use format compatible with 'at' command."
         return 1
     fi
 
-    # Get the job ID and remove the test job
-    job_id=$(echo "echo 'test'" | at "$datetime" 2>/dev/null | awk '/job/ {print $2}')
+    # Extract job ID and remove the test job
+    job_id=$(echo "$job_output" | awk '/job/ {print $2}')
     if [[ -n "$job_id" ]]; then
         atrm "$job_id" 2>/dev/null || true
     fi
@@ -208,27 +209,20 @@ main() {
         exit 5
     fi
 
-    # Create temporary job script
-    JOB_SCRIPT=$(mktemp)
-    cat <<EOF > "$JOB_SCRIPT"
+    # Build the scheduled script content
+    SCHEDULED_SCRIPT=$(cat <<EOF
 #!/bin/bash
-export PATH=${SOLANA_INSTALL_DIR}/active_release/bin:\$PATH
+export PATH=${SOLANA_INSTALL_DIR}/active_release/bin:$PATH
 agave-validator --ledger $LEDGER_PATH set-identity $IDENTITY_FILE > $OUTPUT_FILE 2>&1
-rm -- "\$0"
 EOF
-    chmod +x "$JOB_SCRIPT"
+)
 
     # Schedule the job with better error handling
     local exit_code
     exit_code=0
     local job_output
-    job_output=''
 
-    if [ "$(whoami)" = "sol" ]; then
-        job_output=$(echo "$JOB_SCRIPT" | at "$SCHEDULED_TIME" 2>&1) || exit_code=$?
-    else
-        job_output=$(echo "$JOB_SCRIPT" | sudo -u sol at "$SCHEDULED_TIME" 2>&1) || exit_code=$?
-    fi
+    job_output=$(echo "$SCHEDULED_SCRIPT" | at "$SCHEDULED_TIME" 2>&1) || exit_code=$?
 
     if [ $exit_code -eq 0 ]; then
         # Extract job ID from output for better logging
