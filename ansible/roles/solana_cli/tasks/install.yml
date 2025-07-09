@@ -9,6 +9,7 @@
   become: true
   ansible.builtin.apt:
     name:
+      - at
       - jq
       - build-essential
       - pkg-config
