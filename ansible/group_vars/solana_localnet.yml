@@ -4,12 +4,12 @@ jito_urls:
   dallas:
     block_engine: "https://dallas.testnet.block-engine.jito.wtf"
     relayer: "http://dallas.testnet.relayer.jito.wtf:8100"
-    shred_receiver_addr: "141.98.218.45:1002"
+    shred_receiver_addr: "141.98.218.12:1002"
     ntp_server: "ntp.dallas.jito.wtf"
   newyork:
     block_engine: "https://ny.testnet.block-engine.jito.wtf"
     relayer: "http://ny.testnet.relayer.jito.wtf:8100"
-    shred_receiver_addr: "141.98.216.132:1002"
+    shred_receiver_addr: "64.130.35.224:1002"
     ntp_server: "ntp.dallas.jito.wtf"
 
 expected_genesis_hash: ""
@@ -22,6 +22,9 @@ poh_pinned_cpu_core: 2
 restart_max_delinquent_stake: 10
 # Minimum time (in seconds) validator must be idle before allowing restart (0 = no delay)
 restart_min_idle_time: 0
+
+# Maximum percentage of credits loss allowed for automatic deprovisioning of source host
+credits_loss_threshold: 6
 
 solana_gossip_entrypoints:
   - gossip-entrypoint:8001

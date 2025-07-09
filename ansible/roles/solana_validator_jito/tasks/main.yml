@@ -13,14 +13,9 @@
   tags: [solana_validator_jito, cleanup]
 
 # Jito relayer installation and configuration
-- when: jito_relayer_type == 'co-hosted'
-  block:
-    - name: Check for Co-hosted Relayer installation
-      import_tasks: jito_relayer_cohosted/install.yml
-    - name: Configure Co-hosted Relayer post installation
-      import_tasks: jito_relayer_cohosted/config.yml
-    - name: Verify Co-hosted Relayer installation and configuration are correct
-      import_tasks: jito_relayer_cohosted/verify.yml
+- name: Co-hosted Relayer installation
+  import_tasks: jito_relayer_cohosted/main.yml
+  when: jito_relayer_type == 'co-hosted'
 
 # Jito client installation and configuration
 - name: Setup Jito client

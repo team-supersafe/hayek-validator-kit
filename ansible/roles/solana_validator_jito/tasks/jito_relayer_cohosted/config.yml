@@ -1,6 +1,38 @@
 ---
+# Ensure firewall ports are open if needed
+- block:
+    - name: jito_relayer_cohosted - config - Ensure UFW is installed
+      become: true
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+      tags: [jito_relayer.config, jito_relayer.firewall]
+
+    - name: jito_relayer_cohosted - config - Ensure UFW is enabled
+      become: true
+      ansible.builtin.ufw:
+        state: enabled
+      tags: [jito_relayer.config, jito_relayer.firewall]
+
+    - name: jito_relayer_cohosted - config - Open UDP port 11228 for Jito relayer
+      become: true
+      ansible.builtin.ufw:
+        rule: allow
+        port: 11228
+        proto: udp
+      tags: [jito_relayer.config, jito_relayer.firewall]
+
+    - name: jito_relayer_cohosted - config - Open UDP port 11229 for Jito relayer
+      become: true
+      ansible.builtin.ufw:
+        rule: allow
+        port: 11229
+        proto: udp
+      tags: [jito_relayer.config, jito_relayer.firewall]
+  when: jito_relayer_open_ports_needed | default(false)
+
 # Service
-- name: Template Jito relayer systemd service file
+- name: jito_relayer_cohosted - config - Template Jito relayer systemd service file
   become: true
   ansible.builtin.template:
     src: jito-relayer.service.j2
@@ -11,14 +43,14 @@
   notify: "restart {{ jito_relayer_service_name }}"
   tags: [jito_relayer.config, jito_relayer.systemd]
 
-- name: Reload systemd to pick up new service
+- name: jito_relayer_cohosted - config - Reload systemd to pick up new service
   become: true
   ansible.builtin.systemd:
     daemon_reload: yes
   ignore_errors: yes
   tags: [jito_relayer.config, jito_relayer.systemd]
 
-- name: Enable Jito relayer service
+- name: jito_relayer_cohosted - config - Enable Jito relayer service
   become: true
   ansible.builtin.systemd:
     name: "{{ jito_relayer_service_name }}"

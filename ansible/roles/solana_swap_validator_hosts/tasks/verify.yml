@@ -71,30 +71,6 @@
     source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'].stdout_lines[0] | default('') }}"
   run_once: true
 
-- name: verify - Display Final State Summary
-  ansible.builtin.debug:
-    msg: |
-      ===============================================
-      VALIDATOR SWAP FINAL STATE VERIFICATION
-      ===============================================
-
-      Source Validator:
-      - Host: {{ source_host }} ({{ source_validator_name }})
-      - Running Identity: {{ source_host_identity_link_path }}
-        Pubkey: {{ source_running_pubkey | default('Not found') }}
-
-      Destination Validator:
-      - Host: {{ destination_host }} ({{ destination_validator_name }})
-      - Running Identity: {{ destination_host_identity_link_path }}
-        Pubkey: {{ destination_running_pubkey | default('Not found') }}
-
-      Please review that:
-      1. The running identity on {{ source_host }} ({{ source_validator_name }}) is the hot-spare identity
-      2. Primary Target Identity is running only in {{ destination_host }} ({{ destination_validator_name }})
-      ===============================================
-  delegate_to: localhost
-  run_once: true
-
 - name: verify - Verify source validator is using hot-spare identity
   ansible.builtin.fail:
     msg: |
@@ -120,3 +96,102 @@
     - destination_running_pubkey != ''
     - source_primary_pubkey != ''
   run_once: true
+
+- name: verify - Get vote account data after swap
+  block:
+    - name: verify - Determine Solana cluster parameter
+      ansible.builtin.set_fact:
+        solana_cluster_param: >-
+          {%- if 'solana_mainnet' in group_names -%}
+          -um
+          {%- elif 'solana_testnet' in group_names -%}
+          -ut
+          {%- elif 'solana_localnet' in group_names -%}
+          -ul
+          {%- else -%}
+          -ul
+          {%- endif -%}
+      run_once: true
+
+    - name: verify - Get validator identity pubkey at destination host
+      ansible.builtin.command: >
+        solana-keygen pubkey {{ destination_host_primary_target_identity_path }}
+      register: validator_identity_pubkey
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: inventory_hostname == destination_host
+      changed_when: false
+      check_mode: false
+
+    - name: verify - Get vote account address
+      ansible.builtin.shell: |
+        solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json | jq -r '.validators[] | select(.identityPubkey == "{{ validator_identity_pubkey.stdout }}") | .voteAccountPubkey'
+      register: vote_account_address_result
+      when: inventory_hostname == destination_host
+      delegate_to: localhost
+      changed_when: false
+      check_mode: false
+
+    - name: verify - Get vote account data from destination validator
+      ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ vote_account_address_result.stdout }} --output json
+      register: source_vote_account_after
+      when: inventory_hostname == destination_host
+      delegate_to: localhost
+      changed_when: false
+      check_mode: false
+
+    - name: verify - Parse vote account data after swap
+      ansible.builtin.set_fact:
+        vote_account_after: "{{ source_vote_account_after.stdout | from_json }}"
+      when: 
+        - inventory_hostname == destination_host
+        - source_vote_account_after.stdout is defined
+        - source_vote_account_after.stdout != ''
+
+    - name: verify - Make vote account data after swap available globally
+      ansible.builtin.set_fact:
+        vote_account_after: "{{ hostvars[destination_host]['vote_account_after'] }}"
+      run_once: true
+      when:
+        - hostvars[destination_host]['vote_account_after'] is defined
+
+    - name: verify - Store post-swap stats
+      ansible.builtin.set_fact:
+        post_swap_stats:
+          epoch: "{{ vote_account_after.epochVotingHistory[-1] }}"
+          credits_earned: "{{ vote_account_after.epochVotingHistory[-1].creditsEarned }}"
+          max_possible_credits: >-
+            {{
+              vote_account_after.epochVotingHistory[-1].slotsInEpoch *
+              vote_account_after.epochVotingHistory[-1].maxCreditsPerSlot
+            }}
+      run_once: true
+      when:
+        - vote_account_after is defined
+        - vote_account_after.epochVotingHistory is defined
+        - vote_account_after.epochVotingHistory | length > 0
+
+- name: verify - Calculate TVC impact
+  block:
+    - name: verify - Calculate missed credits
+      ansible.builtin.set_fact:
+        missed_credits: >-
+          {{
+            (post_swap_stats.credits_earned | int) - (pre_swap_stats.credits_earned | int)
+          }}
+        max_possible_credits: "{{ pre_swap_stats.max_possible_credits }}"
+      run_once: true
+      when:
+        - pre_swap_stats is defined
+        - post_swap_stats is defined
+
+    - name: verify - Calculate credits loss percentage
+      ansible.builtin.set_fact:
+        credits_loss_percentage: >-
+          {{
+            (missed_credits | int / pre_swap_stats.max_possible_credits | int * 100) | round(2)
+          }}
+      run_once: true
+      when:
+        - pre_swap_stats is defined
+        - missed_credits is defined
