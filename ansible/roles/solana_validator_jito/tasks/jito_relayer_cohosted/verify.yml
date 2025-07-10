@@ -23,7 +23,7 @@
   tags: [jito_relayer.verify]
 
 - name: jito_relayer_cohosted - verify - Get last 50 lines of Jito relayer logs
-  ansible.builtin.shell: journalctl -u {{ jito_relayer_service_name }} --no-pager | tail -n 50
+  ansible.builtin.shell: journalctl -u {{ jito_relayer_service_name }} --no-pager --since "10 seconds ago" | tail -n 50
   register: relayer_logs
   changed_when: false
   tags: [jito_relayer.verify]
