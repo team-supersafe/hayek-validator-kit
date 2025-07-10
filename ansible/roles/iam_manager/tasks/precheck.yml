@@ -23,7 +23,7 @@
 # Fails if the CSV is empty or missing required fields
 - name: Verify CSV data structure
   ansible.builtin.fail:
-    msg: "Invalid CSV structure. Required fields: user, key, group_a, group_b, group_c"
+    msg: "Invalid CSV structure. Required fields: user, key, group_a, group_b, group_c, group_d"
   when: >
     not (users_csv is defined and
     users_csv | length > 0)
@@ -42,6 +42,7 @@
     - group_a
     - group_b
     - group_c
+    - group_d
   delegate_to: localhost
   run_once: true
 
@@ -84,17 +85,24 @@
 
       Access Control Configuration:
 
-      🔧 SYSADMIN USERS (Password + SSH Key + Sudo):
+      🔧 SYSADMIN USERS (Password + SSH Key + Sudo + Password Self-Service):
       {% for user, data in users_csv.dict.items() %}
-      {% if 'sysadmin' in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('')).split(',') %}
-      - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}
+      {% if 'sysadmin' in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
+      {% endif %}
+      {% endfor %}
+
+      🤖 ANSIBLE_EXECUTOR USERS (Password + SSH Key + Sudo + Password Self-Service):
+      {% for user, data in users_csv.dict.items() %}
+      {% if 'ansible_executor' in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
       {% endif %}
       {% endfor %}
 
       🔑 SSH KEY ONLY USERS (No Password, No Sudo):
       {% for user, data in users_csv.dict.items() %}
-      {% if 'sysadmin' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('')).split(',') %}
-      - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}
+      {% if 'sysadmin' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') and 'ansible_executor' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
       {% endif %}
       {% endfor %}
 

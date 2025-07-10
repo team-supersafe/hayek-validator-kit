@@ -56,7 +56,6 @@
     mode: '0440'
     validate: 'visudo -cf %s'
   no_log: true
-
 # Configure sudo access for ansible_executor user
 - name: Configure sudo access for ansible_executor user
   ansible.builtin.template:
@@ -65,3 +64,4 @@
     mode: '0440'
     validate: 'visudo -cf %s'
   no_log: true
+

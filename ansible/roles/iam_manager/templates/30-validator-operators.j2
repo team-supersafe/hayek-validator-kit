@@ -4,12 +4,6 @@
 # Allow group members to become validator_operators without password
 # This is required for Ansible to use become_user: validator_operators
 
-# Allow Ansible to execute temporary modules (required for become)
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/python3
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/python
-%validator_operators ALL=(ALL) NOPASSWD: /tmp/*
-%validator_operators ALL=(ALL) NOPASSWD: /var/tmp/*
-
 # Service control commands
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl start {{ validator_service }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop {{ validator_service }}

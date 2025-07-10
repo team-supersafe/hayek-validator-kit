@@ -2,8 +2,8 @@
 # Sysadmin Welcome Script - Password reset instructions
 # This file is managed by Ansible - DO NOT EDIT MANUALLY
 
-# Check if current user is in sysadmin group
-if groups | grep -q sysadmin; then
+# Check if current user is in sysadmin or ansible_executor group
+if groups | grep -q sysadmin || groups | grep -q ansible_executor; then
     echo ""
     echo "==============================================================================="
     echo "                              PASSWORD MANAGEMENT"

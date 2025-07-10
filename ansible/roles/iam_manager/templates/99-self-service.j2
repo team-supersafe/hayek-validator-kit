@@ -7,3 +7,4 @@ Cmnd_Alias PASSWD_SELF = /usr/local/sbin/reset-my-password
 # Full system access for sysadmin group
 # NOPASSWD only for password self-service, password required for all other commands
 %sysadmin ALL=(ALL) NOPASSWD: PASSWD_SELF
+%ansible_executor ALL=(ALL) NOPASSWD: PASSWD_SELF

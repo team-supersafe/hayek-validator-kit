@@ -7,17 +7,9 @@
 - name: Create users
   import_tasks: create_users.yml
 
-# # Create group-specific users for Ansible become_user operations
-# - name: Create group users
-#   import_tasks: create_group_users.yml
-
 # Configure RBAC sudoers files
 - name: Configure RBAC sudoers
   import_tasks: configure_sudoers.yml
-
-# Setup dedicated ansible_executor user for automation
-- name: Setup ansible executor user
-  import_tasks: setup_ansible_executor.yml
 
 # Configure password self-service for sysadmin users
 - name: Setup password self-service
