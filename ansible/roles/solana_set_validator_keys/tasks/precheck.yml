@@ -1,0 +1,114 @@
+---
+# precheck.yml - solana_set_validator_keys
+
+- name: Ensure required variables are defined
+  ansible.builtin.assert:
+    that:
+      - source_validator_name is defined
+      - validator_type is defined
+      - validator_type in ['primary', 'hot-spare']
+    fail_msg: >
+      "The variables 'source_validator_name' and 'validator_type' must be defined. 'validator_type' must be 'primary' or 'hot-spare'."
+    success_msg: "source_validator_name: {{ source_validator_name }}, validator_type: {{ validator_type }}"
+
+- name: Set ansible_keys_dir and validator_keys_dir for source_validator_name
+  ansible.builtin.set_fact:
+    ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ source_validator_name }}"
+    validator_keys_dir: "{{ keys_dir }}/{{ source_validator_name }}"
+
+- name: Check required validator keypairs for source_validator_name
+  block:
+    - name: Check if primary-target-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/primary-target-identity.json"
+      register: primary_target_identity_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail if primary-target-identity.json is missing
+      ansible.builtin.fail:
+        msg: "primary-target-identity.json not found in {{ ansible_keys_dir }}"
+      when: not primary_target_identity_file.stat.exists
+
+    - name: Get primary target identity pubkey
+      ansible.builtin.command: solana-keygen pubkey {{ ansible_keys_dir }}/primary-target-identity.json
+      register: primary_target_pubkey
+      delegate_to: localhost
+      run_once: true
+
+    - name: Check if vote-account.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/vote-account.json"
+      register: vote_account_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail if vote-account.json is missing
+      ansible.builtin.fail:
+        msg: "vote-account.json not found in {{ ansible_keys_dir }}"
+      when: not vote_account_file.stat.exists
+
+    - name: Check if Jito Relayer Block Engine keypair exists
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
+      register: private_key_exists
+      delegate_to: localhost
+      run_once: true
+
+    - name: Warn if jito-relayer-block-eng.json is missing
+      ansible.builtin.debug:
+        msg: >
+          WARNING: jito-relayer-block-eng.json not found in {{ ansible_keys_dir }}.
+          The keypair will be generated later. When this happens, please be alert to copy
+          the public key from the console output as it needs to be registered with Jito
+          to whitelist our relayer.
+      when: not private_key_exists.stat.exists
+
+- name: Determine Solana cluster parameter
+  ansible.builtin.set_fact:
+    solana_cluster_param: >-
+      {%- if 'solana_mainnet' in group_names -%}
+      -um
+      {%- elif 'solana_testnet' in group_names -%}
+      -ut
+      {%- elif 'solana_localnet' in group_names -%}
+      -ul
+      {%- else -%}
+      -ul
+      {%- endif -%}
+  run_once: true
+
+- name: If validator_type is 'primary', check if primary identity is running elsewhere
+  block:
+    - name: Get all hosts in inventory
+      ansible.builtin.set_fact:
+        all_hosts: "{{ groups['all'] }}"
+      run_once: true
+
+    - name: Check running identity pubkey on each host
+      ansible.builtin.command: solana-keygen pubkey {{ keys_dir }}/{{ item }}/identity.json
+      register: running_identity_pubkey
+      failed_when: false
+      changed_when: false
+      delegate_to: "{{ item }}"
+      loop: "{{ all_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+      when: validator_type == 'primary'
+
+    - name: Set list of hosts running the primary identity
+      ansible.builtin.set_fact:
+        hosts_running_primary: >-
+          {{ running_identity_pubkey.results | selectattr('stdout', 'defined') | selectattr('stdout', 'equalto', primary_target_pubkey.stdout) | map(attribute='item') | list }}
+      run_once: true
+      when: validator_type == 'primary'
+
+    - name: Fail if primary identity is running on another host
+      ansible.builtin.fail:
+        msg: >
+          The desired state is 'primary', but the primary identity pubkey ({{ primary_target_pubkey.stdout }}) is currently running on the following host(s): {{ hosts_running_primary }}. Refusing to proceed to avoid slashing risk.
+      when:
+        - validator_type == 'primary'
+        - hosts_running_primary | length > 0
+        - (hosts_running_primary | difference([inventory_hostname])) | length > 0
+  when: validator_type == 'primary'

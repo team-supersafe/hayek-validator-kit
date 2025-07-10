@@ -1,0 +1,61 @@
+---
+# configure.yml - solana_set_validator_keys
+
+- name: Create identity.json symlink based on validator_type
+  ansible.builtin.file:
+    src: "{{ validator_keys_dir }}/{{ 'primary-target-identity.json' if validator_type == 'primary' else 'hot-spare-identity.json' }}"
+    dest: "{{ validator_keys_dir }}/identity.json"
+    state: link
+    force: true
+  become: true
+
+- name: Set validator script path
+  ansible.builtin.set_fact:
+    validator_script_path: "{{ scripts_dir }}/run-{{ source_validator_name }}.sh"
+
+- name: Get vote account public key
+  ansible.builtin.command: solana address -k {{ validator_keys_dir }}/vote-account.json
+  register: vote_account_cmd
+  delegate_to: localhost
+  run_once: true
+
+- name: Set vote account public key fact
+  ansible.builtin.set_fact:
+    vote_account_pubkey: "{{ vote_account_cmd.stdout }}"
+
+- name: Create validator startup script from template
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../roles/solana_validator_jito/templates/validator.startup.j2"
+    dest: "{{ validator_script_path }}"
+    mode: "0755"
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+  become: true
+
+- name: Rebuild jito-relayer systemd service unit
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../roles/solana_validator_jito/templates/jito-relayer.service.j2"
+    dest: "/etc/systemd/system/{{ jito_relayer_service_name }}.service"
+    mode: "0644"
+    owner: root
+    group: root
+  become: true
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: Start Jito relayer service
+  ansible.builtin.systemd:
+    name: "{{ jito_relayer_service_name }}"
+    enabled: true
+    state: started
+  become: true
+
+- name: Start validator service
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+    enabled: true
+    state: started
+  become: true

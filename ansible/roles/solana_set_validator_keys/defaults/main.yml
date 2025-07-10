@@ -1,0 +1,7 @@
+---
+# defaults file for solana_set_validator_keys
+# These should be overridden by playbook or inventory
+
+target_host: ""
+source_validator_name: ""
+validator_type: ""
