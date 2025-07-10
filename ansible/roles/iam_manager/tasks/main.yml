@@ -15,6 +15,10 @@
 - name: Setup password self-service
   import_tasks: setup_pss.yml
 
+# Create user permission files
+- name: Create user permission files
+  import_tasks: create_user_permissions_files.yml
+
 # Configure ISO 27001 compliant audit logging
 - name: Setup audit logging
   import_tasks: setup_audit_logs.yml

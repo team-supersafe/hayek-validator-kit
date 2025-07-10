@@ -23,7 +23,7 @@
 # Configure sysadmin-specific welcome script with password reset instructions
 - name: Configure sysadmin welcome script
   ansible.builtin.template:
-    src: sysadmin-welcome.sh.j2
+    src: user-welcome-bash.sh.j2
     dest: /etc/profile.d/sysadmin-welcome.sh
     mode: '0755'
     owner: root
