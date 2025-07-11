@@ -50,7 +50,7 @@
       changed_when: false
       check_mode: false
       run_once: true
-    
+
     - name: Set primary target public key
       ansible.builtin.set_fact:
         primary_target_pubkey: "{{ primary_target_pubkey_result.stdout }}"
@@ -109,6 +109,34 @@
         jito_relayer_block_engine_pubkey: "{{ jito_relayer_block_engine_pubkey_result.stdout }}"
       when: private_key_exists.stat.exists
 
+    - name: Check if hot-spare-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/hot-spare-identity.json"
+      register: hot_spare_identity_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: Warn if hot-spare-identity.json is missing
+      ansible.builtin.debug:
+        msg: >
+          WARNING: hot-spare-identity.json not found in {{ ansible_keys_dir }}.
+          This keypair will still be generated when copying the keys.
+      when: not hot_spare_identity_file.stat.exists
+
+    - name: Get hot spare identity pubkey
+      ansible.builtin.command: solana-keygen pubkey {{ ansible_keys_dir }}/hot-spare-identity.json
+      register: hot_spare_identity_pubkey_result
+      delegate_to: localhost
+      changed_when: false
+      check_mode: false
+      run_once: true
+      when: hot_spare_identity_file.stat.exists
+
+    - name: Set hot spare identity public key
+      ansible.builtin.set_fact:
+        hot_spare_identity_pubkey: "{{ hot_spare_identity_pubkey_result.stdout }}"
+      when: hot_spare_identity_file.stat.exists
+
 - name: Debug var primary_target_pubkey
   ansible.builtin.debug:
     msg: |
@@ -117,11 +145,36 @@
       ===============================================
       - Name: ({{ source_validator_name }})
       - Primary Target Identity: {{ primary_target_pubkey }}
+      - Hot Spare Identity: {{ hot_spare_identity_pubkey | default('Not found') }}
       - Vote account: {{ vote_account_pubkey }}
       - Jito Relayer Block Engine auth: {{ jito_relayer_block_engine_pubkey | default('Not found') }}
   delegate_to: localhost
   run_once: true
 
-# - name: If validator_type is 'primary', check if primary identity is running elsewhere
-#   block:
-#   when: validator_type == 'primary'
+- name: If validator_type is 'primary', check if primary identity is running elsewhere
+  block:
+    - name: Check if primary target identity is already running on the network
+      ansible.builtin.shell: |
+        solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json | jq -r '.validators[] | select(.identityPubkey == "{{ primary_target_pubkey }}") | .identityPubkey'
+      register: existing_primary_validator_check
+      delegate_to: localhost
+      changed_when: false
+      check_mode: false
+      run_once: true
+
+    - name: Fail if primary target identity is already running elsewhere
+      ansible.builtin.fail:
+        msg: |
+          CRITICAL: Primary target identity {{ primary_target_pubkey }} is already running on the network!
+          This would cause slashing if we start another validator with the same identity.
+          Please ensure the primary identity is not running anywhere else before proceeding.
+      when: existing_primary_validator_check.stdout != ''
+      run_once: true
+
+    - name: Debug primary identity safety check passed
+      ansible.builtin.debug:
+        msg: "✓ Primary target identity {{ primary_target_pubkey }} is not running elsewhere - safe to proceed"
+      when: existing_primary_validator_check.stdout == ''
+      run_once: true
+
+  when: validator_type == 'primary'
