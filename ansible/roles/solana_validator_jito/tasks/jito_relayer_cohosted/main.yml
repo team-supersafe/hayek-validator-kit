@@ -5,7 +5,6 @@
 
 - name: Install Jito relayer cohosted
   import_tasks: install.yml
-  when: relayer_installation_needed | default(false)
   tags: [jito_relayer, install]
 
 - name: Configure Jito relayer cohosted
