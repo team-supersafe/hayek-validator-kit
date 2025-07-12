@@ -137,7 +137,7 @@
         hot_spare_identity_pubkey: "{{ hot_spare_identity_pubkey_result.stdout }}"
       when: hot_spare_identity_file.stat.exists
 
-- name: Debug var primary_target_pubkey
+- name: Display source validator keyset information
   ansible.builtin.debug:
     msg: |
       ===============================================
@@ -153,28 +153,76 @@
 
 - name: If validator_type is 'primary', check if primary identity is running elsewhere
   block:
-    - name: Check if primary target identity is already running on the network
+    - name: Get target host IP address
+      ansible.builtin.setup:
+        filter: ansible_default_ipv4
+      register: target_host_facts
+
+    - name: Set target host IP
+      ansible.builtin.set_fact:
+        target_host_ip: "{{ target_host_facts.ansible_facts.ansible_default_ipv4.address }}"
+
+    - name: Check if primary target identity is running on other hosts
       ansible.builtin.shell: |
-        solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json | jq -r '.validators[] | select(.identityPubkey == "{{ primary_target_pubkey }}") | .identityPubkey'
-      register: existing_primary_validator_check
+        solana {{ solana_cluster_param }} gossip | grep "{{ primary_target_pubkey }}" | awk '{print $1}' | grep -v "{{ target_host_ip }}"
+      register: existing_primary_validator_on_other_hosts
       delegate_to: localhost
       changed_when: false
       check_mode: false
       run_once: true
+      ignore_errors: true
 
-    - name: Fail if primary target identity is already running elsewhere
+    - name: Fail if primary target identity is already running on other hosts
       ansible.builtin.fail:
         msg: |
-          CRITICAL: Primary target identity {{ primary_target_pubkey }} is already running on the network!
+          CRITICAL: Primary target identity {{ primary_target_pubkey }} is already running on other host(s)!
+          Found running on IP(s): {{ existing_primary_validator_on_other_hosts.stdout_lines | default([]) }}
           This would cause slashing if we start another validator with the same identity.
-          Please ensure the primary identity is not running anywhere else before proceeding.
-      when: existing_primary_validator_check.stdout != ''
+          Please ensure the primary identity is not running on other hosts before proceeding.
+      when: existing_primary_validator_on_other_hosts.stdout != ''
       run_once: true
 
     - name: Debug primary identity safety check passed
       ansible.builtin.debug:
-        msg: "✓ Primary target identity {{ primary_target_pubkey }} is not running elsewhere - safe to proceed"
-      when: existing_primary_validator_check.stdout == ''
+        msg: |
+          ✓ Primary target identity {{ primary_target_pubkey }} is not running on other hosts
+          Target host IP: {{ target_host_ip }}
+          Safe to proceed with validator setup/restart
+      when: existing_primary_validator_on_other_hosts.stdout == ''
       run_once: true
 
   when: validator_type == 'primary'
+
+- name: Check if target host is running co-hosted Jito relayer
+  block:
+    - name: Check Jito relayer systemd service status on target host
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name | default('jito-relayer') }}"
+      register: jito_relayer_service_status
+      ignore_errors: true
+
+    - name: Check Jito relayer process status on target host
+      ansible.builtin.shell: ps aux | grep jito-transaction-relayer | grep -v grep
+      register: jito_relayer_process_status
+      changed_when: false
+      ignore_errors: true
+
+    - name: Set fact for co-hosted Jito relayer running status
+      ansible.builtin.set_fact:
+        target_host_running_jito_relayer: >-
+          {{ (jito_relayer_service_status is not failed and
+              jito_relayer_service_status.status.ActiveState == 'active' and
+              jito_relayer_process_status is not failed and
+              jito_relayer_process_status.stdout_lines | length > 0) }}
+
+    - name: Debug Jito relayer status on target host
+      ansible.builtin.debug:
+        msg: |
+          ===============================================
+          TARGET HOST JITO RELAYER STATUS
+          ===============================================
+          - Service Exists: {{ jito_relayer_service_status is not failed }}
+          - Service Active: {{ jito_relayer_service_status.status.ActiveState | default('N/A') }}
+          - Service Enabled: {{ jito_relayer_service_status.status.UnitFileState | default('N/A') }}
+          - Process Running: {{ jito_relayer_process_status.stdout_lines | length > 0 }}
+          - Consensus - Co-hosted Relayer Running: {{ target_host_running_jito_relayer }}
