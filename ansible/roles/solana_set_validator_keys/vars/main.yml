@@ -1,2 +1,6 @@
 ---
 # role specific variables here
+
+validator_name: "{{ source_validator_name }}" # Name of the target host validator will match source_validator_name
+jito_relayer_user: "{{ solana_user | default('sol') }}" # User for Jito relayer service, defaults to 'sol'
+jito_relayer_install_dir: "{{ solana_user_dir }}/.local/share/jito-relayer/install/active_release"
