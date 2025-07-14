@@ -15,18 +15,6 @@
       {{ (group_names | select('match', '^solana_.*') | list | first | regex_replace('^solana_', '')) if (group_names | select('match', '^solana_.*') | list | length > 0) else 'localnet' }}
   run_once: true
 
-- name: precheck - Debug solana cluster parameter
-  ansible.builtin.debug:
-    msg: "solana_cluster_param: '{{ solana_cluster_param }}'"
-  delegate_to: localhost
-  run_once: true
-
-- name: precheck - Debug solana cluster name
-  ansible.builtin.debug:
-    msg: "solana_cluster: '{{ solana_cluster }}'"
-  delegate_to: localhost
-  run_once: true
-
 - name: precheck - Gather facts for localhost
   ansible.builtin.setup:
   delegate_to: localhost
@@ -36,6 +24,30 @@
   ansible.builtin.set_fact:
     ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ source_validator_name }}"
     validator_keys_dir: "{{ keys_dir }}/{{ source_validator_name }}"
+
+- name: precheck - Ensure a validator is installed
+  block:
+    - name: precheck - Check if validator binary exists
+      ansible.builtin.stat:
+        path: "{{ solana_install_dir }}/agave-validator"
+      register: solana_binary
+
+    - name: precheck - Get installed Solana validator version
+      ansible.builtin.command: "{{ solana_install_dir }}/agave-validator --version"
+      register: installed_version
+      changed_when: false
+      failed_when: false
+      when: solana_binary.stat.exists
+
+    - name: precheck - Fail if no solana validator binary found or non functional
+      ansible.builtin.fail:
+        msg: |
+          No functional Solana validator binary found at {{ solana_install_dir }}/agave-validator!
+          Command output: {{ installed_version.stdout | default('N/A') }}
+          Return code: {{ installed_version.rc | default('N/A') }}
+      when:
+        - not solana_binary.stat.exists
+        - installed_version is not defined or installed_version.rc is not defined or installed_version.rc != 0
 
 - name: precheck - Check required validator keypairs for source_validator_name
   block:
@@ -148,9 +160,7 @@
 - name: precheck - Display source validator keyset information
   ansible.builtin.debug:
     msg: |
-      ===============================================
-      SOURCE VALIDATOR KEYSET
-      ===============================================
+      SOURCE VALIDATOR KEYSET:
       - Name: ({{ source_validator_name }})
       - Primary Target Identity: {{ primary_target_pubkey }}
       - Hot Spare Identity: {{ hot_spare_identity_pubkey | default('Not found') }}
@@ -223,28 +233,12 @@
               jito_relayer_process_status is not failed and
               jito_relayer_process_status.stdout_lines | length > 0) }}
 
-    - name: precheck - Debug Jito relayer status on target host
-      ansible.builtin.debug:
-        msg: |
-          ===============================================
-          TARGET HOST JITO RELAYER STATUS
-          ===============================================
-          - Service Exists: {{ jito_relayer_service_status is not failed }}
-          - Service Active: {{ jito_relayer_service_status.status.ActiveState | default('N/A') }}
-          - Service Enabled: {{ jito_relayer_service_status.status.UnitFileState | default('N/A') }}
-          - Process Running: {{ jito_relayer_process_status.stdout_lines | length > 0 }}
-          - Consensus - Co-hosted Relayer Running: {{ target_host_running_jito_relayer }}
-
 - name: precheck - Gather Jito URLs from inventory
   block:
     - name: precheck - Build Jito block engine city key
       ansible.builtin.set_fact:
         jito_relayer_type: "{{ 'co-hosted' if target_host_running_jito_relayer else 'shared' }}"
         jito_block_engine_city_key: "jito_{{ solana_cluster }}_block_engine_city"
-
-    - name: precheck - Debug Jito relayer type
-      ansible.builtin.debug:
-        msg: "jito_relayer_type: {{ jito_relayer_type }}"
 
     - name: precheck - Set Jito target city
       ansible.builtin.set_fact:
