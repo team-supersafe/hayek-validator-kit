@@ -1,14 +1,14 @@
 ---
-- name: Stop and Remove Validator service
+- name: install - Stop and Remove Validator service
   block:
-    - name: Check if validator service exists and is running
+    - name: install - Check if validator service exists and is running
       ansible.builtin.systemd:
         name: "{{ validator_service_name }}"
       register: service_status
       changed_when: false
       failed_when: false
 
-    - name: Stop validator service if running
+    - name: install - Stop validator service if running
       ansible.builtin.systemd:
         name: "{{ validator_service_name }}"
         state: stopped
@@ -20,16 +20,16 @@
       when: service_status.status.ActiveState == "active"
       become: true
 
-- name: Stop and Remove Jito relayer service if applicable
+- name: install - Stop and Remove Jito relayer service if applicable
   block:
-    - name: Check the jito-relayer service status
+    - name: install - Check the jito-relayer service status
       ansible.builtin.systemd:
         name: "{{ jito_relayer_service_name }}"
       register: relayer_service_status
       changed_when: false
       failed_when: false
 
-    - name: Stop jito-relayer service if running
+    - name: install - Stop jito-relayer service if running
       ansible.builtin.systemd:
         name: "{{ jito_relayer_service_name }}"
         state: stopped
@@ -41,21 +41,21 @@
       when: relayer_service_status.status.ActiveState == "active"
       become: true
 
-    - name: Remove jito-relayer service unit file if not running on target host
+    - name: install - Remove jito-relayer service unit file if not running on target host
       ansible.builtin.file:
         path: "/etc/systemd/system/{{ jito_relayer_service_name }}.service"
         state: absent
       when: not target_host_running_jito_relayer | default(false)
       become: true
 
-- name: Reload systemd daemon
+- name: install - Reload systemd daemon
   ansible.builtin.systemd:
     daemon_reload: true
   become: true
 
-- name: Reset validator keys directory
+- name: install - Reset validator keys directory
   block:
-    - name: Remove validator key store
+    - name: install - Remove validator key store
       ansible.builtin.shell: |
         #!/bin/bash
         set -e
@@ -63,7 +63,7 @@
       delegate_to: "{{ target_host }}"
       become: true
 
-    - name: Ensure validator_keys_dir exists
+    - name: install - Ensure validator_keys_dir exists
       ansible.builtin.file:
         path: "{{ validator_keys_dir }}"
         state: directory
@@ -73,9 +73,9 @@
       delegate_to: "{{ target_host }}"
       become: true
 
-- name: Install validator keys
+- name: install - Install validator keys
   block:
-    - name: Copy primary-target-identity.json to target host
+    - name: install - Copy primary-target-identity.json to target host
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/primary-target-identity.json"
         dest: "{{ validator_keys_dir }}/primary-target-identity.json"
@@ -84,7 +84,7 @@
         group: "{{ solana_user }}"
       become: true
 
-    - name: Copy vote-account.json to target host
+    - name: install - Copy vote-account.json to target host
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/vote-account.json"
         dest: "{{ validator_keys_dir }}/vote-account.json"
@@ -93,14 +93,14 @@
         group: "{{ solana_user }}"
       become: true
 
-    - name: Check if hot-spare-identity.json keypair exists in ansible_keys_dir
+    - name: install - Check if hot-spare-identity.json keypair exists in ansible_keys_dir
       ansible.builtin.stat:
         path: "{{ ansible_keys_dir }}/hot-spare-identity.json"
       register: local_hot_spare_key_exists
       delegate_to: localhost
       run_once: true
 
-    - name: Copy hot-spare-identity.json to target host if it exists on ansible_keys_dir
+    - name: install - Copy hot-spare-identity.json to target host if it exists on ansible_keys_dir
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/hot-spare-identity.json"
         dest: "{{ validator_keys_dir }}/hot-spare-identity.json"
@@ -110,7 +110,7 @@
       become: true
       when: local_hot_spare_key_exists.stat.exists | default(false)
 
-    - name: Generate hot-spare-identity.json keypair
+    - name: install - Generate hot-spare-identity.json keypair
       ansible.builtin.shell: |
         . "$HOME/.cargo/env"
         . "$HOME/.bashrc"
@@ -121,7 +121,7 @@
       delegate_to: "{{ target_host }}"
       when: not local_hot_spare_key_exists.stat.exists | default(false)
 
-    - name: Fail with error message (hot-spare-identity.json)
+    - name: install - Fail with error message (hot-spare-identity.json)
       ansible.builtin.fail:
         msg: "Could not generate hot-spare-identity.json keypair. Error: {{ keygen_result }}"
       when:
@@ -129,23 +129,23 @@
         - keygen_result is defined
         - keygen_result.rc != 0
 
-    - name: Create identity.json symlink
+    - name: install - Create identity.json symlink
       ansible.builtin.file:
         src: "{{ validator_keys_dir }}/{{ 'primary-target-identity.json' if validator_type == 'primary' else 'hot-spare-identity.json' }}"
         dest: "{{ validator_keys_dir }}/identity.json"
         state: link
         force: true
 
-- name: Install jito relayer keys if applicable
+- name: install - Install jito relayer keys if applicable
   block:
-    - name: Check if Jito Relayer Block Engine key exists in ansible_keys_dir
+    - name: install - Check if Jito Relayer Block Engine key exists in ansible_keys_dir
       ansible.builtin.stat:
         path: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
       register: local_key_exists
       delegate_to: localhost
       run_once: true
 
-    - name: Copy jito-relayer-block-eng.json to target host if it exists on ansible_keys_dir
+    - name: install - Copy jito-relayer-block-eng.json to target host if it exists on ansible_keys_dir
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
         dest: "{{ validator_keys_dir }}/jito-relayer-block-eng.json"
@@ -155,7 +155,7 @@
       become: true
       when: local_key_exists.stat.exists | default(false)
 
-    - name: Generate jito-relayer-block-eng.json keypair
+    - name: install - Generate jito-relayer-block-eng.json keypair
       ansible.builtin.shell: |
         . "$HOME/.cargo/env"
         . "$HOME/.bashrc"
@@ -166,21 +166,21 @@
       delegate_to: "{{ target_host }}"
       when: not local_key_exists.stat.exists | default(false)
 
-    - name: Fail with error message (jito-relayer-block-eng.json)
+    - name: install - Fail with error message (jito-relayer-block-eng.json)
       ansible.builtin.fail:
         msg: "Could not generate jito-relayer-block-eng.json keypair. Error: {{ jito_keygen_result }}"
       when: jito_keygen_result.rc is defined and jito_keygen_result.rc != 0
 
     # Generate Jito Relayer Comms Keys
 
-    - name: Check if Jito Relayer Comms private key exists in ansible_keys_dir
+    - name: install - Check if Jito Relayer Comms private key exists in ansible_keys_dir
       ansible.builtin.stat:
         path: "{{ ansible_keys_dir }}/jito-relayer-comms-pvt.pem"
       register: local_comms_key_exists
       delegate_to: localhost
       run_once: true
 
-    - name: Copy Jito Relayer Comms private key to target host if it exists on ansible_keys_dir
+    - name: install - Copy Jito Relayer Comms private key to target host if it exists on ansible_keys_dir
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/jito-relayer-comms-pvt.pem"
         dest: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
@@ -190,7 +190,7 @@
       become: true
       when: local_comms_key_exists.stat.exists | default(false)
 
-    - name: Generate Jito Relayer Comms RSA private key on target host if not found on ansible host
+    - name: install - Generate Jito Relayer Comms RSA private key on target host if not found on ansible host
       ansible.builtin.shell: |
         openssl genrsa --out {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem 2048
       args:
@@ -198,7 +198,7 @@
       delegate_to: "{{ target_host }}"
       when: not local_comms_key_exists.stat.exists | default(false)
 
-    - name: Generate Jito Relayer Comms RSA public key on target host
+    - name: install - Generate Jito Relayer Comms RSA public key on target host
       ansible.builtin.shell: |
         openssl rsa --in {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem --pubout --out {{ validator_keys_dir }}/jito-relayer-comms-pub.pem
       args:

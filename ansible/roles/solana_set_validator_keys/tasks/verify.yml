@@ -1,57 +1,57 @@
 ---
-- name: Check if Jito relayer binary exists
+- name: verify - Check if Jito relayer binary exists
   ansible.builtin.stat:
     path: "{{ jito_relayer_install_dir }}/jito-transaction-relayer"
   register: relayer_binary
 
-- name: Fail if Jito relayer binary is missing
+- name: verify - Fail if Jito relayer binary is missing
   ansible.builtin.fail:
     msg: "Jito relayer binary not found at {{ jito_relayer_install_dir }}/jito-transaction-relayer!"
   when: not relayer_binary.stat.exists
 
-- name: Check Jito relayer systemd service status
+- name: verify - Check Jito relayer systemd service status
   ansible.builtin.systemd:
     name: "{{ jito_relayer_service_name }}"
   register: relayer_service
 
-- name: Get last 50 lines of Jito relayer logs
+- name: verify - Get last 50 lines of Jito relayer logs
   ansible.builtin.shell: journalctl -u {{ jito_relayer_service_name }} --no-pager --since "10 seconds ago" | tail -n 50
   register: relayer_logs
   changed_when: false
 
-- name: Print last 50 lines of Jito relayer logs
+- name: verify - Print last 50 lines of Jito relayer logs
   ansible.builtin.debug:
     var: relayer_logs.stdout_lines
 
-- name: Check Jito relayer process status
+- name: verify - Check Jito relayer process status
   ansible.builtin.shell: ps aux | grep jito-transaction-relayer | grep -v grep
   register: relayer_process
   changed_when: false
 
-- name: Check if validator binary exists
+- name: verify - Check if validator binary exists
   ansible.builtin.stat:
     path: "{{ solana_install_dir }}/agave-validator"
   register: validator_binary
 
-- name: Fail if validator binary is missing
+- name: verify - Fail if validator binary is missing
   ansible.builtin.fail:
     msg: "Validator binary not found at {{ solana_install_dir }}/agave-validator!"
   when: not validator_binary.stat.exists
 
-- name: Check validator systemd service status
+- name: verify - Check validator systemd service status
   ansible.builtin.systemd:
     name: "{{ validator_service_name }}"
   register: validator_service
 
-- name: Get last 50 lines of validator logs
+- name: verify - Get last 50 lines of validator logs
   ansible.builtin.shell: journalctl -u {{ validator_service_name }} --no-pager | tail -n 50
   register: validator_logs
   changed_when: false
 
-- name: Print last 50 lines of validator logs
+- name: verify - Print last 50 lines of validator logs
   ansible.builtin.debug:
     var: validator_logs.stdout_lines
 
-- name: Print validator monitoring hints
+- name: verify - Print validator monitoring hints
   ansible.builtin.debug:
     msg: 🚀 Validator & Jito Relayer Setup Complete!

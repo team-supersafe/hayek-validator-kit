@@ -1,5 +1,5 @@
 ---
-- name: Determine Solana cluster parameter for solana commands
+- name: precheck - Determine Solana cluster parameter for solana commands
   ansible.builtin.set_fact:
     solana_cluster_param: >-
       {%- if 'solana_mainnet' in group_names -%}
@@ -15,43 +15,43 @@
       {{ (group_names | select('match', '^solana_.*') | list | first | regex_replace('^solana_', '')) if (group_names | select('match', '^solana_.*') | list | length > 0) else 'localnet' }}
   run_once: true
 
-- name: Debug solana cluster parameter
+- name: precheck - Debug solana cluster parameter
   ansible.builtin.debug:
     msg: "solana_cluster_param: '{{ solana_cluster_param }}'"
   delegate_to: localhost
   run_once: true
 
-- name: Debug solana cluster name
+- name: precheck - Debug solana cluster name
   ansible.builtin.debug:
     msg: "solana_cluster: '{{ solana_cluster }}'"
   delegate_to: localhost
   run_once: true
 
-- name: Gather facts for localhost
+- name: precheck - Gather facts for localhost
   ansible.builtin.setup:
   delegate_to: localhost
   run_once: true
 
-- name: Set keys dir for local ansible control host and target host
+- name: precheck - Set keys dir for local ansible control host and target host
   ansible.builtin.set_fact:
     ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ source_validator_name }}"
     validator_keys_dir: "{{ keys_dir }}/{{ source_validator_name }}"
 
-- name: Check required validator keypairs for source_validator_name
+- name: precheck - Check required validator keypairs for source_validator_name
   block:
-    - name: Check if primary-target-identity.json exists in ansible_keys_dir
+    - name: precheck - Check if primary-target-identity.json exists in ansible_keys_dir
       ansible.builtin.stat:
         path: "{{ ansible_keys_dir }}/primary-target-identity.json"
       register: primary_target_identity_file
       delegate_to: localhost
       run_once: true
 
-    - name: Fail if primary-target-identity.json is missing
+    - name: precheck - Fail if primary-target-identity.json is missing
       ansible.builtin.fail:
         msg: "primary-target-identity.json not found in {{ ansible_keys_dir }}"
       when: not primary_target_identity_file.stat.exists
 
-    - name: Get primary target identity pubkey
+    - name: precheck - Get primary target identity pubkey
       ansible.builtin.command: solana-keygen pubkey {{ ansible_keys_dir }}/primary-target-identity.json
       register: primary_target_pubkey_result
       delegate_to: localhost
@@ -59,23 +59,23 @@
       check_mode: false
       run_once: true
 
-    - name: Set primary target public key
+    - name: precheck - Set primary target public key
       ansible.builtin.set_fact:
         primary_target_pubkey: "{{ primary_target_pubkey_result.stdout }}"
 
-    - name: Check if vote-account.json exists in ansible_keys_dir
+    - name: precheck - Check if vote-account.json exists in ansible_keys_dir
       ansible.builtin.stat:
         path: "{{ ansible_keys_dir }}/vote-account.json"
       register: vote_account_file
       delegate_to: localhost
       run_once: true
 
-    - name: Fail if vote-account.json is missing
+    - name: precheck - Fail if vote-account.json is missing
       ansible.builtin.fail:
         msg: "vote-account.json not found in {{ ansible_keys_dir }}"
       when: not vote_account_file.stat.exists
 
-    - name: Get vote account pubkey
+    - name: precheck - Get vote account pubkey
       ansible.builtin.command: solana-keygen pubkey {{ ansible_keys_dir }}/vote-account.json
       register: vote_account_pubkey_result
       delegate_to: localhost
@@ -83,18 +83,18 @@
       check_mode: false
       run_once: true
 
-    - name: Set vote account public key
+    - name: precheck - Set vote account public key
       ansible.builtin.set_fact:
         vote_account_pubkey: "{{ vote_account_pubkey_result.stdout }}"
 
-    - name: Check if Jito Relayer Block Engine keypair exists
+    - name: precheck - Check if Jito Relayer Block Engine keypair exists
       ansible.builtin.stat:
         path: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
       register: private_key_exists
       delegate_to: localhost
       run_once: true
 
-    - name: Warn if jito-relayer-block-eng.json is missing
+    - name: precheck - Warn if jito-relayer-block-eng.json is missing
       ansible.builtin.debug:
         msg: >
           WARNING: jito-relayer-block-eng.json not found in {{ ansible_keys_dir }}.
@@ -103,7 +103,7 @@
           you have the correct keypair for which Jito has whitelisted the public key.
       when: not private_key_exists.stat.exists
 
-    - name: Get jito relayer block engine authentication public key
+    - name: precheck - Get jito relayer block engine authentication public key
       ansible.builtin.command: solana-keygen pubkey {{ ansible_keys_dir }}/jito-relayer-block-eng.json
       register: jito_relayer_block_engine_pubkey_result
       delegate_to: localhost
@@ -112,26 +112,26 @@
       run_once: true
       when: private_key_exists.stat.exists
 
-    - name: Set jito relayer block engine authentication public key
+    - name: precheck - Set jito relayer block engine authentication public key
       ansible.builtin.set_fact:
         jito_relayer_block_engine_pubkey: "{{ jito_relayer_block_engine_pubkey_result.stdout }}"
       when: private_key_exists.stat.exists
 
-    - name: Check if hot-spare-identity.json exists in ansible_keys_dir
+    - name: precheck - Check if hot-spare-identity.json exists in ansible_keys_dir
       ansible.builtin.stat:
         path: "{{ ansible_keys_dir }}/hot-spare-identity.json"
       register: hot_spare_identity_file
       delegate_to: localhost
       run_once: true
 
-    - name: Warn if hot-spare-identity.json is missing
+    - name: precheck - Warn if hot-spare-identity.json is missing
       ansible.builtin.debug:
         msg: >
           WARNING: hot-spare-identity.json not found in {{ ansible_keys_dir }}.
           This keypair will still be generated when copying the keys.
       when: not hot_spare_identity_file.stat.exists
 
-    - name: Get hot spare identity pubkey
+    - name: precheck - Get hot spare identity pubkey
       ansible.builtin.command: solana-keygen pubkey {{ ansible_keys_dir }}/hot-spare-identity.json
       register: hot_spare_identity_pubkey_result
       delegate_to: localhost
@@ -140,12 +140,12 @@
       run_once: true
       when: hot_spare_identity_file.stat.exists
 
-    - name: Set hot spare identity public key
+    - name: precheck - Set hot spare identity public key
       ansible.builtin.set_fact:
         hot_spare_identity_pubkey: "{{ hot_spare_identity_pubkey_result.stdout }}"
       when: hot_spare_identity_file.stat.exists
 
-- name: Display source validator keyset information
+- name: precheck - Display source validator keyset information
   ansible.builtin.debug:
     msg: |
       ===============================================
@@ -159,18 +159,18 @@
   delegate_to: localhost
   run_once: true
 
-- name: If validator_type is 'primary', check if primary identity is running elsewhere
+- name: precheck - If validator_type is 'primary', check if primary identity is running elsewhere
   block:
-    - name: Get target host IP address
+    - name: precheck - Get target host IP address
       ansible.builtin.setup:
         filter: ansible_default_ipv4
       register: target_host_facts
 
-    - name: Set target host IP
+    - name: precheck - Set target host IP
       ansible.builtin.set_fact:
         target_host_ip: "{{ target_host_facts.ansible_facts.ansible_default_ipv4.address }}"
 
-    - name: Check if primary target identity is running on other hosts
+    - name: precheck - Check if primary target identity is running on other hosts
       ansible.builtin.shell: |
         solana {{ solana_cluster_param }} gossip | grep "{{ primary_target_pubkey }}" | awk '{print $1}' | grep -v "{{ target_host_ip }}"
       register: existing_primary_validator_on_other_hosts
@@ -180,7 +180,7 @@
       run_once: true
       ignore_errors: true
 
-    - name: Fail if primary target identity is already running on other hosts
+    - name: precheck - Fail if primary target identity is already running on other hosts
       ansible.builtin.fail:
         msg: |
           CRITICAL: Primary target identity {{ primary_target_pubkey }} is already running on other host(s)!
@@ -190,7 +190,7 @@
       when: existing_primary_validator_on_other_hosts.stdout != ''
       run_once: true
 
-    - name: Debug primary identity safety check passed
+    - name: precheck - Debug primary identity safety check passed
       ansible.builtin.debug:
         msg: |
           ✓ Primary target identity {{ primary_target_pubkey }} is not running on other hosts
@@ -201,21 +201,21 @@
 
   when: validator_type == 'primary'
 
-- name: Check if target host is running co-hosted Jito relayer
+- name: precheck - Check if target host is running co-hosted Jito relayer
   block:
-    - name: Check Jito relayer systemd service status on target host
+    - name: precheck - Check Jito relayer systemd service status on target host
       ansible.builtin.systemd:
         name: "{{ jito_relayer_service_name | default('jito-relayer') }}"
       register: jito_relayer_service_status
       ignore_errors: true
 
-    - name: Check Jito relayer process status on target host
+    - name: precheck - Check Jito relayer process status on target host
       ansible.builtin.shell: ps aux | grep jito-transaction-relayer | grep -v grep
       register: jito_relayer_process_status
       changed_when: false
       check_mode: false
 
-    - name: Set fact for co-hosted Jito relayer running status
+    - name: precheck - Set fact for co-hosted Jito relayer running status
       ansible.builtin.set_fact:
         target_host_running_jito_relayer: >-
           {{ (jito_relayer_service_status is not failed and
@@ -223,7 +223,7 @@
               jito_relayer_process_status is not failed and
               jito_relayer_process_status.stdout_lines | length > 0) }}
 
-    - name: Debug Jito relayer status on target host
+    - name: precheck - Debug Jito relayer status on target host
       ansible.builtin.debug:
         msg: |
           ===============================================
@@ -235,27 +235,27 @@
           - Process Running: {{ jito_relayer_process_status.stdout_lines | length > 0 }}
           - Consensus - Co-hosted Relayer Running: {{ target_host_running_jito_relayer }}
 
-- name: Gather Jito URLs from inventory
+- name: precheck - Gather Jito URLs from inventory
   block:
-    - name: Build Jito block engine city key
+    - name: precheck - Build Jito block engine city key
       ansible.builtin.set_fact:
         jito_relayer_type: "{{ 'co-hosted' if target_host_running_jito_relayer else 'shared' }}"
         jito_block_engine_city_key: "jito_{{ solana_cluster }}_block_engine_city"
 
-    - name: Debug Jito relayer type
+    - name: precheck - Debug Jito relayer type
       ansible.builtin.debug:
         msg: "jito_relayer_type: {{ jito_relayer_type }}"
 
-    - name: Set Jito target city
+    - name: precheck - Set Jito target city
       ansible.builtin.set_fact:
         jito_target_city: "{{ hostvars[inventory_hostname][jito_block_engine_city_key] }}"
 
-    - name: Verify Jito target city is set
+    - name: precheck - Verify Jito target city is set
       ansible.builtin.fail:
         msg: "Host {{ inventory_hostname }} must be assigned to a city group (city_dal, city_man, etc.) in the inventory"
       when: jito_target_city == ''
 
-    - name: Set Jito URLs
+    - name: precheck - Set Jito URLs
       ansible.builtin.set_fact:
         jito_relayer_url: "{{ 'http://127.0.0.1:11226' if jito_relayer_type == 'co-hosted' else jito_urls[jito_target_city].relayer }}"
         jito_block_engine_url: "{{ jito_urls[jito_target_city].block_engine }}"
