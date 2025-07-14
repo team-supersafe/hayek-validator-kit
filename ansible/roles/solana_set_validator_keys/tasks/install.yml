@@ -55,10 +55,12 @@
 
 - name: Reset validator keys directory
   block:
-    - name: Remove existing validator keys from target host
-      ansible.builtin.file:
-        path: "{{ validator_keys_dir }}"
-        state: absent
+    - name: Remove validator key store
+      ansible.builtin.shell: |
+        #!/bin/bash
+        set -e
+        rm -rf {{ keys_dir }}/*
+      delegate_to: "{{ target_host }}"
       become: true
 
     - name: Ensure validator_keys_dir exists
@@ -68,6 +70,8 @@
         mode: '0755'
         owner: "{{ solana_user }}"
         group: "{{ solana_user }}"
+      delegate_to: "{{ target_host }}"
+      become: true
 
 - name: Install validator keys
   block:
@@ -76,16 +80,18 @@
         src: "{{ ansible_keys_dir }}/primary-target-identity.json"
         dest: "{{ validator_keys_dir }}/primary-target-identity.json"
         mode: '0600'
-      delegate_to: localhost
-      run_once: true
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
 
     - name: Copy vote-account.json to target host
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/vote-account.json"
         dest: "{{ validator_keys_dir }}/vote-account.json"
         mode: '0600'
-      delegate_to: localhost
-      run_once: true
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
 
     - name: Check if hot-spare-identity.json keypair exists in ansible_keys_dir
       ansible.builtin.stat:
@@ -99,9 +105,10 @@
         src: "{{ ansible_keys_dir }}/hot-spare-identity.json"
         dest: "{{ validator_keys_dir }}/hot-spare-identity.json"
         mode: '0600'
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
       when: local_hot_spare_key_exists.stat.exists | default(false)
-      delegate_to: localhost
-      run_once: true
 
     - name: Generate hot-spare-identity.json keypair
       ansible.builtin.shell: |
@@ -111,6 +118,7 @@
       args:
         chdir: "{{ validator_keys_dir }}"
       register: keygen_result
+      delegate_to: "{{ target_host }}"
       when: not local_hot_spare_key_exists.stat.exists | default(false)
 
     - name: Fail with error message (hot-spare-identity.json)
@@ -142,9 +150,10 @@
         src: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
         dest: "{{ validator_keys_dir }}/jito-relayer-block-eng.json"
         mode: '0600'
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
       when: local_key_exists.stat.exists | default(false)
-      delegate_to: localhost
-      run_once: true
 
     - name: Generate jito-relayer-block-eng.json keypair
       ansible.builtin.shell: |
@@ -154,6 +163,7 @@
       args:
         chdir: "{{ validator_keys_dir }}"
       register: jito_keygen_result
+      delegate_to: "{{ target_host }}"
       when: not local_key_exists.stat.exists | default(false)
 
     - name: Fail with error message (jito-relayer-block-eng.json)
@@ -175,15 +185,17 @@
         src: "{{ ansible_keys_dir }}/jito-relayer-comms-pvt.pem"
         dest: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
         mode: '0600'
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
       when: local_comms_key_exists.stat.exists | default(false)
-      delegate_to: localhost
-      run_once: true
 
     - name: Generate Jito Relayer Comms RSA private key on target host if not found on ansible host
       ansible.builtin.shell: |
         openssl genrsa --out {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem 2048
       args:
         creates: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
+      delegate_to: "{{ target_host }}"
       when: not local_comms_key_exists.stat.exists | default(false)
 
     - name: Generate Jito Relayer Comms RSA public key on target host

@@ -1,6 +1,4 @@
 ---
-# verify.yml - solana_set_validator_keys
-
 - name: Check if Jito relayer binary exists
   ansible.builtin.stat:
     path: "{{ jito_relayer_install_dir }}/jito-transaction-relayer"
@@ -17,9 +15,13 @@
   register: relayer_service
 
 - name: Get last 50 lines of Jito relayer logs
-  ansible.builtin.shell: journalctl -u {{ jito_relayer_service_name }} --no-pager | tail -n 50
+  ansible.builtin.shell: journalctl -u {{ jito_relayer_service_name }} --no-pager --since "10 seconds ago" | tail -n 50
   register: relayer_logs
   changed_when: false
+
+- name: Print last 50 lines of Jito relayer logs
+  ansible.builtin.debug:
+    var: relayer_logs.stdout_lines
 
 - name: Check Jito relayer process status
   ansible.builtin.shell: ps aux | grep jito-transaction-relayer | grep -v grep
@@ -46,55 +48,10 @@
   register: validator_logs
   changed_when: false
 
-- name: Check validator process status
-  ansible.builtin.shell: ps aux | grep "validator" | grep -v grep
-  register: validator_process
-  changed_when: false
-
-- name: Print service and process status summary
-  ansible.builtin.debug:
-    msg: |
-      =============================
-      Jito Relayer Service Status:
-      - Binary exists: {{ relayer_binary.stat.exists }}
-      - Service active: {{ relayer_service.status.ActiveState }}
-      - Service enabled: {{ relayer_service.status.UnitFileState }}
-      - Process running: {{ relayer_process.stdout_lines | length > 0 }}
-
-      Validator Service Status:
-      - Binary exists: {{ validator_binary.stat.exists }}
-      - Service active: {{ validator_service.status.ActiveState }}
-      - Service enabled: {{ validator_service.status.UnitFileState }}
-      - Process running: {{ validator_process.stdout_lines | length > 0 }}
-      =============================
-
-- name: Print last 50 lines of Jito relayer logs
-  ansible.builtin.debug:
-    var: relayer_logs.stdout_lines
-
 - name: Print last 50 lines of validator logs
   ansible.builtin.debug:
     var: validator_logs.stdout_lines
 
 - name: Print validator monitoring hints
   ansible.builtin.debug:
-    msg: |
-      ===========================================================
-      🚀 Validator & Jito Relayer Setup Complete! Helpful commands:
-      ===========================================================
-      📈 Monitor cluster validators:
-      solana -ul validators --keep-unstaked-delinquents
-      solana gossip -ul
-      🔍 Check for running validator process:
-      ps aux | grep validator
-      🔄 Check for running Jito Relayer process:
-      ps aux | grep jito-relayer
-      📊 Monitor validator startup state:
-      agave-validator -l /mnt/ledger/ monitor
-      ⚡ View validator catchup status:
-      solana -ul catchup --our-localhost 8899 --url http://127.0.0.1:8899
-      🔍 Inspect logs:
-      tail -f ~/logs/agave-validator.log
-      tail -f ~/logs/agave-validator.log | grep -v 'solana_metrics::metrics'
-      journalctl -u jito-relayer -f
-      ===========================================================
+    msg: 🚀 Validator & Jito Relayer Setup Complete!
