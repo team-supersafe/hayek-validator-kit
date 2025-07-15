@@ -1,6 +1,7 @@
 ---
 # Ensure firewall ports are open if needed
-- block:
+- name: jito_relayer_cohosted - config - Ensure firewall ports are open
+  block:
     - name: jito_relayer_cohosted - config - Ensure UFW is installed
       become: true
       ansible.builtin.apt:
@@ -29,7 +30,7 @@
         port: 11229
         proto: udp
       tags: [jito_relayer.config, jito_relayer.firewall]
-  when: jito_relayer_open_ports_needed | default(false)
+  when: (jito_relayer_open_ports_needed | default(false)) and (solana_cluster != 'localnet')
 
 # Service
 - name: jito_relayer_cohosted - config - Template Jito relayer systemd service file

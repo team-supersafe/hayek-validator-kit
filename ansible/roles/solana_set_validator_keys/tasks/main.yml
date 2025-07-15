@@ -1,0 +1,12 @@
+---
+- name: Precheck
+  import_tasks: precheck.yml
+
+- name: Install validator keys
+  import_tasks: install.yml
+
+- name: Configure validator
+  import_tasks: configure.yml
+
+- name: Verify validator
+  import_tasks: verify.yml
