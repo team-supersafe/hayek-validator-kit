@@ -171,8 +171,6 @@
         msg: "Could not generate jito-relayer-block-eng.json keypair. Error: {{ jito_keygen_result }}"
       when: jito_keygen_result.rc is defined and jito_keygen_result.rc != 0
 
-    # Generate Jito Relayer Comms Keys
-
     - name: install - Check if Jito Relayer Comms private key exists in ansible_keys_dir
       ansible.builtin.stat:
         path: "{{ ansible_keys_dir }}/jito-relayer-comms-pvt.pem"

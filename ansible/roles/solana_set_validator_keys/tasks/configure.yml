@@ -13,7 +13,6 @@
       ansible.builtin.set_fact:
         validator_script_path: "{{ scripts_dir }}/run-{{ validator_name }}.sh"
 
-    # Get genesis hash for localnet
     - name: configure - Get localnet genesis hash
       block:
         - name: configure - Get genesis hash
@@ -44,7 +43,6 @@
 
       when: solana_cluster == "localnet"
 
-    # Create the validator startup script from template
     - name: configure - Create validator startup script
       ansible.builtin.template:
         src: "{{ playbook_dir }}/../roles/solana_validator_jito/templates/validator.startup.j2"
