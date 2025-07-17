@@ -131,26 +131,3 @@ After a the scrip runs, the new build will be uploaded to the S3 bucket and avai
 If the binaries for this version already exist in the S3 bucket, the script will exit without changes.
 
 Note that the binaries are not downloaded into any particular Localnet node. Instead, they are ready to be downloaded and installed into any node we want in the cluster without needing to build-from-source every time.
-
-## Extras
-
-### Compress / Decompress
-
-See [https://www.cyberciti.biz/faq/ubuntu-howto-compress-files-using-tar/](https://www.cyberciti.biz/faq/ubuntu-howto-compress-files-using-tar/)
-
-```bash
-# Extract from archive, Verbose, use gZip, archive Filename
-tar -xvzf "v${SOLANA_RELEASE}.tar.gz"
-
-# Compress new archive, Verbose, use gZip, Preserve permissions, archive Filename, 
-# -Change to directory dir, . archive everything in the current directory
-tar -cvzpf 2.1.17.tar.gz \
-  -C .local/share/solana/install/releases/2.1.17/ \
-  .
-
-# Compress new archive, Verbose, j: use bzip2, Preserve permissions, archive Filename, 
-# -Change to directory dir, . archive everything in the current directory
-tar -cvjpf v2.1.17_aarch64-unknown-linux-gnu.tar.bz2 \
-  -C .local/share/solana/install/releases/2.1.17/ \
-  .
-```
