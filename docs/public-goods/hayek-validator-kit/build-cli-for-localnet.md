@@ -4,25 +4,26 @@ description: How to build Solana CLI for Localnet
 
 # Build CLI for Localnet
 
-For [Localnet](solana-localnet.md), which is focused on development and operator workloads, we want to **avoid** having to BUILD FROM SOURCE every time we spin up a new docker container, since the build process itself is very resource intensive and slows down the development REPL. For this reason, all Localnet deployments are done from pre-compiled binaries.&#x20;
+For [Localnet](solana-localnet.md), which is focused on development and operator workloads, we want to **avoid** having to BUILD FROM SOURCE every time we spin up a new docker container, since the build process itself is very resource intensive and slows down the development REPL. For this reason, all Localnet deployments are done from pre-compiled binaries.
 
 Anza publishes new releases of Agave at [https://github.com/anza-xyz/agave/releases](https://github.com/anza-xyz/agave/releases). However, they **don't** publish pre-built binaries for Apple Silicon running virtualized hosts, which is not an uncommon setup for developer workstations.
 
-To accomodate these developers and operators, we pre-compile binaries for Apple Silicon and store them in an accessible place so Docker and Ansible can use them in their Localnet.
+To accomodate these developers and operators, we pre-compile binaries for Ubuntu on Apple Silicon ARM architecture and store them in an accessible place so Docker and Ansible can use them in their Localnet.
 
 ## Storage Setup
 
-We'll use an AWS S3 bucket and IAM user for storing the Solana CLI binaries.&#x20;
+We'll use an AWS S3 bucket and IAM user for storing the Solana CLI binaries.
 
 ### Create S3 Bucket
 
-Go to your AWS account and create an S3 bucket. We named ours `solv-store` . We'll use this bucket to upload and download our binaries.&#x20;
+Go to your AWS account and create an S3 bucket. We named ours `solv-store` . We'll use this bucket to upload and download our binaries.
 
 ### IAM Credentials Setup
 
-To securely create AWS credentials for uploading files to your S3 bucket, do need to setup a policy, a user, credentials and link them together, like this:&#x20;
+To securely create AWS credentials for uploading files to your S3 bucket, you need to setup a policy, a user, credentials and link them together, like this:
 
-1.  Create an IAM Policy with Least Privilege Define a policy that grants access only to the specific S3 bucket and the required actions. The policy shown below allows uploading (PutObject) and downloading (GetObject) files to/from the bucket, which is what we need:
+1.  Create an IAM Policy with Least Privilege\
+    Define a policy that grants access only to the specific S3 bucket and the required actions. The policy shown below allows uploading (`PutObject`) and downloading (`GetObject`) files to/from the bucket, which is what we need:
 
     ```json
     {
@@ -39,7 +40,8 @@ To securely create AWS credentials for uploading files to your S3 bucket, do nee
       ]
     }
     ```
-2.  To create an IAM User, run the following command from your workstation:
+2.  Create an IAM User\
+    Run the following command from your workstation:
 
     ```bash
     aws iam create-user \
@@ -47,7 +49,7 @@ To securely create AWS credentials for uploading files to your S3 bucket, do nee
       --region us-east-1 \
       --profile supersafe-root
     ```
-3.  Attach the IAM Policy to the IAM User&#x20;
+3.  Attach the IAM Policy to the IAM User
 
     ```bash
     aws iam put-user-policy \
@@ -66,8 +68,9 @@ To securely create AWS credentials for uploading files to your S3 bucket, do nee
       --profile supersafe-root
     ```
 
+    \
     **NOTE**: Save the AccessKeyId and SecretAccessKey securely. We recommend using a well established password manager like 1Password or Keeper for this.
-5.  Set the credentials as environment variables in your local workstation&#x20;
+5.  Set the credentials as environment variables in your local workstation
 
     ```bash
     export AWS_ACCESS_KEY_ID=XXXXXXXXXXXXX
@@ -105,7 +108,7 @@ op run -- ./run-build-in-container.sh 2.1.21
 
 ### Not Using 1Password
 
-If you are NOT using 1Password because you are using another password manager... okay:&#x20;
+If you are NOT using 1Password because you are using another password manager... okay:
 
 ```bash
 # Navigate to the script dir
@@ -123,7 +126,7 @@ export SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY="<COPY_FROM_1PASSWORD>"
 
 After a the scrip runs, the new build will be uploaded to the S3 bucket and available to download at this address and accessible to you. For example, the build binaries for Agave 2.1.21 live here:
 
-* [https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download/v2.1.21/solana-release-aarch64-unknown-linux-gnu.tar.gz](https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download/v2.1.21/solana-release-aarch64-unknown-linux-gnu.tar.gz).&#x20;
+* [https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download/v2.1.21/solana-release-aarch64-unknown-linux-gnu.tar.gz](https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download/v2.1.21/solana-release-aarch64-unknown-linux-gnu.tar.gz).
 
 If the binaries for this version already exist in the S3 bucket, the script will exit without changes.
 
