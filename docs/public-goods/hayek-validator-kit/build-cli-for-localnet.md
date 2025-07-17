@@ -115,8 +115,8 @@ If you are NOT using 1Password because you are using another password manager...
 cd solana-local-cluster/build-solana-cli
 
 # Set credentials for script
-export SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID="<COPY_FROM_1PASSWORD>"
-export SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY="<COPY_FROM_1PASSWORD>"
+export SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID="<YOUR_AWS_ACCESS_KEY_ID_HERE>"
+export SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY="<YOUR_AWS_SECRET_ACCESS_KEY_HERE>"
 
 # Run script
 ./run-build-in-container.sh 2.1.21
