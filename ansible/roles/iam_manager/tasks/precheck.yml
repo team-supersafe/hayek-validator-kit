@@ -31,18 +31,45 @@
   run_once: true
 
 # Precheck 4: Validate required fields exist
-- name: Validate CSV has required fields
+- name: Validate CSV has required field user
   ansible.builtin.fail:
-    msg: "CSV missing required field: {{ item }}"
-  when: >
-    not (users_csv.dict.values() | map(attribute=item) | list | first is defined)
-  loop:
-    - user
-    - key
-    - group_a
-    - group_b
-    - group_c
-    - group_d
+    msg: "CSV missing required field: user"
+  when: not (users_csv.dict.values() | map(attribute='user') | list | first is defined)
+  delegate_to: localhost
+  run_once: true
+
+- name: Validate CSV has required field key
+  ansible.builtin.fail:
+    msg: "CSV missing required field: key"
+  when: not (users_csv.dict.values() | map(attribute='key') | list | first is defined)
+  delegate_to: localhost
+  run_once: true
+
+- name: Validate CSV has required field group_a
+  ansible.builtin.fail:
+    msg: "CSV missing required field: group_a"
+  when: not (users_csv.dict.values() | map(attribute='group_a') | list | first is defined)
+  delegate_to: localhost
+  run_once: true
+
+- name: Validate CSV has required field group_b
+  ansible.builtin.fail:
+    msg: "CSV missing required field: group_b"
+  when: not (users_csv.dict.values() | map(attribute='group_b') | list | first is defined)
+  delegate_to: localhost
+  run_once: true
+
+- name: Validate CSV has required field group_c
+  ansible.builtin.fail:
+    msg: "CSV missing required field: group_c"
+  when: not (users_csv.dict.values() | map(attribute='group_c') | list | first is defined)
+  delegate_to: localhost
+  run_once: true
+
+- name: Validate CSV has required field group_d
+  ansible.builtin.fail:
+    msg: "CSV missing required field: group_d"
+  when: not (users_csv.dict.values() | map(attribute='group_d') | list | first is defined)
   delegate_to: localhost
   run_once: true
 
