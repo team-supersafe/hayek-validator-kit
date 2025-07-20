@@ -39,8 +39,8 @@
         repo: "{{ forked_agave_repo }}.git"
         dest: "{{ agave_build_dir }}/agave-{{ agave_version }}"
         version: "v{{ agave_version }}"
-        update: yes
-        force: yes
+        update: true
+        force: true
 
     - name: Checkout the desired tag
       ansible.builtin.shell: |
