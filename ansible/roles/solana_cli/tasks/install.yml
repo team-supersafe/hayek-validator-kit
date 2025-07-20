@@ -5,6 +5,10 @@
 # Ensure the host architecture is set (required for conditional installation logic)
 - import_tasks: ../common/tasks/set_host_architecture.yml
 
+- name: Determine if we should build from source
+  ansible.builtin.set_fact:
+    should_build_from_source: "{{ force_build | default(false) or build_from_source }}"
+
 - name: Install prerequisites
   become: true
   ansible.builtin.apt:
@@ -13,6 +17,7 @@
       - jq
       - build-essential
       - pkg-config
+      - libssl-dev
       - libudev-dev
       - llvm
       - libclang-dev
@@ -21,21 +26,13 @@
     update_cache: true
 
 # Choose installation method based on architecture and user preference
-- when: build_from_source | bool
+- when: should_build_from_source | bool
   name: Install - Installing from source based on architecture
   ansible.builtin.include_tasks: install_from_source.yml
-  
-- when: not build_from_source | bool
+
+- when: not should_build_from_source | bool
   name: Install - Installing from url based on architecture
   ansible.builtin.include_tasks: install_from_url.yml
-
-# Create symlink to new release
-- name: Create symlink to new release
-  ansible.builtin.file:
-    src: "{{ solana_installed_releases_dir }}/v{{ agave_version }}/solana-release"
-    dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
-    state: link
-    force: true
 
 # Ensure Solana CLI bin path is in the user's .bashrc and .zshrc for persistent CLI access
 - name: Install - Ensure Solana CLI bin path is in .bashrc

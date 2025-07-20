@@ -1,8 +1,6 @@
 ---
-# Other variables are expected as input when calling this role 
+# Other variables are expected as input when calling this role
 # and checked during the role's precheck task
 # e.g. jito_relayer_type, etc.
 jito_relayer_install_dir: "{{ solana_user_dir }}/.local/share/jito-relayer/install/active_release"
-jito_repo_url: "https://github.com/jito-foundation/jito-solana.git"
-jito_repo_dest: "{{ solana_user_dir }}/build/jito-solana"
-
+jito_build_dir: "{{ solana_user_dir }}/build/jito-solana"

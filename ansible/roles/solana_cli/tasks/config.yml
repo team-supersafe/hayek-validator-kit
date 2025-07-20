@@ -1,4 +1,18 @@
 ---
+- name: Config - Determine Solana cluster parameter
+  ansible.builtin.set_fact:
+    solana_cluster_param: >-
+      {%- if 'solana_mainnet' in group_names -%}
+      -um
+      {%- elif 'solana_testnet' in group_names -%}
+      -ut
+      {%- elif 'solana_localnet' in group_names -%}
+      -ul
+      {%- else -%}
+      -ul
+      {%- endif -%}
+  run_once: true
+
 - name: Config - Refresh shell environment
   ansible.builtin.shell: |
     . "$HOME/.zshrc"
@@ -12,8 +26,8 @@
   debug:
     msg: "PATH after sourcing: {{ cli_shell_env_path.stdout }}"
 
-- name: Config - Set Solana CLI to use mainnet-beta cluster as the default cluster to connect to
-  ansible.builtin.command: solana config set --url https://api.mainnet-beta.solana.com
+- name: Config - Set Solana CLI to use a default cluster
+  ansible.builtin.command: solana config set {{ solana_cluster_param }}
   environment:
     PATH: "{{ cli_shell_env_path.stdout }}"
   register: solana_config_set

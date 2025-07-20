@@ -11,7 +11,8 @@
 #   -i solana_localnet.yml \
 #   --limit host-charlie \
 #   -e "agave_version=2.2.14" \
-#   -e "target_host=host-charlie"
+#   -e "target_host=host-charlie" \
+#   -e "force_build=true" \ # Optional: Force build from sources regardless of architecture
 #
 # For syntax check add --syntax-check
 # For dry run add --diff --check
