@@ -70,7 +70,6 @@
   ansible.builtin.shell: |
     set -e
     . "{{ solana_user_dir }}/.cargo/env"
-    cargo clean
     ./scripts/cargo-install-all.sh . > {{ agave_build_dir }}/agave-build.log 2>&1
   args:
     chdir: "{{ agave_build_dir }}/agave-{{ agave_version }}"
