@@ -75,6 +75,24 @@
       register: ci_commit
       ignore_errors: "{{ ansible_check_mode }}"
 
+    - name: Read version from Cargo.toml
+      ansible.builtin.shell: grep '^version' Cargo.toml | awk -F '"' '{print $2}'
+      args:
+        chdir: "{{ jito_repo_dest }}"
+      register: cargo_toml_version
+      changed_when: false
+
+    - name: Debug Cargo.toml version
+      ansible.builtin.debug:
+        msg: "Cargo.toml version: {{ cargo_toml_version.stdout }} | Expected: {{ jito_version }}"
+
+    - name: Fail if Cargo.toml version does not match jito_version
+      ansible.builtin.fail:
+        msg: "Cargo.toml version ({{ cargo_toml_version.stdout }}) does not match expected jito_version ({{ jito_version }})!"
+      when: cargo_toml_version.stdout != jito_version
+      changed_when: false
+      ignore_errors: "{{ ansible_check_mode }}"
+
     - name: Build Jito-Solana CLI
       ansible.builtin.shell: |
         set -e

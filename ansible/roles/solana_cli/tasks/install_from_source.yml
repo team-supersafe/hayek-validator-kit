@@ -60,6 +60,24 @@
           Failed to checkout tag v{{ agave_version }}. Error: {{ checkout_result.stderr | default('Unknown error') }}
       when: checkout_result.rc != 0
 
+    - name: Read version from Cargo.toml
+      ansible.builtin.shell: grep '^version' Cargo.toml | awk -F '"' '{print $2}'
+      args:
+        chdir: "{{ agave_build_dir }}/agave-{{ agave_version }}"
+      register: cargo_toml_version
+      changed_when: false
+
+    - name: Debug Cargo.toml version
+      ansible.builtin.debug:
+        msg: "Cargo.toml version: {{ cargo_toml_version.stdout }} | Expected: {{ agave_version }}"
+
+    - name: Fail if Cargo.toml version does not match agave_version
+      ansible.builtin.fail:
+        msg: "Cargo.toml version ({{ cargo_toml_version.stdout }}) does not match expected agave_version ({{ agave_version }})!"
+      when: cargo_toml_version.stdout != agave_version
+      changed_when: false
+      ignore_errors: "{{ ansible_check_mode }}"
+
 - name: Create release directory for Agave
   ansible.builtin.file:
     path: "{{ solana_installed_release_dir }}"
