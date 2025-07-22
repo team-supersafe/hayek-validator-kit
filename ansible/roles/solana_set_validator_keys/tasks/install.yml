@@ -198,7 +198,7 @@
 
     - name: install - Generate Jito Relayer Comms RSA public key on target host
       ansible.builtin.shell: |
-        openssl rsa --in {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem --pubout --out {{ validator_keys_dir }}/jito-relayer-comms-pub.pem
+        openssl rsa -in {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem -pubout -out {{ validator_keys_dir }}/jito-relayer-comms-pub.pem
       args:
         creates: "{{ validator_keys_dir }}/jito-relayer-comms-pub.pem"
 
