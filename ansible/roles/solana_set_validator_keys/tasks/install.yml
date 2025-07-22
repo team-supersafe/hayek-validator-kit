@@ -190,7 +190,7 @@
 
     - name: install - Generate Jito Relayer Comms RSA private key on target host if not found on ansible host
       ansible.builtin.shell: |
-        openssl genrsa --out {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem 2048
+        openssl genrsa -out {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem 2048
       args:
         creates: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
       delegate_to: "{{ target_host }}"
