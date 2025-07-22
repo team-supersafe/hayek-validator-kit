@@ -46,8 +46,7 @@
           Command output: {{ installed_version.stdout | default('N/A') }}
           Return code: {{ installed_version.rc | default('N/A') }}
       when:
-        - not solana_binary.stat.exists
-        - installed_version is not defined or installed_version.rc is not defined or installed_version.rc != 0
+        - not solana_binary.stat.exists or installed_version.rc != 0
 
 - name: precheck - Check required validator keypairs for source_validator_name
   block:
