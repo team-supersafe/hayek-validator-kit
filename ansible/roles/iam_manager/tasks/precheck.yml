@@ -147,10 +147,7 @@
     item.value.key != "" and
     item.value.key is not none and
     not item.value.key.startswith('ssh-ed25519 ') and
-    not item.value.key.startswith('ssh-rsa ') and
-    not item.value.key.startswith('ecdsa-sha2-nistp256 ') and
-    not item.value.key.startswith('ecdsa-sha2-nistp384 ') and
-    not item.value.key.startswith('ecdsa-sha2-nistp521 ')
+    not item.value.key.startswith('ssh-rsa ')
   delegate_to: localhost
   no_log: true
   run_once: true
@@ -163,4 +160,26 @@
   when: item.value.key is not defined or item.value.key == "" or item.value.key is none
   delegate_to: localhost
   no_log: true
+  run_once: true
+
+# Precheck 11: Check RSA key length
+- name: Check RSA key length
+  ansible.builtin.shell: |
+    echo "{{ item.value.key }}" | ssh-keygen -lf -
+  register: rsa_key_info
+  when: item.value.key is defined and item.value.key.startswith('ssh-rsa ')
+  loop: "{{ users_csv.dict | dict2items }}"
+  delegate_to: localhost
+  changed_when: false
+  run_once: true
+
+- name: Fail if RSA key is too short
+  ansible.builtin.fail:
+    msg: "RSA key for user {{ item.key }} is too short (must be at least 2048 bits, got {{ rsa_key_info.results[loop.index0].stdout.split(' ')[0] }} bits)"
+  when:
+    - item.value.key is defined
+    - item.value.key.startswith('ssh-rsa ')
+    - (rsa_key_info.results[loop.index0].stdout.split(' ')[0] | int) < 2048
+  loop: "{{ users_csv.dict | dict2items }}"
+  delegate_to: localhost
   run_once: true
