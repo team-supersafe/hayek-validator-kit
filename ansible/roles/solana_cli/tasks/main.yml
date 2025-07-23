@@ -13,7 +13,7 @@
   when:
     - install_agave_validator | default(false)
     - validator_name is defined
-    - source_validator_name is defined
+    - keyset_source_name is defined
     - validator_type is defined
   tags: [solana, keyset]
 

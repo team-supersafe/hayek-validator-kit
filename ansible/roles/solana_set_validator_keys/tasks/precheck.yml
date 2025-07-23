@@ -22,8 +22,8 @@
 
 - name: precheck - Set keys dir for local ansible control host and target host
   ansible.builtin.set_fact:
-    ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ source_validator_name }}"
-    validator_keys_dir: "{{ keys_dir }}/{{ source_validator_name }}"
+    ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ keyset_source_name }}"
+    validator_keys_dir: "{{ keys_dir }}/{{ keyset_source_name }}"
 
 - name: precheck - Ensure a validator is installed
   block:
@@ -48,7 +48,7 @@
       when:
         - not solana_binary.stat.exists or installed_version.rc != 0
 
-- name: precheck - Check required validator keypairs for source_validator_name
+- name: precheck - Check required validator keypairs for keyset_source_name
   block:
     - name: precheck - Check if primary-target-identity.json exists in ansible_keys_dir
       ansible.builtin.stat:
@@ -160,7 +160,7 @@
   ansible.builtin.debug:
     msg: |
       SOURCE VALIDATOR KEYSET:
-      - Name: ({{ source_validator_name }})
+      - Name: ({{ keyset_source_name }})
       - Primary Target Identity: {{ primary_target_pubkey }}
       - Hot Spare Identity: {{ hot_spare_identity_pubkey | default('Not found') }}
       - Vote account: {{ vote_account_pubkey }}

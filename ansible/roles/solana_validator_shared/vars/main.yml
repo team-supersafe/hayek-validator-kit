@@ -1,3 +1,3 @@
 # Common variables for validator keyset installation
-ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ source_validator_name | default(validator_name) }}"
+ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ keyset_source_name | default(validator_name) }}"
 validator_keys_dir: "{{ keys_dir }}/{{ validator_name }}"
