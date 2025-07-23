@@ -6,3 +6,6 @@ jito_relayer_install_dir: "{{ solana_user_dir }}/.local/share/jito-relayer/insta
 jito_repo_url: "https://github.com/jito-foundation/jito-solana.git"
 jito_repo_dest: "{{ solana_user_dir }}/build/jito-solana"
 
+# For Jito validator, the keyset source name is the same as validator name
+keyset_source_name: "{{ validator_name }}"
+
