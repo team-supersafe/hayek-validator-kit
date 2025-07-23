@@ -13,6 +13,16 @@
 #   -e "agave_version=2.2.14" \
 #   -e "target_host=host-charlie"
 #
+# To install keys and configure agave validator:
+# ansible-playbook playbooks/pb_install_solana_cli.yml \
+#   -i solana_localnet.yml \
+#   --limit host-charlie \
+#   -e "agave_version=2.2.14" \
+#   -e "target_host=host-charlie" \
+#   -e "install_agave_validator=true" \
+#   -e "validator_name=my-validator" \
+#   -e "source_validator_name=source-validator"
+#
 # For syntax check add --syntax-check
 # For dry run add --diff --check
 
@@ -33,7 +43,19 @@
             - target_host
             - agave_version
 
+    - name: Assert validator variables when installing agave validator
+      ansible.builtin.assert:
+        that:
+          - validator_name is defined
+          - source_validator_name is defined
+        fail_msg: >
+          When install_agave_validator=true, must provide:
+            - validator_name
+            - source_validator_name
+      when: install_agave_validator | default(false)
+
   roles:
     - role: solana_cli
       vars:
         agave_version: "{{ agave_version }}"
+        install_agave_validator: "{{ install_agave_validator | default(false) }}"

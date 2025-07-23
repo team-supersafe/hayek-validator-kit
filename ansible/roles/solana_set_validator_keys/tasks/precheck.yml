@@ -223,6 +223,7 @@
       register: jito_relayer_process_status
       changed_when: false
       check_mode: false
+      ignore_errors: true
 
     - name: precheck - Set fact for co-hosted Jito relayer running status
       ansible.builtin.set_fact:

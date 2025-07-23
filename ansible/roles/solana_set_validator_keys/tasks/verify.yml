@@ -1,32 +1,35 @@
 ---
-- name: verify - Check if Jito relayer binary exists
-  ansible.builtin.stat:
-    path: "{{ jito_relayer_install_dir }}/jito-transaction-relayer"
-  register: relayer_binary
+- name: verify - Jito relayer verification (only if relayer was running before)
+  block:
+    - name: verify - Check if Jito relayer binary exists
+      ansible.builtin.stat:
+        path: "{{ jito_relayer_install_dir }}/jito-transaction-relayer"
+      register: relayer_binary
 
-- name: verify - Fail if Jito relayer binary is missing
-  ansible.builtin.fail:
-    msg: "Jito relayer binary not found at {{ jito_relayer_install_dir }}/jito-transaction-relayer!"
-  when: not relayer_binary.stat.exists
+    - name: verify - Fail if Jito relayer binary is missing
+      ansible.builtin.fail:
+        msg: "Jito relayer binary not found at {{ jito_relayer_install_dir }}/jito-transaction-relayer!"
+      when: not relayer_binary.stat.exists
 
-- name: verify - Check Jito relayer systemd service status
-  ansible.builtin.systemd:
-    name: "{{ jito_relayer_service_name }}"
-  register: relayer_service
+    - name: verify - Check Jito relayer systemd service status
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+      register: relayer_service
 
-- name: verify - Get last 50 lines of Jito relayer logs
-  ansible.builtin.shell: journalctl -u {{ jito_relayer_service_name }} --no-pager --since "{{ log_time_window | default('1 minute ago') }}" | tail -n 50
-  register: relayer_logs
-  changed_when: false
+    - name: verify - Get last 50 lines of Jito relayer logs
+      ansible.builtin.shell: journalctl -u {{ jito_relayer_service_name }} --no-pager --since "{{ log_time_window | default('1 minute ago') }}" | tail -n 50
+      register: relayer_logs
+      changed_when: false
 
-- name: verify - Print last 50 lines of Jito relayer logs
-  ansible.builtin.debug:
-    var: relayer_logs.stdout_lines
+    - name: verify - Print last 50 lines of Jito relayer logs
+      ansible.builtin.debug:
+        var: relayer_logs.stdout_lines
 
-- name: verify - Check Jito relayer process status
-  ansible.builtin.shell: ps aux | grep jito-transaction-relayer | grep -v grep
-  register: relayer_process
-  changed_when: false
+    - name: verify - Check Jito relayer process status
+      ansible.builtin.shell: ps aux | grep jito-transaction-relayer | grep -v grep
+      register: relayer_process
+      changed_when: false
+  when: target_host_running_jito_relayer | default(false)
 
 - name: verify - Check if validator binary exists
   ansible.builtin.stat:

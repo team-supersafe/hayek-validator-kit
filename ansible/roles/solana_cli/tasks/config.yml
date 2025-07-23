@@ -32,3 +32,23 @@
   ansible.builtin.debug:
     msg: "Current Solana CLI config:\n{{ solana_config_get.stdout }}"
   tags: [solana_cli, config]
+
+- name: Configure and start agave validator (if requested)
+  block:
+    - name: Debug - Agave validator configuration placeholder
+      ansible.builtin.debug:
+        msg: |
+          PLACEHOLDER: Configure and start agave validator
+          - Validator name: {{ validator_name }}
+          - Validator type: {{ validator_type }}
+
+          This is where we will:
+          1. Create validator startup script from templates
+          2. Create systemd service
+          3. Configure logrotate
+          4. Start the agave validator service
+
+          Templates and service configuration will be added in future updates.
+      tags: [solana_cli, config, agave_validator]
+  when: install_agave_validator | default(false)
+  tags: [solana_cli, config, agave_validator]
