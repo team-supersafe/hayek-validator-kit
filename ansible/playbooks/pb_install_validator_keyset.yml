@@ -7,7 +7,7 @@
 # ------
 # Run from /ansible directory:
 #
-# ansible-playbook playbooks/pb_set_validator_keys.yml \
+# ansible-playbook playbooks/pb_install_validator_keyset.yml \
 #   -i solana_localnet.yml \
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
@@ -56,4 +56,4 @@
         fail_msg: "Invalid validator_type '{{ validator_type }}'. Must be 'primary' or 'hot-spare'."
 
   roles:
-    - role: solana_set_validator_keys
+    - role: solana_validator_keyset

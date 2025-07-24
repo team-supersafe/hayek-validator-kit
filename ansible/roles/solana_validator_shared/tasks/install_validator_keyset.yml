@@ -1,9 +1,4 @@
 ---
-# Reusable task: install_validator_keyset
-# This task installs a validator keyset on a target host
-# It handles copying existing keys, generating missing keys, and creating symlinks
-# prechecks or post-verifications need to be done in the calling role
-
 - name: install_validator_keyset - Validate validator_name is defined
   ansible.builtin.assert:
     that:
