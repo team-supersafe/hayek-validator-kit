@@ -1,4 +1,4 @@
-user,email,sent_email,key,group_a,group_b
-alice,alice.dev@example.com,True,ssh-ed25519 AAAAC3NzaUniqueKey1 alice@dev,Admin,QA
-bob,bob.ops@example.com,False,ssh-ed25519 AAAAC3NzaUniqueKey2 bob@ops,Ops,SRE
-carla,carla.qa@example.com,False,ssh-ed25519 AAAAC3NzaUniqueKey3 carla@qa,QA,
+user,key,group_a,group_b,group_c,group_d
+alice,ssh-ed25519 AAAAC3NzaUniqueKey1 alice@dev,sysadmin,,,
+bob,ssh-ed25519 AAAAC3NzaUniqueKey2 bob@ops,sysadmin,validator_operators,validator_admins,
+carla,ssh-ed25519 AAAAC3NzaUniqueKey3 carla@qa,validator_operators,ansible_executor,,

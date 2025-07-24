@@ -12,13 +12,13 @@ By default, most ASN providers provision bare metal machines with the `ubuntu` u
 
 Beyond `ubuntu` , our approach when it comes to security is that of lest privileges, where we define these identity and access management users and groups as follows:
 
-<table><thead><tr><th width="206.796875">RBAC (UBUNTU GROUPS)</th><th width="278.9765625">DESCRIPTION</th><th>PERMISSION</th></tr></thead><tbody><tr><td>📂 sysadmin</td><td>Sudo access</td><td>To pre-set the permissions needed for each of the different roles played by operators.</td></tr><tr><td>📂 validator_admins</td><td>Can do everything to the validator, including install/uninstall, but nothing to the server</td><td><mark style="background-color:red;">????</mark></td></tr><tr><td>📂 validator_operators</td><td>Cannot install/uninstall the validator, but can perform all other operators, like upgrade, restart, migrate, start, and stop.</td><td><mark style="background-color:red;">????</mark></td></tr></tbody></table>
+<table><thead><tr><th width="206.796875">RBAC (UBUNTU GROUPS)</th><th width="278.9765625">DESCRIPTION</th><th>PERMISSION</th></tr></thead><tbody><tr><td>📂 sysadmin</td><td>Sudo access</td><td>To pre-set the permissions needed for each of the different roles played by operators.</td></tr><tr><td>📂 validator_admins</td><td>Can do everything to the validator, including install/uninstall, but nothing to the server</td><td><mark style="background-color:red;">????</mark></td></tr><tr><td>📂 validator_operators</td><td>Cannot install/uninstall the validator, but can perform all other operators, like upgrade, restart, migrate, start, and stop.</td><td><mark style="background-color:red;">????</mark></td></tr><tr><td>📂 ansible_executor</td><td>The <code>ansible_executor</code> role is assigned to users who need permission to run Ansible playbooks. Users with this role must be members of the <code>ansible_executor</code> group and are required to configure their own password using the self-service password setup. This ensures secure privilege escalation and auditability while maintaining least-privilege access.</td><td></td></tr><tr><td>📂 validator_viewers</td><td>The <code>validator_viewers</code> role is intended for users who need read-only access to validator-related operations. Members of this role can view service statuses, access logs, monitoring and inspect validator keys, but cannot perform any administrative or write actions.</td><td></td></tr></tbody></table>
 
 {% hint style="warning" %}
 These are the preset groups that will be provisioned AFTER running the user setup Ansible script. When configuring your iam\_setup.csv file ([see below](user-access.md#setup-users-csv)), make sure you use the correct group names on each user for their membership.
 {% endhint %}
 
-<table><thead><tr><th width="177.41796875">UBUNTU USERS</th><th width="294.82421875">DESCRIPTION</th><th>USAGE</th></tr></thead><tbody><tr><td>⚙️ <strong>ubuntu</strong></td><td>Provisioned by ASN with a server. Disabled after secure user setup.</td><td>To provision server users.</td></tr><tr><td>⚙️ <strong>sol</strong></td><td>Primary validator service runner and owner of the validator files and data.</td><td>Runs the validator service.</td></tr><tr><td>🧍Operator User:<br>>>> <strong>alice</strong>, <strong>bob</strong>, etc.</td><td>Each human operator has his/her dedicated Ubuntu user.</td><td>Access the server via SSH and run Ansible scripts from the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>.</td></tr></tbody></table>
+<table><thead><tr><th width="177.41796875">USERS</th><th width="294.82421875">DESCRIPTION</th><th>USAGE</th></tr></thead><tbody><tr><td>⚙️ <strong>ubuntu</strong></td><td>Provisioned by ASN with a server. Disabled after secure user setup.</td><td>To provision server users.</td></tr><tr><td>⚙️ <strong>sol</strong></td><td>Primary validator service runner and owner of the validator files and data.</td><td>Runs the validator service.</td></tr><tr><td>🧍Operator User:<br>>>> <strong>alice</strong>, <strong>bob</strong>, etc.</td><td>Each human operator has his/her dedicated user.</td><td>Access the server via SSH and run Ansible scripts from the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>.</td></tr></tbody></table>
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ Since the user provisioning is done via an Ansible script, you must have:
 
 The `pb_setup_server_users.yml` expects a CSV with users and groups meta that will be used for the identity and access management provisioning.
 
-You can use the template below as a starting point and modify as needed. Once you are happy with the setup, put in your local workstation in a short and accessible path, like `~/Desktop` or `~/Setup`. You'll be using this path as a parameter when running the script.
+You can use the template below as a starting point and modify as needed. Once you are happy with the setup, put in your local workstation in a short and accessible path, like `~/new-metal-box/iam_setup.csv`. You'll be using this path as a parameter when running the script.
 
 {% file src="../../.gitbook/assets/iam_setup.csv" %}
 
@@ -50,23 +50,30 @@ all:
 Replace `<target_ip_address>` with your actual values. Once the inventory is updated, you can run the playbook using:
 
 ```sh
-ansible-playbook -i solana_new_metal_box.yml playbooks/pb_setup_server_users.yml \
-  -e "target_host_name=new-metal-box" \
-  -e "user_list=~/Desktop/iam_setup.csv"
+ansible-playbook playbooks/pb_setup_server_users.yml \
+  -i target_one_host.yml \
+  -e "target_host=new-metal-box" \
+  -e "ansible_user=ubuntu" \
+  -e "csv_file=iam_setup.csv"
 ```
 
 {% hint style="danger" %}
 **Note:** The playbook is configured to run with the user `ubuntu` which is the only user in the newly provisioned server.
 {% endhint %}
 
-## Confirmation Step
+### Confirmation Step
 
 Upon running the playbook, you will see a confirmation asking you to verify the IP of the host you are about to change:
 
 ```
-TASK [Show server IP and request confirmation] ******************************************************
-[Show server IP and request confirmation]
+TASK [Show server IP and location for confirmation] ******************************
+[Show server IP and location for confirmation]
 IMPORTANT: You are about to run this playbook on the server with IP: 192.168.1.100
+
+Location Information:
+- City: Unknown
+- Country: Unknown
+- Organization: Unknown
 
 To continue, please type exactly this IP: 192.168.1.100
 
@@ -77,112 +84,193 @@ Type IP here
 
 This step is a safety measure to ensure you are provisioning the correct server. Type the IP address shown to continue. If you are not sure, press Ctrl+C to cancel the process.
 
-## User Passwords
+### Ubuntu User Disablement Notice
 
-Only users who require sudo (elevated) privileges are provisioned with passwords. These passwords are securely generated and encrypted using the age tool with each user’s public key. Users with sudo access must decrypt their password locally using their private SSH key to perform privileged actions.
+Before the playbook completes, a **final security warning** is issued to inform the operator that the default `ubuntu` user will be disabled. This is a **deliberate security measure**, as many cloud providers (ASN) preconfigure servers with the `ubuntu` user by default, which poses a risk if left active.
 
-These users with elevated privileges [will receive an email](user-access.md#password-generation) with their temp password and should use [age tool](https://github.com/FiloSottile/age) like so:
+A notification is displayed with the following message:
 
-* On Ubuntu/Debian: `apt install age`
-* On macOS: `brew install age`
+```bash
+TASK [iam_manager : Notify about upcoming ubuntu user disablement] ******************************
 
-For all other users, no password is set. These users access the server exclusively via SSH key-based authentication, and cannot escalate privileges. This approach minimizes the attack surface while maintaining secure administrative access for authorized operators.
+MSG:
 
-### Password Generation - Pending below&#x20;
+IMPORTANT WARNING: The ubuntu user will now be disabled.
+After this task completes, you will LOSE CONNECTION to this server.
+Please ensure you can connect with one of the newly created users:
+- alan
+- alice
+- bob
 
-<mark style="background-color:red;">The playbook will extract user information from the CSV file and generate a password for each user. These passwords will be encrypted using Ansible Vault and stored in a local directory on the operator's computer.</mark>
-
-During the execution, you will be prompted to enter a password to encrypt the vault file. This password is crucial as it will be needed later to view all the generated user credentials.
-
-Ansible prompt:
-
-```
-Please enter a password to encrypt the vault file ~/.encryptedpsw/users_2025-06-17.yml
-IMPORTANT: Save this password! You will need it later to view all the generated user credentials.
-```
-
-After entering the password, you will be asked to confirm it:
-
-```
-New Vault password:
-Confirm New Vault password:
+TASK [iam_manager : Pause for warning] **********************************************************
+[iam_manager : Pause for warning]
+Press Enter to continue and disable ubuntu user (you will lose connection!), or Ctrl+C to abort:
 ```
 
-#### Accessing Encrypted Passwords
+{% hint style="danger" %}
+Once confirmed, the `ubuntu` user is disabled, and the SSH session will be terminated.
+{% endhint %}
 
-After the passwords are encrypted and stored, the playbook will require access to this encrypted file to generate and encrypt individual password files for each user. These files will be sent to each user via email.
+## Sudo Access by Role
 
-During the execution, you will be prompted to enter the password for the generated passwords vault file:
+The playbook automatically configures the required sudo permissions for each role by deploying dedicated policy files under `/etc/sudoers.d/`. For example:
+
+<table><thead><tr><th width="177.41796875">ROLE</th><th width="294.82421875">FILE</th><th>PERMS</th></tr></thead><tbody><tr><td>sysadmin</td><td><code>10-sysadmin</code></td><td><p></p><pre class="language-bash"><code class="lang-bash"><a data-footnote-ref href="#user-content-fn-1">%sysadmin ALL=(ALL) ALL</a>
+</code></pre></td></tr><tr><td>validator_admins</td><td><code>20-validator-admins</code></td><td><p></p><pre><code>%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl start {{ validator_service }}
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop {{ validator_service }}
+</code></pre></td></tr><tr><td>validator_operators</td><td><code>30-validator-operators</code></td><td><p></p><pre><code>%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/tail -f {{ validator_log_file }}
+</code></pre></td></tr><tr><td>ansible_executor</td><td><code>40-ansible-executor</code></td><td><p></p><pre><code>%ansible_executor ALL=(ALL) PASSWD: /bin/sh
+</code></pre></td></tr><tr><td>validator_viewers</td><td><code>40-validator-viewers</code></td><td><p></p><pre><code>%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/iostat
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/top -n 1
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/free -h
+</code></pre></td></tr></tbody></table>
+
+
+
+## Password Self Service
+
+Users who belong to the `sysadmin` or `ansible_executor` groups are **required to set their own password** in order to perform privilege escalation via `sudo`.
+
+### Initial Access
+
+After the user logs in using their **SSH private key**, they will see a welcome message guiding them through the self-service password setup:
+
+```bash
+ssh -p 2522 alan@192.168.1.100
+```
 
 ```
-Please enter the password for the generated passwords vault file (/hayek-validator-kit/ansible/vault/group_vars/generated_pass.yml)
-This password is needed to access the user passwords that were previously generated.
+===============================================================================
+                              WELCOME TO THE SYSTEM
+===============================================================================
+Welcome, alan!
+===============================================================================
+
+===============================================================================
+                              PASSWORD MANAGEMENT
+===============================================================================
+To change your password, use: sudo reset-my-password
+
+This command allows you to reset your password without entering your current
+sudo password. It's a self-service feature for your convenience.
+===============================================================================
+
 ```
 
-#### User Creation and Group Assignment
+Run the following command once logged in:
 
-The playbook will use the CSV file to create users. It will assign users to the corresponding groups based on the `group_a` and `group_b` columns. If either of these columns is empty, the playbook will omit the group assignment for that user.
+```bash
+sudo reset-my-password
+```
 
-#### Public Key Configuration
+### Security Question Setup
 
-Additionally, the playbook will extract the public keys for each user from the CSV file and configure them on the target server for each user.
+After running the `sudo reset-my-password` command for the first time, users will be prompted to configure a **personal security question and answer**. This is a mandatory step in the password self-service process.
 
-#### Temporary Password
+```bash
+First-time setup: create your personal security question.
+ Question (min 10 chars): secure question > 10 chars
+ Answer (min 6 chars, will not echo): 
+```
 
-The generated password is temporary. Users must change their password immediately upon accessing the server. This can be enforced using the command:
+{% hint style="warning" %}
+This security question and answer can be randomly generated using a password manager such as 1Password and securely stored in the same vault alongside your other credentials. It is important that the question is not something obvious or personal, as attackers may attempt to guess it using social engineering techniques. Treat your security question and answer with the same level of confidentiality as your password to ensure maximum protection.
+{% endhint %}
+
+The security question and answer are encrypted using **AES-256** with a high number of iterations and a unique salt, ensuring robust protection against brute-force or dictionary attacks. This encrypted data is stored in the path `/etc/password-security/alan`, with strict file permissions accessible **only by root**.
+
+If a user wishes to reset their password using the self-service script (`sudo reset-my-password`), they will be prompted to correctly answer their security question.&#x20;
+
+The user has **a maximum of 3 attempts**. After three failed answers, the script will deny further access for 24 hours, displaying the following message:
+
+```bash
+sudo reset-my-password
+Security check: secure question > 10 chars...
+ Answer: 
+Incorrect answer. 2 attempts remaining.
+ Answer: 
+Incorrect answer. 1 attempts remaining.
+ Answer: 
+sdfsIncorrect answer. 0 attempts remaining.
+Too many failed attempts. Account locked for 24 hours.
+Contact administrator for immediate unlock.
+```
+
+To regain access before the lockout period ends, a **user from the `sysadmin` group** must either:
+
+* Manually reset the password using `sudo passwd alan`, or
+* **Remove the lock file** at `/etc/password-security/password-reset-blocked-alan` to re-enable the self-service flow.
+
+### Password Self-Service Logging
+
+To ensure full **traceability and auditability**, all user interactions with the `reset-my-password` script are logged in the file `/var/log/password-reset.log`. This includes events such as security question setup, password resets, and encryption actions.
+
+Each log entry includes a timestamp, session ID, username, event type, and source IP address. This enables administrators to monitor and audit all password self-service activity in a secure and structured format.
 
 ```sh
-chage -d 0 {{ user }}
+[2025-07-23 03:51:09] [INFO] [SESSION:95939d91] [USER:alan] [TYPE:SESSION_START] [IP:172.25.0.10] Password reset process initiated  
+[2025-07-23 03:51:09] [INFO] [SESSION:95939d91] [USER:alan] [TYPE:FIRST_TIME_SETUP] [IP:172.25.0.10] User creating initial security question  
+[2025-07-23 03:55:59] [INFO] [SESSION:6298dffe] [USER:alan] [TYPE:QUESTION_CREATED] [IP:172.25.0.10] Security question created successfully  
+[2025-07-23 04:04:31] [INFO] [SESSION:e56002e8] [USER:alan] [TYPE:ANSWER_CREATED] [IP:172.25.0.10] Security answer created successfully  
+[2025-07-23 04:04:32] [INFO] [SESSION:e85a52ef] [USER:alan] [TYPE:QUESTION_ENCRYPTED] [IP:172.25.0.10] Security question encrypted with AES-256  
+[2025-07-23 04:04:32] [INFO] [SESSION:e85a52ef] [USER:alan] [TYPE:SECURITY_QUESTION_SAVED] [IP:172.25.0.10] Security question and answer stored successfully  
 ```
 
-#### Sending Encrypted Passwords via Email
+All log files are owned by `root` and are protected from unauthorized access. This logging system ensures compliance with internal audit policies and helps detect misuse or suspicious activity in password operations.
 
-To send the passwords via email, the playbook needs access to the encrypted file containing the SMTP configurations, `email_vars.yml`. The passwords are encrypted using the `age` tool with each user's public key, which must be included in the CSV.
+## Discovering Your Sudo Permissions
 
-Below is an example of the email sent to users:
+To help users understand **what commands they are allowed to run**, a message is displayed at login as part of the system's **welcome screen**:
 
 ```
-Hello dave,
+===============================================================================
+                              WELCOME TO THE SYSTEM
+===============================================================================
+Welcome, alan!
+===============================================================================
 
-Your server access credentials have been encrypted with your SSH public key.
-For decrypt the password, you need to have the private key of the user.
+===============================================================================
+                              USEFUL COMMANDS
+===============================================================================
+To check your current permissions, run:
+  sudo -l -U alan
 
-Server IP: 192.168.1.100
-Username: dave
+To view your permissions file:
+  cat ~/permissions.txt
+===============================================================================
 
-The encrypted password file is attached to this email.
-
-To decrypt your password:
-1. Install age if not already installed:
-   - On Ubuntu/Debian: apt install age
-   - On macOS: brew install age
-2. Save the attachment and run:
-   age -d -i ~/.ssh/private_key dave_password.age
-
-Connection command:
-ssh -p 2522 dave@192.168.1.100
-
-Please change your password upon first login.
-
-Best regards,
-System Administrator
 ```
 
-#### Cleanup
+Each user is provided with a `permissions.txt` file in their home directory. This file is:
 
-The playbook includes cleanup tasks to ensure that temporary vault files are removed after use. This is done to prevent potential issues with leftover files. The following tasks are executed:
+* **Automatically generated** by Ansible during provisioning
+* Updated based on the user’s **assigned role and sudoers configuration**
 
-* **Delete temporal vault file if it exists**: This task removes the temporary vault file specified by `generated_pass_file` to avoid any issues with leftover files.
-* **Delete temporal vault file backup if it exists**: This task removes any backup of the temporary vault file, ensuring that no sensitive information is left behind.
+```bash
+cat ~/permissions.txt
+```
 
-These tasks are delegated to the localhost to ensure they are executed on the control machine.
+```
+cat ~/permissions.txt
 
-#### Disabling the Ubuntu User
+# REAL USER PERMISSIONS FOR alan
+# ================================================
+# This file shows the REAL permissions you have on this server
+# based on your current sudoers configuration
+#
+# Automatically generated by Ansible
+# Last updated: 2025-07-23T02:47:16Z
 
-The playbook includes tasks to disable the `ubuntu` user after the new users are created. This is a security measure to prevent unauthorized access. The following tasks are executed:
+systemctl status sol.service
+journalctl -u sol.service --no-pager
+tail -f /home/sol/logs/agave-validator.log
+tail -n 50 /home/sol/logs/agave-validator.log
+pgrep -f sol.service
+du -sh /mnt/ledger
+du -sh /mnt/accounts
+```
 
-* **Disable ubuntu user**: This task disables the `ubuntu` user by locking the password and changing the shell to `/usr/sbin/nologin`.
-* **Block SSH login for ubuntu user**: This task modifies the SSH configuration to deny login for the `ubuntu` user.
-* **Restart SSH service**: This task restarts the SSH service to apply the changes.
 
-These tasks ensure that the `ubuntu` user is completely disabled, and you must use one of the newly created users to access the server.
+
+[^1]: 
