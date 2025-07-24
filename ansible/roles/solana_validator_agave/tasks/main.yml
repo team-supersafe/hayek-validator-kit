@@ -1,0 +1,16 @@
+---
+- name: Precheck environment
+  import_tasks: precheck.yml
+  tags: [agave_validator, precheck]
+
+- name: Install validator keyset
+  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/install_validator_keyset.yml
+  tags: [agave_validator, keyset]
+
+- name: Configure agave validator
+  import_tasks: configure.yml
+  tags: [agave_validator, configure]
+
+- name: Verify agave validator
+  import_tasks: verify.yml
+  tags: [agave_validator, verify] 

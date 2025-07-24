@@ -8,15 +8,6 @@
   when: not solana_cli_already_installed
   tags: [solana, install]
 
-- name: Install validator keyset (if agave validator is requested)
-  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/install_validator_keyset.yml
-  when:
-    - install_agave_validator | default(false)
-    - validator_name is defined
-    - keyset_source_name is defined
-    - validator_type is defined
-  tags: [solana, keyset]
-
 - name: Configure the Solana CLI post installation
   import_tasks: config.yml
   when: not solana_cli_already_installed

@@ -1,0 +1,49 @@
+---
+- name: precheck - Validate required variables
+  block:
+    - name: precheck - Validate validator_name is defined
+      ansible.builtin.assert:
+        that:
+          - validator_name is defined
+        fail_msg: "validator_name must be defined"
+
+    - name: precheck - Validate keyset_source_name is defined
+      ansible.builtin.assert:
+        that:
+          - keyset_source_name is defined
+        fail_msg: "keyset_source_name must be defined"
+
+    - name: precheck - Validate validator_type is defined
+      ansible.builtin.assert:
+        that:
+          - validator_type is defined
+        fail_msg: "validator_type must be defined"
+
+    - name: precheck - Validate validator_type value
+      ansible.builtin.assert:
+        that:
+          - validator_type in ['primary', 'hot-spare']
+        fail_msg: "validator_type must be set to 'primary' or 'hot-spare', got: {{ validator_type }}"
+
+- name: precheck - Ensure Solana CLI is installed
+  block:
+    - name: precheck - Check if agave-validator binary exists
+      ansible.builtin.stat:
+        path: "{{ solana_install_dir }}/agave-validator"
+      register: agave_validator_binary
+
+    - name: precheck - Get installed agave-validator version
+      ansible.builtin.command: "{{ solana_install_dir }}/agave-validator --version"
+      register: installed_version
+      changed_when: false
+      failed_when: false
+      when: agave_validator_binary.stat.exists
+
+    - name: precheck - Fail if no agave-validator binary found or non functional
+      ansible.builtin.fail:
+        msg: |
+          No functional agave-validator binary found at {{ solana_install_dir }}/agave-validator!
+          Command output: {{ installed_version.stdout | default('N/A') }}
+          Return code: {{ installed_version.rc | default('N/A') }}
+      when:
+        - not agave_validator_binary.stat.exists or installed_version.rc != 0 
