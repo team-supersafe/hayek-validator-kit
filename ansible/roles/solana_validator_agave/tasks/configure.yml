@@ -11,7 +11,7 @@
       - Validator name: {{ validator_name }}
       - Validator type: {{ validator_type }}
       - Keys directory: {{ validator_keys_dir }}
-      
+
       This will create a startup script that:
       1. Sets up environment variables
       2. Configures validator parameters
@@ -24,7 +24,7 @@
       PLACEHOLDER: Create systemd service
       - Service name: {{ validator_service_name | default('agave-validator') }}
       - User: {{ solana_user }}
-      
+
       This will create a systemd service that:
       1. Manages the validator process
       2. Handles restarts and failures
@@ -36,7 +36,7 @@
     msg: |
       PLACEHOLDER: Configure logrotate
       - Log directory: {{ validator_log_dir | default('/var/log/agave-validator') }}
-      
+
       This will configure log rotation to:
       1. Rotate logs daily
       2. Compress old logs
@@ -48,7 +48,7 @@
     msg: |
       PLACEHOLDER: Start agave validator service
       - Service: {{ validator_service_name | default('agave-validator') }}
-      
+
       This will:
       1. Enable the service
       2. Start the service
@@ -58,4 +58,4 @@
 - name: configure - Configuration complete
   ansible.builtin.debug:
     msg: "Agave validator configuration completed successfully"
-  tags: [agave_validator, configure] 
+  tags: [agave_validator, configure]

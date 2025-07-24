@@ -44,4 +44,4 @@
 
   roles:
     - role: solana_cli
-    - role: solana_validator_agave 
+    - role: solana_validator_agave

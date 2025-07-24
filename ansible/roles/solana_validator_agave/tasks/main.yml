@@ -13,4 +13,4 @@
 
 - name: Verify agave validator
   import_tasks: verify.yml
-  tags: [agave_validator, verify] 
+  tags: [agave_validator, verify]

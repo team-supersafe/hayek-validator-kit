@@ -46,4 +46,4 @@
           Command output: {{ installed_version.stdout | default('N/A') }}
           Return code: {{ installed_version.rc | default('N/A') }}
       when:
-        - not agave_validator_binary.stat.exists or installed_version.rc != 0 
+        - not agave_validator_binary.stat.exists or installed_version.rc != 0

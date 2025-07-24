@@ -1,5 +1,5 @@
 ---
-# Other variables are expected as input when calling this role 
+# Other variables are expected as input when calling this role
 # and checked during the role's precheck task
 
 # For agave validator, the keyset source name is the same as validator name

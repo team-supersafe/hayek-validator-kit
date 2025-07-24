@@ -25,4 +25,4 @@
 
 - name: verify - Print agave validator monitoring hints
   ansible.builtin.debug:
-    msg: 🚀 Agave Validator Setup Complete! 
+    msg: 🚀 Agave Validator Setup Complete!
