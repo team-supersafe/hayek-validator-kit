@@ -9,13 +9,6 @@
 	// The /workspace is where the root project dir is mounted in the volumes section of 
 	// devtools service in docker-compose.yml 
 	"workspaceFolder": "/hayek-validator-kit",
-	// "target" is the path *inside* the container where the socket will appear
-	"mounts": [
-		"source=${env:SSH_AUTH_SOCK},target=/ssh-agent,readonly"
-	],
-	"containerEnv": {
-		"SSH_AUTH_SOCK": "/ssh-agent" // Ensure this matches the target path in the mount
-	},
 	"customizations": {
 		// Configure properties specific to VS Code.
 		"vscode": {
