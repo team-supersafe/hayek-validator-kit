@@ -276,7 +276,7 @@ EOF
 }
 
 echo
-echo "---   Configuring host-alphat with the demo validator key set   ---"
+echo "---   Configuring host-alpha with the demo validator key set   ---"
 echo
 cleanup-host host-alpha
 # docker exec -it primary bash -c 'sudo chown -R sol:sol /mnt/ledger && sudo chown -R sol:sol /mnt/accounts && sudo chown -R sol:sol /mnt/snapshots'
