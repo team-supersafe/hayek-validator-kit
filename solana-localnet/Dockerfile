@@ -244,7 +244,7 @@ RUN --mount=type=cache,target=/root/.cache \
 # otherwise the container will exit with unknown error 255
 USER root
 
-# End of validator
+# End of validator-builder
 
 
 # Dockerfile - This target is used to create a pristine image with basic tooling, users and ssh server
@@ -272,4 +272,4 @@ RUN --mount=type=cache,target=/root/.cache \
 # Default command
 CMD [ "bash" ]
 
-# End of pristine
+# End of naked-builder
