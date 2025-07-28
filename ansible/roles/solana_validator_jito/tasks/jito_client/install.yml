@@ -1,4 +1,27 @@
 ---
+- name: Install prerequisites
+  become: true
+  block:
+    - name: Install build prerequisites
+      ansible.builtin.apt:
+        name:
+          - bzip2
+          - libssl-dev
+          - libudev-dev
+          - pkg-config
+          - zlib1g-dev
+          - llvm
+          - clang
+          - cmake
+          - make
+          - libprotobuf-dev
+          - protobuf-compiler
+        update_cache: true
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to install build prerequisites. Error: {{ ansible_failed_result }}"
+
 - name: Determine if we should build from source
   ansible.builtin.set_fact:
     should_build_from_source: "{{ jito_force_build | default(false) or build_from_source }}"
