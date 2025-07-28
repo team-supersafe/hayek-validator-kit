@@ -9,6 +9,7 @@
   become: true
   ansible.builtin.apt:
     name:
+      - at
       - build-essential
       - pkg-config
       - libudev-dev

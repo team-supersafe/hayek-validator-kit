@@ -5,6 +5,7 @@
     - name: Install build prerequisites
       ansible.builtin.apt:
         name:
+          - at
           - bzip2
           - libssl-dev
           - libudev-dev
