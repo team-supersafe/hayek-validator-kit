@@ -1,45 +1,29 @@
+ARG SOLANA_RELEASE=2.2.20
+
 FROM ubuntu:24.04 AS ubuntu-base
 LABEL maintainer="eydel.rivero@gmail.com"
-
-ARG SOLANA_RELEASE=2.2.14
+ARG SOLANA_RELEASE
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Clean up docker and handle apt locks properly
-RUN rm -rf /var/lib/apt/lists/* && \
-    rm -f /var/cache/apt/archives/lock && \
-    rm -f /var/lib/dpkg/lock* && \
-    dpkg --configure -a && \
-    apt-get clean && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        openssh-server nano curl git openssl tar jq less tree \
-        bzip2 zstd xz-utils lbzip2 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install dependencies with proper lock handling
-RUN rm -rf /var/lib/apt/lists/* && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
+# Install dependencies.
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && apt-get install -y --no-install-recommends \
        apt-utils \
-       at \
-       cron \
-       clang \
-       libclang-dev \
        locales \
-       logrotate \
        python3-dev \
        python3-setuptools \
        python3-pip \
        python3-yaml \
        software-properties-common \
        rsyslog sudo iproute2 \
-       openssh-client git curl nano openssl tar jq less tree \
+       openssh-client openssh-server git curl nano openssl tar jq less tree \
+       at cron logrotate \
+    && apt-get purge -y --auto-remove \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /usr/share/doc \
-    && rm -rf /usr/share/man
+    && rm -Rf /var/lib/apt/lists/* \
+    && rm -Rf /usr/share/doc && rm -Rf /usr/share/man
+# RUN sed -i 's/^\($ModLoad imklog\)/#\1/' /etc/rsyslog.conf
 
 # Remove useless Python environment warning flag.
 RUN sudo rm -rf /usr/lib/python3.12/EXTERNALLY-MANAGED
@@ -48,7 +32,7 @@ RUN sudo rm -rf /usr/lib/python3.12/EXTERNALLY-MANAGED
 
 
 FROM alpine AS solana-binaries
-ARG SOLANA_RELEASE=2.2.14
+ARG SOLANA_RELEASE
 
 # ADD "https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download/$SOLANA_RELEASE/solana-release-aarch64-unknown-linux-gnu.tar.bz2" "/$SOLANA_RELEASE.tar.bz2"
 
@@ -79,6 +63,7 @@ RUN --mount=type=cache,target=/root/.cache \
 # Dockerfile
 FROM ubuntu-base AS ansible-control-builder
 LABEL maintainer="eydel.rivero@gmail.com"
+ARG SOLANA_RELEASE
 
 # Fix potential UTF-8 errors with ansible-test.
 RUN locale-gen en_US.UTF-8
@@ -114,7 +99,8 @@ RUN --mount=type=cache,target=/root/.cache \
     ln -sf "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE/solana-release" "$SOLANA_INSTALL_DIR/active_release" \
     && export PATH=$SOLANA_INSTALL_DIR/active_release/bin:$PATH \
     && solana --version \
-    && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.bashrc \
+    && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.profile \
+    && echo 'source ~/.bashrc' >> ~/.profile \
     && echo 'export PS1="\[\e[0;32m\]ansible-control\[\e[m\]:\w\$ "' >> ~/.bashrc
 
 # Default command
@@ -126,19 +112,17 @@ CMD [ "bash" ]
 # Dockerfile
 FROM ubuntu-base AS gossip-entrypoint-builder
 LABEL maintainer="eydel.rivero@gmail.com"
-
-ARG SOLANA_RELEASE=2.2.14
+ARG SOLANA_RELEASE
 
 # set workdir
 RUN mkdir -p /opt/code/tools
 WORKDIR /opt/code/tools
 
-# Install runtime OS package dependencies
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && \
-        apt-get install -y --no-install-recommends \
-        openssh-server nano curl git openssl tar jq less tree && \
-        apt-get purge -y --auto-remove
+# # Install runtime OS package dependencies (gossip)
+# RUN apt-get update && \
+#         apt-get install -y --no-install-recommends \
+#         openssh-server && \
+#         apt-get purge -y --auto-remove
 
 SHELL [ "/bin/bash", "-c" ]
 ENV LANG=C.UTF-8
@@ -166,7 +150,8 @@ RUN --mount=type=cache,target=/root/.cache \
     ln -sf "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE/solana-release" "$SOLANA_INSTALL_DIR/active_release" \
     && export PATH=$SOLANA_INSTALL_DIR/active_release/bin:$PATH \
     && solana --version \
-    && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.bashrc
+    && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.profile \
+    && echo 'source ~/.bashrc' >> ~/.profile
 
 # RPC JSON
 EXPOSE 8899/tcp
@@ -212,19 +197,17 @@ CMD [""]
 # Dockerfile
 FROM ubuntu-base AS validator-builder
 LABEL maintainer="eydel.rivero@gmail.com"
-
-ARG SOLANA_RELEASE=2.2.14
+ARG SOLANA_RELEASE
 
 # set workdir
 RUN mkdir -p /opt/code/tools
 WORKDIR /opt/code/tools
 
-# Install runtime OS package dependencies
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && \
-        apt-get install -y --no-install-recommends \
-        openssh-server nano curl git openssl tar jq less tree && \
-        apt-get purge -y --auto-remove
+# # Install runtime OS package dependencies (validator-builder)
+# RUN apt-get update && \
+#         apt-get install -y --no-install-recommends \
+#         openssh-server && \
+#         apt-get purge -y --auto-remove
 
 SHELL [ "/bin/bash", "-c" ]
 ENV LANG=C.UTF-8
@@ -254,13 +237,14 @@ RUN --mount=type=cache,target=/root/.cache \
     ln -sf "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE/solana-release" "$SOLANA_INSTALL_DIR/active_release" \
     && export PATH=$SOLANA_INSTALL_DIR/active_release/bin:$PATH \
     && solana --version \
-    && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.bashrc
+    && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.profile \
+    && echo 'source ~/.bashrc' >> ~/.profile
 
 # switch back to root user so the base container CMD ["/lib/systemd/systemd"] can run
 # otherwise the container will exit with unknown error 255
 USER root
 
-# End of validator
+# End of validator-builder
 
 
 # Dockerfile - This target is used to create a pristine image with basic tooling, users and ssh server
@@ -272,12 +256,11 @@ LABEL maintainer="eydel.rivero@gmail.com"
 RUN mkdir -p /opt/code/tools
 WORKDIR /opt/code/tools
 
-# Install runtime OS package dependencies
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && \
-        apt-get install -y --no-install-recommends \
-        openssh-server nano curl git openssl tar jq less tree && \
-        apt-get purge -y --auto-remove
+# # Install runtime OS package dependencies (naked-builder)
+# RUN apt-get update && \
+#         apt-get install -y --no-install-recommends \
+#         openssh-server && \
+#         apt-get purge -y --auto-remove
 
 SHELL [ "/bin/bash", "-c" ]
 ENV LANG=C.UTF-8
@@ -286,18 +269,7 @@ ENV LANG=C.UTF-8
 RUN --mount=type=cache,target=/root/.cache \
     sudo systemctl enable ssh
 
-# Configure sol user
-RUN --mount=type=cache,target=/root/.cache \
-    adduser --disabled-password --gecos "" sol \
-    && echo "sol:solpw" | chpasswd \
-    && usermod -aG sudo sol \
-    && echo "sol ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-
-USER sol
-
-USER root
-
 # Default command
 CMD [ "bash" ]
 
-# End of pristine
+# End of naked-builder

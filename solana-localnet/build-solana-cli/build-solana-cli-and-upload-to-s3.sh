@@ -3,7 +3,7 @@
 
 if [ -z "${SOLANA_RELEASE}" ]; then echo "Error: SOLANA_RELEASE is not set"; exit 1; fi
 if [ -z "${AWS_ACCESS_KEY_ID}" ]; then echo "Error: AWS_ACCESS_KEY_ID is not set"; exit 1; fi
-if [ -z "${AWS_ACCESS_KEY_SECRET}" ]; then echo "Error: AWS_ACCESS_KEY_SECRET is not set"; exit 1; fi
+if [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then echo "Error: AWS_SECRET_ACCESS_KEY is not set"; exit 1; fi
 if [ -z "${AWS_REGION}" ]; then echo "Error: AWS_REGION is not set"; exit 1; fi
 if [ -z "${BUCKET_NAME}" ]; then echo "Error: BUCKET_NAME is not set"; exit 1; fi
 
@@ -74,7 +74,7 @@ pretty_echo  "Installing dependencies..."
 sudo apt-get install -y --no-install-recommends \
     build-essential \
     pkg-config \
-    libudev-dev llvm libclang-dev \
+    libudev-dev llvm libclang-dev libssl-dev \
     protobuf-compiler
 
 pretty_echo "Installed software:"
