@@ -2,10 +2,7 @@
 
 The Hayek Solana Validator uses the Hayek Validator Kit for infrastructure and security using the Jito installer.
 
-| Name                | Mainnet                                      | Testnet |
-| ------------------- | -------------------------------------------- | ------- |
-| Identity Public Key | HAYEKSWg2EY21k38St9X5yM7QMW6SunKDefs5SqYSFty | ?       |
-| Voting Public Key   | HAYEKSWg2EY21k38St9X5yM7QMW6SunKDefs5SqYSFty | ?       |
+<table><thead><tr><th width="177.60546875">Name</th><th>Mainnet</th><th>Testnet</th></tr></thead><tbody><tr><td>Identity Public Key</td><td>hykfH9jUQqe2yqv3VqVAK5AmMYqrmMWmdwDcbfsm6My</td><td>?</td></tr><tr><td>Voting Public Key</td><td>HAYEKSWg2EY21k38St9X5yM7QMW6SunKDefs5SqYSFty</td><td>?</td></tr></tbody></table>
 
 Upgrade version when any of them is true:
 
