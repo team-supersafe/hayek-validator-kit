@@ -1,4 +1,5 @@
 #!/bin/bash
+# Not to be called directly, but called by devcontainer or start-localnet-from-outside-ide.sh to configure the localnet
 
 set -e
 
@@ -61,7 +62,7 @@ MIN_FINALIZED_SLOT=20 # Recommended value is 100. See https://github.com/mvines/
 
 # the following is not needed because it is done in the docker-compose file
 # OPERATOR_AUTHORIZED_SSH_KEY=$(cat ~/.ssh/id_ed25519.pub)
-# docker exec -it canopy bash -c "sudo echo $OPERATOR_AUTHORIZED_SSH_KEY >> /home/sol/.ssh/authorized_keys"
+# docker exec -it alpha bash -c "sudo echo $OPERATOR_AUTHORIZED_SSH_KEY >> /home/sol/.ssh/authorized_keys"
 # docker exec -it secondary bash -c "sudo echo $OPERATOR_AUTHORIZED_SSH_KEY >> /home/sol/.ssh/authorized_keys"
 
 echolog "Waiting for $MIN_FINALIZED_SLOT finalized slots..."
@@ -86,15 +87,16 @@ CLUSTER_RPC=http://localhost:8899
 # Get the identity public key of the gossip entrypoint validator by:
 # 1. Querying the local validator list with --keep-unstaked-delinquents to include all validators
 # 2. Getting JSON output and using jq to extract the first validator's identity pubkey
-# This will be used later to configure other validators to connect to the gossipentrypoint
+# This will be used later to configure other validators to connect to the gossip-entrypoint
 ENTRYPOINT_IDENTITY_PUBKEY=$(solana -ul validators --keep-unstaked-delinquents --output json | jq -r ".validators | .[0].identityPubkey")
 
-ANSIBLE_VALIDATORS_KEYS_DIR=/hayek-validator-kit/solana-localnet/validator-keys
-ANSIBLE_CANOPY_KEYS_DIR="$ANSIBLE_VALIDATORS_KEYS_DIR/canopy"
-ALPHA_CANOPY_KEYS_DIR="/home/sol/keys/canopy"
-# We have the CANOPY SERVER BOX
-# We have the CANOPY VALIDATOR KEY SET
-# We could have the SEED VALIDATOR KEY SET deployed on the CANOPY SERVER BOX
+ANSIBLE_WORKSPACE_DIR="/hayek-validator-kit" # Should match the ansible-control volume where the repo is mounted in docker-compose.yml
+ANSIBLE_VALIDATORS_KEYS_DIR="$ANSIBLE_WORKSPACE_DIR/solana-localnet/validator-keys"
+ANSIBLE_DEMO_KEYS_DIR="$ANSIBLE_VALIDATORS_KEYS_DIR/demo1"
+ALPHA_DEMO_KEYS_DIR="/home/sol/keys/demo1"
+# We have the HOST-ALPHA SERVER BOX
+# We have the DEMO VALIDATOR KEY SET
+# We could have the DEMO VALIDATOR KEY SET deployed on the HOST-ALPHA SERVER BOX
 
 MOUNT_ROOT_DIR=/mnt
 LEDGER_DIR="${MOUNT_ROOT_DIR}/ledger"
@@ -107,27 +109,33 @@ solana -u $CLUSTER_RPC epoch-info
 # Airdrop 500k SOL to the default CLI signer at ~/.config/solana/id.json
 solana -u $CLUSTER_RPC airdrop 500000
 
-# Generate Canopy Accounts and Keys on the Ansible Control.
-# They'll be used to configure the Canopy Validator in the script below.
-echo "---   GENERATING ANSIBLE CANOPY VALIDATOR ACCOUNT KEYS...   ---"
+# Provision the demo Accounts and Keys on the Ansible Control.
+# They'll be used to configure the host-alpha node in the script below.
+# The demo keys are pre-generated with all addresses starting with "DEMO"
+# to facilitate communication and debugging between team members. This 
+# allows deterministic behavior and documentation. For example, localnet
+# blockchain explorer urls in the documentation are the same for all team
+# members.
 
-echo ">>> ANSIBLE_CANOPY_KEYS_DIR: $ANSIBLE_CANOPY_KEYS_DIR"
+# WARNING: The demo keys are under source control and should not be used in 
+# any other cluster other than localnet. They are meant for development and
+# testing only.
+
+echo ">>> ANSIBLE_DEMO_KEYS_DIR: $ANSIBLE_DEMO_KEYS_DIR"
 echo ">>> ANSIBLE_VALIDATORS_KEYS_DIR: $ANSIBLE_VALIDATORS_KEYS_DIR"
-mkdir -p "$ANSIBLE_CANOPY_KEYS_DIR"
-cd "$ANSIBLE_CANOPY_KEYS_DIR"
-source "$ANSIBLE_VALIDATORS_KEYS_DIR/_gen-validator-keys.sh"
-#Airdrop 42 localnet SOL to the Canopy validator
+cd "$ANSIBLE_DEMO_KEYS_DIR"
+#Airdrop 42 localnet SOL to the demo validator
 solana -u $CLUSTER_RPC --keypair primary-target-identity.json airdrop 42
-#Create a vote account for the Canopy validator
+#Create a vote account for the demo validator
 solana -u $CLUSTER_RPC create-vote-account vote-account.json primary-target-identity.json authorized-withdrawer.json
 #Create a stake account with 200k SOL in it
 solana -u $CLUSTER_RPC create-stake-account stake-account.json 200000
-#Delegate the stake account to the vote account of the Canopy validator
+#Delegate the stake account to the vote account of the demo validator
 solana -u $CLUSTER_RPC delegate-stake stake-account.json vote-account.json --force
 
-# Generate ALPHA CANOPY validator startup script
-echo "---   SETTING UP CANOPY VALIDATOR SCRIPT WITH ACCOUNT KEYS...   ---"
-VOTE_ACCOUNT_PUBKEY=$(solana address -k $ANSIBLE_CANOPY_KEYS_DIR/vote-account.json)
+# Generate ALPHA DEMO validator startup script
+echo "---   SETTING UP DEMO VALIDATOR SCRIPT WITH ACCOUNT KEYS...   ---"
+VOTE_ACCOUNT_PUBKEY=$(solana address -k $ANSIBLE_DEMO_KEYS_DIR/vote-account.json)
 EXPECTED_GENESIS_HASH=$(solana -u $CLUSTER_RPC genesis-hash)
 
 CLUSTER_NAME=localnet
@@ -152,9 +160,9 @@ generate_tmp_validator_startup_script() {
     cat > "$output_file" << EOF
 #!/bin/bash
 agave-validator \\
-    --identity ${ALPHA_CANOPY_KEYS_DIR}/identity.json \\
+    --identity ${ALPHA_DEMO_KEYS_DIR}/identity.json \\
     --vote-account ${VOTE_ACCOUNT_PUBKEY} \\
-    --authorized-voter ${ALPHA_CANOPY_KEYS_DIR}/primary-target-identity.json \\
+    --authorized-voter ${ALPHA_DEMO_KEYS_DIR}/primary-target-identity.json \\
     --known-validator ${ENTRYPOINT_IDENTITY_PUBKEY} \\
     --only-known-rpc \\
     --log /home/sol/logs/agave-validator.log \\
@@ -197,8 +205,8 @@ cleanup-host() {
 }
 
 # Configure the validator on the host
-# USE: configure-canopy-in-host HOST
-configure-canopy-in-host() {
+# USE: configure-demo-in-host HOST
+configure-demo-in-host() {
   USER=sol
   SSH_PORT=22
   : ${1?"Requires HOST"}
@@ -207,40 +215,40 @@ configure-canopy-in-host() {
   HOST_SOLANA_BIN="~/.local/share/solana/install/active_release/bin"
 
   # Copy the primary-target-identity.json from the Ansible Control to the host
-  scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $ANSIBLE_CANOPY_KEYS_DIR/primary-target-identity.json "$USER@$HOST:~/primary-target-identity.json"
+  scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $ANSIBLE_DEMO_KEYS_DIR/primary-target-identity.json "$USER@$HOST:~/primary-target-identity.json"
 
   # Generate the validator startup script
-  ANSIBLE_CANOPY_STARTUP_SCRIPT=$CURRENT_SCRIPT_RUNTIME_DIR/agave-validator-localnet.sh
+  ANSIBLE_DEMO_STARTUP_SCRIPT=$CURRENT_SCRIPT_RUNTIME_DIR/agave-validator-localnet.sh
   generate_tmp_validator_startup_script
-  cp -f $TMP_DIR/agave-validator-localnet.sh $ANSIBLE_CANOPY_STARTUP_SCRIPT
-  chmod +x $ANSIBLE_CANOPY_STARTUP_SCRIPT
-  if [ ! -f $ANSIBLE_CANOPY_STARTUP_SCRIPT ]; then
+  cp -f $TMP_DIR/agave-validator-localnet.sh $ANSIBLE_DEMO_STARTUP_SCRIPT
+  chmod +x $ANSIBLE_DEMO_STARTUP_SCRIPT
+  if [ ! -f $ANSIBLE_DEMO_STARTUP_SCRIPT ]; then
     echo "Validator startup script could not be created."
     exit 1
   fi
 
-  echo "cat validator startup script at $ANSIBLE_CANOPY_STARTUP_SCRIPT"
-  cat $ANSIBLE_CANOPY_STARTUP_SCRIPT
+  echo "cat validator startup script at $ANSIBLE_DEMO_STARTUP_SCRIPT"
+  cat $ANSIBLE_DEMO_STARTUP_SCRIPT
   echo
 
   # Transfer the validator startup script from Ansible to the Host's sol user's bin directory
   ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT "mkdir -p ~/bin && chmod 754 ~/bin"
-  scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $ANSIBLE_CANOPY_STARTUP_SCRIPT "$USER@$HOST:~/bin/run-validator-canopy.sh"
-  rm -rf $ANSIBLE_CANOPY_STARTUP_SCRIPT
+  scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $ANSIBLE_DEMO_STARTUP_SCRIPT "$USER@$HOST:~/bin/run-validator-demo.sh"
+  rm -rf $ANSIBLE_DEMO_STARTUP_SCRIPT
 
   # Transfer the validator keys from Ansible to the Host's sol user's keys directory and create symlinks for identity.json
   ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT "
     set -e
     # source ~/.profile
     PATH=$HOST_SOLANA_BIN:$PATH
-    mkdir -p $ALPHA_CANOPY_KEYS_DIR && chmod 755 $ALPHA_CANOPY_KEYS_DIR
+    mkdir -p $ALPHA_DEMO_KEYS_DIR && chmod 755 $ALPHA_DEMO_KEYS_DIR
     mkdir -p ~/logs && chmod 755 ~/logs
-    mv ~/primary-target-identity.json $ALPHA_CANOPY_KEYS_DIR/primary-target-identity.json
-    ln -sf "$ALPHA_CANOPY_KEYS_DIR/primary-target-identity.json" "$ALPHA_CANOPY_KEYS_DIR/identity.json"
+    mv ~/primary-target-identity.json $ALPHA_DEMO_KEYS_DIR/primary-target-identity.json
+    ln -sf "$ALPHA_DEMO_KEYS_DIR/primary-target-identity.json" "$ALPHA_DEMO_KEYS_DIR/identity.json"
 
-    if [ ! -f "$ALPHA_CANOPY_KEYS_DIR/hot-spare-identity.json" ]; then
+    if [ ! -f "$ALPHA_DEMO_KEYS_DIR/hot-spare-identity.json" ]; then
       echo "Generating hot-spare-identity.json..."
-      solana-keygen new -s --no-bip39-passphrase -o "$ALPHA_CANOPY_KEYS_DIR/hot-spare-identity.json"
+      solana-keygen new -s --no-bip39-passphrase -o "$ALPHA_DEMO_KEYS_DIR/hot-spare-identity.json"
     fi
 
 (cat | sudo tee -a /etc/systemd/system/sol.service) <<EOF
@@ -257,7 +265,7 @@ User=sol
 LimitNOFILE=1000000
 LogRateLimitIntervalSec=0
 Environment="PATH=/bin:/usr/bin:$HOST_SOLANA_BIN"
-ExecStart=/home/sol/bin/run-validator-canopy.sh
+ExecStart=/home/sol/bin/run-validator-demo.sh
 
 [Install]
 WantedBy=multi-user.target
@@ -268,11 +276,11 @@ EOF
 }
 
 echo
-echo "---   Configuring Alpha Host with the Canopy Validator Node   ---"
+echo "---   Configuring host-alpha with the demo validator key set   ---"
 echo
 cleanup-host host-alpha
 # docker exec -it primary bash -c 'sudo chown -R sol:sol /mnt/ledger && sudo chown -R sol:sol /mnt/accounts && sudo chown -R sol:sol /mnt/snapshots'
-configure-canopy-in-host host-alpha
+configure-demo-in-host host-alpha
 
 echo
 echo "---   Configuring Bravo Host as a server that is ready for, but NOT running a validator   ---"
@@ -280,3 +288,4 @@ echo
 cleanup-host host-bravo
 # docker exec -it secondary bash -c 'sudo chown -R sol:sol /mnt/ledger && sudo chown -R sol:sol /mnt/accounts && sudo chown -R sol:sol /mnt/snapshots'
 echo "---   ALL DONE. LOCALNET IS RUNNING.   ---"
+echo
