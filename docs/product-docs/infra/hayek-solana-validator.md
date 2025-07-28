@@ -1,6 +1,11 @@
 # Hayek Solana Validator
 
-The Hayek Solana Validator uses the Hayek Validator Kit for infrastructure and security.
+The Hayek Solana Validator uses the Hayek Validator Kit for infrastructure and security using the Jito installer.
+
+| Name                | Mainnet                                      | Testnet |
+| ------------------- | -------------------------------------------- | ------- |
+| Identity Public Key | HAYEKSWg2EY21k38St9X5yM7QMW6SunKDefs5SqYSFty | ?       |
+| Voting Public Key   | HAYEKSWg2EY21k38St9X5yM7QMW6SunKDefs5SqYSFty | ?       |
 
 Upgrade version when any of them is true:
 
