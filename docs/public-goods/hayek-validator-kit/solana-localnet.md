@@ -32,7 +32,7 @@ You should [get familiar with the contents of the repo](github-repo.md#navigatin
 
 The Localnet cluster consist of the following containers:
 
-<table><thead><tr><th width="260.39453125">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>gossip-entrypoint</code><br>- Maps to localhost:9022</td><td><p>The cluster's Gossip protocol entry point node. Any validator can use this to join the network and synchronize with other validators.</p><ul><li>It provides Genesis block for Solana Localnet</li><li>Kick-starts POH</li><li>Epoch = 750 slots (~5 min)</li><li>Mostly for cluster boilerplate and not meant to be modified</li></ul></td></tr><tr><td><code>host-alpha</code><br>- Maps to localhost:9122</td><td><p>Running a validator named <code>Canopy</code> with:</p><ul><li>200K delegated SOL (~16% of all cluster stake)</li><li>See how to view the <code>Canopy</code> validator keys in the <a href="ansible-control.md#validator-keys">Validator Keys section</a>.</li></ul></td></tr><tr><td><code>host-bravo</code><br>- Maps to localhost:9222<br></td><td>A validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.</td></tr><tr><td><code>host-charlie</code><br>- Maps to localhost:9322</td><td>A naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.</td></tr><tr><td><p><code>ansible-control</code><br>- Not mapped</p><p>- See <a href="ansible-control.md#connecting-to-ansible-control">how to connect</a></p></td><td><p>Your official sysadmin automation environment:</p><ul><li>Solana CLI and Ansible installed</li><li>Access Solana Mainnet, Testnet and Localnet</li></ul><pre><code># For Mainnet Connectivity
+<table><thead><tr><th width="288.88671875">Container Node</th><th>Key Features</th></tr></thead><tbody><tr><td><code>gossip-entrypoint</code><br>- SSH port binding: <code>localhost:9022</code></td><td><p>The cluster's Gossip protocol entry point node. Any validator can use this to join the network and synchronize with other validators.</p><ul><li>It provides Genesis block for Solana Localnet</li><li>Kick-starts POH</li><li>Epoch = 750 slots (~5 min)</li><li>Mostly for cluster boilerplate and not meant to be modified</li></ul></td></tr><tr><td><code>host-alpha</code><br>- SSH port binding: <code>localhost:9122</code></td><td><p>Running the <code>demo1</code> validator key set with:</p><ul><li>200K delegated SOL (~16% of all cluster stake)</li><li>See how to view the <code>demo1</code> validator keys in the <a href="ansible-control.md#validator-keys">Validator Keys section</a>.</li></ul></td></tr><tr><td><code>host-bravo</code><br>- SSH port binding: <code>localhost:9222</code><br></td><td>A validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.</td></tr><tr><td><code>host-charlie</code><br>- SSH port binding: <code>localhost:9322</code></td><td>A naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.</td></tr><tr><td><p><code>ansible-control</code><br>- Not SSH bound</p><p>- See <a href="ansible-control.md#connecting-to-ansible-control">how to connect</a></p></td><td><p>Your official sysadmin automation environment:</p><ul><li>Solana CLI and Ansible installed</li><li>Access Solana Mainnet, Testnet and Localnet</li></ul><pre><code># For Mainnet Connectivity
 solana -um ***
 #For Testnet Connectivity
 solana -ut ***
@@ -41,7 +41,7 @@ solana -ul ***
 or also "solana -url localhost (-ul)"
 </code></pre><ul><li>Connect to any Localnet container <a href="ansible-control.md#connecting-to-localnet-nodes">via SSH</a>.</li></ul></td></tr></tbody></table>
 
-After the cluster is provisioned, the staked SOL delegated to the `Canopy` node will be active at the beginning of Epoch 1 (after \~5 minutes). Then the `Canopy` validator will start voting and move from delinquent to not-delinquent at the beginning of Epoch 2.
+After the cluster is provisioned, the staked SOL delegated to the `demo1` key set will be active at the beginning of Epoch 1 (after \~5 minutes). Then the `demo1` validator will start voting and move from delinquent to not-delinquent at the beginning of Epoch 2.
 
 ### Using Explorers
 
@@ -52,12 +52,12 @@ You can use the Solana Explorer and Solscan apps to explore any accounts in your
 
 ### Running Localnet
 
-To run Localnet you must run it in Docker
+We use Docker to run Localnet:
 
 1. **IDE Option (recommended)**\
-   Open the repo in VSCode. This will automatically run the `docker-compose.yml` with `docker compose up` and trigger the build process of the images in the `Dockerfile`
-2.  **Docker Option**\
-    Another option, for those VSCode haters, is the run Localnet directly from Docker by running:
+   Open the repo in VSCode or another popular IDE and select "Reopen in Container" or similar option. This will use the Dev Containers extension to automatically run the services containers defined in `docker-compose.yml` and trigger the build process of the images in the `Dockerfile`  if needed.
+2.  **Terminal Option**\
+    Another option, for those VSCode haters, is the run Localnet directly from the terminal by running:
 
     ```bash
     cd solana-localnet
@@ -75,8 +75,8 @@ At times, and as you corrupt the state of your docker containers running in Loca
 You can also stop the cluster from docker with
 
 ```bash
-cd solana-local-cluster
-docker compose down
+cd solana-localnet
+./start-localnet-from-outside-ide.sh
 ```
 
 ## SSH into nodes
@@ -84,20 +84,24 @@ docker compose down
 ### From Workstation
 
 ```sh
-ssh -p 9122 sol@host-alpha # ssh into alpha host
-ssh -p 9222 sol@host-bravo # ssh into bravo host
+ssh -p 9122 sol@localhost # ssh into alpha host
+ssh -p 9222 sol@localhost # ssh into bravo host
+ssh -p 9322 sol@localhost # ssh into bravo host
 ```
 
 Ports are mapped from your localhost to each container:
 
-* for `host-alpha`: localhost:9122 maps to container 22
-* for `host-bravo`: localhost:9222 maps to container 22
+* `localhost:9022` → `gossip-entrypoint:22`
+* `localhost:9122` → `host-alpha:22`
+* `localhost:9222` → `host-bravo:22`
+* `localhost:9322` → `host-charlie:22`
 
 ### From Ansible Control
 
 ```sh
 ssh sol@host-alpha # ssh into host-alpha node
 ssh sol@host-bravo # ssh into host-bravo node
+ssh sol@host-charlie # ssh into host-bravo node
 ```
 
 ## Validator CLI Commands
