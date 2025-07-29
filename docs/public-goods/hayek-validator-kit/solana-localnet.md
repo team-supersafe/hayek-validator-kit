@@ -24,7 +24,7 @@ All the configurations related to the Hayek Validator Kit are in this [GitHub re
 git clone https://github.com/team-supersafe/hayek-validator-kit.git
 ```
 
-You should [get familiar with the contents of the repo](github-repo.md#navigating-the-repo). The Localnet cluster is defined in the `Dockerfile` under the `solana-localnet` folder.
+You should [get familiar with the contents of the repo](github-repo.md#navigating-the-repo). The Localnet cluster is defined in the `Dockerfile` and `docker-compose.yml` files under the `solana-localnet` folder.
 
 ## The Localnet Cluster
 
