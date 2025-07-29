@@ -1,27 +1,4 @@
 ---
-- name: Install prerequisites
-  become: true
-  block:
-    - name: Install build prerequisites
-      ansible.builtin.apt:
-        name:
-          - jq
-          - libssl-dev
-          - libudev-dev
-          - pkg-config
-          - zlib1g-dev
-          - llvm
-          - clang
-          - cmake
-          - make
-          - libprotobuf-dev
-          - protobuf-compiler
-        update_cache: true
-  rescue:
-    - name: Fail with error message
-      ansible.builtin.fail:
-        msg: "Failed to install build prerequisites. Error: {{ ansible_failed_result }}"
-
 - name: Set Jito tag
   ansible.builtin.set_fact:
     jito_tag: "v{{ jito_version }}-jito"
