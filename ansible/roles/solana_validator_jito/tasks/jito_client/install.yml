@@ -1,4 +1,45 @@
 ---
+- name: Gather installed package facts
+  become: true
+  ansible.builtin.package_facts:
+    manager: apt
+
+- name: Define required build prerequisites
+  set_fact:
+    jito_build_prerequisites:
+      - at
+      - bzip2
+      - libssl-dev
+      - libudev-dev
+      - pkg-config
+      - zlib1g-dev
+      - llvm
+      - clang
+      - cmake
+      - make
+      - libprotobuf-dev
+      - protobuf-compiler
+
+- name: Determine missing build prerequisites
+  set_fact:
+    jito_missing_build_prerequisites: >-
+      {{
+        jito_build_prerequisites | reject('in', ansible_facts.packages.keys()) | list
+      }}
+
+- name: Install missing build prerequisites
+  become: true
+  block:
+    - name: Install missing packages
+      ansible.builtin.apt:
+        name: "{{ jito_missing_build_prerequisites }}"
+        update_cache: true
+      when: jito_missing_build_prerequisites | length > 0
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to install build prerequisites. Error: {{ ansible_failed_result }}"
+
 - name: Determine if we should build from source
   ansible.builtin.set_fact:
     should_build_from_source: "{{ jito_force_build | default(false) or build_from_source }}"
