@@ -1,0 +1,5 @@
+---
+dependencies:
+  - role: solana_validator_shared
+    vars:
+      validator_name: "{{ keyset_source_name }}"
