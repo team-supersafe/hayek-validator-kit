@@ -12,6 +12,15 @@
         https://github.com/jito-foundation/jito-solana/releases/download/{{ jito_tag }}/solana-release-{{ host_arch }}.tar.bz2
       {% endif %}
 
+- name: Debug download information
+  ansible.builtin.debug:
+    msg: |
+      Download Information:
+      - Jito tag: {{ jito_tag }}
+      - Host architecture: {{ host_arch }}
+      - Download URL: {{ solana_download_url }}
+      - Target file: {{ host_arch }}.tar.bz2
+
 - name: Create temporary directory for download
   ansible.builtin.file:
     path: "{{ ansible_env.TMPDIR | default('/tmp') }}/jito-solana-{{ jito_tag }}"
@@ -24,7 +33,30 @@
     url: "{{ solana_download_url }}"
     dest: "{{ temp_dir.path }}/{{ host_arch }}.tar.bz2"
     mode: '0644'
+    timeout: 300
   register: download_result
+
+- name: Debug download result
+  ansible.builtin.debug:
+    msg: |
+      Download Result:
+      - Status: {{ download_result.status_code | default('unknown') }}
+      - File size: {{ download_result.size | default('unknown') }}
+      - File path: {{ download_result.dest | default('unknown') }}
+      - Changed: {{ download_result.changed | default('unknown') }}
+
+- name: Check downloaded file
+  ansible.builtin.stat:
+    path: "{{ temp_dir.path }}/{{ host_arch }}.tar.bz2"
+  register: downloaded_file
+
+- name: Debug file information
+  ansible.builtin.debug:
+    msg: |
+      Downloaded File Info:
+      - Exists: {{ downloaded_file.stat.exists }}
+      - Size: {{ downloaded_file.stat.size | default('unknown') }}
+      - Mode: {{ downloaded_file.stat.mode }}
 
 - name: Create solana releases directory
   ansible.builtin.file:
