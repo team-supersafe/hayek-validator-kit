@@ -129,18 +129,13 @@ Download and install WireGuard from the official website:
 Visit [https://www.wireguard.com/install/](https://www.wireguard.com/install/) and download the appropriate version for your platform:
 
 * **Windows**: Download the Windows installer
-* **macOS**: Download from App Store
+* **macOS**: Download from App Store and install Wireguard tools via Homebrew\
+  `brew install wireguard-tools`
 * **Linux**: Use your distribution's package manager
 
 #### Generate Client Keys
 
-For macOS install WireGuard tools via Homebrew (recommended)
-
-```bash
-brew install wireguard-tools
-```
-
-#### Generate keys
+**For Mac:**
 
 ```bash
 umask 077
