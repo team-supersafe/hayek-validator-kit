@@ -21,4 +21,4 @@ done
 docker compose -f "$COMPOSE_FILE" exec $SERVICE bash -l -c "cd /hayek-validator-kit && ./solana-localnet/start-localnet.sh"
 
 echo "Localnet started. Attach to the container with:"
-echo "docker compose -f $COMPOSE_FILE exec $SERVICE bash -l"
+echo "docker compose -f $COMPOSE_FILE exec -w /hayek-validator-kit $SERVICE bash -l"
