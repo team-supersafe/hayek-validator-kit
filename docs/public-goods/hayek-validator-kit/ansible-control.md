@@ -8,12 +8,6 @@ With your [Localnet running](solana-localnet.md#running-localnet), you'll have y
 
 Having one of the nodes of the Localnet as the `ansible-control` allows all operators to control remote hosts from an identical environment, rather than having individually setup Ansible configurations on each workstation.
 
-## Pre-Provisioned Assets
-
-### Canopy Validator Key Set
-
-We have pre-provisioned a sets of keys for the `Canopy` validator that will be running with 200k SOL staked in Localnet every time you start the cluster. These 200k SOL represents roughly \~16% of all cluster stake... which is a lot... and that's why we named it `Canopy` .
-
 ### Creating Validator Key Sets
 
 Under the Ansible Control node you will find this script:
