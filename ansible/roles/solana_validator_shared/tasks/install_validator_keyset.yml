@@ -1,0 +1,201 @@
+---
+- name: install_validator_keyset - Validate validator_name is defined
+  ansible.builtin.assert:
+    that:
+      - validator_name is defined
+    fail_msg: "validator_name must be defined"
+
+- name: install_validator_keyset - Validate keyset_source_name is defined
+  ansible.builtin.assert:
+    that:
+      - keyset_source_name is defined
+    fail_msg: "keyset_source_name must be defined"
+
+- name: install_validator_keyset - Validate validator_type is defined
+  ansible.builtin.assert:
+    that:
+      - validator_type is defined
+    fail_msg: "validator_type must be defined"
+
+- name: install_validator_keyset - Validate validator_type value
+  ansible.builtin.assert:
+    that:
+      - validator_type in ['primary', 'hot-spare']
+    fail_msg: "validator_type must be set to 'primary' or 'hot-spare', got: {{ validator_type }}"
+
+- name: install_validator_keyset - Validate keys_dir is defined
+  ansible.builtin.assert:
+    that:
+      - keys_dir is defined
+    fail_msg: "keys_dir must be defined"
+
+- name: install_validator_keyset - Validate solana_user is defined
+  ansible.builtin.assert:
+    that:
+      - solana_user is defined
+    fail_msg: "solana_user must be defined"
+
+- name: install_validator_keyset - Validate solana_install_dir is defined
+  ansible.builtin.assert:
+    that:
+      - solana_install_dir is defined
+    fail_msg: "solana_install_dir must be defined"
+
+- name: install_validator_keyset - Validate ansible_home_dir is defined
+  ansible.builtin.assert:
+    that:
+      - ansible_home_dir is defined
+    fail_msg: "ansible_home_dir must be defined"
+
+- name: install_validator_keyset - Set required variables
+  block:
+    - name: install_validator_keyset - Set validator keys directory
+      ansible.builtin.set_fact:
+        validator_keys_dir: "{{ keys_dir }}/{{ validator_name }}"
+        ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ keyset_source_name }}"
+
+    - name: install_validator_keyset - Check if hot-spare-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/hot-spare-identity.json"
+      register: local_hot_spare_key_exists
+      delegate_to: localhost
+      run_once: true
+
+    - name: install_validator_keyset - Check if Jito Relayer Block Engine key exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
+      register: local_jito_key_exists
+      delegate_to: localhost
+      run_once: true
+
+    - name: install_validator_keyset - Check if Jito Relayer Comms private key exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/jito-relayer-comms-pvt.pem"
+      register: local_comms_key_exists
+      delegate_to: localhost
+      run_once: true
+
+- name: install_validator_keyset - Reset validator keys directory
+  block:
+    - name: install_validator_keyset - Remove validator key store
+      ansible.builtin.shell: |
+        #!/bin/bash
+        set -e
+        rm -rf {{ keys_dir }}/*
+      become: true
+
+    - name: install_validator_keyset - Ensure validator_keys_dir exists
+      ansible.builtin.file:
+        path: "{{ validator_keys_dir }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
+
+- name: install_validator_keyset - Install validator keys
+  block:
+    - name: install_validator_keyset - Copy primary-target-identity.json to target host
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/primary-target-identity.json"
+        dest: "{{ validator_keys_dir }}/primary-target-identity.json"
+        mode: '0600'
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
+
+    - name: install_validator_keyset - Copy vote-account.json to target host
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/vote-account.json"
+        dest: "{{ validator_keys_dir }}/vote-account.json"
+        mode: '0600'
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
+
+    - name: install_validator_keyset - Copy hot-spare-identity.json to target host if it exists on ansible_keys_dir
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/hot-spare-identity.json"
+        dest: "{{ validator_keys_dir }}/hot-spare-identity.json"
+        mode: '0600'
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
+      when: local_hot_spare_key_exists.stat.exists | default(false)
+
+    - name: install_validator_keyset - Generate hot-spare-identity.json keypair
+      ansible.builtin.shell: |
+        . "$HOME/.cargo/env"
+        . "$HOME/.bashrc"
+        {{ solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json -f
+      args:
+        chdir: "{{ validator_keys_dir }}"
+      register: keygen_result
+      when: not local_hot_spare_key_exists.stat.exists | default(false)
+
+    - name: install_validator_keyset - Fail with error message (hot-spare-identity.json)
+      ansible.builtin.fail:
+        msg: "Could not generate hot-spare-identity.json keypair. Error: {{ keygen_result }}"
+      when:
+        - not local_hot_spare_key_exists.stat.exists | default(false)
+        - keygen_result is defined
+        - keygen_result.rc != 0
+
+    - name: install_validator_keyset - Create identity.json symlink
+      ansible.builtin.file:
+        src: "{{ validator_keys_dir }}/{{ 'primary-target-identity.json' if validator_type == 'primary' else 'hot-spare-identity.json' }}"
+        dest: "{{ validator_keys_dir }}/identity.json"
+        state: link
+        force: true
+
+- name: install_validator_keyset - Install jito relayer keys if applicable
+  block:
+    - name: install_validator_keyset - Copy jito-relayer-block-eng.json to target host if it exists on ansible_keys_dir
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
+        dest: "{{ validator_keys_dir }}/jito-relayer-block-eng.json"
+        mode: '0600'
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
+      when: local_jito_key_exists.stat.exists | default(false)
+
+    - name: install_validator_keyset - Generate jito-relayer-block-eng.json keypair
+      ansible.builtin.shell: |
+        . "$HOME/.cargo/env"
+        . "$HOME/.bashrc"
+        {{ solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o jito-relayer-block-eng.json -f
+      args:
+        chdir: "{{ validator_keys_dir }}"
+      register: jito_keygen_result
+      when: not local_jito_key_exists.stat.exists | default(false)
+
+    - name: install_validator_keyset - Fail with error message (jito-relayer-block-eng.json)
+      ansible.builtin.fail:
+        msg: "Could not generate jito-relayer-block-eng.json keypair. Error: {{ jito_keygen_result }}"
+      when: jito_keygen_result is defined and jito_keygen_result.rc is defined and jito_keygen_result.rc != 0
+
+    - name: install_validator_keyset - Copy Jito Relayer Comms private key to target host if it exists on ansible_keys_dir
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/jito-relayer-comms-pvt.pem"
+        dest: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
+        mode: '0600'
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      become: true
+      when: local_comms_key_exists.stat.exists | default(false)
+
+    - name: install_validator_keyset - Generate Jito Relayer Comms RSA private key on target host if not found on ansible host
+      ansible.builtin.shell: |
+        openssl genrsa --out {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem 2048
+      args:
+        creates: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
+      when: not local_comms_key_exists.stat.exists | default(false)
+
+    - name: install_validator_keyset - Generate Jito Relayer Comms RSA public key on target host
+      ansible.builtin.shell: |
+        openssl rsa -in {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem -pubout -out {{ validator_keys_dir }}/jito-relayer-comms-pub.pem
+      args:
+        creates: "{{ validator_keys_dir }}/jito-relayer-comms-pub.pem"
+
+  when: target_host_running_jito_relayer | default(false)

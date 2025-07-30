@@ -10,7 +10,6 @@
   ansible.builtin.apt:
     name:
       - at
-      - jq
       - build-essential
       - pkg-config
       - libudev-dev
@@ -24,7 +23,7 @@
 - when: build_from_source | bool
   name: Install - Installing from source based on architecture
   ansible.builtin.include_tasks: install_from_source.yml
-  
+
 - when: not build_from_source | bool
   name: Install - Installing from url based on architecture
   ansible.builtin.include_tasks: install_from_url.yml

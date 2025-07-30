@@ -1,0 +1,136 @@
+---
+- name: configure - Configure validator startup script
+  block:
+    - name: configure - Ensure scripts_dir exists
+      ansible.builtin.file:
+        path: "{{ scripts_dir }}"
+        state: directory
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+        mode: "0754"
+
+    - name: configure - Set validator script path
+      ansible.builtin.set_fact:
+        validator_script_path: "{{ scripts_dir }}/run-{{ validator_name }}.sh"
+
+    - name: configure - Get localnet genesis hash
+      block:
+        - name: configure - Get genesis hash
+          ansible.builtin.command: solana -ul genesis-hash
+          register: cluster_genesis_hash
+          delegate_to: localhost
+          changed_when: false
+          check_mode: false
+          run_once: true
+
+        - name: configure - Set expected genesis hash
+          ansible.builtin.set_fact:
+            expected_genesis_hash: "{{ cluster_genesis_hash.stdout }}"
+
+        - name: configure - Get entrypoint identity pubkey
+          ansible.builtin.shell: |
+            solana gossip -ul --output json | jq -r '.[0].identityPubkey'
+          register: entrypoint_identity_cmd
+          delegate_to: localhost
+          changed_when: false
+          check_mode: false
+          run_once: true
+          ignore_errors: true
+
+        - name: configure - Add entrypoint to known validators
+          ansible.builtin.set_fact:
+            known_validators: "{{ known_validators + [entrypoint_identity_cmd.stdout] }}"
+
+      when: solana_cluster == "localnet"
+
+    - name: configure - Create validator startup script
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/solana_validator_jito/templates/validator.startup.j2"
+        dest: "{{ validator_script_path }}"
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+
+    - name: configure - Copy fix_core_afinity_bug_for_poh.sh script to remote
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../scripts/fix_core_afinity_bug_for_poh.sh"
+        dest: "{{ scripts_dir }}"
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      ignore_errors: "{{ ansible_check_mode }}"
+
+    - name: configure - Copy schedule_set_hot_spare_identity.sh script to remote
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../scripts/schedule_set_hot_spare_identity.sh"
+        dest: "{{ scripts_dir }}"
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      ignore_errors: "{{ ansible_check_mode }}"
+
+  rescue:
+    - name: configure - Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator startup script. Error: {{ ansible_failed_result }}"
+
+- name: configure - Configure validator service
+  block:
+    - name: configure - Create systemd service directory
+      ansible.builtin.file:
+        path: /etc/systemd/system
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: configure - Create validator systemd service
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/solana_validator_jito/templates/validator.service.j2"
+        dest: "/etc/systemd/system/{{ validator_service_name }}.service"
+        mode: "0644"
+      become: true
+
+    - name: configure - Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+      become: true
+
+    - name: configure - Enable validator service
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        enabled: true
+        state: started
+      become: true
+
+  rescue:
+    - name: configure - Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator systemd service. Error: {{ ansible_failed_result }}"
+
+- name: configure - Configure Jito relayer service
+  block:
+    - name: configure - Rebuild jito-relayer systemd service unit
+      become: true
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/solana_validator_jito/templates/jito-relayer.service.j2"
+        dest: "/etc/systemd/system/{{ jito_relayer_service_name }}.service"
+        mode: "0644"
+        owner: root
+        group: root
+      notify: "restart {{ jito_relayer_service_name }}"
+
+    - name: configure - Reload systemd due to service unit changes
+      become: true
+      ansible.builtin.systemd:
+        daemon_reload: yes
+      ignore_errors: yes
+
+    - name: configure - Enable Jito relayer service
+      become: true
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+        enabled: yes
+        state: started
+      ignore_errors: yes
+
+  when: target_host_running_jito_relayer | default(false)

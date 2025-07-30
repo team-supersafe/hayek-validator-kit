@@ -1,0 +1,59 @@
+---
+# Validator Keys Switcher
+# -------------------
+# Playbook to set validator keys on a given host
+#
+# Usage:
+# ------
+# Run from /ansible directory:
+#
+# ansible-playbook playbooks/pb_install_validator_keyset.yml \
+#   -i solana_localnet.yml \
+#   --limit host-charlie \
+#   -e "target_host=host-charlie" \
+#   -e "keyset_source_name=canopy" \
+#   -e "validator_type=primary"
+
+- name: Set validator keys on target host
+  hosts: "{{ target_host }}"
+  user: "{{ solana_user | default(omit) }}"
+  become: false
+
+  pre_tasks:
+    - name: Assert required parameters are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - keyset_source_name is defined
+          - validator_type is defined
+        fail_msg: >
+          Missing required variables. Must provide:
+            - target_host
+            - keyset_source_name
+            - validator_type (must be 'primary' or 'hot-spare')
+
+    - name: Debug ansible_limit and target_host
+      ansible.builtin.debug:
+        msg:
+          - "ansible_limit: {{ ansible_limit | default('not defined') }}"
+          - "ansible_limit type: {{ ansible_limit | type_debug }}"
+          - "target_host: {{ target_host }}"
+          - "ansible_play_hosts: {{ ansible_play_hosts }}"
+
+    - name: Validate that target_host matches the limited host
+      ansible.builtin.assert:
+        that:
+          - ansible_limit is defined
+          - target_host == ansible_limit
+        fail_msg: >
+          This playbook must be run with --limit to target exactly one host.
+          Make sure you run this playbook with: --limit {{ target_host }} -e "target_host={{ target_host }}"
+
+    - name: Validate validator_type value
+      ansible.builtin.assert:
+        that:
+          - validator_type in ['primary', 'hot-spare']
+        fail_msg: "Invalid validator_type '{{ validator_type }}'. Must be 'primary' or 'hot-spare'."
+
+  roles:
+    - role: solana_validator_keyset
