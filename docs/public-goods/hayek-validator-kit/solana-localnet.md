@@ -182,32 +182,20 @@ Searching for an RPC service with shred version 36796 (Retrying: Wait for known 
 ENTRYPOINT_IDENTITY_PUBKEY=3jHsYXrWP7GrmBhzkGHp84EEwAvLtKnD6SZC9r6LM3Ji
 
 # primary validator node
-agave-validator --entrypoint entrypoint:8001 \
-    --identity ~/keys-localtest/identity.json \
-    --vote-account FadfWQhHGwdQQWbvscyiNLedbBr6q9DDWqfU2bWyhmwx \
-    --authorized-voter ~/keys-localtest/staked-identity.json \
+agave-validator \
+    --identity /home/sol/keys/demo1/identity.json \
+    --vote-account demo52s9s1foFXgnbVa8vYQM8GS9XRsJ3aMpus1rNnb \
+    --authorized-voter /home/sol/keys/demo1/primary-target-identity.json \
     --log agave-validator.log \
     --ledger /mnt/ledger \
     --accounts /mnt/accounts \
     --snapshots /mnt/snapshots \
-    --allow-private-addr --rpc-port 9999 \
+    --allow-private-addr \
+    --rpc-port 9999 \
     --no-os-network-limits-test \
     --known-validator 3jHsYXrWP7GrmBhzkGHp84EEwAvLtKnD6SZC9r6LM3Ji \
     --only-known-rpc
 
-# secondary validator node
-agave-validator --entrypoint entrypoint:8001 \
-    --identity ~/keys-localtest/identity.json \
-    --vote-account FadfWQhHGwdQQWbvscyiNLedbBr6q9DDWqfU2bWyhmwx \
-    --authorized-voter ~/keys-localtest/staked-identity.json \
-    --log agave-validator.log \
-    --ledger /mnt/ledger \
-    --accounts /mnt/accounts \
-    --snapshots /mnt/snapshots \
-    --allow-private-addr --rpc-port 9999 \
-    --no-os-network-limits-test \
-    --known-validator 3jHsYXrWP7GrmBhzkGHp84EEwAvLtKnD6SZC9r6LM3Ji \
-    --only-known-rpc
 ```
 
 ## Troubleshooting <a href="#troubleshuting" id="troubleshuting"></a>
