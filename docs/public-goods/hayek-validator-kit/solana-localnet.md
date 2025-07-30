@@ -115,19 +115,34 @@ ssh sol@host-bravo # ssh into host-bravo node
 ssh sol@host-charlie # ssh into host-charlie node
 ```
 
-## Validator CLI Commands
+## Using the Solana CLI in localnet
+
+We will use the `solana gossip` and `solana validators` command to illustrate how to correctly configure the RPC url depending on from where we are running the commands.
+
+### Directly from our workstation
+
+```bash
+solana --url localhost gossip # or just solana -ul gossip
+solana --url localhost validators # or just solana -ul validators
+```
+
+### From ansible-control
+
+<pre class="language-bash"><code class="lang-bash"><strong>solana --url localhost gossip # or just solana -ul gossip
+</strong>solana --url localhost validators # or just solana -ul validators
+</code></pre>
+
+### From a validator node
 
 After the first login into one of the validator hosts (`host-alpha` and `host-bravo`), we set the `RPC_URL` environment variable pointing to the `gossip-entrypoint` host, so we can use that variable when using the Solana CLI, like so:
 
 ```bash
-# After login, set the RPC url to point to the entrypoint node
-RPC_URL=http://gossip-entrypoint:8899
+# This varibale is already set when provisioning the cluster
+# RPC_URL=http://gossip-entrypoint:8899
 
-# then for example, you can do this from a validator host
-solana --url $RPC_URL cluster-version
+solana --url $RPC_URL gossip # or just solana -u $RPC_URL gossip
+solana --url $RPC_URL validators # or just solana -u $RPC_URL validators
 ```
-
-To use the Solana CLI from the `ansible-control` just do `solana --url localhost ...` or shorter, `solana -ul ...`
 
 Other common validator CLI commands can be found [HERE](../validator-operations/deploying-a-validator-client/agave.md#common-commands).
 
