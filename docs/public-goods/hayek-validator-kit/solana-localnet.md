@@ -61,7 +61,7 @@ We use Docker to run Localnet:
 
     ```bash
     cd solana-localnet
-    docker compose up --detach
+    ./start-localnet-from-outside-ide.sh
     ```
 
 Congratulations! You are now running Solana Localnet, connected to your [Ansible Control](ansible-control.md) and ready to make a mess of your Localnet playground.
@@ -76,7 +76,7 @@ You can also stop the cluster from docker with
 
 ```bash
 cd solana-localnet
-./start-localnet-from-outside-ide.sh
+docker compose down
 ```
 
 ## SSH into nodes
