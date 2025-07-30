@@ -24,7 +24,7 @@ This script generates a new set of validator keys. These will be needed when pro
 6. **Jito Relayer Comms Key**: RSA keys in the `jito-relayer-comms-private.pem` and `jito-relayer-comms-public.pem` files.
 
 {% hint style="info" %}
-There is never the need to run this script manually if you provision your validators using the Hayek Validator Kit Ansible playbooks provided, since they do this automatically for us. However, for development purposes it may be useful to understand this part a little further, ergo we take the time to explain more.
+You can run this script every time you need to generate a new validator keyset. If the keys are to be used in a cluster other than `Localnet`, such as `Testnet` or `Mainnet-Beta`, we strongly recommend that you backup the keys somewhere safe.
 {% endhint %}
 
 To generate a new set of keys, you should give them a name (aka: the validator name) and run the following commands from your Ansible Control:
