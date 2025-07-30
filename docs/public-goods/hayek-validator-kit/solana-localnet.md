@@ -83,11 +83,10 @@ docker compose down
 
 ### From Workstation
 
-```sh
-ssh -p 9122 sol@localhost # ssh into alpha host
-ssh -p 9222 sol@localhost # ssh into bravo host
-ssh -p 9322 sol@localhost # ssh into bravo host
-```
+<pre class="language-sh"><code class="lang-sh">ssh -p 9122 sol@localhost # ssh into alpha host
+<strong>ssh -p 9222 sol@localhost # ssh into bravo host
+</strong>ssh -p 9322 sol@localhost # ssh into charlie host
+</code></pre>
 
 Ports are mapped from your localhost to each container:
 
@@ -101,17 +100,22 @@ Ports are mapped from your localhost to each container:
 ```sh
 ssh sol@host-alpha # ssh into host-alpha node
 ssh sol@host-bravo # ssh into host-bravo node
-ssh sol@host-charlie # ssh into host-bravo node
+ssh sol@host-charlie # ssh into host-charlie node
 ```
 
 ## Validator CLI Commands
 
-After the first login to a validator that was just setup, you'll need to have it join Localnet by setting its entrypoint, like so:
+After the first login into one of the validator hosts (`host-alpha` and `host-bravo`), we set the `RPC_URL` environment variable pointing to the `gossip-entrypoint` host, so we can use that variable when using the Solana CLI, like so:
 
 ```bash
 # After login, set the RPC url to point to the entrypoint node
 RPC_URL=http://gossip-entrypoint:8899
+
+# then for example, you can do this from a validator host
+solana --url $RPC_URL cluster-version
 ```
+
+To use the Solana CLI from the `ansible-control` just do `solana --url localhost ...` or shorter, `solana -ul ...`
 
 Other common validator CLI commands can be found [HERE](../validator-operations/deploying-a-validator-client/agave.md#common-commands).
 
