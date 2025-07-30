@@ -53,8 +53,8 @@ solana-keygen pubkey primary-target-identity.json
 For convenience, we have also generated the public keys as a separate empty file for each of the keys. Each file-pair should look like this:
 
 ```
-staked-identity-Z1RtExJVeFskxLD1D6RCPHH9NBpLHvcqKW8iXZfkMEK
-staked-identity.json
+primary-target-identity.Z1RtExJVeFskxLD1D6RCPHH9NBpLHvcqKW8iXZfkMEK
+primary-target-identity.json
 ```
 
 You can view the full accounts by pasting their respective public keys in the [Localnet Explorers](solana-localnet.md#using-explorers).
