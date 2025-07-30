@@ -16,7 +16,7 @@ Under the Ansible Control node you will find this script:
 
 This script generates a new set of validator keys. These will be needed when provisioning a new validator on any of the containers in the Localnet cluster. A set of keys contains the following:
 
-1. **Staked Identity Key**: It will always start with the characters `Z1`
+1. **Primary Target Identity Key**: A.K.A Staked Identity. It will always start with the characters `Z1`
 2. **Vote Account Key**: It will always start with the characters `Z2`
 3. **Stake Account Key**: It will always start with the characters `Z3`
 4. **Authorized Withdrawer Account Key**: It will always start with the characters `Z4`
@@ -47,7 +47,7 @@ $KEYS_DIRECTORY/_gen-validator-keys.sh
 You can view the public keys of any of these respective private keys like this:
 
 ```bash
-solana-keygen pubkey staked-identity.json
+solana-keygen pubkey primary-target-identity.json
 ```
 
 For convenience, we have also generated the public keys as a separate empty file for each of the keys. Each file-pair should look like this:
