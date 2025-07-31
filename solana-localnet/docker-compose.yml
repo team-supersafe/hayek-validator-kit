@@ -189,7 +189,9 @@ services:
           echo "" >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
       done
       # Deduplicate authorized_keys entries
-      awk '!seen[$0]++' /home/$$DEFAULT_USERNAME/.ssh/authorized_keys > /home/$$DEFAULT_USERNAME/.ssh/authorized_keys.tmp && mv /home/$$DEFAULT_USERNAME/.ssh/authorized_keys.tmp /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+      TEMP_AUTH_KEYS="/home/$$DEFAULT_USERNAME/.ssh/authorized_keys.tmp"
+      awk '!seen[$0]++' /home/$$DEFAULT_USERNAME/.ssh/authorized_keys > $$TEMP_AUTH_KEYS
+      mv $$TEMP_AUTH_KEYS /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
 
       chmod 600 /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
       chown -R $$DEFAULT_USERNAME:$$DEFAULT_USERNAME /home/$$DEFAULT_USERNAME/.ssh
