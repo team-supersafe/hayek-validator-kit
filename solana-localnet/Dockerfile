@@ -256,11 +256,9 @@ LABEL maintainer="eydel.rivero@gmail.com"
 RUN mkdir -p /opt/code/tools
 WORKDIR /opt/code/tools
 
-# # Install runtime OS package dependencies (naked-builder)
-# RUN apt-get update && \
-#         apt-get install -y --no-install-recommends \
-#         openssh-server && \
-#         apt-get purge -y --auto-remove
+# Set password for ubuntu user
+RUN echo "ubuntu:ubuntu" | chpasswd \
+    && echo "ubuntu ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 SHELL [ "/bin/bash", "-c" ]
 ENV LANG=C.UTF-8
