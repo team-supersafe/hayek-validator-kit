@@ -256,9 +256,8 @@ LABEL maintainer="eydel.rivero@gmail.com"
 RUN mkdir -p /opt/code/tools
 WORKDIR /opt/code/tools
 
-# Set password for ubuntu user
-RUN echo "ubuntu:ubuntu" | chpasswd \
-    && echo "ubuntu ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+# Give ubuntu passwordless sudo access for ansible playbooks testing
+RUN echo "ubuntu ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 SHELL [ "/bin/bash", "-c" ]
 ENV LANG=C.UTF-8
