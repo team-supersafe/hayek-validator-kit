@@ -187,7 +187,6 @@ services:
           # Adding an empty line after each key is not strictly necessary for authorized_keys parsing,
           # but it improves readability and maintains consistency with other containers.
           echo "" >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
-        echo "" >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
       done
       # Deduplicate authorized_keys entries
       awk '!seen[$0]++' /home/$$DEFAULT_USERNAME/.ssh/authorized_keys > /home/$$DEFAULT_USERNAME/.ssh/authorized_keys.tmp && mv /home/$$DEFAULT_USERNAME/.ssh/authorized_keys.tmp /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
