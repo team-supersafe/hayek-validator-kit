@@ -1,0 +1,40 @@
+---
+# Create user permission files based on actual sudo permissions
+# This task creates a text file in each user's home directory with their real permissions
+
+- name: Get actual sudo permissions for each user
+  ansible.builtin.shell: "sudo -l -U {{ item.key }}"
+  register: user_sudo_permissions
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: >
+    item.value.group_a is defined or
+    item.value.group_b is defined or
+    item.value.group_c is defined or
+    item.value.group_d is defined
+  no_log: true
+
+- name: Create user permission files with real permissions
+  ansible.builtin.template:
+    src: sudo-permissions-output.j2
+    dest: "/home/{{ item.item.key }}/permissions.txt"
+    owner: "{{ item.item.key }}"
+    group: "{{ item.item.key }}"
+    mode: '0644'
+  loop: "{{ user_sudo_permissions.results }}"
+  when: >
+    item.item.value.group_a is defined or
+    item.item.value.group_b is defined or
+    item.item.value.group_c is defined or
+    item.item.value.group_d is defined
+  no_log: true
+
+- name: Debug permission files created
+  ansible.builtin.debug:
+    msg: "Created permission file for user {{ item.item.key }}: /home/{{ item.item.key }}/permissions.txt"
+  loop: "{{ user_sudo_permissions.results }}"
+  when: >
+    item.item.value.group_a is defined or
+    item.item.value.group_b is defined or
+    item.item.value.group_c is defined or
+    item.item.value.group_d is defined
+  no_log: true
