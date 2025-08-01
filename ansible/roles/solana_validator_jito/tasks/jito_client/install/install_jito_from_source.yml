@@ -35,15 +35,82 @@
       ansible.builtin.fail:
         msg: "Failed to prepare build environment. Error: {{ ansible_failed_result }}"
 
+- name: Check if build directory exists and read current version
+  block:
+    - name: Check if build directory exists
+      ansible.builtin.stat:
+        path: "{{ jito_build_dir }}"
+      register: build_dir_stat
+
+    - name: Read current version from Cargo.toml if build directory exists
+      ansible.builtin.shell: grep '^version' Cargo.toml | awk -F '"' '{print $2}'
+      args:
+        chdir: "{{ jito_build_dir }}"
+      register: current_cargo_version
+      when: build_dir_stat.stat.exists
+      ignore_errors: true
+      changed_when: false
+
+    - name: Set fact for version mismatch
+      ansible.builtin.set_fact:
+        version_mismatch: "{{ build_dir_stat.stat.exists and (current_cargo_version is failed or current_cargo_version.stdout != jito_version) }}"
+
+    - name: Debug Cargo.toml version
+      ansible.builtin.debug:
+        msg: "Cargo.toml version: {{ current_cargo_version.stdout }} | Expected: {{ jito_version }}. {{ version_mismatch | ternary('Version mismatch detected.', 'No version mismatch detected.') }}"
+      when: build_dir_stat.stat.exists
+
+- name: Clean up build directory if version mismatch detected
+  ansible.builtin.file:
+    path: "{{ jito_build_dir }}"
+    state: absent
+  when: version_mismatch | default(false)
+
 - name: Clone and build Jito-Solana
   block:
     - name: Clone/Pull jito-solana repository with submodules
       ansible.builtin.git:
         repo: "{{ forked_jito_repo }}.git"
         dest: "{{ jito_build_dir }}"
-        version: "tags/{{ jito_tag }}"
+        version: "{{ jito_tag }}"
         recursive: true
-        update: true
+        force: true
+
+    - name: Force checkout the exact tag
+      ansible.builtin.shell: |
+        git fetch --tags --force
+        git checkout "{{ jito_tag }}" --force
+        git reset --hard "{{ jito_tag }}"
+        git checkout "refs/tags/{{ jito_tag }}" --force
+      args:
+        chdir: "{{ jito_build_dir }}"
+      changed_when: false
+
+    - name: Verify we're on the correct tag and commit
+      ansible.builtin.shell: |
+        git rev-parse HEAD
+        git log --oneline -1
+        echo "Checking if tag {{ jito_tag }} exists and points to current commit:"
+        git show-ref "{{ jito_tag }}"
+        echo "Current HEAD:"
+        git rev-parse HEAD
+      args:
+        chdir: "{{ jito_build_dir }}"
+      register: git_verification
+      changed_when: false
+
+    - name: Verify we're on the correct tag
+      ansible.builtin.shell: |
+        git describe --tags --exact-match
+      args:
+        chdir: "{{ jito_build_dir }}"
+      register: current_tag
+      changed_when: false
+
+    - name: Fail if not on correct tag
+      ansible.builtin.fail:
+        msg: "Expected tag {{ jito_tag }}, but got {{ current_tag.stdout }}"
+      when: current_tag.stdout != jito_tag
 
     - name: Get the latest commit hash
       ansible.builtin.command: git rev-parse HEAD
@@ -55,7 +122,7 @@
     - name: Read version from Cargo.toml
       ansible.builtin.shell: grep '^version' Cargo.toml | awk -F '"' '{print $2}'
       args:
-        chdir: "{{ jito_repo_dest }}"
+        chdir: "{{ jito_build_dir }}"
       register: cargo_toml_version
       changed_when: false
 

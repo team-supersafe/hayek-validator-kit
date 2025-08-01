@@ -1,3 +1,2 @@
 ---
-jito_repo_dest: "{{ solana_user_dir }}/build/jito-solana"
 jito_build_dir: "{{ solana_user_dir }}/build/jito-solana"
