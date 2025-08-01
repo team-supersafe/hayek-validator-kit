@@ -4,6 +4,11 @@
     msg: "Starting Jito-Solana validator configuration"
   tags: [jito_client, check.keys]
 
+- name: Set keyset_source_name default if not defined
+  set_fact:
+    keyset_source_name: "{{ validator_name }}"
+  when: keyset_source_name is not defined
+
 - name: Install validator keyset using shared task
   ansible.builtin.import_tasks: ../../../solana_validator_shared/tasks/install_validator_keyset.yml
   tags: [jito_client, check.keys]

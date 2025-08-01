@@ -1,5 +1,2 @@
 ---
-jito_relayer_install_dir: "{{ solana_user_dir }}/.local/share/jito-relayer/install/active_release"
-jito_repo_url: "https://github.com/jito-foundation/jito-solana.git"
-jito_repo_dest: "{{ solana_user_dir }}/build/jito-solana"
-keyset_source_name: "{{ validator_name }}"
+jito_build_dir: "{{ solana_user_dir }}/build/jito-solana"
