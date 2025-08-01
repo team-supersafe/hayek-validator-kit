@@ -20,7 +20,9 @@ These are the preset groups that will be provisioned AFTER running the user setu
 
 These are the permissions on/off for each role:
 
-<table><thead><tr><th width="161.71484375" align="right">ROLE -></th><th width="116.0625">sysadmin</th><th width="158.68359375">validator_admin</th><th width="135.76171875">validator_operator</th><th>ansible_executor</th></tr></thead><tbody><tr><td align="right">Permission A</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr><tr><td align="right">Permission B</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td align="right">Permission C</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr></tbody></table>
+<table><thead><tr><th width="150.65234375" align="right">ROLE -></th><th width="119.23828125">sysadmin</th><th width="153.36328125">validator admin</th><th width="170.8671875">validator operator</th><th>ansible executor</th></tr></thead><tbody><tr><td align="right">Permission A</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr><tr><td align="right">Permission B</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td align="right">Permission C</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr></tbody></table>
+
+Add here:
 
 <table><thead><tr><th width="177.41796875">USERS</th><th width="294.82421875">DESCRIPTION</th><th>USAGE</th></tr></thead><tbody><tr><td>⚙️ <strong>ubuntu</strong></td><td>Provisioned by ASN with a server. Disabled after secure user setup.</td><td>To provision server users.</td></tr><tr><td>⚙️ <strong>sol</strong></td><td>Primary validator service runner and owner of the validator files and data.</td><td>Runs the validator service.</td></tr><tr><td>🧍Operator User:<br>>>> <strong>alice</strong>, <strong>bob</strong>, etc.</td><td>Each human operator has his/her dedicated user.</td><td>Access the server via SSH and run Ansible scripts from the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>.</td></tr></tbody></table>
 
