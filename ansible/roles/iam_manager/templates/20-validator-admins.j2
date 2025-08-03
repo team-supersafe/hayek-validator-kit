@@ -7,10 +7,17 @@
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl status {{ validator_service }}
 
 # Package management commands (unique to admins)
+# Package management commands (unique to admins)
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt-get install
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt update
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt-get upgrade
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt upgrade
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt-get remove
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt remove
+# For demonstration purposes
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt-get install *
+%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/apt install *
 
 # Development tools and utilities (unique to admins)
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/curl
