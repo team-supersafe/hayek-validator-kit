@@ -5,7 +5,7 @@
   tags: [jito_client, check.keys]
 
 - name: Set keyset_source_name default if not defined
-  set_fact:
+  ansible.builtin.set_fact:
     keyset_source_name: "{{ validator_name }}"
   when: keyset_source_name is not defined
 

@@ -76,16 +76,6 @@
         recursive: true
         force: true
 
-    - name: Force checkout the exact tag
-      ansible.builtin.shell: |
-        git fetch --tags --force
-        git checkout "{{ jito_tag }}" --force
-        git reset --hard "{{ jito_tag }}"
-        git checkout "refs/tags/{{ jito_tag }}" --force
-      args:
-        chdir: "{{ jito_build_dir }}"
-      changed_when: false
-
     - name: Verify we're on the correct tag and commit
       ansible.builtin.shell: |
         git rev-parse HEAD

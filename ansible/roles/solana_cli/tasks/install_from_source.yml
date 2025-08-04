@@ -44,7 +44,7 @@
 
     - name: Checkout the desired tag
       ansible.builtin.shell: |
-        cd {{ agave_build_dir }}/agave-{{ agave_version }}
+        cd "{{ agave_build_dir }}/agave-{{ agave_version }}"
         git reset --hard HEAD
         git clean -fd
         git checkout v{{ agave_version }}
@@ -99,10 +99,10 @@
     - name: Move agave we just built into the releases directory
       ansible.builtin.shell: |
         set -e
-        rm -rf {{ solana_installed_release_dir }}/*
-        mv {{ agave_build_dir }}/agave-{{ agave_version }}/.crates.toml {{ solana_installed_release_dir }}
-        mv {{ agave_build_dir }}/agave-{{ agave_version }}/.crates2.json {{ solana_installed_release_dir }}
-        mv {{ agave_build_dir }}/agave-{{ agave_version }}/bin {{ solana_installed_release_dir }}
+        rm -rf "{{ solana_installed_release_dir }}"/*
+        mv "{{ agave_build_dir }}/agave-{{ agave_version }}/.crates.toml" "{{ solana_installed_release_dir }}"
+        mv "{{ agave_build_dir }}/agave-{{ agave_version }}/.crates2.json" "{{ solana_installed_release_dir }}"
+        mv "{{ agave_build_dir }}/agave-{{ agave_version }}/bin" "{{ solana_installed_release_dir }}"
   rescue:
     - name: Fail if moving built assets failed
       ansible.builtin.fail:
