@@ -4,7 +4,7 @@ description: How to create and manage access for users on a new server
 
 # User Access
 
-Once your raw metal server is ready to host a Solana validator, the system administrator must provision access for the validator operators. This guide walks you through the process of running the Ansible script to provision users on a Solana Validator.
+Once your raw metal server is ready to host a Solana validator, the system administrator must provision access for the validator operators. This guide walks you through the process of running the Ansible script to provision users on a newly provisioned metal server.
 
 ## Best Practices
 
