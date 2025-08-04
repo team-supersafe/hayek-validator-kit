@@ -37,7 +37,7 @@ Since the user provisioning is done via an Ansible script, you must have:
 
 The `pb_setup_server_users.yml` expects a CSV with users and groups meta that will be used for the identity and access management provisioning.
 
-You can use the template below as a starting point and modify as needed. Once you are happy with the setup, put in your local workstation in a short and accessible path, like `~/new-metal-box/iam_setup.csv`. You'll be using this path as a parameter when running the script.
+You can use the template below as a starting point and modify as needed. Once you are happy with the setup, put in this folder  `~/new-metal-box/iam_setup.csv`. You'll be using this path as a parameter when running the script.
 
 {% file src="../../.gitbook/assets/iam_setup.csv" %}
 
