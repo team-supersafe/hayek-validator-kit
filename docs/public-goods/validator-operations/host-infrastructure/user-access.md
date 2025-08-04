@@ -20,7 +20,7 @@ These are the preset groups that will be provisioned AFTER running the user setu
 
 These are the permissions on/off for each role:
 
-<table><thead><tr><th width="150.65234375" align="right">ROLE -></th><th width="119.23828125">sysadmin</th><th width="153.36328125">validator admin</th><th width="170.8671875">validator operator</th><th>ansible executor</th></tr></thead><tbody><tr><td align="right">Permission A</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr><tr><td align="right">Permission B</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td align="right">Permission C</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr></tbody></table>
+<table><thead><tr><th width="150.65234375" align="right">ROLE -></th><th width="119.23828125">sysadmin</th><th width="153.36328125">validator admin</th><th width="170.8671875">validator operator</th><th>avalidator_viewers</th></tr></thead><tbody><tr><td align="right"><code>systemctl stop logrotate</code></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td align="right"><code>sudo systemctl stop cron</code></td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr><tr><td align="right"><code>sudo apt-get update</code></td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td align="right"><code>systemctl status cron</code></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td align="right"><code>sudo apt get install</code></td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td align="right"><code>free -h</code></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr></tbody></table>
 
 Users `ubuntu` and `sol` are special in that they do not belong to any group. All others are:
 
