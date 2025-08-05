@@ -4,10 +4,11 @@
 
 - name: Test sudo permissions for cron stop
   ansible.builtin.shell:
-    cmd: "timeout {{ timeout_sec }} sudo -n systemctl stop cron"
+    cmd: "timeout {{ timeout_sec }} sudo {{ '-n' if not is_sysadmin else '' }} systemctl stop cron"
     executable: /bin/bash
   register: cron_stop_result
   ignore_errors: true
+  become: "{{ is_sysadmin | bool }}"
 
 - name: Display cron stop result
   ansible.builtin.debug:

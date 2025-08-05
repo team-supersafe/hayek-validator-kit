@@ -4,10 +4,11 @@
 
 - name: Test sudo permissions for apt-get update
   ansible.builtin.shell:
-    cmd: "timeout {{ timeout_sec }} sudo -n apt-get update"
+    cmd: "timeout {{ timeout_sec }} sudo {{ '-n' if not is_sysadmin else '' }} apt-get update"
     executable: /bin/bash
   register: apt_update_result
   ignore_errors: true
+  become: "{{ is_sysadmin | bool }}"
 
 - name: Display apt-get update result
   ansible.builtin.debug:

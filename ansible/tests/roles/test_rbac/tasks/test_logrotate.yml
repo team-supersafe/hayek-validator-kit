@@ -21,10 +21,11 @@
 
 - name: Restart logrotate service if it was stopped
   ansible.builtin.shell:
-    cmd: "timeout {{ timeout_sec }} sudo -n systemctl start logrotate"
+    cmd: "timeout {{ timeout_sec }} sudo {{ '-n' if not is_sysadmin else '' }} systemctl start logrotate"
     executable: /bin/bash
   when: logrotate_stop_result.rc == 0
   ignore_errors: true
+  become: "{{ is_sysadmin | bool }}"
 
 - name: Display logrotate restart message
   ansible.builtin.debug:

@@ -13,4 +13,4 @@
   ansible.builtin.unarchive:
     src: "{{ htop_download_url }}"
     dest: "/tmp"
-    remote_src: yes
+    remote_src: true

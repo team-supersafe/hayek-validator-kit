@@ -4,10 +4,11 @@
 
 - name: Test sudo permissions for apt install
   ansible.builtin.shell:
-    cmd: "timeout {{ timeout_sec }} sudo -n apt-get install"
+    cmd: "timeout {{ timeout_sec }} sudo {{ '-n' if not is_sysadmin else '' }} apt-get install"
     executable: /bin/bash
   register: apt_install_result
   ignore_errors: true
+  become: "{{ is_sysadmin | bool }}"
 
 - name: Display apt install result
   ansible.builtin.debug:
