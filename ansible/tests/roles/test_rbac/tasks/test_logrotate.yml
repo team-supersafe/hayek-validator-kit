@@ -4,10 +4,11 @@
 
 - name: Test sudo permissions for logrotate stop
   ansible.builtin.shell:
-    cmd: "timeout 5 sudo -n systemctl stop logrotate"
+    cmd: "timeout {{ timeout_sec }} sudo {{ '-n' if not is_sysadmin else '' }} systemctl stop logrotate"
     executable: /bin/bash
   register: logrotate_stop_result
   ignore_errors: true
+  become: "{{ is_sysadmin | bool }}"
 
 - name: Display logrotate stop result
   ansible.builtin.debug:
@@ -20,7 +21,7 @@
 
 - name: Restart logrotate service if it was stopped
   ansible.builtin.shell:
-    cmd: "timeout 5 sudo -n systemctl start logrotate"
+    cmd: "timeout {{ timeout_sec }} sudo -n systemctl start logrotate"
     executable: /bin/bash
   when: logrotate_stop_result.rc == 0
   ignore_errors: true

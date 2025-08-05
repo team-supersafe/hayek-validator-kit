@@ -4,7 +4,7 @@
 
 - name: Check if cron service is active
   ansible.builtin.shell:
-    cmd: "timeout 5 systemctl is-active cron"
+    cmd: "timeout {{ timeout_sec }} systemctl is-active cron"
     executable: /bin/bash
   register: cron_status_check
   ignore_errors: true
@@ -20,7 +20,7 @@
 
 - name: Check if apt package manager is available
   ansible.builtin.shell:
-    cmd: "timeout 5 which apt-get"
+    cmd: "timeout {{ timeout_sec }} which apt-get"
     executable: /bin/bash
   register: apt_availability_check
   ignore_errors: true
@@ -31,7 +31,7 @@
 
 - name: Check system memory information availability
   ansible.builtin.shell:
-    cmd: "timeout 5 which free"
+    cmd: "timeout {{ timeout_sec }} which free"
     executable: /bin/bash
   register: free_command_check
   ignore_errors: true

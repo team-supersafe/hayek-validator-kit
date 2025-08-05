@@ -4,7 +4,7 @@
 
 - name: Test sudo permissions for apt-get update
   ansible.builtin.shell:
-    cmd: "timeout 5 sudo -n apt-get update"
+    cmd: "timeout {{ timeout_sec }} sudo -n apt-get update"
     executable: /bin/bash
   register: apt_update_result
   ignore_errors: true

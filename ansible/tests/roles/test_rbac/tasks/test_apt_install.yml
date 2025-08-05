@@ -4,7 +4,7 @@
 
 - name: Test sudo permissions for apt install
   ansible.builtin.shell:
-    cmd: "timeout 5 sudo -n apt-get install"
+    cmd: "timeout {{ timeout_sec }} sudo -n apt-get install"
     executable: /bin/bash
   register: apt_install_result
   ignore_errors: true

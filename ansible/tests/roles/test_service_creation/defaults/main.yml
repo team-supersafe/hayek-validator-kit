@@ -10,3 +10,6 @@ service_port: 8080
 # Service configuration
 service_restart_sec: "10"
 service_timeout_stop_sec: "30"
+
+# Timeout
+timeout_sec: "30"
