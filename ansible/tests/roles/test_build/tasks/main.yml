@@ -1,0 +1,20 @@
+---
+# Main tasks for test_build role
+
+- name: Install dependencies
+  import_tasks: install_dependencies.yml
+
+- name: Download source code
+  import_tasks: download_source.yml
+
+- name: Compile application
+  import_tasks: compile.yml
+
+- name: Install application
+  import_tasks: install.yml
+
+- name: Create symbolic link
+  import_tasks: create_symlink.yml
+
+- name: Verify installation
+  import_tasks: verify.yml

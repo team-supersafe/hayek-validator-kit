@@ -1,0 +1,14 @@
+---
+# Create simple web service script
+- name: Create simple web service script
+  ansible.builtin.copy:
+    dest: "{{ service_script_path }}"
+    mode: '0755'
+    owner: "{{ service_user }}"
+    group: "{{ service_group }}"
+    content: |
+      #!/bin/bash
+      while true; do
+        echo "Unix Testing in Progress - $(date)" > /tmp/unix-test-status.txt
+        sleep 30
+      done

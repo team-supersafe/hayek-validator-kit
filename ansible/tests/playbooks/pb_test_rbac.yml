@@ -1,20 +1,17 @@
 ---
-# Playbook for initial setup of metal box server
-# This playbook configures a new metal box for validator operations
+# Test RBAC functionality
 # --------------------
 # Usage:
 # ------
-# Run from /ansible directory:
+# Run from /ansible/tests directory:
 #
-# ansible-playbook playbooks/pb_setup_metal_box.yml \
-#   -i solana_new_metal_box.yml \
-#   -e "target_host=new-metal-box" \
-#   -e "ansible_user=ubuntu"
+# ansible-playbook playbooks/pb_test_rbac.yml \
+#   -e "target_host=host-charlie" \
+#   -e "ansible_user=username"
 
-- name: Setup Metal Box Server
+- name: Test RBAC functionality
   hosts: "{{ target_host }}"
-  user: "{{ ansible_user }}"
-  become: true
+  become: false
   pre_tasks:
     # Gather system facts to get server information
     - name: Gather facts
@@ -33,7 +30,7 @@
     - name: Show server IP and location for confirmation
       ansible.builtin.pause:
         prompt: |
-          IMPORTANT: You are about to run this playbook on the server with IP: {{ ansible_default_ipv4.address }}
+          IMPORTANT: You are about to run RBAC tests on the server with IP: {{ ansible_default_ipv4.address }}
 
           Location Information:
           - City: {{ ip_info.json.city | default('Unknown') }}
@@ -58,4 +55,4 @@
         - ip_confirmation.user_input != ansible_default_ipv4.address
 
   roles:
-    - server_initial_setup
+    - test_rbac

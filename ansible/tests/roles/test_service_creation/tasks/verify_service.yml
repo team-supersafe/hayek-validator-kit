@@ -1,0 +1,67 @@
+---
+# Verify service is working by checking the status file
+- name: Check if service status file exists
+  ansible.builtin.stat:
+    path: /tmp/unix-test-status.txt
+  register: status_file
+
+- name: Read service status file
+  ansible.builtin.slurp:
+    src: /tmp/unix-test-status.txt
+  register: status_content
+  when: status_file.stat.exists
+
+- name: Get file modification time
+  ansible.builtin.stat:
+    path: /tmp/unix-test-status.txt
+  register: file_stats
+  when: status_file.stat.exists
+
+- name: Convert timestamp to readable date
+  ansible.builtin.shell:
+    cmd: "date -d @{{ file_stats.stat.mtime | int }}"
+  register: readable_date
+  when: status_file.stat.exists
+  changed_when: false
+
+- name: Check service status
+  ansible.builtin.systemd:
+    name: "{{ service_name }}"
+  register: service_status
+  changed_when: false
+
+- name: Get process user
+  ansible.builtin.shell:
+    cmd: "ps -o user= -p {{ service_status.status.MainPID }}"
+  register: process_user
+  when: service_status.status.MainPID is defined and service_status.status.MainPID != 0
+  changed_when: false
+
+- name: Get service logs
+  ansible.builtin.shell:
+    cmd: "journalctl -u {{ service_name }} --no-pager -n 3"
+  register: service_logs
+  ignore_errors: true
+  changed_when: false
+
+- name: Display service summary
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      UNIX TEST SERVICE SUMMARY
+      ========================================
+      Service Name: {{ service_name }}
+      Service Status: {{ service_status.status.ActiveState }}
+      Service PID: {{ service_status.status.MainPID | default('N/A') }}
+      Process User: {{ process_user.stdout | default('N/A') }}
+
+      Status File: /tmp/unix-test-status.txt
+      File Exists: {{ 'true' if status_file.stat.exists else 'false' }}
+      {% if status_file.stat.exists %}
+      File Content: {{ status_content.content | b64decode }}
+      Last Modified: {{ readable_date.stdout }}
+      {% endif %}
+
+      Service Logs:
+      {{ service_logs.stdout | default('No logs available') }}
+      ========================================

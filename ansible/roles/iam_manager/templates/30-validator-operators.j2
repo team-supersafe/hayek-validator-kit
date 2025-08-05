@@ -1,0 +1,32 @@
+# Validator Operators - Service management and monitoring
+# This file is managed by Ansible - DO NOT EDIT MANUALLY
+
+# Allow group members to become validator_operators without password
+# This is required for Ansible to use become_user: validator_operators
+
+# Service control commands (unique to operators)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl start {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop cron
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl start cron
+
+# Process management (unique to operators)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/pkill -f {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/kill -9
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/renice
+
+# Log management (unique to operators)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/tail -n 100 {{ validator_log_file }}
+
+# System monitoring (unique to operators)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/htop
+
+# ========================================
+# INHERITED PERMISSIONS FROM VALIDATOR_VIEWERS
+# ========================================
+{% set viewers_content = lookup('template', '40-validator-viewers.j2') %}
+{{ viewers_content | regex_replace('%validator_viewers', '%validator_operators') }}
+
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/test operator1
+

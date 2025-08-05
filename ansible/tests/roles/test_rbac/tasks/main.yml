@@ -1,0 +1,35 @@
+---
+# Test RBAC Role - Main Tasks
+
+# Check if services are active
+- name: Test bed setup
+  import_tasks: precheck.yml
+
+# Get user information
+- name: Get user information
+  import_tasks: get_user_info.yml
+
+# Test all permissions
+- name: Test logrotate permissions
+  import_tasks: test_logrotate.yml
+
+- name: Test cron permissions
+  import_tasks: test_cron.yml
+
+- name: Test apt-get update permissions
+  import_tasks: test_apt_update.yml
+
+- name: Test apt install permissions
+  import_tasks: test_apt_install.yml
+
+- name: Test free -h permissions
+  import_tasks: test_free_h.yml
+
+- name: Pause before final summary
+  ansible.builtin.pause:
+    seconds: 3
+    prompt: "Generating final summary..."
+
+# Include summary tasks
+- name: Include summary tasks
+  import_tasks: summary.yml

@@ -1,0 +1,14 @@
+---
+# Default variables for test_build role
+
+# htop version to compile
+htop_version: "3.3.0"
+
+# Sol user directory
+sol_user_dir: "/home/sol"
+
+# Installation directory
+htop_install_dir: "{{ sol_user_dir }}/.local"
+
+# Download URL
+htop_download_url: "https://github.com/htop-dev/htop/archive/refs/tags/{{ htop_version }}.tar.gz"

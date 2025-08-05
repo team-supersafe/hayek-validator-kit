@@ -1,0 +1,32 @@
+---
+# Test and verify installation
+# ===========================
+# This task verifies that the installation was successful by executing the binary
+# and displaying information about the installation.
+#
+# Best practices:
+# - Always verify that the installation works correctly
+# - Use register to capture the test result
+# - Use changed_when: false to not mark verifications as "changed"
+# - Display useful information about the installation
+# - Use variables to show paths and versions
+
+- name: Test installation
+  ansible.builtin.shell:
+    cmd: "{{ htop_install_dir }}/bin/htop --version"
+  register: htop_test
+  changed_when: false
+
+- name: Test symbolic link
+  ansible.builtin.shell:
+    cmd: "/usr/local/bin/htop --version"
+  register: htop_symlink_test
+  changed_when: false
+
+- name: Display result
+  ansible.builtin.debug:
+    msg: |
+      htop {{ htop_version }} installed successfully:
+      - User installation: {{ htop_install_dir }}/bin/htop
+      - System-wide link: /usr/local/bin/htop
+      - Symlink test: {{ 'SUCCESS' if htop_symlink_test.rc == 0 else 'FAILED' }}
