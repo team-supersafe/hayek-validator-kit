@@ -10,7 +10,7 @@
 # Run from /ansible directory:
 #
 # ansible-playbook playbooks/pb_hot_swap_validator_hosts.yml \
-#   -i solana_localnet.yml \
+#   -i solana_two_host_operations.yml \
 #   -e "source_host=host-alpha" \
 #   -e "destination_host=host-bravo" \
 #   -e "deprovision_source_host=true" # Optional: Use this to deprovision all validator-related files, folders, services, and keys from the source host

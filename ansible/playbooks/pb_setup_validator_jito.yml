@@ -8,14 +8,28 @@
 # Run from /ansible directory:
 #
 # syntax check
-# ansible-playbook playbooks/pb_setup_validator_jito.yml
-#   -i solana_localnet.yml \
+# ansible-playbook playbooks/pb_setup_validator_jito.yml \
+#   -i solana_setup_host.yml \
 #   --limit host-charlie \
 #   --syntax-check \
 #   -e "target_host=host-charlie"
 #
+# Example running against production host
 # ansible-playbook playbooks/pb_setup_validator_jito.yml \
-#   -i solana_localnet.yml \
+#   -i solana_setup_host.yml \
+#   --limit hyk-lat-mia \
+#   -e "target_host=hyk-lat-mia" \
+#   -e "validator_name=hayek-mainnet" \
+#   -e "validator_type=hot-spare" \
+#   -e "solana_cluster=mainnet" \
+#   -e "jito_version=2.3.6" \
+#   -e "jito_relayer_type=co-hosted" \
+#   -e "jito_relayer_version=0.4.2" \
+#   -e "jito_force_build=true"
+#
+# Example running against localnet host (create inventory from README reference)
+# ansible-playbook playbooks/pb_setup_validator_jito.yml \
+#   -i solana_setup_host.yml \
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
 #   -e "validator_name=penny" \
