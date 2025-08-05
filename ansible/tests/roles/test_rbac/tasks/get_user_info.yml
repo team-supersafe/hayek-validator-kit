@@ -1,0 +1,17 @@
+---
+# Get user information and display groups
+- name: Get user groups
+  ansible.builtin.shell:
+    cmd: "groups {{ ansible_user }}"
+    executable: /bin/bash
+  register: user_groups_result
+  ignore_errors: true
+
+- name: Display user groups
+  ansible.builtin.debug:
+    msg: "User {{ ansible_user }} belongs to groups: {{ user_groups_result.stdout | default('No groups found') }}"
+
+- name: Pause before testing permissions
+  ansible.builtin.pause:
+    seconds: 2
+    prompt: "Testing RBAC permissions for {{ ansible_user }}..."

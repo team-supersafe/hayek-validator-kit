@@ -23,7 +23,7 @@
     path: "/home/{{ solana_user }}"
     owner: "{{ solana_user }}"
     group: validator_admins
-    mode: '0774'
+    mode: '0775'
     recurse: true
   no_log: true
 

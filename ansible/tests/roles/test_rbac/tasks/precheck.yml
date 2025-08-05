@@ -1,0 +1,57 @@
+---
+# Test bed setup - Prechecks for service status
+# This task verifies that required services are active before running RBAC tests
+
+- name: Check if cron service is active
+  ansible.builtin.shell:
+    cmd: "timeout 5 systemctl is-active cron"
+    executable: /bin/bash
+  register: cron_status_check
+  ignore_errors: true
+
+- name: Display cron service status
+  ansible.builtin.debug:
+    msg: "Cron service status: {{ 'ACTIVE' if cron_status_check.rc == 0 else 'INACTIVE' }}"
+
+- name: Fail if cron service is not active
+  ansible.builtin.fail:
+    msg: "Cron service is not active. Please start the service before running RBAC tests."
+  when: cron_status_check.rc != 0
+
+- name: Check if apt package manager is available
+  ansible.builtin.shell:
+    cmd: "timeout 5 which apt-get"
+    executable: /bin/bash
+  register: apt_availability_check
+  ignore_errors: true
+
+- name: Display apt availability status
+  ansible.builtin.debug:
+    msg: "APT package manager: {{ 'AVAILABLE' if apt_availability_check.rc == 0 else 'NOT AVAILABLE' }}"
+
+- name: Check system memory information availability
+  ansible.builtin.shell:
+    cmd: "timeout 5 which free"
+    executable: /bin/bash
+  register: free_command_check
+  ignore_errors: true
+
+- name: Display free command availability
+  ansible.builtin.debug:
+    msg: "Free command: {{ 'AVAILABLE' if free_command_check.rc == 0 else 'NOT AVAILABLE' }}"
+
+- name: Display test bed setup summary
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      TEST BED SETUP SUMMARY
+      ========================================
+      Cron Service: {{ 'ACTIVE' if cron_status_check.rc == 0 else 'INACTIVE' }}
+      APT Package Manager: {{ 'AVAILABLE' if apt_availability_check.rc == 0 else 'NOT AVAILABLE' }}
+      Free Command: {{ 'AVAILABLE' if free_command_check.rc == 0 else 'NOT AVAILABLE' }}
+      ========================================
+
+- name: Pause before starting RBAC tests
+  ansible.builtin.pause:
+    seconds: 2
+    prompt: "Test bed setup complete. Starting RBAC tests..."

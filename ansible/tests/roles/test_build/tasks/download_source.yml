@@ -1,0 +1,16 @@
+---
+# Download and extract source code
+# ===============================
+# This task downloads htop source code from GitHub and extracts it to /tmp.
+#
+# Best practices:
+# - Use remote_src: yes to download from external URL
+# - Extract to /tmp to avoid conflicts with previous installations
+# - The unarchive module automatically handles download and extraction
+# - Use variables for URL and version for easy maintenance
+
+- name: Download and extract htop source
+  ansible.builtin.unarchive:
+    src: "{{ htop_download_url }}"
+    dest: "/tmp"
+    remote_src: yes
