@@ -20,6 +20,7 @@
   * [Hardware tuning](validator-operations/host-infrastructure/hardware-tunning-info.md)
   * [System Tuning](validator-operations/host-infrastructure/system-tuning.md)
   * [Bastion Host Setup](validator-operations/host-infrastructure/bastion-host-setup.md)
+  * [Running Testing](validator-operations/host-infrastructure/running-testing.md)
 * [Validator clients](validator-operations/deploying-a-validator-client/README.md)
   * [Agave](validator-operations/deploying-a-validator-client/agave.md)
   * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
