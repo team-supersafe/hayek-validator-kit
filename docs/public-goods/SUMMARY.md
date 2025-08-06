@@ -26,6 +26,7 @@
   * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
   * [Jito](validator-operations/deploying-a-validator-client/jito.md)
   * [Client Troubleshooting](validator-operations/deploying-a-validator-client/client-troubleshooting.md)
+  * [Client Mods](validator-operations/deploying-a-validator-client/client-mods.md)
 * [Metrics & Monitoring](validator-operations/metrics-and-monitoring/README.md)
   * [Community Dashboards](validator-operations/metrics-and-monitoring/community-dashboards.md)
   * [Setup Validator Metrics](validator-operations/metrics-and-monitoring/setup-validator-metrics.md)
