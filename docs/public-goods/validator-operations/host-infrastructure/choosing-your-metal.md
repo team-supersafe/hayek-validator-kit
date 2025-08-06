@@ -65,7 +65,14 @@ Every ranking system is different, but they all penalize central points of failu
 * Best practice:
   * Avoid using a shared Jito Relayer. Build and install your own and co-host it with the validator in the same bare metal.
 
-#### Max Decentralization = Max Delegation
+### Max Decentralization = Max Delegation
+
+It is important to realize there are two (2) vectors in each decentralization metric:
+
+1. **Stake Concentration**: usually expressed as a percentage of the total SOL staked in that ASN/DC/City/etc
+2. **Population Concentration**: The number of unique nodes hosted in that ASN/DC/City/etc.
+
+Although they are both important factors, Stake Concentration carries more weight than Population, since PoS and Leader Schedule only accounts for Stake distribution and not Population.
 
 Validators who score high on decentralization are more likely to:
 
