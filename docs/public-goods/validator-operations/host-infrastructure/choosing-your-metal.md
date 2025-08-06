@@ -27,7 +27,10 @@ They roughly point at these recommended minimum requirements:
 
 ### ASN Concentration
 
-add
+When choosing an ASN (Autonomous System Number) for your raw metal validator host, there are several important considerations. Tools and ranking systems like Validators.app, JSOL, and Solana Compass penalize ASN concentration to promote decentralization.
+
+1. Stay away from large clouds (like AWS, Azure or Google Cloud)
+   1. They usually don
 
 ### Data Center Concentration
 
