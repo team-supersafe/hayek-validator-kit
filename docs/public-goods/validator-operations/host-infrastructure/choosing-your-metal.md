@@ -1,12 +1,29 @@
+---
+description: How to choose your bare metal host to run a validator
+---
+
 # Choosing your metal
 
-### Hawdware Requirements
+### Hardware Requirements
 
 These are well maintained across different clients and the community in the following links:
 
 1. [Anza's Hardware Recommendations](https://docs.anza.xyz/operations/requirements#hardware-recommendations)&#x20;
 2. [Solana Hardware Compatibility List](https://solanahcl.org/) (Community Maintained - Open Source )
 3. [Firedancer Hardware Requirements](https://docs.firedancer.io/guide/getting-started.html#hardware-requirements)
+
+They roughly point at these recommended minimum requirements:
+
+* CPU: 24+ physical cores (48+ threads) with AVX2
+* RAM: 512 GB ECC DDR4/DDR5
+* Disk:
+  * 2 TB NVMe SSD for ledger
+  * 1 TB NVMe SSD for accounts
+  * Optional: separate OS drive
+* Network: 3 Gbps minimum, 10+ Gbps preferred
+* Power: UPS and dual PSU recommended
+
+> 🎯 _These specs aim to ensure your validator can stay in consensus, avoid delinquency, and perform well under high network load._
 
 ### ASN Concentration
 
