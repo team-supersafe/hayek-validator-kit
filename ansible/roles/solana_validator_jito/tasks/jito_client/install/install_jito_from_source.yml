@@ -43,7 +43,7 @@
       register: build_dir_stat
 
     - name: Read current version from Cargo.toml if build directory exists
-      ansible.builtin.shell: grep '^version' Cargo.toml | awk -F '"' '{print $2}'
+      ansible.builtin.shell: grep '^version' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
       args:
         chdir: "{{ jito_build_dir }}"
       register: current_cargo_version
@@ -114,7 +114,7 @@
       ignore_errors: "{{ ansible_check_mode }}"
 
     - name: Read version from Cargo.toml
-      ansible.builtin.shell: grep '^version' Cargo.toml | awk -F '"' '{print $2}'
+      ansible.builtin.shell: grep '^version' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
       args:
         chdir: "{{ jito_build_dir }}"
       register: cargo_toml_version
