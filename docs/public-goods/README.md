@@ -36,10 +36,4 @@ This will start a local Solana network called Localnet with all of the Hayek Val
 
 ### What’s Next?
 
-Use the menu on the left to explore the rest of the documentation:
-
-* [Hayek Validator Kit](broken-reference/) – Detailed setup instructions.
-* [Validator Operations](broken-reference/) – Run and manage your own validator.
-* [Key Management](broken-reference/) – Secure your staking and signing keys.
-
-If you’re just experimenting, localnet is all you need. If you’re going live, follow the full setup under Validator Operations.
+Use the menu on the left to explore the rest of the documentation. If you’re just experimenting, localnet is all you need. If you’re going live, follow the full setup under Validator Operations.
