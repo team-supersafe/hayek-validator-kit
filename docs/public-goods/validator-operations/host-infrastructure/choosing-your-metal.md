@@ -27,14 +27,14 @@ They roughly point at these recommended minimum requirements:
 
 ## Decentralization Scoring
 
-Many Solana validator rankings (e.g. Validators.app, JSOL, Jito Score) reward validators that contribute to network-level decentralization. These "rewards" are usually rankings that have a direct impact in delegation incentives coming from [Stake Pools](../validator-stake/stake-pools.md) and [Delegation Programs](../validator-stake/sfdp.md).&#x20;
+Many Solana validator rankings (e.g. Validators.app, JPool, Jito Score) reward validators that contribute to network-level decentralization. These "rewards" are usually rankings that have a direct impact in delegation incentives coming from [Stake Pools](../validator-stake/stake-pools.md) and [Delegation Programs](../validator-stake/sfdp.md).&#x20;
 
 Every ranking system is different, but they all penalize central points of failure to decentralize the network across many dimensions. Four of those dimensions come into play when choosing your bare metal:&#x20;
 
 ### 1. ASN (Autonomous System Number)
 
 * What it is: The network ID associated with your hosting provider or ISP.
-* Why it matters: Too many validators under the same ASN (e.g. AS24940 for Hetzner) create single points of failure and routing risk.
+* Why it matters: Too many validators under the same ASN (e.g. [396356](https://www.validators.app/asns/396356?locale=en\&network=mainnet) for LATITUDE-SH) create single points of failure and routing risk.
 * Best practice:
   * Avoid ASNs with large node population (e.g. TERASWITCH, OVH, AWS, GCP).
   * Prefer unique or lightly used ASNs.
