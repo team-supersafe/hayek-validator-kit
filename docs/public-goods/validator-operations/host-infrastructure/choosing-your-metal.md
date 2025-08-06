@@ -2,7 +2,11 @@
 
 ### Hawdware Requirements
 
-add
+These are well maintained across different clients and the community in the following links:
+
+1. [Anza's Hardware Recommendations](https://docs.anza.xyz/operations/requirements#hardware-recommendations)&#x20;
+2. [Solana Hardware Compatibility List](https://solanahcl.org/) (Community Maintained - Open Source )
+3. [Firedancer Hardware Requirements](https://docs.firedancer.io/guide/getting-started.html#hardware-requirements)
 
 ### ASN Concentration
 
