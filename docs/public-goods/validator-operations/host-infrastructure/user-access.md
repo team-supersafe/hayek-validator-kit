@@ -10,6 +10,8 @@ Once your raw metal server is ready to host a Solana validator, the system admin
 
 This page assumes you have access to a provisioned bare metal with the `ubuntu` user with `sudo` access as explained in the [Choosing Your Metal](choosing-your-metal.md) page.
 
+Since the user provisioning is done via an Ansible script, you must have a running [Ansible Control](../../hayek-validator-kit/ansible-control.md)
+
 ## Least Privilege & RBAC
 
 Our security strategy is based on the principle of least privilege.&#x20;
@@ -26,14 +28,9 @@ Users `ubuntu` and `sol` are special in that they do not belong to any group. Al
 
 <table><thead><tr><th width="177.41796875">USERS</th><th width="294.82421875">DESCRIPTION</th><th>USAGE</th></tr></thead><tbody><tr><td>⚙️ <strong>ubuntu</strong></td><td>Provisioned by ASN with a server. Disabled after secure user setup.</td><td>To provision server users.</td></tr><tr><td>⚙️ <strong>sol</strong></td><td>Primary validator service runner and owner of the validator files and data.</td><td>Runs the validator service.</td></tr><tr><td>🧍Operator User:<br>>>> <strong>alice</strong>, <strong>bob</strong>, etc.</td><td>Each human operator has his/her dedicated user.</td><td>Access the server via SSH and run Ansible scripts from the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>.</td></tr></tbody></table>
 
-## Prerequisites
+## User Setup
 
-Since the user provisioning is done via an Ansible script, you must have:
-
-1. A running [Ansible Control](../../hayek-validator-kit/ansible-control.md)
-2. Access to the user `ubuntu` on the provisioned server. See how [HERE](choosing-your-metal.md#provisioning).
-
-## Setup Users CSV
+### Users Config File
 
 The `pb_setup_server_users.yml` expects a CSV with users and groups meta that will be used for the identity and access management provisioning.
 
@@ -41,9 +38,9 @@ You can use the template below as a starting point and modify as needed. Once yo
 
 {% file src="../../.gitbook/assets/iam_setup.csv" %}
 
-## Executing the Playbook
+### Provisioning Users
 
-Before running the playbook, ensure that your inventory file (`target_one_host.yml`) is updated with the IP address of the target server where you will install the users. Your inventory file should look like this:
+Before running the user provisioning playbook, ensure that your inventory file (`target_one_host.yml`) is updated with the IP address of the target server where you will install the users. Your inventory file should look like this:
 
 ```yaml
 all:
@@ -67,8 +64,6 @@ ansible-playbook playbooks/pb_setup_server_users.yml \
 **Note:** The playbook is configured to run with the user `ubuntu` which is the only user in the newly provisioned server.
 {% endhint %}
 
-### Confirmation Step
-
 Upon running the playbook, you will see a confirmation asking you to verify the IP of the host you are about to change:
 
 ```
@@ -90,7 +85,7 @@ Type IP here
 
 This step is a safety measure to ensure you are provisioning the correct server. Type the IP address shown to continue. If you are not sure, press Ctrl+C to cancel the process.
 
-### Ubuntu User Disablement Notice
+### Disabling Ubuntu User
 
 Before the playbook completes, a **final security warning** is issued to inform the operator that the default `ubuntu` user will be disabled. This is a **deliberate security measure**, as many cloud providers (ASN) preconfigure servers with the `ubuntu` user by default, which poses a risk if left active.
 
