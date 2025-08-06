@@ -26,8 +26,8 @@
   ansible.builtin.include_tasks: install_from_source.yml
 
 - when: not ((override_build_method | default(false)) or build_from_source)
-  name: Install - Installing from url based on architecture
-  ansible.builtin.include_tasks: install_from_url.yml
+  name: Install - Installing from binaries based on architecture
+  ansible.builtin.include_tasks: install_from_binaries.yml
 
 # Ensure Solana CLI bin path is in the user's .bashrc and .zshrc for persistent CLI access
 - name: Install - Ensure Solana CLI bin path is in .bashrc
