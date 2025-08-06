@@ -30,7 +30,7 @@ Users `ubuntu` and `sol` are special in that they do not belong to any group. Al
 
 ## User Setup
 
-### Users Config File
+### 🎛️ Config File
 
 The `pb_setup_server_users.yml` expects a CSV with users and groups meta that will be used for the identity and access management provisioning.
 
@@ -38,7 +38,7 @@ You can use the template below as a starting point and modify as needed. Once yo
 
 {% file src="../../.gitbook/assets/iam_setup.csv" %}
 
-### Provisioning Users
+### ❇️ Provisioning
 
 Before running the user provisioning playbook, ensure that your inventory file (`target_one_host.yml`) is updated with the IP address of the target server where you will install the users. Your inventory file should look like this:
 
@@ -85,7 +85,7 @@ Type IP here
 
 This step is a safety measure to ensure you are provisioning the correct server. Type the IP address shown to continue. If you are not sure, press Ctrl+C to cancel the process.
 
-### Disabling Ubuntu User
+### ❌ Ubuntu User
 
 Before the playbook completes, a **final security warning** is issued to inform the operator that the default `ubuntu` user will be disabled. This is a **deliberate security measure**, as many cloud providers (ASN) preconfigure servers with the `ubuntu` user by default, which poses a risk if left active.
 
@@ -112,21 +112,13 @@ Press Enter to continue and disable ubuntu user (you will lose connection!), or 
 Once confirmed, the `ubuntu` user is disabled, and the SSH session will be terminated.
 {% endhint %}
 
-## Sudo Access by Role
+### 🎟️ User Access
 
 The playbook automatically configures the required sudo permissions for each role by deploying dedicated policy files under `/etc/sudoers.d/`. The system uses a hierarchical approach where higher roles inherit permissions from lower roles.
 
 #### Role Hierarchy and Permissions
 
-| ROLE                     | FILE                     | PERMISSIONS                                                            | INHERITANCE             |
-| ------------------------ | ------------------------ | ---------------------------------------------------------------------- | ----------------------- |
-| **sysadmin**             | `10-sysadmin`            | Full system access                                                     | None (top level)        |
-| **validator\_admins**    | `20-validator-admins`    | Complete validator management + package management + development tools | Inherits from operators |
-| **validator\_operators** | `30-validator-operators` | Service control + process management + monitoring                      | Inherits from viewers   |
-| **validator\_viewers**   | `40-validator-viewers`   | Read-only monitoring + system status                                   | Base level              |
-| **ansible\_executor**    | `40-ansible-executor`    | Ansible automation only                                                | Special purpose         |
-
-
+<table><thead><tr><th width="175.21484375">ROLE</th><th>FILE</th><th width="195.21484375">PERMISSIONS</th><th>INHERITANCE</th></tr></thead><tbody><tr><td><strong>sysadmin</strong></td><td><code>10-sysadmin</code></td><td>Full system access</td><td>None (top level)</td></tr><tr><td><strong>validator_admins</strong></td><td><code>20-validator-admins</code></td><td>Complete validator management + package management + development tools</td><td>Inherits from operators</td></tr><tr><td><strong>validator_operators</strong></td><td><code>30-validator-operators</code></td><td>Service control + process management + monitoring</td><td>Inherits from viewers</td></tr><tr><td><strong>validator_viewers</strong></td><td><code>40-validator-viewers</code></td><td>Read-only monitoring + system status</td><td>Base level</td></tr><tr><td><strong>ansible_executor</strong></td><td><code>40-ansible-executor</code></td><td>Ansible automation only</td><td>Special purpose</td></tr></tbody></table>
 
 ## Password Self Service
 
