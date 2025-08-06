@@ -29,7 +29,7 @@ They roughly point at these recommended minimum requirements:
 
 Many Solana validator rankings (e.g. Validators.app, JSOL, Jito Score) reward validators that contribute to network-level decentralization. These "rewards" are usually rankings that have a direct impact in delegation incentives coming from [Stake Pools](../validator-stake/stake-pools.md) and [Delegation Programs](../validator-stake/sfdp.md).&#x20;
 
-These rankings penalize central points of failure to decentralize the network across four key dimensions:
+These rankings penalize central points of failure to decentralize the network across many dimensions, but four key ones come into play an important role when choosing your bare metal:&#x20;
 
 ### 1. ASN (Autonomous System Number)
 
