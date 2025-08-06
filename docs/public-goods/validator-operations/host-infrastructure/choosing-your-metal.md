@@ -31,7 +31,7 @@ Many Solana validator rankings (e.g. Validators.app, JSOL, Jito Score) reward va
 
 These rankings penalize central points of failure to decentralize the network across four key dimensions:
 
-#### 1. ASN (Autonomous System Number)
+### 1. ASN (Autonomous System Number)
 
 * What it is: The network ID associated with your hosting provider or ISP.
 * Why it matters: Too many validators under the same ASN (e.g. AS24940 for Hetzner) create single points of failure and routing risk.
@@ -40,7 +40,7 @@ These rankings penalize central points of failure to decentralize the network ac
   * Prefer unique or lightly used ASNs.
   * Use [Validators.app ASN Map](https://validators.app/asn-map) to assess ASN concentration.
 
-#### 2. Data Center / Hosting Provider
+### 2. Data Center / Hosting Provider
 
 * What it is: The physical facility where your node runs.
 * Why it matters: Even under different ASNs, multiple validators in the same DC are subject to the same physical outages or maintenance windows.
@@ -49,7 +49,7 @@ These rankings penalize central points of failure to decentralize the network ac
   * Colocate in diverse DCs or contract with smaller ISPs.
   * Check that the data center isn’t hosting >10 validators.
 
-#### 3. Geographic Location
+### 3. Geographic Location
 
 * What it is: The continent, country, and city where the validator is hosted.
 * Why it matters: Geographic diversity protects against region-specific threats—natural disasters, regulatory clampdowns, or network partitions.
@@ -58,7 +58,7 @@ These rankings penalize central points of failure to decentralize the network ac
   * Spread nodes across continents, not just countries.
   * Tools like JSOL and Jito’s validator reports show clustering hotspots.
 
-#### 4. TPU IP Concentration (for Jito)
+### 4. TPU IP Concentration (for Jito)
 
 * What it is: The Transaction Processing Unit IP address your Jito relayer advertises to the world.
 * Why it matters: Validators running the Jito client, and using a Shared Jito Relayer (as opposed to a co-hosted one) are also sharing the TPU IPs and create a single point of failure if that Relayer does down.
