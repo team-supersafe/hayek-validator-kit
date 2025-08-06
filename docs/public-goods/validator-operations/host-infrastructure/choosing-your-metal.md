@@ -36,7 +36,7 @@ Every ranking system is different, but they all penalize central points of failu
 * What it is: The network ID associated with your hosting provider or ISP.
 * Why it matters: Too many validators under the same ASN (e.g. [396356](https://www.validators.app/asns/396356?locale=en\&network=mainnet) for LATITUDE-SH) create single points of failure and routing risk.
 * Best practice:
-  * Avoid ASNs with large node population (e.g. TERASWITCH, OVH, AWS, GCP).
+  * Avoid ASNs with large node population (e.g. TERASWITCH, LATITUDE-SH, OVH, AWS, GCP).
   * Prefer unique or lightly used ASNs.
   * Use [Validators.app ASN Map](https://validators.app/asn-map) to assess ASN concentration.
 
@@ -47,7 +47,7 @@ Every ranking system is different, but they all penalize central points of failu
 * Best practice:
   * Avoid DCs with large node population (e.g. [20326-DE-Frankfurt am Main](https://www.validators.app/data-centers/20326-DE-Frankfurt%20am%20Main?locale=en\&network=mainnet), [20326-NL-Amsterdam](https://www.validators.app/data-centers/20326-NL-Amsterdam?locale=en\&network=mainnet), [396356-GB-London](https://www.validators.app/data-centers/396356-GB-London?locale=en\&network=mainnet)).
   * Colocate in diverse DCs or contract with smaller ISPs.
-  * Use [Validators.app Data Center List](https://validators.app/asn-map) to assess DC concentration (go for 10 or less).
+  * Use [Validators.app Data Center List](https://validators.app/asn-map) to assess DC concentration.
 
 ### 3. Geographic Location
 
