@@ -73,6 +73,18 @@ Validators who score high on decentralization are more likely to:
 * Avoid slashing risks tied to shared failures
 * Attract decentralization-focused delegators (Foundation, JSOL, stake pools)
 
+## Mainnet vs Testnet
+
+Solana Mainnet-Beta and Solana Testnet are the two networks you will most likely be configuring on your validator after it gets installed in your raw metal server. A general rule of thumb is to follow the Solana Foundation liveness requirements for the [Delegation Program](https://solana.org/delegation-program) as a litmus test of how much you should be provisioning and. what's expected of your servers.
+
+A common setup is to have:
+
+1. One host as the primary for Mainnet in ASN a1, DC d1, City c1
+2. One host as the hot-spare of your primary in ASN a2, DC d2, City c2
+3. One host as the primary for Testnet in ASN a3, DC d3, City c3
+
+The key is to maintain enough variance across ASNs, DCs and Cities, such that, in the event of disaster, you can recover quickly by switching to your hot-spare, or in the worst-case scenario, repurposing the Testnet host.
+
 ## Provisioning
 
 Most metal providers (e.g. Vultr, Edgevana, Latitude, etc.) force the provisioning of the server with the `ubuntu` user by default, as the SUDO user for sys-admins.
