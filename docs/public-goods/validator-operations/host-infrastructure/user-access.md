@@ -119,18 +119,17 @@ Once confirmed, the `ubuntu` user is disabled, and the SSH session will be termi
 
 ## Sudo Access by Role
 
-The playbook automatically configures the required sudo permissions for each role by deploying dedicated policy files under `/etc/sudoers.d/`. For example:
+The playbook automatically configures the required sudo permissions for each role by deploying dedicated policy files under `/etc/sudoers.d/`. The system uses a hierarchical approach where higher roles inherit permissions from lower roles.
 
-<table><thead><tr><th width="177.41796875">ROLE</th><th width="294.82421875">FILE</th><th>PERMS</th></tr></thead><tbody><tr><td>sysadmin</td><td><code>10-sysadmin</code></td><td><p></p><pre class="language-bash"><code class="lang-bash"><a data-footnote-ref href="#user-content-fn-1">%sysadmin ALL=(ALL) ALL</a>
-</code></pre></td></tr><tr><td>validator_admins</td><td><code>20-validator-admins</code></td><td><p></p><pre><code>%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl start {{ validator_service }}
-%validator_admins ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop {{ validator_service }}
-</code></pre></td></tr><tr><td>validator_operators</td><td><code>30-validator-operators</code></td><td><p></p><pre><code>%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u {{ validator_service }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/tail -f {{ validator_log_file }}
-</code></pre></td></tr><tr><td>ansible_executor</td><td><code>40-ansible-executor</code></td><td><p></p><pre><code>%ansible_executor ALL=(ALL) PASSWD: /bin/sh
-</code></pre></td></tr><tr><td>validator_viewers</td><td><code>40-validator-viewers</code></td><td><p></p><pre><code>%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/iostat
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/top -n 1
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/free -h
-</code></pre></td></tr></tbody></table>
+#### Role Hierarchy and Permissions
+
+| ROLE                     | FILE                     | PERMISSIONS                                                            | INHERITANCE             |
+| ------------------------ | ------------------------ | ---------------------------------------------------------------------- | ----------------------- |
+| **sysadmin**             | `10-sysadmin`            | Full system access                                                     | None (top level)        |
+| **validator\_admins**    | `20-validator-admins`    | Complete validator management + package management + development tools | Inherits from operators |
+| **validator\_operators** | `30-validator-operators` | Service control + process management + monitoring                      | Inherits from viewers   |
+| **validator\_viewers**   | `40-validator-viewers`   | Read-only monitoring + system status                                   | Base level              |
+| **ansible\_executor**    | `40-ansible-executor`    | Ansible automation only                                                | Special purpose         |
 
 
 
@@ -277,6 +276,3 @@ du -sh /mnt/ledger
 du -sh /mnt/accounts
 ```
 
-
-
-[^1]: 
