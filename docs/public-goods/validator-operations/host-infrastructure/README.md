@@ -6,8 +6,6 @@ description: >-
 
 # Host infrastructure
 
-## General Considerations
-
 Running a performant validator requires reliable, optimized hardware paired with infrastructure automation. This guide outlines Hayek’s approach to provisioning and maintaining host infrastructure using Ansible.
 
 ## Validator Stack
