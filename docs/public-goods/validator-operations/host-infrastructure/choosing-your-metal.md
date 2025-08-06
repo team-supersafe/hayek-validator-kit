@@ -27,7 +27,7 @@ They roughly point at these recommended minimum requirements:
 
 ## Decentralization Scoring
 
-Many Solana validator rankings (e.g. Validators.app, JPool, Jito Score) reward validators that contribute to network-level decentralization. These "rewards" are usually rankings that have a direct impact in delegation incentives coming from [Stake Pools](../validator-stake/stake-pools.md) and [Delegation Programs](../validator-stake/sfdp.md).&#x20;
+Many Solana validator rankings (e.g. Validators.app, JPool, Jito Score) reward validators that contribute to network-level decentralization. These "rewards" are usually rankings that have a direct impact in delegation incentives coming from [Stake Pools](../revenue-and-performance/stake-pools.md) and [Delegation Programs](../revenue-and-performance/sfdp.md).&#x20;
 
 Every ranking system is different, but they all penalize central points of failure to decentralize the network across many dimensions. Four of those dimensions come into play when choosing your bare metal:&#x20;
 

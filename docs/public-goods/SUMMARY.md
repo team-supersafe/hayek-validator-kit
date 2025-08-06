@@ -32,11 +32,11 @@
   * [Inspecting Logs](validator-operations/metrics-and-monitoring/inspecting-logs.md)
 * [Backup & Recovery](validator-operations/backup-and-recovery/README.md)
   * [Cluster Halting](validator-operations/backup-and-recovery/cluster-halting.md)
-* [Stake Management](validator-operations/validator-stake/README.md)
-  * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
-  * [Delegation Programs](validator-operations/validator-stake/sfdp.md)
-  * [Liquid Staking](validator-operations/validator-stake/liquid-staking.md)
-* [Revenue & Performance](validator-operations/revenue-and-performance.md)
+* [Revenue & Performance](validator-operations/revenue-and-performance/README.md)
+  * [Stake Management](validator-operations/revenue-and-performance/validator-stake.md)
+  * [Stake Pools](validator-operations/revenue-and-performance/stake-pools.md)
+  * [Delegation Programs](validator-operations/revenue-and-performance/sfdp.md)
+  * [Liquid Staking](validator-operations/revenue-and-performance/liquid-staking.md)
 
 ## Security Infrastructure
 
