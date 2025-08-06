@@ -42,3 +42,8 @@ argument_specs:
         required: false
         default: false
         description: "Override architecture-based build decision. When true, forces build from source regardless of architecture"
+      use_official_repo:
+        type: bool
+        required: false
+        default: false
+        description: "Use official repository instead of forked repository when building from source"
