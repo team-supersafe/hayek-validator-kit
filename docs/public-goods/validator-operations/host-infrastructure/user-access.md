@@ -10,7 +10,7 @@ Once your raw metal server is ready to host a Solana validator, the system admin
 
 This page assumes you have access to a provisioned bare metal with the `ubuntu` user with `sudo` access as explained in the [Choosing Your Metal](choosing-your-metal.md) page.
 
-Since the user provisioning is done via an Ansible script, you must have a running [Ansible Control](../../hayek-validator-kit/ansible-control.md)
+Since the user provisioning is done via an Ansible script, you must also have a running [Ansible Control](../../hayek-validator-kit/ansible-control.md).
 
 ## Least Privilege & RBAC
 
