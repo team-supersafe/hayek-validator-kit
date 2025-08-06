@@ -20,17 +20,7 @@ Physical Hardware → OS and Networking → Solana Client (e.g., Solana Labs, Ji
 
 You cannot run testnet and mainnet Solana Validators using virtualized environments, as it will fall behind the rest of the network, no matter how much you think you can optimize it. Don't waste your time. But if you are hard-headed, don't come back asking why it doesn't work.
 
-The recommended baseline specs:
-
-* CPU: 24+ physical cores with AVX2 (e.g. AMD EPYC or Intel Xeon)
-* RAM: Minimum 384 GB ECC DDR4/DDR5
-* Storage:
-  * 2 TB NVMe (ledger)
-  * 1 TB NVMe (accounts)
-  * Separate drive for OS
-* Network: 3–25 Gbps symmetric with low latency
-
-There's a lot more to choosing your metal. Explore the [Choosing Your Metal](choosing-your-metal.md) dedicated page for everything you need to know.
+Explore the [Choosing Your Metal](choosing-your-metal.md) dedicated page for everything you need to know.
 
 ## Infrastructure Options
 
