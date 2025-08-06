@@ -4,7 +4,7 @@ description: How to choose your bare metal host to run a validator
 
 # Choosing your metal
 
-### Hardware Requirements
+## Hardware Requirements
 
 These are well maintained across different clients and the community in the following links:
 
@@ -25,24 +25,53 @@ They roughly point at these recommended minimum requirements:
 
 > 🎯 _These specs aim to ensure your validator can stay in consensus, avoid delinquency, and perform well under high network load._
 
-### ASN Concentration
+## Decentralization Scoring
 
-When choosing an ASN (Autonomous System Number) for your raw metal validator host, there are several important considerations. Tools and ranking systems like Validators.app, JSOL, and Solana Compass penalize ASN concentration to promote decentralization.
+Many Solana validator rankings (e.g. Validators.app, JSOL, Jito Score) reward validators that contribute to network-level decentralization. These "rewards" are usually rankings that have a direct impact in delegation incentives coming from [Stake Pools](../validator-stake/stake-pools.md) and [Delegation Programs](../validator-stake/sfdp.md).&#x20;
 
-1. Stay away from large clouds (like AWS, Azure or Google Cloud)
-   1. They usually don
+These rankings penalize central points of failure to decentralize the network across four key dimensions:
 
-### Data Center Concentration
+#### 1. ASN (Autonomous System Number)
 
-add
+* What it is: The network ID associated with your hosting provider or ISP.
+* Why it matters: Too many validators under the same ASN (e.g. AS24940 for Hetzner) create single points of failure and routing risk.
+* Best practice:
+  * Avoid ASNs with large node population (e.g. TERASWITCH, OVH, AWS, GCP).
+  * Prefer unique or lightly used ASNs.
+  * Use [Validators.app ASN Map](https://validators.app/asn-map) to assess ASN concentration.
 
-### Location Concentration
+#### 2. Data Center / Hosting Provider
 
-add
+* What it is: The physical facility where your node runs.
+* Why it matters: Even under different ASNs, multiple validators in the same DC are subject to the same physical outages or maintenance windows.
+* Best practice:
+  * Avoid DCs with large node population (e.g. [20326-DE-Frankfurt am Main](https://www.validators.app/data-centers/20326-DE-Frankfurt%20am%20Main?locale=en\&network=mainnet), [20326-NL-Amsterdam](https://www.validators.app/data-centers/20326-NL-Amsterdam?locale=en\&network=mainnet), [396356-GB-London](https://www.validators.app/data-centers/396356-GB-London?locale=en\&network=mainnet)).
+  * Colocate in diverse DCs or contract with smaller ISPs.
+  * Check that the data center isn’t hosting >10 validators.
 
-### TPU IP Concentration
+#### 3. Geographic Location
 
-add
+* What it is: The continent, country, and city where the validator is hosted.
+* Why it matters: Geographic diversity protects against region-specific threats—natural disasters, regulatory clampdowns, or network partitions.
+* Best practice:
+  * Avoid clustering in validator-heavy cities like Frankfurt, Amsterdam, or New York.
+  * Spread nodes across continents, not just countries.
+  * Tools like JSOL and Jito’s validator reports show clustering hotspots.
+
+#### 4. TPU IP Concentration (for Jito)
+
+* What it is: The Transaction Processing Unit IP address your Jito relayer advertises to the world.
+* Why it matters: Validators running the Jito client, and using a Shared Jito Relayer (as opposed to a co-hosted one) are also sharing the TPU IPs and create a single point of failure if that Relayer does down.
+* Best practice:
+  * Avoid using a shared Jito Relayer. Build and install your own and co-host it with the validator in the same bare metal.
+
+#### Max Decentralization = Max Delegation
+
+Validators who score high on decentralization are more likely to:
+
+* Rank higher on delegation platforms
+* Avoid slashing risks tied to shared failures
+* Attract decentralization-focused delegators (Foundation, JSOL, stake pools)
 
 ## Provisioning
 
