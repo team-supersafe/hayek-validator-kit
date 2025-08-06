@@ -13,14 +13,14 @@
 
 ## Validator Operations
 
-* [Host infrastructure](validator-operations/host-infrastructure/README.md)
+* [Host Infrastructure](validator-operations/host-infrastructure/README.md)
   * [Choosing your metal](validator-operations/host-infrastructure/choosing-your-metal.md)
   * [User Access](validator-operations/host-infrastructure/user-access.md)
   * [Hardware Tuning](validator-operations/host-infrastructure/hardware-tunning-info.md)
   * [System Tuning](validator-operations/host-infrastructure/system-tuning.md)
   * [Bastion Host Setup](validator-operations/host-infrastructure/bastion-host-setup.md)
   * [Infra Testing](validator-operations/host-infrastructure/infra-testing.md)
-* [Validator clients](validator-operations/deploying-a-validator-client/README.md)
+* [Validator Clients](validator-operations/deploying-a-validator-client/README.md)
   * [Agave](validator-operations/deploying-a-validator-client/agave.md)
   * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
   * [Jito](validator-operations/deploying-a-validator-client/jito.md)
