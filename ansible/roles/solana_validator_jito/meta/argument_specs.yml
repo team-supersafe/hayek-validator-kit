@@ -37,8 +37,8 @@ argument_specs:
         required: false
         default: false
         description: "Force cleanup of existing validator data"
-      jito_force_build:
+      jito_override_build_method:
         type: bool
         required: false
         default: false
-        description: "Force build Jito regardless of architecture"
+        description: "Override architecture-based build decision. When true, forces build from source regardless of architecture"

@@ -18,23 +18,19 @@
       - protobuf-compiler
     update_cache: true
 
-- name: Determine if we should build from source
-  ansible.builtin.set_fact:
-    should_build_from_source: "{{ jito_force_build | default(false) or build_from_source }}"
-
 - name: Install Jito-Solana from binaries
   import_tasks: install/install_jito_from_binaries.yml
-  when: not should_build_from_source
+  when: not ((jito_override_build_method | default(false)) or build_from_source)
 
 - name: Build and install Jito from source
   import_tasks: install/install_jito_from_source.yml
-  when: should_build_from_source
+  when: (jito_override_build_method | default(false)) or build_from_source
 
 - name: Installation complete
   debug:
     msg: >-
       Jito-Solana {{ jito_version }} has been successfully installed
-      {% if should_build_from_source %}
+      {% if (jito_override_build_method | default(false)) or build_from_source %}
       (built from source)
       {% else %}
       (from binaries)
