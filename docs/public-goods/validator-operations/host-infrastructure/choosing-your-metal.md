@@ -85,7 +85,7 @@ A common setup is to have:
 
 The key is to maintain enough variance across ASNs, DCs and Cities, such that, in the event of disaster, you can recover quickly by switching to your hot-spare, or in the worst-case scenario, repurposing the Testnet host.
 
-## Provisioning
+## Provisioning the box
 
 Most metal providers (e.g. Vultr, Edgevana, Latitude, etc.) force the provisioning of the server with the `ubuntu` user by default, as the SUDO user for sys-admins.
 
