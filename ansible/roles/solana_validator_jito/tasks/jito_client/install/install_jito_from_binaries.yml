@@ -5,12 +5,7 @@
 
 - name: Set download URL
   ansible.builtin.set_fact:
-    solana_download_url: >-
-      {% if host_arch == 'aarch64-unknown-linux-gnu' %}
-        https://solv-store.s3.us-east-1.amazonaws.com/jito-solana/releases/download/{{ jito_tag }}/solana-release-{{ host_arch }}.tar.bz2
-      {% else %}
-        {{ forked_jito_repo }}/releases/download/{{ jito_tag }}/solana-release-{{ host_arch }}.tar.bz2
-      {% endif %}
+    solana_download_url: "https://solv-store.s3.us-east-1.amazonaws.com/jito-solana/releases/download/{{ jito_tag }}/solana-release-{{ host_arch }}.tar.bz2"
 
 - name: Debug download information
   ansible.builtin.debug:

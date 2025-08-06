@@ -1,16 +1,7 @@
 ---
-- name: Get Agave Download URL
-  ansible.builtin.shell: |
-    set -e
-    echo "{{ official_agave_repo }}/releases/download/v{{ agave_version }}/solana-release-{{ host_arch }}.tar.bz2"
-  args:
-    executable: /bin/bash
-  register: agave_download_url_reg
-  changed_when: false
-
-- name: Set Solana Agave download URL as a fact
+- name: Set Solana Agave download URL
   ansible.builtin.set_fact:
-    agave_download_url: "{{ agave_download_url_reg.stdout }}"
+    agave_download_url: "https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download/v{{ agave_version }}/solana-release-{{ host_arch }}.tar.bz2"
 
 - name: Print the Agave download URL
   ansible.builtin.debug:
