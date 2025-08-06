@@ -10,13 +10,13 @@ Running a performant validator requires reliable, optimized hardware paired with
 
 ## Validator Stack
 
-At a high level, the validator stack looks like the following
+At a high level, the validator stack looks like the following:
 
 Physical Hardware → OS and Networking → Solana Client (e.g., Solana Labs, Jito, Firedancer) → Monitoring/Logging → Backup & Recovery
 
 ## Choosing your metal
 
-You cannot run testnet and mainnet Solana Validators using virtualized environments, as it will fall behind the rest of the network, no matter how much you think you can optimize it. Don't waste your time. But if you are hard-headed, don't come back asking why it doesn't work.
+You <mark style="background-color:$danger;">**cannot**</mark> run testnet and mainnet Solana Validators using virtualized environments, as it will fall behind the rest of the network, no matter how much you think you can optimize it. Don't waste your time. But if you are hard-headed, don't come back asking why it doesn't work.
 
 Explore the [Choosing Your Metal](choosing-your-metal.md) dedicated page for everything you need to know.
 
