@@ -26,16 +26,17 @@
   * [Jito](validator-operations/deploying-a-validator-client/jito.md)
   * [Client Mods](validator-operations/deploying-a-validator-client/client-mods.md)
   * [Client Troubleshooting](validator-operations/deploying-a-validator-client/client-troubleshooting.md)
-* [Metrics & Monitoring](validator-operations/metrics-and-monitoring/README.md)
+* [Monitoring & Logging](validator-operations/metrics-and-monitoring/README.md)
   * [Community Dashboards](validator-operations/metrics-and-monitoring/community-dashboards.md)
   * [Setup Validator Metrics](validator-operations/metrics-and-monitoring/setup-validator-metrics.md)
   * [Inspecting Logs](validator-operations/metrics-and-monitoring/inspecting-logs.md)
+* [Backup & Recovery](validator-operations/backup-and-recovery/README.md)
+  * [Cluster Halting](validator-operations/backup-and-recovery/cluster-halting.md)
 * [Stake Management](validator-operations/validator-stake/README.md)
   * [Stake Pools](validator-operations/validator-stake/stake-pools.md)
   * [Delegation Programs](validator-operations/validator-stake/sfdp.md)
   * [Liquid Staking](validator-operations/validator-stake/liquid-staking.md)
-* [Performance](validator-operations/performance/README.md)
-  * [Cluster Halting](validator-operations/performance/cluster-halting.md)
+* [Revenue & Performance](validator-operations/revenue-and-performance.md)
 
 ## Security Infrastructure
 
