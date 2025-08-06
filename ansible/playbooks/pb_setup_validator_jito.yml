@@ -25,6 +25,7 @@
 #   -e "jito_relayer_type=shared" \
 #   -e "jito_relayer_version=0.3.1" \
 #   -e "jito_override_build_method=true" \ # Optional: Override architecture-based build decision
+#   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
 #   -e "force_host_cleanup=true" \ # Optional: Use this if a validator service is already running
 
 - name: Install Jito Client with Co-Hosted Relayer
