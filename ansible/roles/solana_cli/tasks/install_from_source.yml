@@ -65,7 +65,7 @@
       when: checkout_result.rc != 0
 
     - name: Read version from Cargo.toml
-      ansible.builtin.shell: grep '^version' Cargo.toml | awk -F '"' '{print $2}'
+      ansible.builtin.shell: grep '^version =' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
       args:
         chdir: "{{ agave_build_dir }}/agave-{{ agave_version }}"
       register: cargo_toml_version
