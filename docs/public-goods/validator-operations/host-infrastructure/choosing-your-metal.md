@@ -47,7 +47,7 @@ Every ranking system is different, but they all penalize central points of failu
 * Best practice:
   * Avoid DCs with large node population (e.g. [20326-DE-Frankfurt am Main](https://www.validators.app/data-centers/20326-DE-Frankfurt%20am%20Main?locale=en\&network=mainnet), [20326-NL-Amsterdam](https://www.validators.app/data-centers/20326-NL-Amsterdam?locale=en\&network=mainnet), [396356-GB-London](https://www.validators.app/data-centers/396356-GB-London?locale=en\&network=mainnet)).
   * Colocate in diverse DCs or contract with smaller ISPs.
-  * Check that the data center isn’t hosting >10 validators.
+  * Use [Validators.app Data Center List](https://validators.app/asn-map) to assess DC concentration (go for 10 or less).
 
 ### 3. Geographic Location
 
@@ -56,7 +56,7 @@ Every ranking system is different, but they all penalize central points of failu
 * Best practice:
   * Avoid clustering in validator-heavy cities like Frankfurt, Amsterdam, or New York.
   * Spread nodes across continents, not just countries.
-  * Tools like JSOL and Jito’s validator reports show clustering hotspots.
+  * Use [JPOOL Stake Locations Concentration Tool](https://app.jpool.one/stake-locations) to see clustering hotspots.
 
 ### 4. TPU IP Concentration (for Jito)
 
