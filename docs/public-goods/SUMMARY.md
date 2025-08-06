@@ -14,7 +14,7 @@
 ## Validator Operations
 
 * [Host Infrastructure](validator-operations/host-infrastructure/README.md)
-  * [Choosing your metal](validator-operations/host-infrastructure/choosing-your-metal.md)
+  * [Choosing Bare Metal](validator-operations/host-infrastructure/choosing-your-metal.md)
   * [User Access](validator-operations/host-infrastructure/user-access.md)
   * [Hardware Tuning](validator-operations/host-infrastructure/hardware-tunning-info.md)
   * [System Tuning](validator-operations/host-infrastructure/system-tuning.md)
