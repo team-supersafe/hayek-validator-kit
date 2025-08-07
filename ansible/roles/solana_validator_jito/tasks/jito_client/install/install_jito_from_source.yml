@@ -70,11 +70,11 @@
   block:
     - name: Debug repository selection
       ansible.builtin.debug:
-        msg: "Using {{ (use_official_repo | default(false)) | ternary('official', 'forked') }} Jito-Solana repository: {{ (use_official_repo | default(false)) | ternary(official_jito_repo, forked_jito_repo) }}"
+        msg: "Using {{ (use_official_repo | default(false)) | ternary('official', 'forked') }} Jito-Solana repository: {{ (use_official_repo | default(false)) | ternary(jito_official_repo, jito_forked_repo) }}"
 
     - name: Clone/Pull Jito-Solana repository with submodules
       ansible.builtin.git:
-        repo: "{{ (use_official_repo | default(false)) | ternary(official_jito_repo, forked_jito_repo) }}.git"
+        repo: "{{ (use_official_repo | default(false)) | ternary(jito_official_repo, jito_forked_repo) }}.git"
         dest: "{{ jito_build_dir }}"
         version: "{{ jito_tag }}"
         recursive: true

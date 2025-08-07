@@ -36,11 +36,11 @@
 
     - name: Debug repository selection
       ansible.builtin.debug:
-        msg: "Using {{ (use_official_repo | default(false)) | ternary('official', 'forked') }} Agave repository: {{ (use_official_repo | default(false)) | ternary(official_agave_repo, forked_agave_repo) }}"
+        msg: "Using {{ (use_official_repo | default(false)) | ternary('official', 'forked') }} Agave repository: {{ (use_official_repo | default(false)) | ternary(agave_official_repo, agave_forked_repo) }}"
 
     - name: Clone or update Agave repository
       ansible.builtin.git:
-        repo: "{{ (use_official_repo | default(false)) | ternary(official_agave_repo, forked_agave_repo) }}.git"
+        repo: "{{ (use_official_repo | default(false)) | ternary(agave_official_repo, agave_forked_repo) }}.git"
         dest: "{{ agave_build_dir }}/agave-{{ agave_version }}"
         version: "v{{ agave_version }}"
         update: true

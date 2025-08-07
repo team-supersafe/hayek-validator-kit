@@ -34,9 +34,9 @@ minimal_snapshot_download_speed: 31457280 # Minimal snapshot download speed in b
 
 # Repositories for downloading sources and binaries
 # Official repositories
-official_agave_repo: https://github.com/anza-xyz/agave
-official_jito_repo: https://github.com/jito-foundation/jito-solana
+agave_official_repo: https://github.com/anza-xyz/agave
+jito_official_repo: https://github.com/jito-foundation/jito-solana
 
 # Forked repositories (with potential modifications)
-forked_agave_repo: https://github.com/team-supersafe/forked-agave
-forked_jito_repo: https://github.com/team-supersafe/forked-jito-solana
+agave_forked_repo: https://github.com/team-supersafe/forked-agave
+jito_forked_repo: https://github.com/team-supersafe/forked-jito-solana
