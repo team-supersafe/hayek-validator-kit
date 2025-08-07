@@ -12,11 +12,6 @@ argument_specs:
         type: str
         required: true
         description: "Version of Agave/Solana CLI to install"
-      override_build_method:
-        type: bool
-        required: false
-        default: false
-        description: "Override architecture-based build decision. When true, forces build from source regardless of architecture"
       use_official_repo:
         type: bool
         required: false

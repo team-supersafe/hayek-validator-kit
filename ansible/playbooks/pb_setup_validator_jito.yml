@@ -24,7 +24,7 @@
 #   -e "jito_version=2.2.15" \
 #   -e "jito_relayer_type=shared" \
 #   -e "jito_relayer_version=0.3.1" \
-#   -e "jito_override_build_method=true" \ # Optional: Override architecture-based build decision
+
 #   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
 #   -e "force_host_cleanup=true" \ # Optional: Use this if a validator service is already running
 
@@ -56,7 +56,7 @@
             - jito_relayer_version
           Optional:
             - force_host_cleanup (set to true to force stop existing validator service)
-            - jito_override_build_method (set to true to override architecture-based build decision)
+
 
     - name: Debug ansible_limit and target_host
       ansible.builtin.debug:

@@ -20,12 +20,12 @@
       - bzip2
     update_cache: true
 
-# Choose installation method based on architecture and user preference
-- when: (override_build_method | default(false)) or build_from_source
+# Choose installation method based on architecture
+- when: build_from_source | bool
   name: Install - Installing from source based on architecture
   ansible.builtin.include_tasks: install_from_source.yml
 
-- when: not ((override_build_method | default(false)) or build_from_source)
+- when: not (build_from_source | bool)
   name: Install - Installing from binaries based on architecture
   ansible.builtin.include_tasks: install_from_binaries.yml
 

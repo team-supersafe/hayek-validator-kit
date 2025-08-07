@@ -59,8 +59,8 @@
 - name: jito_relayer_cohosted - build_from_source - Show build status message
   ansible.builtin.debug:
     msg: >-
-      {% if not jito_relayer_override_build_method and build_target_stat.stat.exists %}
-      Skipping build: existing Jito Relayer build found at {{ jito_relayer_build_dir }}/target/release and jito_relayer_override_build_method is not set.
+      {% if build_target_stat.stat.exists %}
+      Skipping build: existing Jito Relayer build found at {{ jito_relayer_build_dir }}/target/release.
       {% else %}
       Starting build process for Jito Relayer
       {% endif %}
@@ -77,7 +77,7 @@
     - name: jito_relayer_cohosted - build_from_source - Jito Relayer build completed
       ansible.builtin.debug:
         msg: "Jito Relayer build completed. Build directory: {{ jito_relayer_build_dir }}"
-  when: jito_relayer_override_build_method or (not build_target_stat.stat.exists)
+  when: not build_target_stat.stat.exists
 
 # Activate build
 
