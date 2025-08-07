@@ -20,11 +20,11 @@
 
 - name: Install Jito-Solana from binaries
   import_tasks: install/install_jito_from_binaries.yml
-  when: not ((jito_override_build_method | default(false)) or build_from_source)
+  when: not ((jito_override_build_method | default(false) | bool) or (build_from_source | bool))
 
 - name: Build and install Jito from source
   import_tasks: install/install_jito_from_source.yml
-  when: (jito_override_build_method | default(false)) or build_from_source
+  when: (jito_override_build_method | default(false) | bool) or (build_from_source | bool)
 
 - name: Installation complete
   debug:
