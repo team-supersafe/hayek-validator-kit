@@ -2,7 +2,7 @@
 description: How to choose your bare metal host to run a validator
 ---
 
-# Choosing your metal
+# Choosing Bare Metal
 
 ## Hardware Requirements
 
@@ -16,14 +16,19 @@ They roughly point at these recommended minimum requirements:
 
 * CPU: 24+ physical cores (48+ threads) with AVX2
 * RAM: 512 GB ECC DDR4/DDR5
-* Disk:
-  * 2 TB NVMe SSD for ledger
-  * 1 TB NVMe SSD for accounts
-  * Optional: separate OS drive
+* Disk config:
+  * 2+  TB NVMe SSD for ledger
+  * 2+ TB NVMe SSD for accounts
+  * 300+ GB NVMe SSD for snapshots
+  * 300+ GB NVMe SSD for the OS
+* BIOS config:
+  * RAID-0 (this may require you to create a support ticket with your metal provider)
 * Network: 3 Gbps minimum, 10+ Gbps preferred
 * Power: UPS and dual PSU recommended
 
-> 🎯 _These specs aim to ensure your validator can stay in consensus, avoid delinquency, and perform well under high network load._
+{% hint style="danger" %}
+These specs aim to ensure your validator can stay in consensus, avoid delinquency, and perform well under high network load.
+{% endhint %}
 
 ## Decentralization Scoring
 
