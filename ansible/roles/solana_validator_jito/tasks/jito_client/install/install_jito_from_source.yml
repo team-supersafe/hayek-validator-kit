@@ -80,31 +80,30 @@
         recursive: true
         force: true
 
-    - name: Verify we're on the correct tag and commit
+    - name: Consolidated git verification (tag, commit, version)
       ansible.builtin.shell: |
-        git rev-parse HEAD
-        git log --oneline -1
-        echo "Checking if tag {{ jito_tag }} exists and points to current commit:"
-        git show-ref "{{ jito_tag }}"
-        echo "Current HEAD:"
-        git rev-parse HEAD
+        set -e
+        current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "none")
+        current_commit=$(git rev-parse HEAD)
+        tag_commit=$(git rev-list -n 1 "{{ jito_tag }}" 2>/dev/null || echo "none")
+
+        if [ "$current_tag" != "{{ jito_tag }}" ]; then
+          echo "ERROR: Expected tag {{ jito_tag }}, but got $current_tag"
+          exit 1
+        fi
+
+        if [ "$current_commit" != "$tag_commit" ]; then
+          echo "ERROR: Tag {{ jito_tag }} does not point to current commit"
+          echo "Current commit: $current_commit"
+          echo "Tag commit: $tag_commit"
+          exit 1
+        fi
+
+        echo "Git verification passed: tag $current_tag, commit $current_commit"
       args:
         chdir: "{{ jito_build_dir }}"
       register: git_verification
       changed_when: false
-
-    - name: Verify we're on the correct tag
-      ansible.builtin.shell: |
-        git describe --tags --exact-match
-      args:
-        chdir: "{{ jito_build_dir }}"
-      register: current_tag
-      changed_when: false
-
-    - name: Fail if not on correct tag
-      ansible.builtin.fail:
-        msg: "Expected tag {{ jito_tag }}, but got {{ current_tag.stdout }}"
-      when: current_tag.stdout != jito_tag
 
     - name: Get the latest commit hash
       ansible.builtin.command: git rev-parse HEAD

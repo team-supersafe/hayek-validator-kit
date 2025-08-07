@@ -100,10 +100,31 @@
 # A bin directory, .crates.toml and .crates2.json files.
 - name: Move built Agave assets into the releases directory (with failure handling)
   block:
+    - name: Validate release directory path before cleanup
+      ansible.builtin.assert:
+        that:
+          - solana_installed_release_dir is defined
+          - solana_installed_release_dir != ""
+          - solana_installed_release_dir != "/"
+          - solana_installed_release_dir != "/home"
+          - solana_installed_release_dir != "/root"
+        fail_msg: "Invalid release directory path: {{ solana_installed_release_dir }}"
+
+    - name: Clean up existing release directory contents safely
+      ansible.builtin.file:
+        path: "{{ solana_installed_release_dir }}"
+        state: absent
+      register: cleanup_result
+
+    - name: Recreate release directory
+      ansible.builtin.file:
+        path: "{{ solana_installed_release_dir }}"
+        state: directory
+        mode: "0755"
+
     - name: Move agave we just built into the releases directory
       ansible.builtin.shell: |
         set -e
-        rm -rf "{{ solana_installed_release_dir }}"/*
         mv "{{ agave_build_dir }}/agave-{{ agave_version }}/.crates.toml" "{{ solana_installed_release_dir }}"
         mv "{{ agave_build_dir }}/agave-{{ agave_version }}/.crates2.json" "{{ solana_installed_release_dir }}"
         mv "{{ agave_build_dir }}/agave-{{ agave_version }}/bin" "{{ solana_installed_release_dir }}"
