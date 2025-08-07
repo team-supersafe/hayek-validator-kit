@@ -26,7 +26,7 @@ They roughly point at these recommended minimum requirements:
 * Network: 3 Gbps minimum, 10+ Gbps preferred
 * Power: UPS and dual PSU recommended
 
-{% hint style="danger" %}
+{% hint style="success" %}
 These specs aim to ensure your validator can stay in consensus, avoid delinquency, and perform well under high network load.
 {% endhint %}
 
