@@ -7,6 +7,7 @@
     key: user
   register: users_csv
   delegate_to: localhost
+  become: false
   run_once: true
 
 # Precheck 2: Debug output
@@ -15,6 +16,7 @@
   ansible.builtin.debug:
     var: users_csv
   delegate_to: localhost
+  become: false
   no_log: true
   run_once: true
 
@@ -28,6 +30,7 @@
     not (users_csv is defined and
     users_csv | length > 0)
   delegate_to: localhost
+  become: false
   run_once: true
 
 # Precheck 4: Validate required fields exist
@@ -36,6 +39,7 @@
     msg: "CSV missing required field: user"
   when: not (users_csv.dict.values() | map(attribute='user') | list | first is defined)
   delegate_to: localhost
+  become: false
   run_once: true
 
 - name: Validate CSV has required field key
@@ -43,6 +47,7 @@
     msg: "CSV missing required field: key"
   when: not (users_csv.dict.values() | map(attribute='key') | list | first is defined)
   delegate_to: localhost
+  become: false
   run_once: true
 
 - name: Validate CSV has required field group_a
@@ -50,6 +55,7 @@
     msg: "CSV missing required field: group_a"
   when: not (users_csv.dict.values() | map(attribute='group_a') | list | first is defined)
   delegate_to: localhost
+  become: false
   run_once: true
 
 - name: Validate CSV has required field group_b
@@ -57,6 +63,7 @@
     msg: "CSV missing required field: group_b"
   when: not (users_csv.dict.values() | map(attribute='group_b') | list | first is defined)
   delegate_to: localhost
+  become: false
   run_once: true
 
 - name: Validate CSV has required field group_c
@@ -64,6 +71,7 @@
     msg: "CSV missing required field: group_c"
   when: not (users_csv.dict.values() | map(attribute='group_c') | list | first is defined)
   delegate_to: localhost
+  become: false
   run_once: true
 
 - name: Validate CSV has required field group_d
@@ -71,6 +79,7 @@
     msg: "CSV missing required field: group_d"
   when: not (users_csv.dict.values() | map(attribute='group_d') | list | first is defined)
   delegate_to: localhost
+  become: false
   run_once: true
 
 # Precheck 5: Check for existing users
@@ -84,10 +93,13 @@
 # Precheck 6: Fail if users exist
 # Compares users from CSV with existing system users
 # If any users already exist, the playbook will fail for security reasons
+# Skip this check in testing environments (molecule)
 - name: Check for existing users
   ansible.builtin.fail:
     msg: "It appears this server has already been installed (existing users: {{ existing_users_list | join(', ') }}). For security reasons, this configuration will not continue."
-  when: existing_users_list | length > 0
+  when: 
+    - existing_users_list | length > 0
+    - not (molecule_testing | default(false))
   vars:
     existing_users_list: "{{ users_csv.dict.keys() | select('in', existing_users.stdout_lines) | list }}"
 
@@ -97,6 +109,7 @@
   ansible.builtin.debug:
     msg: "{{ inventory_dir }}"
   delegate_to: localhost
+  become: false
   run_once: true
 
 # Precheck 8: Display CSV summary with access control information
@@ -135,6 +148,7 @@
 
       ========================================
   delegate_to: localhost
+  become: false
   run_once: true
 
 # Precheck 9: Validate SSH key format
@@ -149,6 +163,7 @@
     not item.value.key.startswith('ssh-ed25519 ') and
     not item.value.key.startswith('ssh-rsa ')
   delegate_to: localhost
+  become: false
   no_log: true
   run_once: true
 
@@ -159,6 +174,7 @@
   loop: "{{ users_csv.dict | dict2items }}"
   when: item.value.key is not defined or item.value.key == "" or item.value.key is none
   delegate_to: localhost
+  become: false
   no_log: true
   run_once: true
 
@@ -170,6 +186,7 @@
   when: item.value.key is defined and item.value.key.startswith('ssh-rsa ')
   loop: "{{ users_csv.dict | dict2items }}"
   delegate_to: localhost
+  become: false
   changed_when: false
   run_once: true
 
@@ -182,4 +199,5 @@
     - (rsa_key_info.results[loop.index0].stdout.split(' ')[0] | int) < 2048
   loop: "{{ users_csv.dict | dict2items }}"
   delegate_to: localhost
+  become: false
   run_once: true

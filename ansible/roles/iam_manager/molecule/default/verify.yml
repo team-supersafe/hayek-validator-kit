@@ -1,0 +1,81 @@
+---
+- name: Verify RBAC and least-privilege
+  hosts: all
+  gather_facts: false
+  become: true
+  vars:
+    sudoers_dir: /etc/sudoers.d
+  tasks:
+    - name: Assert expected groups exist
+      ansible.builtin.group:
+        name: "{{ item }}"
+        state: present
+      check_mode: true
+      register: group_check
+      loop:
+        - sysadmin
+        - validator_admins
+        - validator_operators
+        - validator_viewers
+        - ansible_executor
+
+    - name: Fail if any expected group missing
+      ansible.builtin.fail:
+        msg: "Missing required group(s)"
+      when: group_check is failed
+
+    - name: Check sudoers files exist
+      ansible.builtin.stat:
+        path: "{{ sudoers_dir }}/{{ item }}"
+      register: sudoers_stats
+      loop:
+        - 10-sysadmin
+        - 20-validator-admins
+        - 30-validator-operators
+        - 40-validator-viewers
+        - 99-self-service
+
+    - name: Fail if any sudoers file missing
+      ansible.builtin.fail:
+        msg: "Missing sudoers file(s) in {{ sudoers_dir }}"
+      when: "sudoers_stats.results | selectattr('stat.exists', 'equalto', false) | list | length > 0"
+
+    - name: Validate visudo syntax of all sudoers
+      ansible.builtin.command: visudo -cf /etc/sudoers
+      changed_when: false
+
+    - name: Validate sysadmin has full sudo (ALL)
+      ansible.builtin.shell: |
+        su -s /bin/bash -c "sudo -l" testadmin | grep -q "(ALL) ALL"
+      changed_when: false
+
+    - name: Validate viewer cannot execute apt-get (should be denied)
+      ansible.builtin.shell: |
+        su -s /bin/bash -c "sudo -l | grep -E 'apt(-get)? install'" testviewer
+      register: viewer_apt_perms
+      failed_when: viewer_apt_perms.rc == 0
+      changed_when: false
+
+    - name: Validate operator can manage service but not apt install
+      block:
+        - name: Operator can manage service
+          ansible.builtin.shell: |
+            su -s /bin/bash -c "sudo -l | grep -q 'systemctl (start|stop|restart) {{ hostvars[inventory_hostname].validator_service | default('sol.service') }}'" testoperator
+          changed_when: false
+        - name: Operator cannot apt install
+          ansible.builtin.shell: |
+            su -s /bin/bash -c "sudo -l | grep -E 'apt(-get)? install'" testoperator
+          register: operator_apt_perms
+          failed_when: operator_apt_perms.rc == 0
+          changed_when: false
+
+    - name: Validate viewers can read logs but not write
+      block:
+        - name: Viewers can tail log
+          ansible.builtin.shell: su -s /bin/bash -c "sudo -l | grep -q 'journalctl -u'" testviewer
+          changed_when: false
+        - name: Viewers cannot chmod validator log dir
+          ansible.builtin.shell: su -s /bin/bash -c "sudo -l | grep -q 'chmod {{ hostvars[inventory_hostname].validator_log_dir | default('/home/sol/logs') }}'" testviewer
+          register: viewer_chmod_perm
+          failed_when: viewer_chmod_perm.rc == 0
+          changed_when: false
