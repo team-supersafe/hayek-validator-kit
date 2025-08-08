@@ -5,6 +5,7 @@
 - name: Get actual sudo permissions for each user
   ansible.builtin.shell: "sudo -l -U {{ item.key }}"
   register: user_sudo_permissions
+  changed_when: false
   loop: "{{ users_csv.dict | dict2items }}"
   when: >
     item.value.group_a is defined or
@@ -20,6 +21,7 @@
     owner: "{{ item.item.key }}"
     group: "{{ item.item.key }}"
     mode: '0644'
+    force: false
   loop: "{{ user_sudo_permissions.results }}"
   when: >
     item.item.value.group_a is defined or

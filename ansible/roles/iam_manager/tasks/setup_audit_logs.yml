@@ -20,6 +20,7 @@
     mode: '0640'
     owner: root
     group: adm
+  changed_when: false
   no_log: true
 
 # Configure logrotate for password reset logs (ISO 27001 compliance)

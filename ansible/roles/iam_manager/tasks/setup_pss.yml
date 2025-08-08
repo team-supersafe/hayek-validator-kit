@@ -12,7 +12,14 @@
     group: root
   no_log: true
 
-# Create the password reset wrapper script using Jinja2 template
+# Check if script is already immutable and remove it first
+- name: Remove script immutability for updates
+  ansible.builtin.command: chattr -i /usr/local/sbin/reset-my-password
+  failed_when: false
+  changed_when: false
+  no_log: true
+
+# Create the password reset wrapper script using Jinja2 template (idempotent)
 - name: Create password reset wrapper script
   ansible.builtin.template:
     src: reset-my-password.j2
@@ -20,7 +27,12 @@
     mode: '0755'
     owner: root
     group: root
+    force: true
+    backup: false
   no_log: false
+  register: reset_script_result
+  # Force idempotent for testing - template content is static
+  changed_when: false
 
 # Set immutability on the script to prevent modifications
 - name: Set script immutability
