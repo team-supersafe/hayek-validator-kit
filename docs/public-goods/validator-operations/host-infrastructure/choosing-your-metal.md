@@ -103,10 +103,142 @@ Most metal providers (e.g. Vultr, Edgevana, Latitude, etc.) force the provisioni
 
 Once the server is provisioned, you must add your public SSH key to the `ubuntu` user so you can SSH into the server for further setup.
 
-This is how:
+### LATITUDE - Complete Provisioning
 
-1. a
-2. b
-3. c
-4. d
-5. e
+#### Recommended plan: m4.metal.large
+
+{% hint style="success" %}
+This configuration meets the requirements to operate a validator at full capacity for both Mainnet and Testnet environments.
+{% endhint %}
+
+**Server Creation**
+
+1. Access panel: Login to Latitude.sh
+2. Navigation: Left panel → Bare Metal
+3. Create server: Upper right corner → + Create Server
+4. Select plan: Choose m4.metal.large
+5. Location:
+
+* Select desired city
+* If unavailable → Join Waitlist
+
+{% hint style="info" %}
+The city you desire might not be available at the moment. If the location is not available, you can join the waitlist.
+{% endhint %}
+
+**Technical Configuration**
+
+**Operating System**
+
+* OS: Ubuntu 24.04 LTS
+
+**Billing Options**
+
+One of the virtues that not all ASN providers have is the ability to contract servers by the hour. If you want to perform a Solana application update and need to temporarily create a hot spare, this is the best alternative.
+
+* Hourly | Monthly | Yearly
+
+**SSH Authentication**
+
+Latitude offers the possibility to start the server using your public key or creating the server with a password for the ubuntu user. It's highly recommended to use SSH public key authentication.
+
+* ✅ Recommended: SSH Public Key
+* ❌ Not recommended: Password for ubuntu user
+* New key: If you don't have a key → Click New → Add your public key
+
+**RAID Configuration**
+
+* ✅ Select: No RAID
+* Available options: No RAID, RAID 0, RAID 1
+* Important: Configuration optimized for `No RAID`
+
+**Finalization**
+
+1. Server name: Follow defined naming convention
+2. Deploy: Click Deploy
+
+### Post-Provisioning Verifications
+
+It's recommended before starting to configure the server, users, hardware and system tuning, to review some configurations.
+
+#### **Verify RAID Configuration**
+
+```bash
+# Method 1: Check disk structure
+lsblk -o NAME,TYPE,SIZE,FSTYPE,MOUNTPOINT
+
+# Method 2: Check RAID status
+cat /proc/mdstat
+```
+
+Expected output:
+
+```bash
+Personalities : [raid0] [raid1] [raid6] [raid5] [raid4] [raid10] 
+unused devices: <none>
+```
+
+{% hint style="warning" %}
+Make sure the server doesn't have any RAID configuration. We have encountered cases where you request the server with NO RAID and the provider provisions it with RAID 1, especially in locations like MIA.
+{% endhint %}
+
+#### **Verify SMT (Simultaneous Multithreading)**
+
+You must also ensure that the server has SMT active. By running htop you will see the number of cores - on this server you should see 48 instead of 24.
+
+```bash
+# Check available threads
+htop
+```
+
+#### **Verify CPU Governor**
+
+```
+# Check CPU frequency drivers
+ls /sys/devices/system/cpu/cpu0/cpufreq
+```
+
+Expected drivers:
+
+* ✅ amd\_pstate (more efficient, recommended)
+* ⚠️ If no drivers → Contact support to activate in BIOS
+
+**Performance Optimization:** Another verification you can do is to ensure that Governor is active, so that the kernel is assigned to manage CPU frequency and not BIOS. If you don't see any active driver, it's necessary to access the BIOS and activate it. One of the drivers you should see is amd\_pstate.
+
+**Hardware Compatibility**: In case it's not available, you must contact the provider directly because some motherboard firmware doesn't have this driver available, and it's necessary to replace the server with one that can activate it. This driver is more efficient than the one that comes predetermined by the kernel, so it's recommended to activate it to obtain maximum server performance.
+
+### &#x20;EDGEVANA - Complete Provisioning
+
+#### Provisioning Process
+
+1. Login: [Access Edgevana](https://nodes.edgevana.com/dashboard)
+2. Create server: Upper right corner → + button (blue) → Bare Metal
+3. Purpose: Select Solana Mainnet
+4. CPU: Select the same as Latitude (AMD 6254)
+
+**Purpose-Based Selection:** In the new screen, select the server purpose, where they will recommend servers that fit based on this purpose. For example, select "Solana Mainnet". For CPU, select the desired one which is the same we selected in Latitude.
+
+**Automatic Configuration**
+
+* RAM: Same amount as Latitude (384GB)
+* Disks: Similar configuration to Latitude
+* ⚠️ Particularity: Automatically provision with RAID 1
+
+#### **RAID Configuration (Required)**
+
+One of the particularities with Edgevana is that there's no option to select your preferred RAID type during the provisioning process. The provider automatically configures all servers with RAID 1, regardless of your specific requirements. To address this limitation, you must contact their support team directly and explicitly request that they disable RAID on the server you just provisioned. This process typically takes approximately 30 minutes to complete. It's important to make this request immediately after provisioning to minimize any delays in your server setup timeline, as this RAID configuration change is essential for optimal validator performance and matches the storage configuration used in our deployment scripts.
+
+#### **Authentication**
+
+Once they provision the server, you must initialize the server with your public key. This provider doesn't give you the possibility to select between SSH key or user and password. Good for them!
+
+### Post-Provisioning Verifications Edgevana
+
+**Access Limitations**
+
+* ❌ No BIOS access: No direct BIOS access
+* Solution: Contact support for:
+* Activate Hyper-Threading
+* Configure CPU Governor
+
+Once the server is provisioned, you can access it and run the same prechecks, but with the particularity that this provider doesn't give you access to BIOS, so you will have to contact support to activate these requirements in BIOS such as Hyper-Threading and CPU Governor.
