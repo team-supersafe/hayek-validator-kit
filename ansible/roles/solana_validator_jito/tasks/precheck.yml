@@ -96,7 +96,7 @@
           to whitelist our relayer.
       when: not private_key_exists.stat.exists
 
-- name: Get host architecture and infer value for build_from_source
+- name: Get host architecture
   ansible.builtin.import_tasks: ../../common/tasks/set_host_architecture.yml
 
 # Disk space requirements (experimental)

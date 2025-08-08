@@ -20,13 +20,13 @@
       - bzip2
     update_cache: true
 
-# Choose installation method based on architecture
-- when: build_from_source | bool
-  name: Install - Installing from source based on architecture
+# Choose installation method based on user preference
+- when: not (use_precompiled_binaries | default(false) | bool)
+  name: Install - Installing from source
   ansible.builtin.include_tasks: install_from_source.yml
 
-- when: not (build_from_source | bool)
-  name: Install - Installing from binaries based on architecture
+- when: use_precompiled_binaries | default(false) | bool
+  name: Install - Installing from binaries
   ansible.builtin.include_tasks: install_from_binaries.yml
 
 # Ensure Solana CLI bin path is in the user's .bashrc and .zshrc for persistent CLI access

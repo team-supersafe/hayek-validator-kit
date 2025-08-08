@@ -20,18 +20,18 @@
 
 - name: Install Jito-Solana from binaries
   import_tasks: install/install_jito_from_binaries.yml
-  when: not (build_from_source | bool)
+  when: use_precompiled_binaries | default(false) | bool
 
 - name: Build and install Jito from source
   import_tasks: install/install_jito_from_source.yml
-  when: build_from_source | bool
+  when: not (use_precompiled_binaries | default(false) | bool)
 
 - name: Installation complete
   debug:
     msg: >-
       Jito-Solana {{ jito_version }} has been successfully installed
-      {% if build_from_source | bool %}
-      (built from source)
-      {% else %}
+      {% if use_precompiled_binaries | default(false) | bool %}
       (from binaries)
+      {% else %}
+      (built from source)
       {% endif %}

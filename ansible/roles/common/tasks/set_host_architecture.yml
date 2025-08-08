@@ -22,11 +22,3 @@
   ansible.builtin.fail:
     msg: "Unsupported architecture: {{ ansible_architecture }} on {{ ansible_os_family }}"
   when: host_arch == 'unsupported'
-
-- name: Set build_from_source based on architecture
-  ansible.builtin.set_fact:
-    build_from_source: "{{ host_arch == 'aarch64-unknown-linux-gnu' }}"
-
-- name: Print Host Architecture
-  ansible.builtin.debug:
-    msg: "HOST ARCH = {{ host_arch }} | build_from_source = {{ build_from_source }}"
