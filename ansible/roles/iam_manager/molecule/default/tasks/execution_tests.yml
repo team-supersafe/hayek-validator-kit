@@ -87,51 +87,112 @@
       status: "{{ 'PASSED' if (categorized_results.violations | length == 0) else 'FAILED' }}"
       sudo_password_blocks: "{{ categorized_results.expected_block | selectattr('reason', 'equalto', 'sudo_password_required') | list | length }}"
 
+- name: "Build execution test breakdown display"
+  ansible.builtin.set_fact:
+    execution_breakdown_display: |
+      {%- set lines = [] -%}
+      
+      {%- set _ = lines.append("========================================") -%}
+      {%- set _ = lines.append("📋 EXECUTION TEST MATRIX EXPLAINED") -%}
+      {%- set _ = lines.append("========================================") -%}
+      {%- set _ = lines.append("") -%}
+      {%- set _ = lines.append("👥 USERS TESTED: hugo (viewer), alice (operator), sol (admin), bob (admin)") -%}
+      {%- set _ = lines.append("🎯 TOTAL COMMANDS: " + (execution_tests_summary.total_tests | string) + " executions") -%}
+      {%- set _ = lines.append("") -%}
+      {%- set _ = lines.append("📊 COMMAND CATEGORIES BREAKDOWN:") -%}
+      {%- set _ = lines.append("") -%}
+      {%- set _ = lines.append("🟢 BASIC COMMANDS (should work for everyone):") -%}
+      {%- set _ = lines.append("   • Commands: whoami, id, pwd, ls /tmp") -%}
+      {%- set _ = lines.append("   • Users: 4 (all users)") -%}
+      {%- set _ = lines.append("   • Calculation: 4 commands × 4 users = 16 executions") -%}
+      {%- set _ = lines.append("   • Expected: ALL SUCCESS") -%}
+      {%- set _ = lines.append("") -%}
+      {%- set _ = lines.append("🔴 RESTRICTED COMMANDS (should be blocked for viewers/operators):") -%}
+      {%- set _ = lines.append("   • Commands: sudo -n whoami, sudo -n systemctl status") -%}
+      {%- set _ = lines.append("   •           sudo -n cat /etc/shadow, sudo -n useradd") -%}
+      {%- set _ = lines.append("   •           sudo -n apt update/install, sudo -n systemctl stop") -%}
+      {%- set _ = lines.append("   • Users: 2 (hugo=viewer, alice=operator)") -%}
+      {%- set _ = lines.append("   • Calculation: 7 commands × 2 restricted users = 14 blocks") -%}
+      {%- set _ = lines.append("   • Expected: ALL BLOCKED") -%}
+      {%- set _ = lines.append("") -%}
+      {%- set _ = lines.append("🟡 ADMIN COMMANDS (should work for admins only):") -%}
+      {%- set _ = lines.append("   • Commands: sudo -n systemctl status, sudo -n journalctl") -%}
+      {%- set _ = lines.append("   •           sudo -n curl, sudo -n apt update") -%}
+      {%- set _ = lines.append("   •           sudo -n systemctl enable") -%}
+      {%- set _ = lines.append("   • Users: 2 (sol=admin, bob=admin)") -%}
+      {%- set _ = lines.append("   • Calculation: 5 commands × 2 admins = 10 executions") -%}
+      {%- set _ = lines.append("   • Expected: ALL SUCCESS") -%}
+      {%- set _ = lines.append("") -%}
+      {%- set _ = lines.append("🧮 MATH CHECK: 16 basic + 14 restricted + 10 admin = " + (execution_tests_summary.total_tests | string)) -%}
+      {%- set _ = lines.append("========================================") -%}
+      {{ lines }}
+
 - name: "Explain execution test breakdown"
   ansible.builtin.debug:
-    msg: |
-      ========================================
-      📋 DETAILED BREAKDOWN OF {{ execution_tests_summary.total_tests }} COMMANDS TESTED
-      ========================================
+    msg: "{{ execution_breakdown_display }}"
+
+- name: "Build execution test results display"
+  ansible.builtin.set_fact:
+    execution_results_display: |
+      {%- set lines = [] -%}
       
-      👥 USERS TESTED: hugo (viewer), alice (operator), sol (admin), bob (admin)
+      {%- set _ = lines.append("========================================") -%}
+      {%- set _ = lines.append("📊 EXECUTION TESTS - DETAILED RESULTS") -%}
+      {%- set _ = lines.append("========================================") -%}
+      {%- set _ = lines.append("") -%}
       
-      📊 COMMAND CATEGORIES:
-      🟢 BASIC COMMANDS (should work for everyone):
-         • whoami, id, pwd, ls /tmp = 4 commands × 4 users = 16 executions
+      {%- if execution_tests_summary.violations | int == 0 -%}
+        {%- set _ = lines.append("🎯 FINAL ANSWER: ALL TESTS PASSED ✅") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("� EXECUTION STATISTICS:") -%}
+        {%- set _ = lines.append("• Total commands tested: " + (execution_tests_summary.total_tests | string)) -%}
+        {%- set _ = lines.append("• Basic commands successful: " + (execution_tests_summary.successful_executions | string)) -%}
+        {%- set _ = lines.append("• Restricted commands blocked: " + (execution_tests_summary.expected_blocks | string)) -%}
+        {%- set _ = lines.append("• Security violations found: " + (execution_tests_summary.violations | string)) -%}
+        {%- set _ = lines.append("• Success rate: 100%") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("✅ SECURITY ANALYSIS:") -%}
+        {%- set _ = lines.append("• All basic commands work for everyone") -%}
+        {%- set _ = lines.append("• All restricted commands properly blocked") -%}
+        {%- set _ = lines.append("• Admin commands work only for administrators") -%}
+        {%- set _ = lines.append("• sudo -n password prompts working correctly") -%}
+        {%- set _ = lines.append("• Least privilege principles enforced") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("🎯 VERDICT: SECURITY IS PERFECT ✅") -%}
+        {%- set _ = lines.append("System ready for production deployment.") -%}
+      {%- else -%}
+        {%- set _ = lines.append("🚨 FINAL ANSWER: SECURITY BREACH DETECTED ❌") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("📊 EXECUTION STATISTICS:") -%}
+        {%- set _ = lines.append("• Total commands tested: " + (execution_tests_summary.total_tests | string)) -%}
+        {%- set _ = lines.append("• Basic commands successful: " + (execution_tests_summary.successful_executions | string)) -%}
+        {%- set _ = lines.append("• Restricted commands blocked: " + (execution_tests_summary.expected_blocks | string)) -%}
+        {%- set _ = lines.append("• Security violations found: " + (execution_tests_summary.violations | string)) -%}
+        {%- set _ = lines.append("• Success rate: " + (((execution_tests_summary.total_tests | int - execution_tests_summary.violations | int) / execution_tests_summary.total_tests | int * 100) | round(1) | string) + "%") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("🚨 SECURITY PROBLEMS DETECTED:") -%}
+        {%- if execution_tests_summary.violations | int > 0 -%}
+          {%- set _ = lines.append("• " + (execution_tests_summary.violations | string) + " unauthorized command executions") -%}
+          {%- set _ = lines.append("• Users can access restricted commands they shouldn't") -%}
+          {%- set _ = lines.append("• RBAC permissions are incorrectly configured") -%}
+        {%- endif -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("⚠️ ACTION REQUIRED:") -%}
+        {%- set _ = lines.append("1. Review sudoers configuration") -%}
+        {%- set _ = lines.append("2. Check role assignments in /etc/sudoers.d/") -%}
+        {%- set _ = lines.append("3. Verify user group memberships") -%}
+        {%- set _ = lines.append("4. Re-run tests until all violations are resolved") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("🛑 VERDICT: SECURITY NEEDS IMMEDIATE ATTENTION ❌") -%}
+        {%- set _ = lines.append("DO NOT DEPLOY TO PRODUCTION UNTIL RESOLVED!") -%}
+      {%- endif -%}
       
-      🔴 RESTRICTED COMMANDS (should be blocked for viewers/operators):
-         • sudo -n whoami, sudo -n systemctl status, sudo -n cat /etc/shadow
-         • sudo -n useradd, sudo -n apt update, sudo -n apt install
-         • sudo -n systemctl stop ssh = 7 commands × 2 restricted users = 14 blocked attempts
-      
-      🟡 ADMIN COMMANDS (should work for admins only):
-         • sudo -n systemctl status, sudo -n journalctl -u validator, sudo -n curl
-         • sudo -n apt update, sudo -n systemctl enable = 5 commands × 2 admins = 10 allowed executions
-      
-      🎯 TOTAL: 16 basic + 14 restricted + 10 admin = {{ execution_tests_summary.total_tests }} commands tested
-      ========================================
+      {%- set _ = lines.append("========================================") -%}
+      {{ lines }}
 
 - name: "Display execution test results"
   ansible.builtin.debug:
-    msg: |
-      ========================================
-      📊 EXECUTION TESTS - CLEAR RESULTS
-      ========================================
-      
-      🎯 FINAL ANSWER: {{ 'ALL TESTS PASSED ✅' if execution_tests_summary.violations | int == 0 else 'SECURITY BREACH ❌' }}
-      
-      🔢 NUMBERS EXPLAINED:
-      • Basic commands successful: {{ execution_tests_summary.successful_executions }}
-      • Restricted commands blocked: {{ execution_tests_summary.expected_blocks }}
-      • Security violations found: {{ execution_tests_summary.violations }}
-      
-      💡 WHAT THIS MEANS:
-      {{ 'EXCELLENT - Your security is working perfectly!' if execution_tests_summary.violations | int == 0 else 'PROBLEM - Some users can access restricted commands!' }}
-      {{ 'Basic commands work for everyone as expected.' if execution_tests_summary.successful_executions | int > 0 else 'Basic commands are broken!' }}
-      
-      🎯 VERDICT: {{ 'SECURITY IS PERFECT ✅' if execution_tests_summary.violations | int == 0 else 'SECURITY NEEDS IMMEDIATE ATTENTION ❌' }}
-      ========================================
+    msg: "{{ execution_results_display }}"
 
 - name: "Display execution violations if any"
   ansible.builtin.debug:
