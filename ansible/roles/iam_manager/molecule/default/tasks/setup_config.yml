@@ -1,0 +1,97 @@
+---
+# ========================================
+# RBAC VERIFICATION - SETUP AND CONFIGURATION
+# ========================================
+
+- name: Setup RBAC verification configuration
+  ansible.builtin.set_fact:
+    sudoers_dir: /etc/sudoers.d
+
+    # Dynamic RBAC Configuration
+    rbac_config:
+      groups:
+        - name: sysadmin
+          sudoers_file: "10-sysadmin"
+          level: 5
+        - name: validator_admins
+          sudoers_file: "20-validator-admins"
+          level: 4
+        - name: validator_operators
+          sudoers_file: "30-validator-operators"
+          level: 3
+        - name: validator_viewers
+          sudoers_file: "40-validator-viewers"
+          level: 2
+        - name: ansible_executor
+          sudoers_file: "40-ansible-executor"
+          level: 1
+
+      additional_files:
+        - "99-self-service"
+
+      # Dynamic command patterns for testing
+      command_patterns:
+        apt_management: 'apt(-get)?.*(install|upgrade|remove)'
+        service_control: 'systemctl.*(start|stop|restart)'
+        dev_tools: '(curl|wget|git|cargo|rustup|rustc)'
+        process_management: '(pkill|kill|renice)'
+        home_access: '(ls|cat|chmod|chown).*/home/(?!USER_PLACEHOLDER/)'
+        sudoers_edit: '(nano|vim|vi|emacs).*/etc/sudoers'
+        user_management: '(useradd|adduser|userdel|deluser)'
+
+      # Test definitions
+      positive_tests:
+        - name: "sysadmin_sudo_access"
+          roles: ["sysadmin"]
+          pattern: "\\(ALL\\) ALL"
+          description: "Sysadmin users can execute sudo commands"
+        - name: "admin_service_management"
+          roles: ["validator_admins"]
+          pattern: "systemctl.*(start|stop|restart).*sol"
+          description: "Validator admins can manage validator services"
+        - name: "operator_log_access"
+          roles: ["validator_operators"]
+          pattern: "journalctl"
+          description: "Validator operators can view logs"
+
+      negative_tests:
+        - name: "viewers_no_apt"
+          roles: ["validator_viewers"]
+          pattern: "apt_management"
+          description: "Viewers CANNOT execute admin commands (apt management)"
+        - name: "viewers_no_service_control"
+          roles: ["validator_viewers"]
+          pattern: "service_control"
+          description: "Viewers CANNOT execute operator commands (service control)"
+        - name: "operators_no_apt"
+          roles: ["validator_operators"]
+          pattern: "apt_management"
+          description: "Operators CANNOT execute admin commands (apt management)"
+        - name: "viewers_no_dev_tools"
+          roles: ["validator_viewers"]
+          pattern: "dev_tools"
+          description: "Viewers CANNOT execute admin commands (development tools)"
+        - name: "viewers_no_process_mgmt"
+          roles: ["validator_viewers"]
+          pattern: "process_management"
+          description: "Viewers CANNOT execute operator commands (process management)"
+        - name: "operators_no_dev_tools"
+          roles: ["validator_operators"]
+          pattern: "dev_tools"
+          description: "Operators CANNOT execute admin commands (development tools)"
+        - name: "no_home_access"
+          roles: ["validator_admins", "validator_operators", "validator_viewers"]
+          pattern: "home_access"
+          description: "Non-sysadmin users CANNOT access other users' home directories"
+        - name: "no_sudoers_edit"
+          roles: ["validator_admins", "validator_operators", "validator_viewers"]
+          pattern: "sudoers_edit"
+          description: "Non-sysadmin users CANNOT edit sudoers files"
+        - name: "no_user_management"
+          roles: ["validator_operators", "validator_viewers"]
+          pattern: "user_management"
+          description: "Non-admin users CANNOT create new users"
+
+- name: Display RBAC configuration loaded
+  ansible.builtin.debug:
+    msg: "RBAC verification configuration loaded with {{ rbac_config.groups | length }} groups and {{ rbac_config.positive_tests | length }} positive tests, {{ rbac_config.negative_tests | length }} negative tests"

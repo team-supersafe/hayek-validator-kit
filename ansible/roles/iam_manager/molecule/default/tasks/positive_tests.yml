@@ -1,0 +1,88 @@
+---
+# ========================================
+# RBAC VERIFICATION - POSITIVE TESTS
+# ========================================
+
+- name: Build dynamic positive test matrix
+  ansible.builtin.set_fact:
+    positive_test_matrix: |
+      {%- set tests = [] -%}
+      {%- for test in rbac_config.positive_tests -%}
+        {%- for role in test.roles -%}
+          {%- for user in classified_users[role] | default([]) -%}
+            {%- set _ = tests.append({
+                'test_name': test.name,
+                'description': test.description,
+                'user': user,
+                'role': role,
+                'pattern': test.pattern
+            }) -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ tests }}
+
+- name: Execute positive tests dynamically
+  ansible.builtin.shell: "sudo -l -U {{ item.user }} | grep -E '{{ item.pattern }}'"
+  register: positive_test_results
+  loop: "{{ positive_test_matrix }}"
+  changed_when: false
+  failed_when: false  # Don't fail immediately, collect all results
+  when: positive_test_matrix | length > 0
+
+- name: Analyze positive test failures
+  ansible.builtin.set_fact:
+    positive_test_failures: |
+      {%- set failures = [] -%}
+      {%- for result in positive_test_results.results | default([]) -%}
+        {%- if result.rc != 0 -%}
+          {%- set test_info = positive_test_matrix[loop.index0] -%}
+          {%- set _ = failures.append({
+              'user': test_info.user,
+              'role': test_info.role,
+              'test_name': test_info.test_name,
+              'description': test_info.description,
+              'expected_pattern': test_info.pattern,
+              'actual_output': result.stdout | default('No output')
+          }) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ failures }}
+
+- name: Display positive test failures (if any)
+  ansible.builtin.debug:
+    msg: |
+      POSITIVE TEST FAILURE: {{ item.description }}
+      User: {{ item.user }} ({{ item.role }})
+      Expected pattern: {{ item.expected_pattern }}
+      Actual sudo output: {{ item.actual_output }}
+      ---
+  loop: "{{ positive_test_failures }}"
+  when: positive_test_failures | length > 0
+
+- name: Show full sudo permissions for failed positive test users
+  ansible.builtin.shell: "sudo -l -U {{ item }} 2>/dev/null || echo 'No sudo permissions found'"
+  register: failed_users_sudo_permissions
+  loop: "{{ positive_test_failures | map(attribute='user') | unique | list }}"
+  changed_when: false
+  when: positive_test_failures | length > 0
+
+- name: Display full permissions for failed users
+  ansible.builtin.debug:
+    msg: |
+      FULL SUDO PERMISSIONS FOR {{ item.item }}:
+      {{ item.stdout }}
+      ==========================================
+  loop: "{{ failed_users_sudo_permissions.results | default([]) }}"
+  when: positive_test_failures | length > 0
+
+- name: Set positive tests summary
+  ansible.builtin.set_fact:
+    positive_tests_summary:
+      total_tests: "{{ positive_test_matrix | length }}"
+      failures: "{{ positive_test_failures | length }}"
+      status: "{{ 'PASSED' if (positive_test_failures | length == 0) else 'FAILED' }}"
+
+- name: Display positive tests summary
+  ansible.builtin.debug:
+    msg: "POSITIVE TESTS: {{ positive_tests_summary.status }} ({{ positive_tests_summary.total_tests - positive_tests_summary.failures }}/{{ positive_tests_summary.total_tests }} passed)"

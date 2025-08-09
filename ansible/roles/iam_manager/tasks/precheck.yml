@@ -2,7 +2,7 @@
 # Precheck 1: Read and validate CSV file
 # This task reads the CSV file containing user information and validates its structure
 - name: Read users from CSV
-  ansible.builtin.read_csv:
+  community.general.read_csv:
     path: "{{ users_file }}"
     key: user
   register: users_csv
@@ -97,7 +97,7 @@
 - name: Check for existing users
   ansible.builtin.fail:
     msg: "It appears this server has already been installed (existing users: {{ existing_users_list | join(', ') }}). For security reasons, this configuration will not continue."
-  when: 
+  when:
     - existing_users_list | length > 0
     - not (molecule_testing | default(false))
   vars:

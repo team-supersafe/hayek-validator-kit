@@ -1,0 +1,156 @@
+---
+# ========================================
+# RBAC VERIFICATION - TEMPLATE VALIDATION
+# ========================================
+
+- name: Template-Based Permission Validation
+  block:
+    # Read template contents directly from role templates directory
+    - name: Parse allowed commands from templates
+      ansible.builtin.set_fact:
+        template_content:
+          validator_viewers: "{{ lookup('file', '../../templates/40-validator-viewers.j2') }}"
+          validator_operators: "{{ lookup('file', '../../templates/30-validator-operators.j2') }}"
+          validator_admins: "{{ lookup('file', '../../templates/20-validator-admins.j2') }}"
+          ansible_executor: "{{ lookup('file', '../../templates/40-ansible-executor.j2') }}"
+
+    # Direct sudoers vs template comparison for validator_viewers
+    - name: Check validator_viewers actual sudoers file content
+      shell: cat /etc/sudoers.d/40-validator-viewers 2>/dev/null || echo "File not found"
+      register: viewers_actual_sudoers
+      failed_when: false
+
+    - name: Check validator_operators actual sudoers file content
+      shell: cat /etc/sudoers.d/30-validator-operators 2>/dev/null || echo "File not found"
+      register: operators_actual_sudoers
+      failed_when: false
+
+    - name: Check validator_admins actual sudoers file content
+      shell: cat /etc/sudoers.d/20-validator-admins 2>/dev/null || echo "File not found"
+      register: admins_actual_sudoers
+      failed_when: false
+
+    # Test specific unauthorized commands that users should NOT be able to execute
+    - name: Test if validator_viewers can execute apt commands (should FAIL if found)
+      shell: |
+        # Test apt command execution ability
+        timeout 5 sudo -u {{ item }} sudo apt list --installed >/dev/null 2>&1 && echo "VIOLATION: {{ item }} can execute apt commands" || echo "OK: {{ item }} cannot execute apt commands"
+      register: viewers_apt_execution_test
+      failed_when: false
+      loop: "{{ classified_users.validator_viewers | default([]) }}"
+      when: classified_users.validator_viewers is defined and classified_users.validator_viewers | length > 0
+
+    - name: Test if validator_viewers can restart services (should FAIL if found)
+      shell: |
+        # Test systemctl restart ability
+        timeout 5 sudo -u {{ item }} sudo systemctl restart cron --dry-run >/dev/null 2>&1 && echo "VIOLATION: {{ item }} can restart services" || echo "OK: {{ item }} cannot restart services"
+      register: viewers_systemctl_execution_test
+      failed_when: false
+      loop: "{{ classified_users.validator_viewers | default([]) }}"
+      when: classified_users.validator_viewers is defined and classified_users.validator_viewers | length > 0
+
+    - name: Test if validator_operators can install packages (should FAIL if found)
+      shell: |
+        # Test apt install ability
+        timeout 5 sudo -u {{ item }} sudo apt install --dry-run htop >/dev/null 2>&1 && echo "VIOLATION: {{ item }} can install packages" || echo "OK: {{ item }} cannot install packages"
+      register: operators_apt_execution_test
+      failed_when: false
+      loop: "{{ classified_users.validator_operators | default([]) }}"
+      when: classified_users.validator_operators is defined and classified_users.validator_operators | length > 0
+
+    # Detect template violations by comparing actual sudoers content vs templates
+    - name: Detect template violations for validator_viewers (apt permissions)
+      ansible.builtin.set_fact:
+        viewers_template_violations_apt: >-
+          {%- set violations = [] -%}
+          {%- if viewers_actual_sudoers.stdout is defined -%}
+            {%- for line in viewers_actual_sudoers.stdout_lines | default([]) -%}
+              {%- if "apt" in line and ("/usr/apt" in line or "apt update" in line or "apt upgrade" in line or "apt install" in line) -%}
+                {%- if "validator_viewers" in line -%}
+                  {%- set _ = violations.append("TEMPLATE VIOLATION: validator_viewers has apt permissions not defined in template: " + line.strip()) -%}
+                {%- endif -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+          {{ violations }}
+
+    - name: Detect template violations for validator_viewers (systemctl permissions)
+      ansible.builtin.set_fact:
+        viewers_template_violations_systemctl: >-
+          {%- set violations = [] -%}
+          {%- if viewers_actual_sudoers.stdout is defined -%}
+            {%- for line in viewers_actual_sudoers.stdout_lines | default([]) -%}
+              {%- if "systemctl" in line and ("start" in line or "stop" in line or "restart" in line) -%}
+                {%- if "validator_viewers" in line -%}
+                  {%- set _ = violations.append("TEMPLATE VIOLATION: validator_viewers has systemctl start/stop/restart permissions not defined in template: " + line.strip()) -%}
+                {%- endif -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+          {{ violations }}
+
+    - name: Detect template violations for validator_operators (apt permissions)
+      ansible.builtin.set_fact:
+        operators_template_violations_apt: >-
+          {%- set violations = [] -%}
+          {%- if operators_actual_sudoers.stdout is defined -%}
+            {%- for line in operators_actual_sudoers.stdout_lines | default([]) -%}
+              {%- if "apt" in line and ("apt install" in line or "apt upgrade" in line or "apt remove" in line) -%}
+                {%- if "validator_operators" in line -%}
+                  {%- set _ = violations.append("TEMPLATE VIOLATION: validator_operators has apt install/upgrade/remove permissions not defined in template: " + line.strip()) -%}
+                {%- endif -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+          {{ violations }}
+
+    # Analyze execution test violations
+    - name: Analyze execution-based template violations
+      ansible.builtin.set_fact:
+        execution_violations: >-
+          {%- set violations = [] -%}
+          {%- if viewers_apt_execution_test is defined -%}
+            {%- for result in viewers_apt_execution_test.results | default([]) -%}
+              {%- if "VIOLATION:" in result.stdout -%}
+                {%- set _ = violations.append(result.stdout) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+          {%- if viewers_systemctl_execution_test is defined -%}
+            {%- for result in viewers_systemctl_execution_test.results | default([]) -%}
+              {%- if "VIOLATION:" in result.stdout -%}
+                {%- set _ = violations.append(result.stdout) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+          {%- if operators_apt_execution_test is defined -%}
+            {%- for result in operators_apt_execution_test.results | default([]) -%}
+              {%- if "VIOLATION:" in result.stdout -%}
+                {%- set _ = violations.append(result.stdout) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+          {{ violations }}
+
+    - name: Calculate total template violations
+      ansible.builtin.set_fact:
+        total_template_violations: "{{
+          (viewers_template_violations_apt | default([]) | length) +
+          (viewers_template_violations_systemctl | default([]) | length) +
+          (operators_template_violations_apt | default([]) | length) +
+          (execution_violations | default([]) | length)
+        }}"
+
+- name: Set template validation summary
+  ansible.builtin.set_fact:
+    template_validation_summary:
+      total_violations: "{{ total_template_violations | default(0) }}"
+      viewers_apt_violations: "{{ viewers_template_violations_apt | default([]) | length }}"
+      viewers_systemctl_violations: "{{ viewers_template_violations_systemctl | default([]) | length }}"
+      operators_apt_violations: "{{ operators_template_violations_apt | default([]) | length }}"
+      execution_violations: "{{ execution_violations | default([]) | length }}"
+      status: "{{ 'PASSED' if (total_template_violations | default(0) | int == 0) else 'FAILED' }}"
+
+- name: Display template validation summary
+  ansible.builtin.debug:
+    msg: "TEMPLATE VALIDATION: {{ template_validation_summary.status }} ({{ template_validation_summary.total_violations }} violations found)"
