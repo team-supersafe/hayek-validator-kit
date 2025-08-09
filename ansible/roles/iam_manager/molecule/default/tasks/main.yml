@@ -35,6 +35,13 @@
     - permissions
     - unauthorized
 
+- name: "🧪 Execute Real Command Execution Tests"
+  include_tasks: execution_tests.yml
+  tags:
+    - execution
+    - commands
+    - real_testing
+
 - name: "📋 Validate Against Role Templates"
   include_tasks: template_validation.yml
   tags:

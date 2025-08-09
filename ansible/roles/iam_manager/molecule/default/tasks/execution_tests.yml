@@ -1,0 +1,140 @@
+---
+# ========================================
+# RBAC VERIFICATION - REAL COMMAND EXECUTION TESTS
+# ========================================
+
+- name: "Build execution test matrix from existing classifications"
+  ansible.builtin.set_fact:
+    execution_matrix: |
+      {%- set tests = [] -%}
+      {%- for user in ['hugo', 'alice', 'sol', 'bob'] -%}
+        {%- set role = 'viewer' if user == 'hugo' else 'operator' if user == 'alice' else 'admin' -%}
+        {%- for cmd in ['whoami', 'id', 'pwd', 'ls /tmp'] -%}
+          {%- set _ = tests.append({'user': user, 'cmd': cmd, 'expect': 'success', 'role': role, 'type': 'safe'}) -%}
+        {%- endfor -%}
+        {%- if role in ['viewer', 'operator'] -%}
+          {%- for cmd in ['sudo -n whoami', 'sudo -n systemctl status', 'sudo -n cat /etc/shadow', 'sudo -n useradd testuser', 'sudo -n apt update', 'sudo -n apt install --dry-run nano', 'sudo -n systemctl stop ssh --dry-run'] -%}
+            {%- set _ = tests.append({'user': user, 'cmd': cmd, 'expect': 'block', 'role': role, 'type': 'restricted'}) -%}
+          {%- endfor -%}
+        {%- else -%}
+          {%- for cmd in ['sudo -n systemctl status {{ validator_service }}', 'sudo -n journalctl -u {{ validator_service }}', 'sudo -n apt update', 'sudo -n curl --version', 'sudo -n systemctl enable {{ validator_service }}'] -%}
+            {%- set _ = tests.append({'user': user, 'cmd': cmd, 'expect': 'success', 'role': 'admin', 'type': 'admin'}) -%}
+          {%- endfor -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ tests | to_json }}
+
+- name: "Execute command matrix with sudo -n for privilege testing"
+  ansible.builtin.shell: "su - {{ item.user }} -c '{{ item.cmd | replace('{{ validator_service }}', validator_service) }}'"
+  register: execution_results
+  loop: "{{ execution_matrix | from_json }}"
+  failed_when: false
+  changed_when: true
+
+- name: "Categorize sudo -n results intelligently"
+  ansible.builtin.set_fact:
+    categorized_results: |
+      {%- set results = {'success': [], 'violations': [], 'expected_block': []} -%}
+      {%- for i in range(execution_results.results | length) -%}
+        {%- set result = execution_results.results[i] -%}
+        {%- set test_info = (execution_matrix | from_json)[i] -%}
+        {%- if result.rc == 1 and 'sudo: a password is required' in result.stderr and test_info.expect == 'block' -%}
+          {%- set _ = results.expected_block.append({
+              'test': test_info, 
+              'result': result, 
+              'reason': 'sudo_password_required',
+              'status': 'SECURITY_CORRECT'
+          }) -%}
+        {%- elif result.rc == 0 and test_info.expect == 'block' -%}
+          {%- set _ = results.violations.append({
+              'test': test_info,
+              'result': result,
+              'reason': 'unauthorized_sudo_access',
+              'status': 'SECURITY_VIOLATION'
+          }) -%}
+        {%- elif (result.rc == 0 or (test_info.cmd.find('systemctl status') != -1 and result.rc in [3, 4])) and test_info.expect == 'success' -%}
+          {%- set _ = results.success.append({
+              'test': test_info,
+              'result': result,
+              'reason': 'expected_success',
+              'status': 'WORKING_CORRECTLY'
+          }) -%}
+        {%- elif result.rc != 0 and test_info.expect == 'success' and not (test_info.cmd.find('systemctl status') != -1 and result.rc in [3, 4]) -%}
+          {%- set _ = results.violations.append({
+              'test': test_info,
+              'result': result,
+              'reason': 'unexpected_failure',
+              'status': 'COMMAND_BROKEN'
+          }) -%}
+        {%- else -%}
+          {%- set _ = results.expected_block.append({
+              'test': test_info,
+              'result': result,
+              'reason': 'other_block_mechanism',
+              'status': 'SECURITY_WORKING'
+          }) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ results }}
+
+- name: "Set execution test summary for final report"
+  ansible.builtin.set_fact:
+    execution_tests_summary:
+      total_tests: "{{ execution_matrix | from_json | length }}"
+      successful_executions: "{{ categorized_results.success | length }}"
+      expected_blocks: "{{ categorized_results.expected_block | length }}"
+      violations: "{{ categorized_results.violations | length }}"
+      status: "{{ 'PASSED' if (categorized_results.violations | length == 0) else 'FAILED' }}"
+      sudo_password_blocks: "{{ categorized_results.expected_block | selectattr('reason', 'equalto', 'sudo_password_required') | list | length }}"
+
+- name: "Explain execution test breakdown"
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      📋 DETAILED BREAKDOWN OF {{ execution_tests_summary.total_tests }} COMMANDS TESTED
+      ========================================
+      
+      👥 USERS TESTED: hugo (viewer), alice (operator), sol (admin), bob (admin)
+      
+      📊 COMMAND CATEGORIES:
+      🟢 BASIC COMMANDS (should work for everyone):
+         • whoami, id, pwd, ls /tmp = 4 commands × 4 users = 16 executions
+      
+      🔴 RESTRICTED COMMANDS (should be blocked for viewers/operators):
+         • sudo -n whoami, sudo -n systemctl status, sudo -n cat /etc/shadow
+         • sudo -n useradd, sudo -n apt update, sudo -n apt install
+         • sudo -n systemctl stop ssh = 7 commands × 2 restricted users = 14 blocked attempts
+      
+      🟡 ADMIN COMMANDS (should work for admins only):
+         • sudo -n systemctl status, sudo -n journalctl -u validator, sudo -n curl
+         • sudo -n apt update, sudo -n systemctl enable = 5 commands × 2 admins = 10 allowed executions
+      
+      🎯 TOTAL: 16 basic + 14 restricted + 10 admin = {{ execution_tests_summary.total_tests }} commands tested
+      ========================================
+
+- name: "Display execution test results"
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      📊 EXECUTION TESTS - CLEAR RESULTS
+      ========================================
+      
+      🎯 FINAL ANSWER: {{ 'ALL TESTS PASSED ✅' if execution_tests_summary.violations | int == 0 else 'SECURITY BREACH ❌' }}
+      
+      🔢 NUMBERS EXPLAINED:
+      • Basic commands successful: {{ execution_tests_summary.successful_executions }}
+      • Restricted commands blocked: {{ execution_tests_summary.expected_blocks }}
+      • Security violations found: {{ execution_tests_summary.violations }}
+      
+      💡 WHAT THIS MEANS:
+      {{ 'EXCELLENT - Your security is working perfectly!' if execution_tests_summary.violations | int == 0 else 'PROBLEM - Some users can access restricted commands!' }}
+      {{ 'Basic commands work for everyone as expected.' if execution_tests_summary.successful_executions | int > 0 else 'Basic commands are broken!' }}
+      
+      🎯 VERDICT: {{ 'SECURITY IS PERFECT ✅' if execution_tests_summary.violations | int == 0 else 'SECURITY NEEDS IMMEDIATE ATTENTION ❌' }}
+      ========================================
+
+- name: "Display execution violations if any"
+  ansible.builtin.debug:
+    msg: "🚨 EXECUTION VIOLATION: User {{ item.test.user }} ({{ item.test.role }}) executed '{{ item.test.cmd }}' successfully when it should have been blocked!"
+  loop: "{{ categorized_results.violations | default([]) }}"
+  when: categorized_results.violations | length > 0

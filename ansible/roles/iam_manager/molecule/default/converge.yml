@@ -46,6 +46,41 @@
       delegate_to: localhost
       ansible.builtin.debug:
         msg: "Using CSV file: {{ molecule_csv_file }} from {{ molecule_csv_source_dir }}"
+
+    - name: Check if sol.service already exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/sol.service
+      register: service_exists
+
+    - name: Create mock sol.service for testing (initial version)
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/sol.service
+        content: |
+          [Unit]
+          Description=Mock Solana Validator Service
+          After=network.target
+          
+          [Service]
+          Type=simple
+          User=root
+          Group=root
+          ExecStart=/bin/bash -c 'echo "Mock Solana Validator started as $(whoami)" && sleep infinity'
+          ExecStop=/bin/kill -TERM $MAINPID
+          Restart=always
+          RestartSec=5
+          
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+        owner: root
+        group: root
+      register: initial_service_created
+      when: not service_exists.stat.exists
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+      when: initial_service_created.changed | default(false)
   roles:
     - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
       vars:
@@ -53,3 +88,55 @@
         users_file: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
         # Allow re-running tests without failing on existing users
         molecule_testing: true
+  post_tasks:
+    - name: Check if sol user exists
+      ansible.builtin.getent:
+        database: passwd
+        key: sol
+      register: sol_user_check
+      failed_when: false
+
+    - name: Check current service content
+      ansible.builtin.slurp:
+        src: /etc/systemd/system/sol.service
+      register: current_service_content
+      when: sol_user_check.ansible_facts.getent_passwd.sol is defined
+
+    - name: Update sol.service to use sol user after user creation
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/sol.service
+        content: |
+          [Unit]
+          Description=Mock Solana Validator Service
+          After=network.target
+          
+          [Service]
+          Type=simple
+          User=sol
+          Group=sol
+          ExecStart=/bin/bash -c 'echo "Mock Solana Validator started as $(whoami)" && sleep infinity'
+          ExecStop=/bin/kill -TERM $MAINPID
+          Restart=always
+          RestartSec=5
+          
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+        owner: root
+        group: root
+      register: final_service_updated
+      when: 
+        - sol_user_check.ansible_facts.getent_passwd.sol is defined
+        - current_service_content.content | b64decode | regex_search('User=root') is not none
+
+    - name: Reload systemd daemon again
+      ansible.builtin.systemd:
+        daemon_reload: yes
+      when: final_service_updated.changed | default(false)
+
+    - name: Enable and start sol.service with sol user
+      ansible.builtin.systemd:
+        name: sol.service
+        enabled: yes
+        state: started
+      when: sol_user_check.ansible_facts.getent_passwd.sol is defined

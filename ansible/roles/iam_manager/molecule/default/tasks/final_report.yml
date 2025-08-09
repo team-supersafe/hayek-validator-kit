@@ -38,13 +38,20 @@
         users_affected: "{{ negative_tests_summary.users_affected | default(0) }}"
         status: "{{ negative_tests_summary.status | default('UNKNOWN') }}"
       
+      # Execution tests summary
+      execution_tests:
+        total: "{{ execution_tests_summary.total_tests | default(0) }}"
+        violations: "{{ execution_tests_summary.violations | default(0) }}"
+        expected_blocks: "{{ execution_tests_summary.expected_blocks | default(0) }}"
+        status: "{{ execution_tests_summary.status | default('UNKNOWN') }}"
+      
       # Template validation summary
       template_validation:
         violations: "{{ template_validation_summary.total_violations | default(0) }}"
         status: "{{ template_validation_summary.status | default('UNKNOWN') }}"
       
       # Overall status calculation
-      total_issues: "{{ (positive_tests_summary.failures | default(0) | int) + (negative_tests_summary.violations | default(0) | int) + (template_validation_summary.total_violations | default(0) | int) }}"
+      total_issues: "{{ (positive_tests_summary.failures | default(0) | int) + (negative_tests_summary.violations | default(0) | int) + (execution_tests_summary.violations | default(0) | int) + (template_validation_summary.total_violations | default(0) | int) }}"
 
 - name: Calculate overall security status
   ansible.builtin.set_fact:
@@ -66,6 +73,7 @@
         {%- set _ = lines.append("IMPACT ANALYSIS:") -%}
         {%- set _ = lines.append("• Positive test failures: " + (security_summary.positive_tests.failures | string)) -%}
         {%- set _ = lines.append("• Role hierarchy violations: " + (security_summary.negative_tests.violations | string)) -%}
+        {%- set _ = lines.append("• Execution test violations: " + (security_summary.execution_tests.violations | string)) -%}
         {%- set _ = lines.append("• Template violations: " + (security_summary.template_validation.violations | string)) -%}
         {%- set _ = lines.append("• Total security issues: " + (security_summary.total_issues | string)) -%}
         {%- set _ = lines.append("• Users affected: " + (security_summary.negative_tests.users_affected | string)) -%}
@@ -87,6 +95,8 @@
         {%- set _ = lines.append("") -%}
         {%- set _ = lines.append("✓ All positive tests passed (" + (security_summary.positive_tests.total | string) + " tests)") -%}
         {%- set _ = lines.append("✓ All negative tests passed (" + (security_summary.negative_tests.total | string) + " tests)") -%}
+        {%- set _ = lines.append("✓ All execution tests passed (" + (security_summary.execution_tests.total | string) + " tests)") -%}
+        {%- set _ = lines.append("✓ sudo -n blocks: " + (security_summary.execution_tests.expected_blocks | string) + " (security working)") -%}
         {%- set _ = lines.append("✓ Template validation passed") -%}
         {%- set _ = lines.append("✓ No unauthorized access detected") -%}
         {%- set _ = lines.append("✓ Least privilege principles enforced") -%}
@@ -113,6 +123,7 @@
       Details:
       - Positive test failures: {{ security_summary.positive_tests.failures }}
       - Role hierarchy violations: {{ security_summary.negative_tests.violations }}
+      - Execution test violations: {{ security_summary.execution_tests.violations }}
       - Template violations: {{ security_summary.template_validation.violations }}
       - Users affected: {{ security_summary.negative_tests.users_affected }}
       
