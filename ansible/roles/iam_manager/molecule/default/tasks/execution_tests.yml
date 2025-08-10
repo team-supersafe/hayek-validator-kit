@@ -3,7 +3,7 @@
 # RBAC VERIFICATION - REAL COMMAND EXECUTION TESTS
 # ========================================
 
-- name: "Build execution test matrix from existing classifications"
+- name: Build execution test matrix from existing classifications
   ansible.builtin.set_fact:
     execution_matrix: |
       {%- set tests = [] -%}
@@ -24,14 +24,14 @@
       {%- endfor -%}
       {{ tests | to_json }}
 
-- name: "Execute command matrix with sudo -n for privilege testing"
+- name: Execute command matrix with sudo -n for privilege testing
   ansible.builtin.shell: "su - {{ item.user }} -c '{{ item.cmd | replace('{{ validator_service }}', validator_service) }}'"
   register: execution_results
   loop: "{{ execution_matrix | from_json }}"
   failed_when: false
   changed_when: true
 
-- name: "Categorize sudo -n results intelligently"
+- name: Categorize sudo -n results intelligently
   ansible.builtin.set_fact:
     categorized_results: |
       {%- set results = {'success': [], 'violations': [], 'expected_block': []} -%}
@@ -40,8 +40,8 @@
         {%- set test_info = (execution_matrix | from_json)[i] -%}
         {%- if result.rc == 1 and 'sudo: a password is required' in result.stderr and test_info.expect == 'block' -%}
           {%- set _ = results.expected_block.append({
-              'test': test_info, 
-              'result': result, 
+              'test': test_info,
+              'result': result,
               'reason': 'sudo_password_required',
               'status': 'SECURITY_CORRECT'
           }) -%}
@@ -77,7 +77,7 @@
       {%- endfor -%}
       {{ results }}
 
-- name: "Set execution test summary for final report"
+- name: Set execution test summary for final report
   ansible.builtin.set_fact:
     execution_tests_summary:
       total_tests: "{{ execution_matrix | from_json | length }}"
@@ -87,11 +87,11 @@
       status: "{{ 'PASSED' if (categorized_results.violations | length == 0) else 'FAILED' }}"
       sudo_password_blocks: "{{ categorized_results.expected_block | selectattr('reason', 'equalto', 'sudo_password_required') | list | length }}"
 
-- name: "Build execution test breakdown display"
+- name: Build execution test breakdown display
   ansible.builtin.set_fact:
     execution_breakdown_display: |
       {%- set lines = [] -%}
-      
+
       {%- set _ = lines.append("========================================") -%}
       {%- set _ = lines.append("📋 EXECUTION TEST MATRIX EXPLAINED") -%}
       {%- set _ = lines.append("========================================") -%}
@@ -127,20 +127,20 @@
       {%- set _ = lines.append("========================================") -%}
       {{ lines }}
 
-- name: "Explain execution test breakdown"
+- name: Explain execution test breakdown
   ansible.builtin.debug:
     msg: "{{ execution_breakdown_display }}"
 
-- name: "Build execution test results display"
+- name: Build execution test results display
   ansible.builtin.set_fact:
     execution_results_display: |
       {%- set lines = [] -%}
-      
+
       {%- set _ = lines.append("========================================") -%}
       {%- set _ = lines.append("📊 EXECUTION TESTS - DETAILED RESULTS") -%}
       {%- set _ = lines.append("========================================") -%}
       {%- set _ = lines.append("") -%}
-      
+
       {%- if execution_tests_summary.violations | int == 0 -%}
         {%- set _ = lines.append("🎯 FINAL ANSWER: ALL TESTS PASSED ✅") -%}
         {%- set _ = lines.append("") -%}
@@ -186,15 +186,15 @@
         {%- set _ = lines.append("🛑 VERDICT: SECURITY NEEDS IMMEDIATE ATTENTION ❌") -%}
         {%- set _ = lines.append("DO NOT DEPLOY TO PRODUCTION UNTIL RESOLVED!") -%}
       {%- endif -%}
-      
+
       {%- set _ = lines.append("========================================") -%}
       {{ lines }}
 
-- name: "Display execution test results"
+- name: Display execution test results
   ansible.builtin.debug:
     msg: "{{ execution_results_display }}"
 
-- name: "Display execution violations if any"
+- name: Display execution violations if any
   ansible.builtin.debug:
     msg: "🚨 EXECUTION VIOLATION: User {{ item.test.user }} ({{ item.test.role }}) executed '{{ item.test.cmd }}' successfully when it should have been blocked!"
   loop: "{{ categorized_results.violations | default([]) }}"

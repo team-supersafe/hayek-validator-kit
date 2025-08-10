@@ -3,7 +3,7 @@
 # RBAC VERIFICATION - FINAL REPORTING AND DECISION
 # ========================================
 
-- name: "Display All Violations (Dynamic)"
+- name: Display All Violations
   ansible.builtin.debug:
     msg: "{{ item.0.name }}: VIOLATION {{ item.1.item }} ({{
       item.0.role if item.0.role != 'mixed'
@@ -24,32 +24,32 @@
     security_summary:
       # Basic system checks
       basic_checks_passed: true
-      
+
       # Positive tests summary
       positive_tests:
         total: "{{ positive_tests_summary.total_tests | default(0) }}"
         failures: "{{ positive_tests_summary.failures | default(0) }}"
         status: "{{ positive_tests_summary.status | default('UNKNOWN') }}"
-      
-      # Negative tests summary  
+
+      # Negative tests summary
       negative_tests:
         total: "{{ negative_tests_summary.total_tests | default(0) }}"
         violations: "{{ negative_tests_summary.violations | default(0) }}"
         users_affected: "{{ negative_tests_summary.users_affected | default(0) }}"
         status: "{{ negative_tests_summary.status | default('UNKNOWN') }}"
-      
+
       # Execution tests summary
       execution_tests:
         total: "{{ execution_tests_summary.total_tests | default(0) }}"
         violations: "{{ execution_tests_summary.violations | default(0) }}"
         expected_blocks: "{{ execution_tests_summary.expected_blocks | default(0) }}"
         status: "{{ execution_tests_summary.status | default('UNKNOWN') }}"
-      
+
       # Template validation summary
       template_validation:
         violations: "{{ template_validation_summary.total_violations | default(0) }}"
         status: "{{ template_validation_summary.status | default('UNKNOWN') }}"
-      
+
       # Overall status calculation
       total_issues: "{{ (positive_tests_summary.failures | default(0) | int) + (negative_tests_summary.violations | default(0) | int) + (execution_tests_summary.violations | default(0) | int) + (template_validation_summary.total_violations | default(0) | int) }}"
 
@@ -107,25 +107,25 @@
       {%- endif -%}
       {{ lines }}
 
-- name: "Final Security Assessment"
+- name: Final Security Assessment
   ansible.builtin.debug:
     msg: "{{ 'SECURITY: ALL TESTS PASSED - SYSTEM READY' if (security_summary.total_issues | int == 0) else 'SECURITY: ' + (security_summary.total_issues | string) + ' VIOLATIONS FOUND - DEPLOYMENT BLOCKED' }}"
 
 - name: Display comprehensive security report
-  debug:
+  ansible.builtin.debug:
     msg: "{{ violation_summary_lines }}"
 
-- name: "Security Check Failed"
+- name: Security Check Failed
   ansible.builtin.fail:
     msg: |
       DEPLOYMENT BLOCKED: {{ security_summary.total_issues }} security issues detected
-      
+
       Details:
       - Positive test failures: {{ security_summary.positive_tests.failures }}
       - Role hierarchy violations: {{ security_summary.negative_tests.violations }}
       - Execution test violations: {{ security_summary.execution_tests.violations }}
       - Template violations: {{ security_summary.template_validation.violations }}
       - Users affected: {{ security_summary.negative_tests.users_affected }}
-      
+
       DO NOT DEPLOY TO PRODUCTION UNTIL RESOLVED!
   when: security_summary.total_issues | int > 0

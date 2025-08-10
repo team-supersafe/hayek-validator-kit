@@ -123,19 +123,19 @@
       users_affected: "{{ parsed_violation_analysis.total_users_affected | default(0) }}"
       status: "{{ 'PASSED' if (parsed_violation_analysis.total_violations | default(0) | int == 0) else 'FAILED' }}"
 
-- name: "🚫 CRITICAL: Verify ubuntu user has NO sudo privileges"
+- name: Verify ubuntu user has NO sudo privileges
   ansible.builtin.shell: "sudo -l -U ubuntu 2>/dev/null | grep -v 'may not run sudo' | grep -v 'is not allowed to run sudo' || echo 'NO_SUDO_ACCESS'"
   register: ubuntu_sudo_check
   changed_when: false
   failed_when: false
 
-- name: "Analyze ubuntu sudo privileges"
+- name: Analyze ubuntu sudo privileges
   ansible.builtin.debug:
     msg: |
       Ubuntu user sudo check result: {{ ubuntu_sudo_check.stdout }}
       Return code: {{ ubuntu_sudo_check.rc }}
 
-- name: "Assert ubuntu user has no sudo access"
+- name: Assert ubuntu user has no sudo access
   ansible.builtin.assert:
     that:
       - "ubuntu_sudo_check.stdout == 'NO_SUDO_ACCESS' or 'may not run sudo' in ubuntu_sudo_check.stdout or 'is not allowed to run sudo' in ubuntu_sudo_check.stdout"
@@ -145,7 +145,7 @@
       This is a severe security risk - ubuntu user should be completely disabled.
     success_msg: "✓ CRITICAL CHECK PASSED: Ubuntu user has no sudo privileges"
 
-- name: "Update negative test summary to include ubuntu verification"
+- name: Update negative test summary to include ubuntu verification
   ansible.builtin.set_fact:
     negative_tests_summary:
       total_tests: "{{ (negative_test_matrix | length) + 1 }}"

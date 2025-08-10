@@ -19,9 +19,8 @@
   loop: "{{ system_users.ansible_facts.getent_passwd | dict2items }}"
   when:
     - item.value[1] | int < 1000  # UID less than 1000 = system user
-    - item.key != 'sol'  # Keep sol as it might be a service user we want to test
 
-- name: Find users in RBAC groups dynamically (Improved)
+- name: Find users in RBAC groups dynamically
   ansible.builtin.set_fact:
     rbac_users: "{{ rbac_users | default({}) | combine({item.key: {'groups': [], 'uid': item.value[1], 'shell': item.value[5]}}) }}"
   loop: "{{ system_users.ansible_facts.getent_passwd | dict2items }}"

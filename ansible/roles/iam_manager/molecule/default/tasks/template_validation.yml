@@ -30,7 +30,6 @@
       register: admins_actual_sudoers
       failed_when: false
 
-    # Test specific unauthorized commands that users should NOT be able to execute
     - name: Test if validator_viewers can execute apt commands (should FAIL if found)
       shell: |
         # Test apt command execution ability

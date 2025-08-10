@@ -29,7 +29,7 @@
       additional_files:
         - "99-self-service"
 
-      # Dynamic command patterns for testing
+      # Command patterns for testing
       command_patterns:
         apt_management: 'apt(-get)?.*(install|upgrade|remove)'
         service_control: 'systemctl.*(start|stop|restart)'
