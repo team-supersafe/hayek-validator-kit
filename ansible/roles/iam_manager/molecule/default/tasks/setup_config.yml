@@ -47,7 +47,7 @@
           description: "Sysadmin users can execute sudo commands"
         - name: "admin_service_management"
           roles: ["validator_admins"]
-          pattern: "systemctl.*(start|stop|restart).*sol"
+          pattern: "systemctl.*(start|stop|restart).*{{ validator_service | regex_replace('\\.service$', '') }}"
           description: "Validator admins can manage validator services"
         - name: "operator_log_access"
           roles: ["validator_operators"]
