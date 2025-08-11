@@ -21,13 +21,13 @@
     update_cache: true
 
 # Choose installation method based on user preference
-- when: not (use_precompiled_binaries | default(false) | bool)
-  name: Install - Installing from source
-  ansible.builtin.include_tasks: install_from_source.yml
-
-- when: use_precompiled_binaries | default(false) | bool
+- when: not (build_from_source | default(false) | bool)
   name: Install - Installing from binaries
   ansible.builtin.include_tasks: install_from_binaries.yml
+
+- when: build_from_source | default(false) | bool
+  name: Install - Installing from source
+  ansible.builtin.include_tasks: install_from_source.yml
 
 # Ensure Solana CLI bin path is in the user's .bashrc and .zshrc for persistent CLI access
 - name: Install - Ensure Solana CLI bin path is in .bashrc

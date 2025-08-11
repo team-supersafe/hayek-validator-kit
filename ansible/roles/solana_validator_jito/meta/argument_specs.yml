@@ -37,11 +37,11 @@ argument_specs:
         required: false
         default: false
         description: "Force cleanup of existing validator data"
-      use_precompiled_binaries:
+      build_from_source:
         type: bool
         required: false
         default: false
-        description: "Use precompiled binaries instead of building from source"
+        description: "Build from source instead of using precompiled binaries"
       use_official_repo:
         type: bool
         required: false

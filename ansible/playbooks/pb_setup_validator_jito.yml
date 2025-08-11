@@ -24,7 +24,7 @@
 #   -e "jito_version=2.2.15" \
 #   -e "jito_relayer_type=shared" \
 #   -e "jito_relayer_version=0.3.1" \
-#   -e "use_precompiled_binaries=true" \ # Optional: Use precompiled binaries instead of building from source
+#   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
 #   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
 #   -e "force_host_cleanup=true" \ # Optional: Use this if a validator service is already running
 

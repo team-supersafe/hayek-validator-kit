@@ -12,7 +12,7 @@
 #   --limit host-charlie \
 #   -e "agave_version=2.2.14" \
 #   -e "target_host=host-charlie" \
-#   -e "use_precompiled_binaries=true" \ # Optional: Use precompiled binaries instead of building from source
+#   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
 #   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
 #
 # For syntax check add --syntax-check
