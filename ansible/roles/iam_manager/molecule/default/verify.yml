@@ -1,16 +1,10 @@
 ---
-- name: Verify RBAC and least-privilege (Modular Version)
+- name: Verify RBAC and least-privilege
   hosts: all
   gather_facts: false
   become: true
   vars_files:
     - "../../defaults/main.yml"
   tasks:
-    # ========================================
-    # MODULAR RBAC VERIFICATION SYSTEM
-    # ========================================
-    # All verification tasks are orchestrated through main.yml
-    # which provides proper sequencing and organization
-    
-    - name: "�️ Execute Complete RBAC Security Verification"
+    - name: Execute Complete RBAC Security Verification
       include_tasks: tasks/main.yml
