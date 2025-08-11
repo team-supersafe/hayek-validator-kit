@@ -1,8 +1,9 @@
 ---
 dependency:
-  name: galaxy
-  options:
-    requirements-file: requirements.yml
+  name: shell
+  command: |
+    cd "${MOLECULE_PROJECT_DIRECTORY}/../../../solana-localnet"
+    docker build --target naked-builder -t solana-localnet-ubuntu-naked .
 
 driver:
   name: docker
@@ -72,6 +73,8 @@ provisioner:
         ansible_user: root
         remote_tmp: /tmp/.ansible/tmp
         ansible_remote_tmp: /tmp/.ansible/tmp
+        # Skip interactive pauses in testing
+        skip_confirmation_pauses: true
 
 verifier:
   name: ansible

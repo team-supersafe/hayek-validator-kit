@@ -13,6 +13,7 @@
 - name: Pause for warning
   ansible.builtin.pause:
     prompt: "Press Enter to continue and disable ubuntu user (you will lose connection!), or Ctrl+C to abort"
+  when: not (skip_confirmation_pauses | default(false))
 
 # Disable ubuntu user
 - name: Disable ubuntu user
