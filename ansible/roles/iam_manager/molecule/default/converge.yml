@@ -82,6 +82,11 @@
         daemon_reload: yes
       when: initial_service_created.changed | default(false)
   roles:
+    # Execute the current role being tested
+    # MOLECULE_PROJECT_DIRECTORY = /path/to/ansible/roles/iam_manager
+    # basename extracts just "iam_manager" from the full path
+    # This dynamically resolves to: role: "iam_manager"
+    # Which executes tasks/main.yml and all imported task files
     - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
       vars:
         # Override the users_file to point to our test CSV using same pattern as production
