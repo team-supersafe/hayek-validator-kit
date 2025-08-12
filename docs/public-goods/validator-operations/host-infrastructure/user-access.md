@@ -34,7 +34,7 @@ If a non-member user of a role, attempts to execute any of the commands within o
 Sorry, user hugo is not allowed to execute '/usr/bin/apt udpate' as root on host-charlie.
 ```
 
-Each Role/Group operates under the principle of least privilege with deny-by-default access control. Users are granted only the specific permissions explicitly defined.
+Each Role/Group operates under the principle of least privilege with deny-by-default access control. Users are granted only the specific permissions explicitly defined using dedicated config files for each role. You can see the details later on this guide on under the [User Access](user-access.md#user-access) section.
 
 ## User Setup
 
