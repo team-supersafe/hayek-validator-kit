@@ -12,7 +12,7 @@ This page assumes you have access to a provisioned bare metal with the `ubuntu` 
 
 Since the user provisioning is done via an Ansible script, you must also have a running [Ansible Control](../../hayek-validator-kit/ansible-control.md).
 
-## Least Privilege & RBAC
+## Architecture
 
 Our security strategy is based on the principle of least privilege.&#x20;
 
