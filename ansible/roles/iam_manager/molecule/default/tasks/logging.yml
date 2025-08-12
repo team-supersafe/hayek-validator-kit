@@ -1,0 +1,117 @@
+---
+# ========================================
+# RBAC VERIFICATION - DETAILED COMMAND LOGGING
+# ========================================
+
+- name: Get current timestamp for logging
+  ansible.builtin.setup:
+    filter: ansible_date_time
+
+- name: Create detailed command execution log
+  ansible.builtin.set_fact:
+    detailed_execution_log: |
+      {%- set log_lines = [] -%}
+      {%- set _ = log_lines.append("========================================") -%}
+      {%- set _ = log_lines.append("DETAILED COMMAND EXECUTION LOG") -%}
+      {%- set _ = log_lines.append("Timestamp: " + ansible_date_time.iso8601) -%}
+      {%- set _ = log_lines.append("Total Commands Executed: " + (execution_results.results | length | string)) -%}
+      {%- set _ = log_lines.append("========================================") -%}
+      {%- set _ = log_lines.append("") -%}
+      
+      {%- for i in range(execution_results.results | length) -%}
+        {%- set result = execution_results.results[i] -%}
+        {%- set cmd_num = i + 1 -%}
+        
+        {%- set _ = log_lines.append("Command #" + (cmd_num | string) + ":") -%}
+        {%- set _ = log_lines.append("  User: " + result.item.user + " (Role: " + result.item.role + ")") -%}
+        {%- set _ = log_lines.append("  Command: " + result.item.cmd) -%}
+        {%- set _ = log_lines.append("  Expected: " + result.item.expect) -%}
+        {%- set _ = log_lines.append("  Type: " + result.item.type) -%}
+        {%- set _ = log_lines.append("  Exit Code: " + (result.rc | string)) -%}
+        {%- if result.stdout -%}
+          {%- set _ = log_lines.append("  STDOUT: " + result.stdout | truncate(200)) -%}
+        {%- endif -%}
+        {%- if result.stderr -%}
+          {%- set _ = log_lines.append("  STDERR: " + result.stderr | truncate(200)) -%}
+        {%- endif -%}
+        
+        {%- if result.rc == 0 and result.item.expect == 'success' -%}
+          {%- set _ = log_lines.append("  Status: ✅ SUCCESS (as expected)") -%}
+        {%- elif result.rc != 0 and result.item.expect == 'block' -%}
+          {%- set _ = log_lines.append("  Status: 🛡️ BLOCKED (security working)") -%}
+        {%- elif result.rc == 0 and result.item.expect == 'block' -%}
+          {%- set _ = log_lines.append("  Status: ⚠️ SECURITY VIOLATION (should be blocked!)") -%}
+        {%- elif result.rc != 0 and result.item.expect == 'success' -%}
+          {%- set _ = log_lines.append("  Status: ❌ FAILED (unexpected failure)") -%}
+        {%- else -%}
+          {%- set _ = log_lines.append("  Status: 🔍 UNKNOWN") -%}
+        {%- endif -%}
+        
+        {%- set _ = log_lines.append("  Duration: " + result.delta) -%}
+        {%- set _ = log_lines.append("  Started: " + result.start) -%}
+        {%- set _ = log_lines.append("  Ended: " + result.end) -%}
+        {%- set _ = log_lines.append("") -%}
+      {%- endfor -%}
+      
+      {%- set _ = log_lines.append("========================================") -%}
+      {%- set _ = log_lines.append("SUMMARY BY COMMAND TYPE:") -%}
+      {%- set _ = log_lines.append("========================================") -%}
+      
+      {%- set safe_commands = [] -%}
+      {%- set restricted_commands = [] -%}
+      {%- set admin_commands = [] -%}
+      
+      {%- for result in execution_results.results -%}
+        {%- if result.item.type == 'safe' -%}
+          {%- set _ = safe_commands.append(result.item.cmd) -%}
+        {%- elif result.item.type == 'restricted' -%}
+          {%- set _ = restricted_commands.append(result.item.cmd) -%}
+        {%- elif result.item.type == 'admin' -%}
+          {%- set _ = admin_commands.append(result.item.cmd) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      
+      {%- set _ = log_lines.append("🟢 Safe Commands (basic): " + (safe_commands | length | string)) -%}
+      {%- set _ = log_lines.append("🔴 Restricted Commands (should block): " + (restricted_commands | length | string)) -%}
+      {%- set _ = log_lines.append("🟡 Admin Commands (privileged): " + (admin_commands | length | string)) -%}
+      {%- set _ = log_lines.append("📊 Total: " + (((safe_commands | length) + (restricted_commands | length) + (admin_commands | length)) | string)) -%}
+      {%- set _ = log_lines.append("") -%}
+      
+      {%- set _ = log_lines.append("========================================") -%}
+      {%- set _ = log_lines.append("SUMMARY BY USER:") -%}
+      {%- set _ = log_lines.append("========================================") -%}
+      
+      {%- set users_summary = {} -%}
+      {%- for result in execution_results.results -%}
+        {%- if result.item.user not in users_summary -%}
+          {%- set _ = users_summary.update({result.item.user: {'role': result.item.role, 'count': 0}}) -%}
+        {%- endif -%}
+        {%- set _ = users_summary[result.item.user].update({'count': users_summary[result.item.user].count + 1}) -%}
+      {%- endfor -%}
+      
+      {%- for user, info in users_summary.items() -%}
+        {%- set _ = log_lines.append("👤 " + user + " (" + info.role + "): " + (info.count | string) + " commands") -%}
+      {%- endfor -%}
+      
+      {%- set _ = log_lines.append("") -%}
+      {%- set _ = log_lines.append("========================================") -%}
+      {%- set _ = log_lines.append("END OF EXECUTION LOG") -%}
+      {%- set _ = log_lines.append("========================================") -%}
+      
+      {{ log_lines }}
+
+- name: Display detailed execution log
+  ansible.builtin.debug:
+    msg: "{{ detailed_execution_log }}"
+
+- name: Save detailed execution log to file
+  ansible.builtin.copy:
+    content: "{{ detailed_execution_log | join('\n') }}"
+    dest: "{{ csv_source_dir | default('~/new-metal-box') }}/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
+    mode: '0644'
+  delegate_to: localhost
+  become: false
+
+- name: Show log file location
+  ansible.builtin.debug:
+    msg: "📄 Detailed execution log saved to: {{ csv_source_dir | default('~/new-metal-box') }}/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
