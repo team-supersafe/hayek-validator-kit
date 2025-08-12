@@ -11,8 +11,8 @@ echo "Welcome, $USER!"
 echo "==============================================================================="
 echo ""
 
-# Password management section only for sysadmin or ansible_executor groups
-if groups | grep -q sysadmin || groups | grep -q ansible_executor; then
+# Password management section only for sysadmin or validator_admins groups
+if groups | grep -q sysadmin || groups | grep -q validator_admins; then
     echo "==============================================================================="
     echo "                              PASSWORD MANAGEMENT"
     echo "==============================================================================="

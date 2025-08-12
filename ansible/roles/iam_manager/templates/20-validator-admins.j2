@@ -58,6 +58,9 @@
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/lsof
 %validator_admins ALL=(ALL) NOPASSWD: /usr/bin/netstat -tulpn
 
+# Shell access (requires password)
+%validator_admins ALL=(ALL) PASSWD: /bin/sh
+
 # ========================================
 # INHERITED PERMISSIONS FROM VALIDATOR_OPERATORS
 # ========================================
