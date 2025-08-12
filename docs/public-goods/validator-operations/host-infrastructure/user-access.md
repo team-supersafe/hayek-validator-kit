@@ -18,11 +18,19 @@ Our security strategy follows the principle of least privilege.
 
 We define IAM users and roles in advance, which serve as the blueprint during setup. Each role maps directly to an Ubuntu group, ensuring every user operating on the host has only the minimal access required for their tasks.
 
+### 🎭 Roles
+
+These are the roles with their asserted purpose and description:
+
 <table><thead><tr><th width="206.140625">ROLES (GROUPS)</th><th width="538.61328125">DESCRIPTION</th></tr></thead><tbody><tr><td>📂 <strong>sysadmin</strong><br><em>Purpose</em>: <br>Complete system administration</td><td>Sudo access. <br><br>Break-glass access for critical system emergencies</td></tr><tr><td>📂 <strong>validator_admins</strong><br><em>Purpose</em>: <br>Validator administration &#x26; development</td><td>Complete validator management without OS access. <br><br>Can do everything to the validator config either directly or via the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>, including install/uninstall, but nothing to the server or OS.</td></tr><tr><td>📂 <strong>validator_operators</strong><br><em>Purpose</em>: <br>Service operations &#x26; process control</td><td>Daily operational control without configuration capability.<br><br>Cannot install/uninstall the validator, but can perform other operations, like upgrade, restart, migrate, start, and stop either directly or via the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>.</td></tr><tr><td>📂 <strong>validator_viewers</strong><br><em>Purpose</em>: <br>System observability &#x26; metrics</td><td>Observability without modification capability.<br><br>This role is intended for users who need read-only access to the validator. Members can view service status, access logs, monitor, and inspect validator keys, but cannot perform any administrative or operational actions either directly or via the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>.</td></tr></tbody></table>
+
+### 🚦 Permissions
 
 These are the permissions that apply to each role along with some example commands that apply to each permission:
 
 <table><thead><tr><th width="255.671875">PERMISSION</th><th>sysadmin</th><th>validator_admins</th><th>validator_operators</th><th>validator_viewers</th></tr></thead><tbody><tr><td><p><strong>user_mgmt</strong> <br><em>Example commands</em>: <code>sudo passwd forgetfuluser</code></p><p><code>sudo userdel baduser</code><br><code>sudo useradd gooduser</code></p></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td><strong>pkg_mgmt</strong><br><em>Example commands</em>: <br><code>sudo apt update</code><br><code>sudo apt install htop</code><br></td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td><strong>pwd_selfsvc</strong><br><em>Example commands</em>: <br><code>sudo reset-my-password</code></td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td><strong>validator_mgmt</strong> <br><em>Example commands</em>: <br><code>sudo systemctl restart sol</code><br><code>kill UID sol service</code><br></td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr><tr><td><p><strong>validator_monitoring</strong><br><em>Example commands</em>: <br><code>systemctl status sol</code></p><p><code>journalctl -u sol.service -f</code></p></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr></tbody></table>
+
+### 👥 Users
 
 Users belong to roles, except `ubuntu` and `sol`, which have special treatment as shown here:
 
