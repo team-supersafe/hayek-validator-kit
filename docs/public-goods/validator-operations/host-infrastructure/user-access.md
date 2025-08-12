@@ -16,35 +16,35 @@ Since the user provisioning is done via an Ansible script, you must also have a 
 
 Our security strategy is based on the principle of least privilege.&#x20;
 
-First, we define our identity and access management (IAM) users and groups, which will serve as the guide during the setup. These groups ensure dedicated minimum access to the different users that will be acting on our host:
+First, we define our identity and access management (IAM) users and groups, which will serve as the guide during the setup. These roles are configured as ubuntu groups and ensure dedicated minimum access to the different users that will be acting on our host:
 
-<table><thead><tr><th>RBAC (UBUNTU GROUPS)</th><th width="538.61328125">DESCRIPTION</th></tr></thead><tbody><tr><td>📂 sysadmin</td><td>Sudo access</td></tr><tr><td>📂 validator_admins</td><td>Can do everything to the validator, including install/uninstall, but nothing to the server</td></tr><tr><td>📂 validator_operators</td><td>Cannot install/uninstall the validator, but can perform all other operators, like upgrade, restart, migrate, start, and stop.</td></tr><tr><td>📂 ansible_executor</td><td>The <code>ansible_executor</code> role is assigned to users who need permission to run Ansible playbooks. Users with this role must be members of the <code>ansible_executor</code> group and are required to configure their own password using the self-service password setup. This ensures secure privilege escalation and auditability while maintaining least-privilege access.</td></tr><tr><td>📂 validator_viewers</td><td>The <code>validator_viewers</code> role is intended for users who need read-only access to validator-related operations. Members of this role can view service statuses, access logs, monitoring and inspect validator keys, but cannot perform any administrative or write actions.</td></tr><tr><td></td><td></td></tr></tbody></table>
+<table><thead><tr><th width="227.34375">ROLES (GROUPS)</th><th width="538.61328125">PURPOSE / DESCRIPTION</th></tr></thead><tbody><tr><td>📂 <strong>sysadmin</strong><br><br>// Complete system administration</td><td>Sudo access. <br><br>Break-glass access for critical system emergencies</td></tr><tr><td>📂 <strong>validator_admins</strong><br><br>//Validator administration &#x26; development</td><td>Complete validator management without OS access. <br><br>Can do everything to the validator config, including install/uninstall, but nothing to the server or OS.</td></tr><tr><td>📂 <strong>validator_operators</strong><br><br>// Service operations &#x26; process control</td><td>Daily operational control without configuration capability.<br><br>Cannot install/uninstall the validator, but can perform all other operators, like upgrade, restart, migrate, start, and stop.</td></tr><tr><td>📂 <strong>ansible_executor</strong><br><br>//Automated deployment execution</td><td>Non-interactive user for automation only.<br><br>The <code>ansible_executor</code> role is assigned to users who need permission to run Ansible playbooks. Users with this role must be members of the <code>ansible_executor</code> group and are required to configure their own password using the self-service password setup. This ensures secure privilege escalation and auditability while maintaining least-privilege access.</td></tr><tr><td>📂 <strong>validator_viewers</strong><br><br>// System observability &#x26; metrics</td><td>Observability without modification capability.<br><br>The <code>validator_viewers</code> role is intended for users who need read-only access to validator-related operations. Members of this role can view service statuses, access logs, monitoring and inspect validator keys, but cannot perform any administrative or write actions.</td></tr></tbody></table>
+
+These are the permissions that apply to each role along with some example commands that apply to each permission:
+
+<table><thead><tr><th width="238.8984375">PERMISSION</th><th>sysadmin</th><th>validator_admins</th><th>validator_operators</th><th>validator_viewers</th></tr></thead><tbody><tr><td><p><strong>user_mgmt</strong> </p><p><code>sudo passwd forgetfuluser</code></p><p><code>sudo userdel baduser</code><br><code>sudo useradd gooduser</code></p></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td><strong>pwd_selfsvc</strong><br><code>sudo reset-my-password</code></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td><strong>pkg_mgmt</strong><br><code>sudo apt update</code><br><code>sudo apt install htop</code><br></td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td><strong>validator_mgmt</strong> <br> <code>kill UID sol service</code><br><code>sudo systemctl restart sol</code>    <br><br></td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr><tr><td><p><strong>validator_monitoring</strong><br><strong>`</strong><code>systemctl status sol`</code></p><p><code>journalctl -u sol.service -f</code></p></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr></tbody></table>
+
+Users belong to roles, except `ubuntu` and `sol`, which have special treatment as shown here:
+
+<table><thead><tr><th width="168.9375">USERS</th><th width="281.00390625">DESCRIPTION</th><th>USAGE</th></tr></thead><tbody><tr><td>⚙️ <strong>ubuntu</strong></td><td>Provisioned by ASN with a server. Disabled after secure user setup.</td><td>To provision server users.</td></tr><tr><td>⚙️ <strong>sol</strong></td><td>Primary validator service runner and owner of the validator files and data.</td><td>Runs the validator service. Restricted to everything else.</td></tr><tr><td>🧍Operator User:<br>>>> <strong>alice</strong>, <strong>bob</strong>, etc.</td><td>Each human operator has his/her dedicated user.</td><td>Access the server via SSH, with no password.<br><br>Could run Ansible scripts from the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a> if they are a member of <strong>ansible_executor</strong> role.</td></tr></tbody></table>
+
+If a non-member user of a role, attempts to execute any of the commands within one of the permission, they will get an error that looks like this:
+
+```bash
+Sorry, user hugo is not allowed to execute '/usr/bin/apt udpate' as root on host-charlie.
+```
+
+
+
+
+
+
 
 Each Role/Group operates under the principle of least privilege with deny-by-default access control. Users are granted only the specific permissions explicitly defined in the following table, with higher-level roles inheriting permissions from lower-level roles through template-based inheritance:
 
+<table><thead><tr><th width="223.9921875">PERMISSION</th><th>DESCRIPTION</th><th>EXAMPLES</th></tr></thead><tbody><tr><td>sysadmin</td><td>Privileged<br>PRIVILEGED</td><td>System_Administration<br>User_Management<br>Password_Self_Service</td></tr><tr><td>validator_admins</td><td>ADMINISTRATIVE</td><td>Software_Management Service_Configuration Development_Tools<br>Key_Management:  Configuration_Management: [chmod, chown, cp, mv on validator dirs]</td></tr><tr><td>validator_operators</td><td>OPERATIONAL_CONTROL</td><td>Solana_Service_Control<br>Solana_Process_Management<br>Operational_Monitoring</td></tr><tr><td>validator_viewers</td><td>READ_ONLY MONITORING</td><td>Status_Monitoring Solana_Log_Analysis<br>Network_Monitorin<br>Performance_Monitoring<br>Validator_Configuration_Viewing</td></tr><tr><td>ansible_executor</td><td>PROGRAMMATIC_LIMITED</td><td>Shell_Access<br>Password_Self_Service</td></tr></tbody></table>
 
 
-| ROLE                 | SCOPE                                  | PERMISSION\_MODEL               | FUNCTIONAL\_AREAS                                                                                                                                         | ROLE\_PURPOSE                                              |
-| -------------------- | -------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| sysadmin             | Complete system administration         | <p>Privileged<br>PRIVILEGED</p> | <p>System_Administration<br>User_Management<br>Password_Self_Service</p>                                                                                  | Break-glass access for critical system emergencies         |
-| validator\_admins    | Validator administration & development | ADMINISTRATIVE                  | <p>Software_Management Service_Configuration Development_Tools<br>Key_Management:  Configuration_Management: [chmod, chown, cp, mv on validator dirs]</p> | Complete validator management without OS access            |
-| validator\_operators | Service operations & process control   | OPERATIONAL\_CONTROL            | <p>Solana_Service_Control<br>Solana_Process_Management<br>Operational_Monitoring</p>                                                                      | Daily operational control without configuration capability |
-| validator\_viewers   | System observability & metrics         | READ\_ONLY MONITORING           | <p>Status_Monitoring Solana_Log_Analysis<br>Network_Monitorin<br>Performance_Monitoring<br>Validator_Configuration_Viewing</p>                            | Observability without modification capability              |
-| ansible\_executor    | Automated deployment execution         | PROGRAMMATIC\_LIMITED           | <p>Shell_Access<br>Password_Self_Service</p>                                                                                                              | Non-interactive user for automation only                   |
-
-
-
-#### PERMISSION VALIDATION MATRIX
-
-| COMMAND                    | sysadmin | validator\_admins | validator\_operators | validator\_viewers |
-| -------------------------- | -------- | ----------------- | -------------------- | ------------------ |
-| sudo useradd newoperator   | ✅        | ❌                 | ❌                    | ❌                  |
-| sudo reset-my-password     | ✅        | ❌                 | ❌                    | ❌                  |
-| sudo apt-get install htop  | ✅        | ✅                 | ❌                    | ❌                  |
-| sudo systemctl restart sol | ✅        | ✅                 | ✅                    | ❌                  |
-| systemctl status sol       | ✅        | ✅                 | ✅                    | ✅                  |
-
-<table><thead><tr><th width="177.41796875">USERS</th><th width="294.82421875">DESCRIPTION</th><th>USAGE</th></tr></thead><tbody><tr><td>⚙️ <strong>ubuntu</strong></td><td>Provisioned by ASN with a server. Disabled after secure user setup.</td><td>To provision server users.</td></tr><tr><td>⚙️ <strong>sol</strong></td><td>Primary validator service runner and owner of the validator files and data.</td><td>Runs the validator service.</td></tr><tr><td>🧍Operator User:<br>>>> <strong>alice</strong>, <strong>bob</strong>, etc.</td><td>Each human operator has his/her dedicated user.</td><td>Access the server via SSH and run Ansible scripts from the <a href="../../hayek-validator-kit/ansible-control.md">Ansible Control</a>.</td></tr></tbody></table>
 
 ## User Setup
 
