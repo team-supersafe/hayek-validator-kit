@@ -126,11 +126,11 @@ The playbook automatically configures the required sudo permissions for each rol
 
 #### Role Hierarchy and Permissions
 
-<table><thead><tr><th width="175.21484375">ROLE</th><th>FILE</th><th>INHERITANCE</th></tr></thead><tbody><tr><td><strong>sysadmin</strong></td><td><code>10-sysadmin</code></td><td>None (top level)</td></tr><tr><td><strong>validator_admins</strong></td><td><code>20-validator-admins</code></td><td>Inherits from operators</td></tr><tr><td><strong>validator_operators</strong></td><td><code>30-validator-operators</code></td><td>Inherits from viewers</td></tr><tr><td><strong>validator_viewers</strong></td><td><code>40-validator-viewers</code></td><td>Base level</td></tr><tr><td><strong>ansible_executor</strong></td><td><code>40-ansible-executor</code></td><td>Special purpose</td></tr></tbody></table>
+<table><thead><tr><th width="175.21484375">ROLE</th><th>FILE</th><th>INHERITANCE</th></tr></thead><tbody><tr><td><strong>sysadmin</strong></td><td><code>10-sysadmin</code></td><td>None (top level)</td></tr><tr><td><strong>validator_admins</strong></td><td><code>20-validator-admins</code></td><td>Inherits from operators</td></tr><tr><td><strong>validator_operators</strong></td><td><code>30-validator-operators</code></td><td>Inherits from viewers</td></tr><tr><td><strong>validator_viewers</strong></td><td><code>40-validator-viewers</code></td><td>Base level</td></tr></tbody></table>
 
 ## Password Self Service
 
-Users who belong to the `sysadmin` or `ansible_executor` groups are **required to set their own password** in order to perform privilege escalation via `sudo`.
+Users who belong to the `sysadmin` or `validator_admins` groups are **required to set their own password** in order to perform privilege escalation via `sudo`.
 
 ### Initial Access
 
