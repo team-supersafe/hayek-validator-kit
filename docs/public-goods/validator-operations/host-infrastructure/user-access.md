@@ -22,7 +22,7 @@ First, we define our identity and access management (IAM) users and groups, whic
 
 These are the permissions that apply to each role along with some example commands that apply to each permission:
 
-<table><thead><tr><th width="238.8984375">PERMISSION</th><th>sysadmin</th><th>validator_admins</th><th>validator_operators</th><th>validator_viewers</th></tr></thead><tbody><tr><td><p><strong>user_mgmt</strong> </p><p><code>sudo passwd forgetfuluser</code></p><p><code>sudo userdel baduser</code><br><code>sudo useradd gooduser</code></p></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td><strong>pwd_selfsvc</strong><br><code>sudo reset-my-password</code></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td><strong>pkg_mgmt</strong><br><code>sudo apt update</code><br><code>sudo apt install htop</code><br></td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td><strong>validator_mgmt</strong> <br> <code>kill UID sol service</code><br><code>sudo systemctl restart sol</code>    <br><br></td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr><tr><td><p><strong>validator_monitoring</strong><br><strong>`</strong><code>systemctl status sol`</code></p><p><code>journalctl -u sol.service -f</code></p></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr></tbody></table>
+<table><thead><tr><th width="255.671875">PERMISSION</th><th>sysadmin</th><th>validator_admins</th><th>validator_operators</th><th>validator_viewers</th></tr></thead><tbody><tr><td><p><strong>user_mgmt</strong> </p><p><code>sudo passwd forgetfuluser</code></p><p><code>sudo userdel baduser</code><br><code>sudo useradd gooduser</code></p></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td><strong>pwd_selfsvc</strong><br><code>sudo reset-my-password</code></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td><strong>pkg_mgmt</strong><br><code>sudo apt update</code><br><code>sudo apt install htop</code><br></td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td><strong>validator_mgmt</strong> <br><code>sudo systemctl restart s</code><br> <code>kill UID sol service</code>    <br><br></td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr><tr><td><p><strong>validator_monitoring</strong><br><code>systemctl status sol</code></p><p><code>journalctl -u sol.service -f</code></p></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr></tbody></table>
 
 Users belong to roles, except `ubuntu` and `sol`, which have special treatment as shown here:
 
@@ -34,17 +34,7 @@ If a non-member user of a role, attempts to execute any of the commands within o
 Sorry, user hugo is not allowed to execute '/usr/bin/apt udpate' as root on host-charlie.
 ```
 
-
-
-
-
-
-
-Each Role/Group operates under the principle of least privilege with deny-by-default access control. Users are granted only the specific permissions explicitly defined in the following table, with higher-level roles inheriting permissions from lower-level roles through template-based inheritance:
-
-<table><thead><tr><th width="223.9921875">PERMISSION</th><th>DESCRIPTION</th><th>EXAMPLES</th></tr></thead><tbody><tr><td>sysadmin</td><td>Privileged<br>PRIVILEGED</td><td>System_Administration<br>User_Management<br>Password_Self_Service</td></tr><tr><td>validator_admins</td><td>ADMINISTRATIVE</td><td>Software_Management Service_Configuration Development_Tools<br>Key_Management:  Configuration_Management: [chmod, chown, cp, mv on validator dirs]</td></tr><tr><td>validator_operators</td><td>OPERATIONAL_CONTROL</td><td>Solana_Service_Control<br>Solana_Process_Management<br>Operational_Monitoring</td></tr><tr><td>validator_viewers</td><td>READ_ONLY MONITORING</td><td>Status_Monitoring Solana_Log_Analysis<br>Network_Monitorin<br>Performance_Monitoring<br>Validator_Configuration_Viewing</td></tr><tr><td>ansible_executor</td><td>PROGRAMMATIC_LIMITED</td><td>Shell_Access<br>Password_Self_Service</td></tr></tbody></table>
-
-
+Each Role/Group operates under the principle of least privilege with deny-by-default access control. Users are granted only the specific permissions explicitly defined.
 
 ## User Setup
 
