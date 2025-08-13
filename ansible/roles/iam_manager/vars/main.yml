@@ -1,3 +1,11 @@
 ---
 # CSV file containing user information (username, groups, email, etc.)
 users_file: "~/new-metal-box/{{ csv_file }}"
+
+# Password aging configuration
+password_max_days: 90
+password_min_days: 0
+password_warn_days: 14
+
+# Password quality configuration
+password_min_length: 14

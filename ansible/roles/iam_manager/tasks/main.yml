@@ -7,6 +7,10 @@
 - name: Create users
   import_tasks: create_users.yml
 
+# Configure password hardening policies
+- name: Configure password hardening
+  import_tasks: password_hardening.yml
+
 # Configure RBAC sudoers files
 - name: Configure RBAC sudoers
   import_tasks: configure_sudoers.yml
