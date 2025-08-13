@@ -1,0 +1,76 @@
+version: "3.9"
+
+networks:
+  molecule_net:
+    name: molecule_net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+services:
+  molecule-host-alpha:
+    build:
+      context: .
+      target: naked-builder
+    image: molecule-host-alpha
+    container_name: molecule-host-alpha
+    hostname: host-alpha
+    privileged: true
+    networks:
+      molecule_net:
+        ipv4_address: 172.28.0.11
+    ports:
+      - "9422:22"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - "../ansible/iam/users:/tmp/team_ssh_public_keys:ro"
+      - type: bind
+        source: ${SSH_AUTH_SOCK:-/dev/null}
+        target: /ssh-agent
+        read_only: true
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent
+      DEFAULT_USERNAME: ubuntu
+    command: |
+      bash -c "
+      rm -rf /home/$$DEFAULT_USERNAME/.ssh
+      mkdir -p /home/$$DEFAULT_USERNAME/.ssh
+      chmod 700 /home/$$DEFAULT_USERNAME/.ssh
+
+      # Pull team keys into authorized_keys if present in mounted path
+      if [ -d /tmp/team_ssh_public_keys ]; then
+        > /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+        for file in /tmp/team_ssh_public_keys/*; do
+          cat $$file >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+          echo "" >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+        done
+      fi
+
+      chmod 600 /home/$$DEFAULT_USERNAME/.ssh/authorized_keys || true
+      chown -R $$DEFAULT_USERNAME:$$DEFAULT_USERNAME /home/$$DEFAULT_USERNAME/.ssh
+
+      /lib/systemd/systemd
+      "
+
+  test-runner:
+    build:
+      context: .
+      target: molecule-runner
+    image: molecule-test-runner
+    container_name: molecule-test-runner
+    depends_on:
+      - molecule-host-alpha
+    stdin_open: true
+    tty: true
+    networks:
+      - molecule_net
+    volumes:
+      - ..:/hayek-validator-kit
+      - ${HOME}/new-metal-box:/root/new-metal-box
+      - /var/run/docker.sock:/var/run/docker.sock
+      - $SSH_AUTH_SOCK:/ssh-agent:ro
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent
+    command: bash -l
+
