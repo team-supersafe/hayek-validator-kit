@@ -26,48 +26,40 @@
   ansible.builtin.debug:
     msg: "Agave build directory: {{ agave_build_dir }}"
 
-- name: Prepare Agave source code (clone, sync, checkout tag)
+- name: Prepare Agave source code (download and extract)
   block:
-    - name: Ensure agave version build directory exists
-      ansible.builtin.file:
-        path: "{{ agave_build_dir }}/agave-{{ agave_version }}"
-        state: directory
-        mode: "0755"
-
-    - name: Debug repository selection
+    - name: Debug repository selection for download
       ansible.builtin.debug:
-        msg: "Using {{ (use_official_repo | default(false)) | ternary('official', 'forked') }} Agave repository: {{ (use_official_repo | default(false)) | ternary(agave_official_repo, agave_forked_repo) }}"
+        msg: "Using {{ (use_official_repo | default(false)) | ternary('official', 'forked') }} Agave repository for download: {{ (use_official_repo | default(false)) | ternary(agave_official_repo, agave_forked_repo) }}"
 
-    - name: Clone or update Agave repository
-      ansible.builtin.git:
-        repo: "{{ (use_official_repo | default(false)) | ternary(agave_official_repo, agave_forked_repo) }}.git"
-        dest: "{{ agave_build_dir }}/agave-{{ agave_version }}"
-        version: "v{{ agave_version }}"
-        update: true
-        force: true
+    - name: Set download URL based on repository selection
+      ansible.builtin.set_fact:
+        agave_download_url: "{{ (use_official_repo | default(false)) | ternary(agave_official_repo, agave_forked_repo) }}/archive/refs/tags/v{{ agave_version }}.tar.gz"
 
-    - name: Checkout the desired tag
-      ansible.builtin.shell: |
-        cd "{{ agave_build_dir }}/agave-{{ agave_version }}"
-        git reset --hard HEAD
-        git clean -fd
-        git checkout v{{ agave_version }}
-      args:
-        executable: /bin/bash
-      register: checkout_result
-      failed_when: checkout_result.rc != 0
-      ignore_errors: false
+    - name: Debug download URL
+      ansible.builtin.debug:
+        msg: "Download URL: {{ agave_download_url }}"
 
-    - name: Fail if checkout failed
-      ansible.builtin.fail:
-        msg: |
-          Failed to checkout tag v{{ agave_version }}. Error: {{ checkout_result.stderr | default('Unknown error') }}
-      when: checkout_result.rc != 0
+    - name: Unarchive Agave source code from tag
+      ansible.builtin.unarchive:
+        src: "{{ agave_download_url }}"
+        dest: "{{ agave_build_dir }}"
+        remote_src: true
+        creates: "{{ agave_build_dir }}/agave-{{ agave_version }}"
 
-    - name: Read version from Cargo.toml
+    - name: Parse forked repo name from agave_forked_repo URL
+      ansible.builtin.set_fact:
+        agave_forked_repo_name: "{{ agave_forked_repo | regex_replace('.*/', '') }}"
+      when: not use_official_repo | default(false)
+
+    - name: Set extracted Agave directory name
+      ansible.builtin.set_fact:
+        agave_extracted_dir_name: "{{ (use_official_repo | default(false)) | ternary('agave', agave_forked_repo_name) }}"
+
+    - name: Read version from Cargo.toml to verify
       ansible.builtin.shell: grep '^version =' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
       args:
-        chdir: "{{ agave_build_dir }}/agave-{{ agave_version }}"
+        chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
       register: cargo_toml_version
       changed_when: false
 
@@ -94,7 +86,7 @@
     . "{{ solana_user_dir }}/.cargo/env"
     ./scripts/cargo-install-all.sh . > {{ agave_build_dir }}/agave-build.log 2>&1
   args:
-    chdir: "{{ agave_build_dir }}/agave-{{ agave_version }}"
+    chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
 
 # The above will compile the source code and create the following:
 # A bin directory, .crates.toml and .crates2.json files.
@@ -125,15 +117,15 @@
     - name: Move agave we just built into the releases directory
       ansible.builtin.shell: |
         set -e
-        mv "{{ agave_build_dir }}/agave-{{ agave_version }}/.crates.toml" "{{ solana_installed_release_dir }}"
-        mv "{{ agave_build_dir }}/agave-{{ agave_version }}/.crates2.json" "{{ solana_installed_release_dir }}"
-        mv "{{ agave_build_dir }}/agave-{{ agave_version }}/bin" "{{ solana_installed_release_dir }}"
+        mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/.crates.toml" "{{ solana_installed_release_dir }}"
+        mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/.crates2.json" "{{ solana_installed_release_dir }}"
+        mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/bin" "{{ solana_installed_release_dir }}"
   rescue:
     - name: Fail if moving built assets failed
       ansible.builtin.fail:
         msg: |
           Failed to move built Agave assets to the releases directory.
-          Check if .crates.toml, .crates2.json, and bin exist in {{ agave_build_dir }}/agave-{{ agave_version }}
+          Check if .crates.toml, .crates2.json, and bin exist in {{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}
 
 # Create symlink to new release
 - name: Create symlink to new release
