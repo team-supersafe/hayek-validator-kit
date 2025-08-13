@@ -1,8 +1,8 @@
 ---
-# Ensure validator_admins group exists
-- name: Ensure validator_admins group exists
+# Ensure validator_operators group exists
+- name: Ensure validator_operators group exists
   ansible.builtin.group:
-    name: validator_admins
+    name: validator_operators
     state: present
 
 # Create the dedicated 'sol' user for validator service
@@ -14,7 +14,6 @@
     system: true
     create_home: true
     home: /home/{{ solana_user }}
-    groups: validator_admins
     append: true
   no_log: true
 
@@ -22,8 +21,8 @@
   ansible.builtin.file:
     path: "/home/{{ solana_user }}"
     owner: "{{ solana_user }}"
-    group: validator_admins
-    mode: '0775'
+    group: validator_operators
+    mode: '0575'
     recurse: true
   no_log: true
 

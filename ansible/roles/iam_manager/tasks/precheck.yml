@@ -124,16 +124,16 @@
       {% endif %}
       {% endfor %}
 
-      🤖 VALIDATOR_ADMINS USERS (Password + SSH Key + Sudo + Password Self-Service):
+      🤖 VALIDATOR_OPERATORS USERS (Password + SSH Key + Sudo + Password Self-Service):
       {% for user, data in users_csv.dict.items() %}
-      {% if 'validator_admins' in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      {% if 'validator_operators' in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
       - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
       {% endif %}
       {% endfor %}
 
       🔑 SSH KEY ONLY USERS (No Password, No Sudo):
       {% for user, data in users_csv.dict.items() %}
-      {% if 'sysadmin' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') and 'validator_admins' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      {% if 'sysadmin' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') and 'validator_operators' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
       - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
       {% endif %}
       {% endfor %}

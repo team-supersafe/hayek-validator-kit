@@ -11,8 +11,8 @@ echo "Welcome, $USER!"
 echo "==============================================================================="
 echo ""
 
-# Password management section only for sysadmin or validator_admins groups
-if groups | grep -q sysadmin || groups | grep -q validator_admins; then
+# Password management section only for sysadmin or validator_operators groups
+if groups | grep -q sysadmin || groups | grep -q validator_operators; then
     echo "==============================================================================="
     echo "                              PASSWORD MANAGEMENT"
     echo "==============================================================================="

@@ -22,11 +22,68 @@
 # System monitoring (unique to operators)
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/htop
 
+# Service control commands (unique to admins)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl status {{ validator_service }}
+
+# Package management commands (unique to admins)
+# Package management commands (unique to admins)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt-get install
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt update
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt-get upgrade
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt upgrade
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt-get remove
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt remove
+# For demonstration purposes
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt-get install *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt install *
+
+# Development tools and utilities (unique to admins)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/curl
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/wget
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/git
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cargo
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rustup
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rustc
+
+# Log management (unique to admins)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u {{ validator_service }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/tail -f {{ validator_log_file }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/less {{ validator_log_file }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/grep -r {{ validator_log_dir }}
+
+# Configuration management (unique to admins)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp {{ validator_config_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ validator_config_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_config_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_config_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown {{ validator_config_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_config_dir }}
+
+# Key management (unique to admins)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/solana-keygen
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/agave-validator
+
+# Directory management (unique to admins)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_ledger_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_accounts_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_snapshots_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_ledger_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_accounts_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_snapshots_dir }}
+
+# Monitoring and debugging (unique to admins)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/strace -p
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/lsof
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/netstat -tulpn
+
+# Shell access (requires password)
+%validator_operators ALL=(ALL) PASSWD: /bin/sh
+
 # ========================================
 # INHERITED PERMISSIONS FROM VALIDATOR_VIEWERS
 # ========================================
 {% set viewers_content = lookup('template', '40-validator-viewers.j2') %}
 {{ viewers_content | regex_replace('%validator_viewers', '%validator_operators') }}
-
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/test operator1
-

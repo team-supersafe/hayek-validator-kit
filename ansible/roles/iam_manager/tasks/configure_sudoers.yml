@@ -29,16 +29,7 @@
     owner: root
     group: root
   no_log: true
-
-# Configure sudo access for validator_admins group
-- name: Configure sudo access for validator_admins group
-  ansible.builtin.template:
-    src: 20-validator-admins.j2
-    dest: /etc/sudoers.d/20-validator-admins
-    mode: '0440'
-    validate: 'visudo -cf %s'
-  no_log: true
-
+  
 # Configure sudo access for validator_operators group
 - name: Configure sudo access for validator_operators group
   ansible.builtin.template:
