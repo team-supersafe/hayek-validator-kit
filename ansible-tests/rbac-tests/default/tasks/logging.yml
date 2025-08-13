@@ -100,9 +100,7 @@
       
       {{ log_lines }}
 
-- name: Display detailed execution log
-  ansible.builtin.debug:
-    msg: "{{ detailed_execution_log }}"
+
 
 - name: Save detailed execution log to file
   ansible.builtin.copy:

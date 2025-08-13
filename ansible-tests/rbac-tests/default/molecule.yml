@@ -3,7 +3,7 @@ dependency:
   name: shell
   command: |
     cd "${MOLECULE_PROJECT_DIRECTORY}/../../../solana-localnet"
-    docker build --target naked-builder -t solana-localnet-ubuntu-naked .
+    DOCKER_BUILDKIT=1 docker build --target naked-builder -t solana-localnet-ubuntu-naked .
 
 driver:
   name: docker
