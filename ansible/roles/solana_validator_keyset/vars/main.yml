@@ -1,4 +1,4 @@
 ---
 log_time_window: "1 minute ago" # Default time window for logs, can be overridden
-validator_name: "{{ keyset_source_name }}" # Name of the target host validator will match keyset_source_name
+validator_name: "{{ validator_keyset_name }}" # Name of the target host validator will match validator_keyset_name
 jito_relayer_user: "{{ solana_user | default('sol') }}" # User for Jito relayer service, defaults to 'sol'

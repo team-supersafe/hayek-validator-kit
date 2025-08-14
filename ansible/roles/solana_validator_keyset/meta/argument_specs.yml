@@ -9,10 +9,13 @@ argument_specs:
       - "Copies keys from ansible host to target host"
       - "Configures validator startup scripts"
     options:
-      keyset_source_name:
+      validator_keyset_name:
         type: str
         required: true
-        description: "Source name for the keyset (used to locate keys in ansible host)"
+        description:
+        - "Name of the validator keyset to install"
+        - "Must match a directory name under ~/.validator-keys/ mapped from the ansible host"
+        - "e.g., 'canopy', 'hayek-testnet', 'hayek-mainnet', etc."
       validator_type:
         type: str
         required: true
