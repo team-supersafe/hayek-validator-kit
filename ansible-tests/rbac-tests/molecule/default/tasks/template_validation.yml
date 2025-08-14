@@ -23,10 +23,6 @@
       register: operators_actual_sudoers
       failed_when: false
 
-    - name: Check validator_admins actual sudoers file content
-      shell: cat /etc/sudoers.d/20-validator-admins 2>/dev/null || echo "File not found"
-      register: admins_actual_sudoers
-      failed_when: false
 
     - name: Test if validator_viewers can execute apt commands (should FAIL if found)
       shell: |
@@ -46,10 +42,10 @@
       loop: "{{ classified_users.validator_viewers | default([]) }}"
       when: classified_users.validator_viewers is defined and classified_users.validator_viewers | length > 0
 
-    - name: Test if validator_operators can install packages (should FAIL if found)
+    - name: Test if validator_operators can install packages (should SUCCEED as expected)
       shell: |
-        # Test apt install ability
-        timeout 5 sudo -u {{ item }} sudo apt install --dry-run htop >/dev/null 2>&1 && echo "VIOLATION: {{ item }} can install packages" || echo "OK: {{ item }} cannot install packages"
+        # Test apt install ability - operators SHOULD have this permission
+        timeout 5 sudo -u {{ item }} sudo apt install --dry-run htop >/dev/null 2>&1 && echo "OK: {{ item }} can install packages (as expected)" || echo "VIOLATION: {{ item }} cannot install packages when they should be able to"
       register: operators_apt_execution_test
       failed_when: false
       loop: "{{ classified_users.validator_operators | default([]) }}"
@@ -86,15 +82,17 @@
           {%- endif -%}
           {{ violations }}
 
-    - name: Detect template violations for validator_operators (apt permissions)
+    - name: Detect template violations for validator_operators (unexpected permissions)
       ansible.builtin.set_fact:
-        operators_template_violations_apt: >-
+        operators_template_violations_unexpected: >-
           {%- set violations = [] -%}
           {%- if operators_actual_sudoers.stdout is defined -%}
             {%- for line in operators_actual_sudoers.stdout_lines | default([]) -%}
-              {%- if "apt" in line and ("apt install" in line or "apt upgrade" in line or "apt remove" in line) -%}
-                {%- if "validator_operators" in line -%}
-                  {%- set _ = violations.append("TEMPLATE VIOLATION: validator_operators has apt install/upgrade/remove permissions not defined in template: " + line.strip()) -%}
+              {%- if "validator_operators" in line -%}
+                {%- if "useradd" in line or "adduser" in line or "userdel" in line or "deluser" in line -%}
+                  {%- set _ = violations.append("TEMPLATE VIOLATION: validator_operators has user management permissions not defined in template: " + line.strip()) -%}
+                {%- elif ("nano" in line or "vim" in line or "vi" in line) and "/etc/sudoers" in line -%}
+                  {%- set _ = violations.append("TEMPLATE VIOLATION: validator_operators has sudoers edit permissions not defined in template: " + line.strip()) -%}
                 {%- endif -%}
               {%- endif -%}
             {%- endfor -%}
@@ -134,7 +132,7 @@
         total_template_violations: "{{
           (viewers_template_violations_apt | default([]) | length) +
           (viewers_template_violations_systemctl | default([]) | length) +
-          (operators_template_violations_apt | default([]) | length) +
+          (operators_template_violations_unexpected | default([]) | length) +
           (execution_violations | default([]) | length)
         }}"
 
@@ -144,7 +142,7 @@
       total_violations: "{{ total_template_violations | default(0) }}"
       viewers_apt_violations: "{{ viewers_template_violations_apt | default([]) | length }}"
       viewers_systemctl_violations: "{{ viewers_template_violations_systemctl | default([]) | length }}"
-      operators_apt_violations: "{{ operators_template_violations_apt | default([]) | length }}"
+      operators_unexpected_violations: "{{ operators_template_violations_unexpected | default([]) | length }}"
       execution_violations: "{{ execution_violations | default([]) | length }}"
       status: "{{ 'PASSED' if (total_template_violations | default(0) | int == 0) else 'FAILED' }}"
 

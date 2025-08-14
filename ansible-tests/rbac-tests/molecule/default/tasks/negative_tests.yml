@@ -36,7 +36,7 @@
 - name: "RBAC Verification Summary"
   ansible.builtin.debug:
     msg:
-      - "Testing {{ (filtered_users.validator_admins_filtered | length) + (filtered_users.validator_operators_filtered | length) + (filtered_users.validator_viewers_filtered | length) }} users across {{ classified_users.keys() | length }} roles"
+      - "Testing {{ (filtered_users.validator_operators_filtered | length) + (filtered_users.validator_viewers_filtered | length) }} users across {{ classified_users.keys() | length }} roles"
 
 - name: "Build dynamic violation display matrix"
   ansible.builtin.set_fact:

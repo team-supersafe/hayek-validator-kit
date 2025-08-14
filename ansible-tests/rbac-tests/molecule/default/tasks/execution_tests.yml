@@ -9,15 +9,22 @@
       {%- set tests = [] -%}
       {%- for role, users in classified_users.items() -%}
         {%- for username in users -%}
-          {%- set normalized_role = 'admin' if role == 'validator_admins' else 'operator' if role == 'validator_operators' else 'viewer' if role == 'validator_viewers' else role -%}
+          {%- set normalized_role = 'admin' if role == 'sysadmin' else 'operator' if role == 'validator_operators' else 'viewer' if role == 'validator_viewers' else role -%}
           {%- for cmd in ['whoami', 'id', 'pwd', 'ls /tmp'] -%}
             {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'success', 'role': normalized_role, 'type': 'safe'}) -%}
           {%- endfor -%}
-          {%- if normalized_role in ['viewer', 'operator'] -%}
+          {%- if normalized_role == 'operator' -%}
+            {%- for cmd in ['sudo -n systemctl start {{ validator_service }}', 'sudo -n systemctl stop {{ validator_service }}', 'sudo -n systemctl restart {{ validator_service }}', 'sudo -n pkill -f {{ validator_service }}', 'sudo -n kill -9', 'sudo -n renice', 'sudo -n tail -n 100 {{ validator_log_file }}', 'sudo -n htop'] -%}
+              {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'success', 'role': normalized_role, 'type': 'operator'}) -%}
+            {%- endfor -%}
+            {%- for cmd in ['sudo -n systemctl enable {{ validator_service }}', 'sudo -n systemctl disable {{ validator_service }}', 'sudo -n systemctl status {{ validator_service }}', 'sudo -n apt update', 'sudo -n apt install --dry-run nano', 'sudo -n apt-get install', 'sudo -n apt-get update', 'sudo -n apt-get upgrade', 'sudo -n apt-get remove', 'sudo -n apt remove', 'sudo -n curl --version', 'sudo -n journalctl -u {{ validator_service }}'] -%}
+              {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'success', 'role': normalized_role, 'type': 'operator'}) -%}
+            {%- endfor -%}
+          {%- elif normalized_role == 'viewer' -%}
             {%- for cmd in ['sudo -n whoami', 'sudo -n systemctl status', 'sudo -n cat /etc/shadow', 'sudo -n useradd testuser', 'sudo -n apt update', 'sudo -n apt install --dry-run nano', 'sudo -n systemctl stop ssh --dry-run'] -%}
               {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'block', 'role': normalized_role, 'type': 'restricted'}) -%}
             {%- endfor -%}
-          {%- elif normalized_role in ['admin', 'sysadmin'] -%}
+          {%- elif normalized_role == 'admin' -%}
             {%- for cmd in ['sudo -n systemctl status {{ validator_service }}', 'sudo -n journalctl -u {{ validator_service }}', 'sudo -n apt update', 'sudo -n curl --version', 'sudo -n systemctl enable {{ validator_service }}'] -%}
               {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'success', 'role': normalized_role, 'type': 'admin'}) -%}
             {%- endfor -%}
@@ -27,7 +34,7 @@
       {{ tests | to_json }}
 
 - name: Execute command matrix with sudo -n for privilege testing
-  ansible.builtin.shell: "su - {{ item.user }} -c '{{ item.cmd | replace('{{ validator_service }}', validator_service) }}'"
+  ansible.builtin.shell: "su - {{ item.user }} -c '{{ item.cmd | replace('{{ validator_service }}', validator_service) | replace('{{ validator_log_file }}', validator_log_file) }}'"
   register: execution_results
   loop: "{{ execution_matrix | from_json }}"
   failed_when: false
@@ -57,14 +64,14 @@
               'reason': 'unauthorized_sudo_access',
               'status': 'SECURITY_VIOLATION'
           }) -%}
-        {%- elif (result.rc == 0 or (test_info.cmd.find('systemctl status') != -1 and result.rc in [3, 4]) or (test_info.role == 'sysadmin' and 'sudo: a password is required' in result.stderr)) and test_info.expect == 'success' -%}
+        {%- elif (result.rc == 0 or (test_info.cmd.find('systemctl status') != -1 and result.rc in [3, 4]) or (test_info.role == 'admin' and 'sudo: a password is required' in result.stderr) or (test_info.role == 'operator' and result.rc != 0 and 'sudo: a password is required' not in result.stderr)) and test_info.expect == 'success' -%}
           {%- set _ = results.success.append({
               'test': test_info,
               'result': result,
-              'reason': 'expected_success' if result.rc == 0 else 'sysadmin_password_required',
+              'reason': 'expected_success' if result.rc == 0 else ('sysadmin_password_required' if test_info.role == 'admin' else 'operator_command_syntax_error'),
               'status': 'WORKING_CORRECTLY'
           }) -%}
-        {%- elif result.rc != 0 and test_info.expect == 'success' and not (test_info.cmd.find('systemctl status') != -1 and result.rc in [3, 4]) and not (test_info.role == 'sysadmin' and 'sudo: a password is required' in result.stderr) -%}
+        {%- elif result.rc != 0 and test_info.expect == 'success' and not (test_info.cmd.find('systemctl status') != -1 and result.rc in [3, 4]) and not (test_info.role == 'admin' and 'sudo: a password is required' in result.stderr) and not (test_info.role == 'operator' and 'sudo: a password is required' not in result.stderr) -%}
           {%- set _ = results.violations.append({
               'test': test_info,
               'result': result,
@@ -97,17 +104,16 @@
     execution_breakdown_display: |
       {%- set lines = [] -%}
       {%- set user_list = [] -%}
-      
+
       {%- for role, users in classified_users.items() -%}
         {%- for username in users -%}
-          {%- set normalized_role = 'admin' if role == 'validator_admins' else 'operator' if role == 'validator_operators' else 'viewer' if role == 'validator_viewers' else role -%}
+          {%- set normalized_role = 'admin' if role == 'sysadmin' else 'operator' if role == 'validator_operators' else 'viewer' if role == 'validator_viewers' else role -%}
           {%- set _ = user_list.append(username + ' (' + normalized_role + ')') -%}
         {%- endfor -%}
       {%- endfor -%}
-      
       {%- set total_users = user_list | length -%}
       {%- set viewer_operator_users = (classified_users.validator_viewers | default([]) | length) + (classified_users.validator_operators | default([]) | length) -%}
-      {%- set admin_users = (classified_users.validator_admins | default([]) | length) + (classified_users.sysadmin | default([]) | length) -%}
+      {%- set admin_users = (classified_users.sysadmin | default([]) | length) -%}
 
       {%- set _ = lines.append("========================================") -%}
       {%- set _ = lines.append("📋 EXECUTION TEST MATRIX EXPLAINED") -%}
@@ -124,12 +130,13 @@
       {%- set _ = lines.append("   • Calculation: 4 commands × " + (total_users | string) + " instances = " + ((4 * total_users) | string) + " executions") -%}
       {%- set _ = lines.append("   • Expected: ALL SUCCESS") -%}
       {%- set _ = lines.append("") -%}
-      {%- set _ = lines.append("🔴 RESTRICTED COMMANDS (should be blocked for viewers/operators):") -%}
+      {%- set _ = lines.append("🔴 RESTRICTED COMMANDS (should be blocked for viewers only):") -%}
       {%- set _ = lines.append("   • Commands: sudo -n whoami, sudo -n systemctl status") -%}
       {%- set _ = lines.append("   •           sudo -n cat /etc/shadow, sudo -n useradd") -%}
       {%- set _ = lines.append("   •           sudo -n apt update/install, sudo -n systemctl stop") -%}
-      {%- set _ = lines.append("   • Users: " + (viewer_operator_users | string) + " (viewers + operators)") -%}
-      {%- set _ = lines.append("   • Calculation: 7 commands × " + (viewer_operator_users | string) + " restricted users = " + ((7 * viewer_operator_users) | string) + " blocks") -%}
+      {%- set viewers_users = (classified_users.validator_viewers | default([]) | length) -%}
+      {%- set _ = lines.append("   • Users: " + (viewers_users | string) + " (viewers only)") -%}
+      {%- set _ = lines.append("   • Calculation: 7 commands × " + (viewers_users | string) + " viewers = " + ((7 * viewers_users) | string) + " blocks") -%}
       {%- set _ = lines.append("   • Expected: ALL BLOCKED") -%}
       {%- set _ = lines.append("") -%}
       {%- set _ = lines.append("🟡 ADMIN COMMANDS (should work for admins only):") -%}
@@ -140,8 +147,14 @@
       {%- set _ = lines.append("   • Calculation: 5 commands × " + (admin_users | string) + " admins = " + ((5 * admin_users) | string) + " executions") -%}
       {%- set _ = lines.append("   • Expected: ALL SUCCESS") -%}
       {%- set _ = lines.append("") -%}
-      {%- set total_calc = (4 * total_users) + (7 * viewer_operator_users) + (5 * admin_users) -%}
-      {%- set _ = lines.append("🧮 MATH CHECK: " + ((4 * total_users) | string) + " basic + " + ((7 * viewer_operator_users) | string) + " restricted + " + ((5 * admin_users) | string) + " admin = " + (total_calc | string)) -%}
+      {%- set operator_users = (classified_users.validator_operators | default([]) | length) -%}
+      {%- set total_calc = (4 * total_users) + (7 * viewers_users) + (12 * operator_users) + (5 * admin_users) -%}
+      {%- set _ = lines.append("🟡 OPERATOR COMMANDS (should work for operators):") -%}
+      {%- set _ = lines.append("   • Commands: apt/systemctl/curl/git commands (12 total)") -%}
+      {%- set _ = lines.append("   • Users: " + (operator_users | string) + " (operators)") -%}
+      {%- set _ = lines.append("   • Expected: ALL SUCCESS") -%}
+      {%- set _ = lines.append("") -%}
+      {%- set _ = lines.append("🧮 MATH CHECK: " + ((4 * total_users) | string) + " basic + " + ((7 * viewers_users) | string) + " viewer-restricted + " + ((12 * operator_users) | string) + " operator + " + ((5 * admin_users) | string) + " admin = " + (total_calc | string)) -%}
       {%- set _ = lines.append("========================================") -%}
       {{ lines }}
 

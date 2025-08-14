@@ -57,10 +57,6 @@
           roles: ["validator_viewers"]
           pattern: "service_control"
           description: "Viewers CANNOT execute operator commands (service control)"
-        - name: "operators_no_apt"
-          roles: ["validator_operators"]
-          pattern: "apt_management"
-          description: "Operators CANNOT execute admin commands (apt management)"
         - name: "viewers_no_dev_tools"
           roles: ["validator_viewers"]
           pattern: "dev_tools"
@@ -69,10 +65,6 @@
           roles: ["validator_viewers"]
           pattern: "process_management"
           description: "Viewers CANNOT execute operator commands (process management)"
-        - name: "operators_no_dev_tools"
-          roles: ["validator_operators"]
-          pattern: "dev_tools"
-          description: "Operators CANNOT execute admin commands (development tools)"
         - name: "no_home_access"
           roles: ["validator_operators", "validator_viewers"]
           pattern: "home_access"

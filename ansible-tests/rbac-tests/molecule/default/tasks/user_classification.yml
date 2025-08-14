@@ -46,7 +46,6 @@
   ansible.builtin.set_fact:
     classified_users: "{{ classified_users | default({}) | combine({
       'sysadmin': classified_users.sysadmin | default([]) + ([item.item.key] if 'sysadmin' in item.stdout else []),
-      'validator_admins': classified_users.validator_admins | default([]) + ([item.item.key] if 'validator_admins' in item.stdout else []),
       'validator_operators': classified_users.validator_operators | default([]) + ([item.item.key] if 'validator_operators' in item.stdout else []),
       'validator_viewers': classified_users.validator_viewers | default([]) + ([item.item.key] if 'validator_viewers' in item.stdout else []),
       'ansible_executor': classified_users.ansible_executor | default([]) + ([item.item.key] if 'ansible_executor' in item.stdout else [])
@@ -62,7 +61,6 @@
 - name: Filter out full privilege users from negative testing groups
   ansible.builtin.set_fact:
     filtered_users: "{{ filtered_users | default({}) | combine({
-      'validator_admins_filtered': (classified_users.validator_admins | default([])) | difference(full_privilege_users | default([])),
       'validator_operators_filtered': (classified_users.validator_operators | default([])) | difference(full_privilege_users | default([])),
       'validator_viewers_filtered': (classified_users.validator_viewers | default([])) | difference(full_privilege_users | default([]))
     }) }}"

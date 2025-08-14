@@ -17,11 +17,11 @@
       {%- set _ = log_lines.append("Total Commands Executed: " + (execution_results.results | length | string)) -%}
       {%- set _ = log_lines.append("========================================") -%}
       {%- set _ = log_lines.append("") -%}
-      
+
       {%- for i in range(execution_results.results | length) -%}
         {%- set result = execution_results.results[i] -%}
         {%- set cmd_num = i + 1 -%}
-        
+
         {%- set _ = log_lines.append("Command #" + (cmd_num | string) + ":") -%}
         {%- set _ = log_lines.append("  User: " + result.item.user + " (Role: " + result.item.role + ")") -%}
         {%- set _ = log_lines.append("  Command: " + result.item.cmd) -%}
@@ -29,12 +29,12 @@
         {%- set _ = log_lines.append("  Type: " + result.item.type) -%}
         {%- set _ = log_lines.append("  Exit Code: " + (result.rc | string)) -%}
         {%- if result.stdout -%}
-          {%- set _ = log_lines.append("  STDOUT: " + result.stdout | truncate(200)) -%}
+          {%- set _ = log_lines.append("  STDOUT: " + result.stdout | truncate(500)) -%}
         {%- endif -%}
         {%- if result.stderr -%}
-          {%- set _ = log_lines.append("  STDERR: " + result.stderr | truncate(200)) -%}
+          {%- set _ = log_lines.append("  STDERR: " + result.stderr | truncate(500)) -%}
         {%- endif -%}
-        
+
         {%- if result.rc == 0 and result.item.expect == 'success' -%}
           {%- set _ = log_lines.append("  Status: ✅ SUCCESS (as expected)") -%}
         {%- elif result.rc != 0 and result.item.expect == 'block' -%}
@@ -46,41 +46,45 @@
         {%- else -%}
           {%- set _ = log_lines.append("  Status: 🔍 UNKNOWN") -%}
         {%- endif -%}
-        
+
         {%- set _ = log_lines.append("  Duration: " + result.delta) -%}
         {%- set _ = log_lines.append("  Started: " + result.start) -%}
         {%- set _ = log_lines.append("  Ended: " + result.end) -%}
         {%- set _ = log_lines.append("") -%}
       {%- endfor -%}
-      
+
       {%- set _ = log_lines.append("========================================") -%}
       {%- set _ = log_lines.append("SUMMARY BY COMMAND TYPE:") -%}
       {%- set _ = log_lines.append("========================================") -%}
-      
+
       {%- set safe_commands = [] -%}
       {%- set restricted_commands = [] -%}
+      {%- set operator_commands = [] -%}
       {%- set admin_commands = [] -%}
-      
+
       {%- for result in execution_results.results -%}
         {%- if result.item.type == 'safe' -%}
           {%- set _ = safe_commands.append(result.item.cmd) -%}
         {%- elif result.item.type == 'restricted' -%}
           {%- set _ = restricted_commands.append(result.item.cmd) -%}
+        {%- elif result.item.type == 'operator' -%}
+          {%- set _ = operator_commands.append(result.item.cmd) -%}
         {%- elif result.item.type == 'admin' -%}
           {%- set _ = admin_commands.append(result.item.cmd) -%}
         {%- endif -%}
       {%- endfor -%}
-      
+
       {%- set _ = log_lines.append("🟢 Safe Commands (basic): " + (safe_commands | length | string)) -%}
       {%- set _ = log_lines.append("🔴 Restricted Commands (should block): " + (restricted_commands | length | string)) -%}
+      {%- set _ = log_lines.append("🟠 Operator Commands (validator ops): " + (operator_commands | length | string)) -%}
       {%- set _ = log_lines.append("🟡 Admin Commands (privileged): " + (admin_commands | length | string)) -%}
-      {%- set _ = log_lines.append("📊 Total: " + (((safe_commands | length) + (restricted_commands | length) + (admin_commands | length)) | string)) -%}
+      {%- set _ = log_lines.append("📊 Total: " + (((safe_commands | length) + (restricted_commands | length) + (operator_commands | length) + (admin_commands | length)) | string)) -%}
       {%- set _ = log_lines.append("") -%}
-      
+
       {%- set _ = log_lines.append("========================================") -%}
       {%- set _ = log_lines.append("SUMMARY BY USER:") -%}
       {%- set _ = log_lines.append("========================================") -%}
-      
+
       {%- set users_summary = {} -%}
       {%- for result in execution_results.results -%}
         {%- if result.item.user not in users_summary -%}
@@ -88,16 +92,16 @@
         {%- endif -%}
         {%- set _ = users_summary[result.item.user].update({'count': users_summary[result.item.user].count + 1}) -%}
       {%- endfor -%}
-      
+
       {%- for user, info in users_summary.items() -%}
         {%- set _ = log_lines.append("👤 " + user + " (" + info.role + "): " + (info.count | string) + " commands") -%}
       {%- endfor -%}
-      
+
       {%- set _ = log_lines.append("") -%}
       {%- set _ = log_lines.append("========================================") -%}
       {%- set _ = log_lines.append("END OF EXECUTION LOG") -%}
       {%- set _ = log_lines.append("========================================") -%}
-      
+
       {{ log_lines }}
 
 
