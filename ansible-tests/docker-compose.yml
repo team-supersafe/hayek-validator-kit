@@ -15,7 +15,7 @@ services:
       target: naked-builder
     image: molecule-host-alpha
     container_name: molecule-host-alpha
-    hostname: host-alpha
+    hostname: molecule-host-alpha
     privileged: true
     networks:
       molecule_net:

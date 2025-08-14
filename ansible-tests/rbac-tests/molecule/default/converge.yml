@@ -10,6 +10,9 @@
     molecule_csv_source_dir: "{{ csv_source_dir | default('~/new-metal-box') }}"
     # Create temporary directory for CSV file
     molecule_csv_dir: "/tmp/molecule"
+    # Required variables for iam_manager role
+    validator_service: "sol.service"
+    solana_user: "sol"
   pre_tasks:
     - name: Check if CSV file exists in source directory
       become: false
@@ -87,7 +90,7 @@
     # basename extracts just "iam_manager" from the full path
     # This dynamically resolves to: role: "iam_manager"
     # Which executes tasks/main.yml and all imported task files
-    - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
+    - role: "iam_manager"
       vars:
         # Override the users_file to point to our test CSV using same pattern as production
         users_file: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"

@@ -2,22 +2,22 @@
 dependency:
   name: shell
   command: |
-    cd "${MOLECULE_PROJECT_DIRECTORY}/../../../solana-localnet"
-    DOCKER_BUILDKIT=1 docker build --target naked-builder -t solana-localnet-ubuntu-naked .
+    cd "${MOLECULE_PROJECT_DIRECTORY}/../"
+    DOCKER_BUILDKIT=1 docker build --target naked-builder -t molecule-host-alpha .
 
 driver:
   name: docker
 
 platforms:
-  - name: molecule-host
-    image: solana-localnet-ubuntu-naked
+  - name: testing-rbac
+    image: molecule-host-alpha
     pre_build_image: true
     privileged: true
     volumes:
       - "/sys/fs/cgroup:/sys/fs/cgroup:rw"
       # SSH agent mount (fallback to /dev/null if not provided externally)
       - "${SSH_AUTH_SOCK:-/dev/null}:/ssh-agent:ro"
-      - "${MOLECULE_PROJECT_DIRECTORY}/../../iam/users:/tmp/team_ssh_public_keys:ro"
+      - "/tmp/molecule_ssh_keys:/tmp/team_ssh_public_keys:ro"
     tmpfs:
       - /run
       - /run/lock
@@ -60,7 +60,7 @@ provisioner:
     converge: converge.yml
     verify: verify.yml
   env:
-    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
+    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/../../ansible/roles"
     ALLOW_BROKEN_CONDITIONALS: "1"
   config_options:
     defaults:
