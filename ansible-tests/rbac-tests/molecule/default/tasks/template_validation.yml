@@ -9,10 +9,8 @@
     - name: Parse allowed commands from templates
       ansible.builtin.set_fact:
         template_content:
-          validator_viewers: "{{ lookup('file', '../../templates/40-validator-viewers.j2') }}"
-          validator_operators: "{{ lookup('file', '../../templates/30-validator-operators.j2') }}"
-          validator_admins: "{{ lookup('file', '../../templates/20-validator-admins.j2') }}"
-          ansible_executor: "{{ lookup('file', '../../templates/40-ansible-executor.j2') }}"
+          validator_viewers: "{{ lookup('file', '../../../../ansible/roles/iam_manager/templates/40-validator-viewers.j2') }}"
+          validator_operators: "{{ lookup('file', '../../../../ansible/roles/iam_manager/templates/30-validator-operators.j2') }}"
 
     # Direct sudoers vs template comparison for validator_viewers
     - name: Check validator_viewers actual sudoers file content

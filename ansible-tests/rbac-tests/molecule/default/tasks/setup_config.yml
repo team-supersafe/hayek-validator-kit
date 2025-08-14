@@ -13,18 +13,12 @@
         - name: sysadmin
           sudoers_file: "10-sysadmin"
           level: 5
-        - name: validator_admins
-          sudoers_file: "20-validator-admins"
-          level: 4
         - name: validator_operators
           sudoers_file: "30-validator-operators"
           level: 3
         - name: validator_viewers
           sudoers_file: "40-validator-viewers"
           level: 2
-        - name: ansible_executor
-          sudoers_file: "40-ansible-executor"
-          level: 1
 
       additional_files:
         - "99-self-service"
@@ -45,10 +39,10 @@
           roles: ["sysadmin"]
           pattern: "\\(ALL\\) ALL"
           description: "Sysadmin users can execute sudo commands"
-        - name: "admin_service_management"
-          roles: ["validator_admins"]
+        - name: "operator_service_management"
+          roles: ["validator_operators"]
           pattern: "systemctl.*(start|stop|restart).*{{ validator_service | regex_replace('\\.service$', '') }}"
-          description: "Validator admins can manage validator services"
+          description: "Validator operators can manage validator services"
         - name: "operator_log_access"
           roles: ["validator_operators"]
           pattern: "journalctl"
@@ -80,11 +74,11 @@
           pattern: "dev_tools"
           description: "Operators CANNOT execute admin commands (development tools)"
         - name: "no_home_access"
-          roles: ["validator_admins", "validator_operators", "validator_viewers"]
+          roles: ["validator_operators", "validator_viewers"]
           pattern: "home_access"
           description: "Non-sysadmin users CANNOT access other users' home directories"
         - name: "no_sudoers_edit"
-          roles: ["validator_admins", "validator_operators", "validator_viewers"]
+          roles: ["validator_operators", "validator_viewers"]
           pattern: "sudoers_edit"
           description: "Non-sysadmin users CANNOT edit sudoers files"
         - name: "no_user_management"

@@ -85,4 +85,4 @@
 
 - name: Display positive tests summary
   ansible.builtin.debug:
-    msg: "POSITIVE TESTS: {{ positive_tests_summary.status }} ({{ positive_tests_summary.total_tests - positive_tests_summary.failures }}/{{ positive_tests_summary.total_tests }} passed)"
+    msg: "POSITIVE TESTS: {{ positive_tests_summary.status }} ({{ (positive_tests_summary.total_tests | int) - (positive_tests_summary.failures | int) }}/{{ positive_tests_summary.total_tests }} passed)"
