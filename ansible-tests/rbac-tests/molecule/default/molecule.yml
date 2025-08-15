@@ -28,7 +28,7 @@ platforms:
       bash -c "
       # Create ubuntu user if it doesn't exist (like docker-compose does)
       id -u ubuntu >/dev/null 2>&1 || adduser --disabled-password --gecos \"\" ubuntu
-      
+
       # set default user ssh authorized_keys
       rm -rf /home/\$$DEFAULT_USERNAME/.ssh
       mkdir -p /home/\$$DEFAULT_USERNAME/.ssh
@@ -41,7 +41,7 @@ platforms:
           cat \$$file >> /home/\$$DEFAULT_USERNAME/.ssh/authorized_keys
           echo \"\" >> /home/\$$DEFAULT_USERNAME/.ssh/authorized_keys
       done
-      
+
       # Deduplicate authorized_keys entries
       TEMP_AUTH_KEYS=\"/home/\$$DEFAULT_USERNAME/.ssh/authorized_keys.tmp\"
       awk '!seen[\$$0]++' /home/\$$DEFAULT_USERNAME/.ssh/authorized_keys > \$$TEMP_AUTH_KEYS
@@ -61,6 +61,7 @@ provisioner:
     verify: verify.yml
   env:
     ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/../../ansible/roles"
+    # Temporary workaround for ansible-core 2.19 strict conditionals breaking molecule-docker playbooks
     ALLOW_BROKEN_CONDITIONALS: "1"
   config_options:
     defaults:

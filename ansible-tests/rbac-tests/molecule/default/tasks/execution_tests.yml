@@ -21,7 +21,7 @@
               {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'success', 'role': normalized_role, 'type': 'operator'}) -%}
             {%- endfor -%}
           {%- elif normalized_role == 'viewer' -%}
-            {%- for cmd in ['sudo -n whoami', 'sudo -n systemctl status', 'sudo -n cat /etc/shadow', 'sudo -n useradd testuser', 'sudo -n apt update', 'sudo -n apt install --dry-run nano', 'sudo -n systemctl stop ssh --dry-run'] -%}
+            {%- for cmd in ['sudo -n whoami', 'sudo -n cat /etc/shadow', 'sudo -n useradd testuser', 'sudo -n apt update', 'sudo -n apt install --dry-run nano', 'sudo -n systemctl stop ssh --dry-run', 'sudo -n passwd {{ solana_user }}'] -%}
               {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'block', 'role': normalized_role, 'type': 'restricted'}) -%}
             {%- endfor -%}
           {%- elif normalized_role == 'admin' -%}
@@ -34,7 +34,7 @@
       {{ tests | to_json }}
 
 - name: Execute command matrix with sudo -n for privilege testing
-  ansible.builtin.shell: "su - {{ item.user }} -c '{{ item.cmd | replace('{{ validator_service }}', validator_service) | replace('{{ validator_log_file }}', validator_log_file) }}'"
+  ansible.builtin.shell: "su - {{ item.user }} -c '{{ item.cmd | replace('{{ validator_service }}', validator_service) | replace('{{ validator_log_file }}', validator_log_file) | replace('{{ solana_user }}', solana_user) }}'"
   register: execution_results
   loop: "{{ execution_matrix | from_json }}"
   failed_when: false
