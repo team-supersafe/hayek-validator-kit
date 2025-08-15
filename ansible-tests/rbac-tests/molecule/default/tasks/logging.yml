@@ -24,7 +24,7 @@
 
         {%- set _ = log_lines.append("Command #" + (cmd_num | string) + ":") -%}
         {%- set _ = log_lines.append("  User: " + result.item.user + " (Role: " + result.item.role + ")") -%}
-        {%- set _ = log_lines.append("  Command: " + result.item.cmd) -%}
+        {%- set _ = log_lines.append("  Command: " + result.item.cmd | replace('{{ validator_service }}', validator_service) | replace('{{ validator_log_file }}', validator_log_file) | replace('{{ solana_user }}', solana_user)) -%}
         {%- set _ = log_lines.append("  Expected: " + result.item.expect) -%}
         {%- set _ = log_lines.append("  Type: " + result.item.type) -%}
         {%- set _ = log_lines.append("  Exit Code: " + (result.rc | string)) -%}
