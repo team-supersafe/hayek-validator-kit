@@ -74,28 +74,7 @@
   become: false
   run_once: true
 
-# Precheck 5: Check for existing users
-# Uses cut command to get a list of existing users from /etc/passwd
-# This is a security check to prevent overwriting existing users
-- name: Get list of existing users
-  ansible.builtin.shell: "cut -d: -f1 /etc/passwd"
-  register: existing_users
-  changed_when: false
-
-# Precheck 6: Fail if users exist
-# Compares users from CSV with existing system users
-# If any users already exist, the playbook will fail for security reasons
-# Skip this check in testing environments (molecule)
-- name: Check for existing users
-  ansible.builtin.fail:
-    msg: "It appears this server has already been installed (existing users: {{ existing_users_list | join(', ') }}). For security reasons, this configuration will not continue."
-  when:
-    - existing_users_list | length > 0
-    - not (molecule_testing | default(false))
-  vars:
-    existing_users_list: "{{ users_csv.dict.keys() | select('in', existing_users.stdout_lines) | list }}"
-
-# Precheck 7: Display inventory directory
+# Precheck 5: Display inventory directory
 # Shows the inventory directory path for verification
 - name: Display message in console
   ansible.builtin.debug:
@@ -104,7 +83,7 @@
   become: false
   run_once: true
 
-# Precheck 8: Display CSV summary with access control information
+# Precheck 6: Display CSV summary with access control information
 - name: Display CSV summary with access control
   ansible.builtin.debug:
     msg: |
@@ -143,7 +122,7 @@
   become: false
   run_once: true
 
-# Precheck 9: Validate SSH key format
+# Precheck 7: Validate SSH key format
 - name: Validate SSH key format
   ansible.builtin.fail:
     msg: "Invalid SSH key format for user {{ item.key }}. Expected format: ssh-ed25519 [key] [email] or ssh-rsa [key] [email]"
@@ -159,7 +138,7 @@
   no_log: true
   run_once: true
 
-# Precheck 10: Debug users without SSH keys
+# Precheck 8: Debug users without SSH keys
 - name: Debug users without SSH keys
   ansible.builtin.debug:
     msg: "User {{ item.key }} has no SSH key configured"
@@ -170,7 +149,7 @@
   no_log: true
   run_once: true
 
-# Precheck 11: Check RSA key length
+# Precheck 9: Check RSA key length
 - name: Check RSA key length
   ansible.builtin.shell: |
     echo "{{ item.value.key }}" | ssh-keygen -lf -
