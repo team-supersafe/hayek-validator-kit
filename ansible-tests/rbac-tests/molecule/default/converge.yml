@@ -69,7 +69,45 @@
       register: sol_user_check
       failed_when: false
 
-    - name: Update {{ validator_service }} to use {{ solana_user }} user with dynamic logging
+    - name: Create mock validator script (after iam_manager role)
+      ansible.builtin.copy:
+        dest: /usr/local/bin/mock-validator
+        content: |
+          #!/bin/bash
+          # Simple Mock Validator for RBAC Testing
+          LOG_FILE="${1:-/home/sol/logs/agave-validator.log}"
+
+          # Create initial log content
+          cat > "$LOG_FILE" << EOF
+          [$(date -u +"%Y-%m-%dT%H:%M:%S.%9NZ")] INFO solana_validator::main > Starting Solana Validator
+          [$(date -u +"%Y-%m-%dT%H:%M:%S.%9NZ")] INFO solana_validator::main > Validator startup complete
+          EOF
+
+          # Set correct group ownership for log file
+          chgrp validator_operators "$LOG_FILE" 2>/dev/null || true
+          chmod 0775 "$LOG_FILE" 2>/dev/null || true
+
+          # Keep running and append logs periodically
+          while true; do
+            echo "[$(date -u +"%Y-%m-%dT%H:%M:%S.%9NZ")] INFO solana_core::validator > Processing slot $((RANDOM % 1000000))" >> "$LOG_FILE"
+            # Ensure group ownership is maintained for new content
+            chgrp validator_operators "$LOG_FILE" 2>/dev/null || true
+            sleep 10
+          done
+        mode: '0775'
+        owner: "{{ solana_user }}"
+        group: validator_operators
+
+    - name: Create and configure validator log directory (after iam_manager role)
+      ansible.builtin.file:
+        path: "{{ validator_log_dir }}"
+        owner: "{{ solana_user }}"
+        group: validator_operators
+        mode: '0775'  # Set group sticky bit so files inherit group
+        state: directory
+      when: sol_user_check.ansible_facts.getent_passwd[solana_user] is defined
+
+    - name: Create {{ validator_service }} with {{ solana_user }} user and dynamic logging
       ansible.builtin.copy:
         dest: /etc/systemd/system/{{ validator_service }}
         content: |
@@ -80,7 +118,7 @@
           [Service]
           Type=simple
           User={{ solana_user }}
-          Group={{ solana_user }}
+          Group=validator_operators
           ExecStart=/usr/local/bin/mock-validator {{ validator_log_file }}
           ExecStop=/bin/kill -TERM $MAINPID
           Restart=always
@@ -90,9 +128,9 @@
 
           [Install]
           WantedBy=multi-user.target
-        mode: '0644'
-        owner: root
-        group: root
+        mode: '0775'
+        owner: "{{ solana_user }}"
+        group: validator_operators
       register: final_service_updated
       when: sol_user_check.ansible_facts.getent_passwd[solana_user] is defined
 
