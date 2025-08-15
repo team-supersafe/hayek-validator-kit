@@ -42,7 +42,6 @@
          installed_solana_version == agave_version }}
   tags: [solana_cli.precheck]
 
-
 - name: Precheck - Find solana binary in PATH
   ansible.builtin.command: which solana
   register: solana_which_result
@@ -55,8 +54,7 @@
     msg: |
       Solana CLI installation status:
       - Binary exists: {{ solana_binary.stat.exists }}
-      - Binary path (expected): {{ solana_install_dir }}/solana
-      - Binary path (found in PATH): {{ solana_which_result.stdout | default('not found in PATH') }}
+      - Binary path: {{ solana_binary.stat.exists | ternary(solana_install_dir ~ '/solana', 'Not found') }}
       - Installed version: {{ installed_solana_version | default('not found') }}
       - Desired version: {{ agave_version }}
       - Already installed: {{ solana_cli_already_installed }}
