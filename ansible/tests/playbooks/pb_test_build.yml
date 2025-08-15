@@ -1,19 +1,18 @@
 ---
-# Playbook for initial setup of metal box server
-# This playbook configures a new metal box for validator operations
-# --------------------
+# Test Build Playbook
+# ------------------
 # Usage:
 # ------
-# Run from /ansible directory:
+# Run from /ansible/tests directory:
 #
-# ansible-playbook playbooks/pb_setup_metal_box.yml \
-#   -i solana_new_metal_box.yml \
-#   -e "target_host=new-metal-box" \
-#   -e "ansible_user=ubuntu"
+# ansible-playbook playbooks/pb_test_build.yml \
+#   -e "target_host=host-charlie" \
+#   -e "htop_version=3.3.0" \
+#   -e "ansible_user=username" \
+#   -K
 
-- name: Setup Metal Box Server
+- name: Test Build - Compile htop from source
   hosts: "{{ target_host }}"
-  user: "{{ ansible_user }}"
   become: true
   pre_tasks:
     # Gather system facts to get server information
@@ -33,12 +32,17 @@
     - name: Show server IP and location for confirmation
       ansible.builtin.pause:
         prompt: |
-          IMPORTANT: You are about to run this playbook on the server with IP: {{ ansible_default_ipv4.address }}
+          IMPORTANT: You are about to compile htop from source on the server with IP: {{ ansible_default_ipv4.address }}
 
           Location Information:
           - City: {{ ip_info.json.city | default('Unknown') }}
           - Country: {{ ip_info.json.country | default('Unknown') }}
           - Organization: {{ ip_info.json.org | default('Unknown') }}
+
+          Build Configuration:
+          - htop version: {{ htop_version | default('3.3.0') }}
+          - Sol user directory: {{ sol_user_dir }}
+          - Install directory: {{ htop_install_dir }}
 
           To continue, please type exactly this IP: {{ ansible_default_ipv4.address }}
 
@@ -58,4 +62,4 @@
         - ip_confirmation.user_input != ansible_default_ipv4.address
 
   roles:
-    - server_initial_setup
+    - test_build

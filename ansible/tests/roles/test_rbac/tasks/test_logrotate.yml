@@ -1,0 +1,33 @@
+---
+# Test logrotate permissions
+# Expected: Only sysadmin can stop logrotate
+
+- name: Test sudo permissions for logrotate stop
+  ansible.builtin.shell:
+    cmd: "timeout {{ timeout_sec }} sudo {{ '-n' if not is_sysadmin else '' }} systemctl stop logrotate"
+    executable: /bin/bash
+  register: logrotate_stop_result
+  ignore_errors: true
+  become: "{{ is_sysadmin | bool }}"
+
+- name: Display logrotate stop result
+  ansible.builtin.debug:
+    msg: "User {{ ansible_user }} - Attempt to stop logrotate service: {{ 'SUCCESS' if logrotate_stop_result.rc == 0 else 'FAILED' }}"
+
+- name: Wait 5 seconds if service was stopped
+  ansible.builtin.pause:
+    seconds: 5
+  when: logrotate_stop_result.rc == 0
+
+- name: Restart logrotate service if it was stopped
+  ansible.builtin.shell:
+    cmd: "timeout {{ timeout_sec }} sudo {{ '-n' if not is_sysadmin else '' }} systemctl start logrotate"
+    executable: /bin/bash
+  when: logrotate_stop_result.rc == 0
+  ignore_errors: true
+  become: "{{ is_sysadmin | bool }}"
+
+- name: Display logrotate restart message
+  ansible.builtin.debug:
+    msg: "Logrotate service restarted after 5 seconds"
+  when: logrotate_stop_result.rc == 0

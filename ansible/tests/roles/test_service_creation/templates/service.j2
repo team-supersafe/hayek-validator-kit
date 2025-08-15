@@ -1,0 +1,20 @@
+[Unit]
+Description={{ service_description | default('Unix Test Service') }}
+After=network.target
+
+[Service]
+Type=simple
+User={{ service_user }}
+Group={{ service_group }}
+ExecStart={{ service_script_path }}
+Restart=always
+{% if service_restart_sec is defined %}
+RestartSec={{ service_restart_sec }}
+{% endif %}
+{% if service_timeout_stop_sec is defined %}
+TimeoutStopSec={{ service_timeout_stop_sec }}
+{% endif %}
+# Service runs on port {{ service_port }}
+
+[Install]
+WantedBy=multi-user.target

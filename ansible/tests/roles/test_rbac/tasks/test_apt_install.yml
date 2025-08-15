@@ -1,0 +1,15 @@
+---
+# Test apt install permissions
+# Expected: sysadmin, validator_admin can run apt install
+
+- name: Test sudo permissions for apt install
+  ansible.builtin.shell:
+    cmd: "timeout {{ timeout_sec }} sudo {{ '-n' if not is_sysadmin else '' }} apt-get install"
+    executable: /bin/bash
+  register: apt_install_result
+  ignore_errors: true
+  become: "{{ is_sysadmin | bool }}"
+
+- name: Display apt install result
+  ansible.builtin.debug:
+    msg: "User {{ ansible_user }} - Attempt to run apt install: {{ 'SUCCESS' if apt_install_result.rc == 0 else 'FAILED' }}"

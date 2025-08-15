@@ -1,12 +1,11 @@
 ---
 # CSV file containing user information (username, groups, email, etc.)
-users_file: "~/.new-metal-box-secrets/users.csv"
+users_file: "~/new-metal-box/{{ csv_file }}"
 
-# Vault file containing email-related variables and configurations
-vault_file: "{{ inventory_dir }}/vault/group_vars/email_vars.yml"
+# Password aging configuration
+password_max_days: 90
+password_min_days: 0
+password_warn_days: 14
 
-# Vault file where generated passwords will be stored
-generated_pass_file: "{{ inventory_dir }}/vault/group_vars/generated_pass.yml"
-
-# Directory for storing encrypted password backups with timestamps
-encrypted_password_dir: "~/.encryptedpsw"
+# Password quality configuration
+password_min_length: 14
