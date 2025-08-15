@@ -52,6 +52,15 @@
         update_cache: yes
       register: packages_installed
 
+    - name: Create validator log directory (will be owned by sol user later)
+      ansible.builtin.file:
+        path: "{{ validator_log_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+
+
     - name: Create simple mock validator script
       ansible.builtin.copy:
         dest: /usr/local/bin/mock-validator

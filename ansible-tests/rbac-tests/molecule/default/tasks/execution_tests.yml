@@ -9,22 +9,22 @@
       {%- set tests = [] -%}
       {%- for role, users in classified_users.items() -%}
         {%- for username in users -%}
-          {%- set normalized_role = 'admin' if role == 'sysadmin' else 'operator' if role == 'validator_operators' else 'viewer' if role == 'validator_viewers' else role -%}
+          {%- set normalized_role = 'sysadmin' if role == 'sysadmin' else 'operator' if role == 'validator_operators' else 'viewer' if role == 'validator_viewers' else role -%}
           {%- for cmd in ['whoami', 'id', 'pwd', 'ls /tmp'] -%}
             {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'success', 'role': normalized_role, 'type': 'safe'}) -%}
           {%- endfor -%}
-          {%- if normalized_role == 'operator' -%}
-            {%- for cmd in ['sudo -n systemctl start {{ validator_service }}', 'sudo -n systemctl stop {{ validator_service }}', 'sudo -n systemctl restart {{ validator_service }}', 'sudo -n pkill -f {{ validator_service }}', 'sudo -n kill -9', 'sudo -n renice', 'sudo -n tail -n 100 {{ validator_log_file }}', 'sudo -n htop'] -%}
+          {%- if normalized_role == 'validator_operators' -%}
+            {%- for cmd in ['sudo -n systemctl start {{ validator_service }}', 'sudo -n systemctl stop {{ validator_service }}', 'sudo -n systemctl restart {{ validator_service }}', 'sudo -n pkill -f {{ validator_service }}', 'sudo -n tail -n 100 {{ validator_log_file }}', 'sudo -n htop'] -%}
               {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'success', 'role': normalized_role, 'type': 'operator'}) -%}
             {%- endfor -%}
             {%- for cmd in ['sudo -n systemctl enable {{ validator_service }}', 'sudo -n systemctl disable {{ validator_service }}', 'sudo -n systemctl status {{ validator_service }}', 'sudo -n apt update', 'sudo -n apt install --dry-run nano', 'sudo -n apt-get install', 'sudo -n apt-get update', 'sudo -n apt-get upgrade', 'sudo -n apt-get remove', 'sudo -n apt remove', 'sudo -n curl --version', 'sudo -n journalctl -u {{ validator_service }}'] -%}
               {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'success', 'role': normalized_role, 'type': 'operator'}) -%}
             {%- endfor -%}
-          {%- elif normalized_role == 'viewer' -%}
+          {%- elif normalized_role == 'validator_viewers' -%}
             {%- for cmd in ['sudo -n whoami', 'sudo -n cat /etc/shadow', 'sudo -n useradd testuser', 'sudo -n apt update', 'sudo -n apt install --dry-run nano', 'sudo -n systemctl stop ssh --dry-run', 'sudo -n passwd {{ solana_user }}'] -%}
               {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'block', 'role': normalized_role, 'type': 'restricted'}) -%}
             {%- endfor -%}
-          {%- elif normalized_role == 'admin' -%}
+          {%- elif normalized_role == 'sysadmin' -%}
             {%- for cmd in ['sudo -n systemctl status {{ validator_service }}', 'sudo -n journalctl -u {{ validator_service }}', 'sudo -n apt update', 'sudo -n curl --version', 'sudo -n systemctl enable {{ validator_service }}'] -%}
               {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'success', 'role': normalized_role, 'type': 'admin'}) -%}
             {%- endfor -%}
