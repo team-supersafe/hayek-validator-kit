@@ -75,7 +75,6 @@ RUN --mount=type=cache,target=/var/cache/apt \
 ENV PIP_PACKAGES="ansible passlib molecule molecule-plugins[docker] ansible-lint yamllint"
 RUN pip3 install $PIP_PACKAGES
 
-# Set workdir to RBAC tests directory for easier access
 RUN mkdir -p /opt/code/tools
 WORKDIR /hayek-validator-kit/ansible-tests/rbac-tests
 
@@ -98,7 +97,7 @@ RUN --mount=type=cache,target=/root/.cache \
     && echo 'if [ -f ~/.bashrc ]; then source ~/.bashrc; fi' >> ~/.profile \
     && echo 'export PS1="\[\e[0;32m\]test-runner\[\e[m\]:\w\$ "' >> ~/.bashrc
 
-# Add welcome message with test examples
+
 RUN echo '# Welcome message for test-runner' >> ~/.bashrc \
     && echo 'show_test_help() {' >> ~/.bashrc \
     && echo '    echo -e "\\n\\033[1;36m=========================================="' >> ~/.bashrc \
