@@ -99,68 +99,25 @@
       status: "{{ 'PASSED' if (categorized_results.violations | length == 0) else 'FAILED' }}"
       sudo_password_blocks: "{{ categorized_results.expected_block | selectattr('reason', 'equalto', 'sudo_password_required') | list | length }}"
 
-- name: Build execution test breakdown display
-  ansible.builtin.set_fact:
-    execution_breakdown_display: |
-      {%- set lines = [] -%}
-      {%- set user_list = [] -%}
-
-      {%- for role, users in classified_users.items() -%}
-        {%- for username in users -%}
-          {%- set normalized_role = 'admin' if role == 'sysadmin' else 'operator' if role == 'validator_operators' else 'viewer' if role == 'validator_viewers' else role -%}
-          {%- set _ = user_list.append(username + ' (' + normalized_role + ')') -%}
-        {%- endfor -%}
-      {%- endfor -%}
-      {%- set total_users = user_list | length -%}
-      {%- set viewer_operator_users = (classified_users.validator_viewers | default([]) | length) + (classified_users.validator_operators | default([]) | length) -%}
-      {%- set admin_users = (classified_users.sysadmin | default([]) | length) -%}
-
-      {%- set _ = lines.append("========================================") -%}
-      {%- set _ = lines.append("📋 EXECUTION TEST MATRIX EXPLAINED") -%}
-      {%- set _ = lines.append("========================================") -%}
-      {%- set _ = lines.append("") -%}
-      {%- set _ = lines.append("👥 USERS TESTED: " + (user_list | join(', '))) -%}
-      {%- set _ = lines.append("🎯 TOTAL COMMANDS: " + (execution_tests_summary.total_tests | string) + " executions") -%}
-      {%- set _ = lines.append("") -%}
-      {%- set _ = lines.append("📊 COMMAND CATEGORIES BREAKDOWN:") -%}
-      {%- set _ = lines.append("") -%}
-      {%- set _ = lines.append("🟢 BASIC COMMANDS (should work for everyone):") -%}
-      {%- set _ = lines.append("   • Commands: whoami, id, pwd, ls /tmp") -%}
-      {%- set _ = lines.append("   • User instances: " + (total_users | string) + " (all user/role combinations)") -%}
-      {%- set _ = lines.append("   • Calculation: 4 commands × " + (total_users | string) + " instances = " + ((4 * total_users) | string) + " executions") -%}
-      {%- set _ = lines.append("   • Expected: ALL SUCCESS") -%}
-      {%- set _ = lines.append("") -%}
-      {%- set _ = lines.append("🔴 RESTRICTED COMMANDS (should be blocked for viewers only):") -%}
-      {%- set _ = lines.append("   • Commands: sudo -n whoami, sudo -n systemctl status") -%}
-      {%- set _ = lines.append("   •           sudo -n cat /etc/shadow, sudo -n useradd") -%}
-      {%- set _ = lines.append("   •           sudo -n apt update/install, sudo -n systemctl stop") -%}
-      {%- set viewers_users = (classified_users.validator_viewers | default([]) | length) -%}
-      {%- set _ = lines.append("   • Users: " + (viewers_users | string) + " (viewers only)") -%}
-      {%- set _ = lines.append("   • Calculation: 7 commands × " + (viewers_users | string) + " viewers = " + ((7 * viewers_users) | string) + " blocks") -%}
-      {%- set _ = lines.append("   • Expected: ALL BLOCKED") -%}
-      {%- set _ = lines.append("") -%}
-      {%- set _ = lines.append("🟡 ADMIN COMMANDS (should work for admins only):") -%}
-      {%- set _ = lines.append("   • Commands: sudo -n systemctl status, sudo -n journalctl") -%}
-      {%- set _ = lines.append("   •           sudo -n curl, sudo -n apt update") -%}
-      {%- set _ = lines.append("   •           sudo -n systemctl enable") -%}
-      {%- set _ = lines.append("   • Users: " + (admin_users | string) + " (admins)") -%}
-      {%- set _ = lines.append("   • Calculation: 5 commands × " + (admin_users | string) + " admins = " + ((5 * admin_users) | string) + " executions") -%}
-      {%- set _ = lines.append("   • Expected: ALL SUCCESS") -%}
-      {%- set _ = lines.append("") -%}
-      {%- set operator_users = (classified_users.validator_operators | default([]) | length) -%}
-      {%- set total_calc = (4 * total_users) + (7 * viewers_users) + (12 * operator_users) + (5 * admin_users) -%}
-      {%- set _ = lines.append("🟡 OPERATOR COMMANDS (should work for operators):") -%}
-      {%- set _ = lines.append("   • Commands: apt/systemctl/curl/git commands (12 total)") -%}
-      {%- set _ = lines.append("   • Users: " + (operator_users | string) + " (operators)") -%}
-      {%- set _ = lines.append("   • Expected: ALL SUCCESS") -%}
-      {%- set _ = lines.append("") -%}
-      {%- set _ = lines.append("🧮 MATH CHECK: " + ((4 * total_users) | string) + " basic + " + ((7 * viewers_users) | string) + " viewer-restricted + " + ((12 * operator_users) | string) + " operator + " + ((5 * admin_users) | string) + " admin = " + (total_calc | string)) -%}
-      {%- set _ = lines.append("========================================") -%}
-      {{ lines }}
-
-- name: Explain execution test breakdown
+# Detailed breakdown replaced with simplified overview below
+- name: Display execution test overview
   ansible.builtin.debug:
-    msg: "{{ execution_breakdown_display }}"
+    msg:
+      - "========================================"
+      - "🧪 RBAC EXECUTION TESTS OVERVIEW"
+      - "========================================"
+      - ""
+      - "👥 Testing {{ classified_users.keys() | length }} user roles: {{ classified_users.keys() | join(', ') }}"
+      - "🎯 Executing {{ execution_tests_summary.total_tests }} total commands"
+      - ""
+      - "📊 Test Categories:"
+      - "• 🟢 Basic commands: Should work for all users"
+      - "• 🔴 Restricted commands: Should be blocked for viewers"
+      - "• 🟡 Admin commands: Should work for admins only"
+      - "• 🟠 Operator commands: Should work for operators only"
+      - ""
+      - "🎯 Expected: All RBAC permissions enforced correctly"
+      - "========================================"
 
 - name: Build execution test results display
   ansible.builtin.set_fact:
@@ -221,9 +178,10 @@
       {%- set _ = lines.append("========================================") -%}
       {{ lines }}
 
-- name: Display execution test results
-  ansible.builtin.debug:
-    msg: "{{ execution_results_display }}"
+# Detailed execution results now shown in final_report.yml - avoiding duplication
+# - name: Display execution test results
+#   ansible.builtin.debug:
+#     msg: "{{ execution_results_display }}"
 
 - name: Display execution violations if any
   ansible.builtin.debug:

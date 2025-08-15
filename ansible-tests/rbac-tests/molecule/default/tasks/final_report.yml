@@ -57,61 +57,79 @@
   ansible.builtin.set_fact:
     overall_security_status: "{{ 'PASSED' if (security_summary.total_issues | int == 0) else 'FAILED' }}"
 
-- name: Build dynamic violation summary
+- name: Build comprehensive unified security report
   ansible.builtin.set_fact:
     violation_summary_lines: |
       {%- set lines = [] -%}
 
       {%- if security_summary.total_issues | int > 0 -%}
         {%- set _ = lines.append("========================================") -%}
-        {%- set _ = lines.append("RBAC SECURITY VIOLATIONS DETECTED") -%}
+        {%- set _ = lines.append("🚨 RBAC SECURITY VIOLATIONS DETECTED") -%}
         {%- set _ = lines.append("========================================") -%}
         {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("VIOLATION SUMMARY:") -%}
+        {%- set _ = lines.append("🎯 FINAL ANSWER: SECURITY BREACH DETECTED ❌") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("📊 EXECUTION STATISTICS:") -%}
+        {%- set _ = lines.append("• Total commands tested: " + (security_summary.execution_tests.total | string)) -%}
+        {%- set _ = lines.append("• Security violations found: " + (security_summary.total_issues | string)) -%}
+        {%- set _ = lines.append("• Success rate: " + (((security_summary.execution_tests.total | int - security_summary.total_issues | int) / security_summary.execution_tests.total | int * 100) | round(1) | string) + "%") -%}
         {%- set _ = lines.append("") -%}
 
-        {%- set _ = lines.append("IMPACT ANALYSIS:") -%}
+        {%- set _ = lines.append("🚨 DETAILED VIOLATION BREAKDOWN:") -%}
         {%- set _ = lines.append("• Positive test failures: " + (security_summary.positive_tests.failures | string)) -%}
         {%- set _ = lines.append("• Role hierarchy violations: " + (security_summary.negative_tests.violations | string)) -%}
         {%- set _ = lines.append("• Execution test violations: " + (security_summary.execution_tests.violations | string)) -%}
         {%- set _ = lines.append("• Template violations: " + (security_summary.template_validation.violations | string)) -%}
-        {%- set _ = lines.append("• Total security issues: " + (security_summary.total_issues | string)) -%}
         {%- set _ = lines.append("• Users affected: " + (security_summary.negative_tests.users_affected | string)) -%}
         {%- set _ = lines.append("") -%}
 
-        {%- set _ = lines.append("ACTION REQUIRED:") -%}
+        {%- set _ = lines.append("⚠️ ACTION REQUIRED:") -%}
         {%- set _ = lines.append("1. Review all violations listed above") -%}
         {%- set _ = lines.append("2. Fix sudoers configuration for affected users") -%}
         {%- set _ = lines.append("3. Verify role templates in /etc/sudoers.d/") -%}
         {%- set _ = lines.append("4. Re-run verification until all tests pass") -%}
         {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("🛑 VERDICT: SECURITY NEEDS IMMEDIATE ATTENTION ❌") -%}
         {%- set _ = lines.append("DEPLOYMENT STATUS: BLOCKED") -%}
-        {%- set _ = lines.append("Security violations prevent deployment until resolved.") -%}
+        {%- set _ = lines.append("DO NOT DEPLOY TO PRODUCTION UNTIL RESOLVED!") -%}
         {%- set _ = lines.append("========================================") -%}
       {%- else -%}
         {%- set _ = lines.append("========================================") -%}
-        {%- set _ = lines.append("RBAC SECURITY VERIFICATION PASSED") -%}
+        {%- set _ = lines.append("🎉 RBAC SECURITY VERIFICATION PASSED") -%}
         {%- set _ = lines.append("========================================") -%}
         {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("✓ All positive tests passed (" + (security_summary.positive_tests.total | string) + " tests)") -%}
-        {%- set _ = lines.append("✓ All negative tests passed (" + (security_summary.negative_tests.total | string) + " tests)") -%}
-        {%- set _ = lines.append("✓ All execution tests passed (" + (security_summary.execution_tests.total | string) + " tests)") -%}
-        {%- set _ = lines.append("✓ sudo -n blocks: " + (security_summary.execution_tests.expected_blocks | string) + " (security working)") -%}
-        {%- set _ = lines.append("✓ Template validation passed") -%}
-        {%- set _ = lines.append("✓ No unauthorized access detected") -%}
-        {%- set _ = lines.append("✓ Least privilege principles enforced") -%}
+        {%- set _ = lines.append("🎯 FINAL ANSWER: ALL TESTS PASSED ✅") -%}
         {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("📊 EXECUTION STATISTICS:") -%}
+        {%- set _ = lines.append("• Total commands tested: " + (security_summary.execution_tests.total | string)) -%}
+        {%- set _ = lines.append("• Commands successful: " + ((security_summary.execution_tests.total | int - security_summary.execution_tests.expected_blocks | int) | string)) -%}
+        {%- set _ = lines.append("• Restricted commands blocked: " + (security_summary.execution_tests.expected_blocks | string)) -%}
+        {%- set _ = lines.append("• Security violations found: " + (security_summary.total_issues | string)) -%}
+        {%- set _ = lines.append("• Success rate: 100%") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("✅ COMPREHENSIVE TEST RESULTS:") -%}
+        {%- set _ = lines.append("• Positive tests passed: " + (security_summary.positive_tests.total | string) + " tests") -%}
+        {%- set _ = lines.append("• Negative tests passed: " + (security_summary.negative_tests.total | string) + " tests") -%}
+        {%- set _ = lines.append("• Execution tests passed: " + (security_summary.execution_tests.total | string) + " tests") -%}
+        {%- set _ = lines.append("• sudo -n blocks: " + (security_summary.execution_tests.expected_blocks | string) + " (security working)") -%}
+        {%- set _ = lines.append("• Template validation passed") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("🛡️ SECURITY ANALYSIS:") -%}
+        {%- set _ = lines.append("• All basic commands work for everyone") -%}
+        {%- set _ = lines.append("• All restricted commands properly blocked") -%}
+        {%- set _ = lines.append("• Admin commands work only for administrators") -%}
+        {%- set _ = lines.append("• sudo -n password prompts working correctly") -%}
+        {%- set _ = lines.append("• Least privilege principles enforced") -%}
+        {%- set _ = lines.append("• No unauthorized access detected") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("🎯 VERDICT: SECURITY IS PERFECT ✅") -%}
         {%- set _ = lines.append("DEPLOYMENT STATUS: APPROVED") -%}
         {%- set _ = lines.append("System ready for production deployment.") -%}
         {%- set _ = lines.append("========================================") -%}
       {%- endif -%}
       {{ lines }}
 
-- name: Final Security Assessment
-  ansible.builtin.debug:
-    msg: "{{ 'SECURITY: ALL TESTS PASSED - SYSTEM READY' if (security_summary.total_issues | int == 0) else 'SECURITY: ' + (security_summary.total_issues | string) + ' VIOLATIONS FOUND - DEPLOYMENT BLOCKED' }}"
-
-- name: Display comprehensive security report
+- name: Display comprehensive unified security report
   ansible.builtin.debug:
     msg: "{{ violation_summary_lines }}"
 
