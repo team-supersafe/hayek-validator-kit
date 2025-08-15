@@ -29,27 +29,7 @@ platforms:
       # Create ubuntu user if it doesn't exist (like docker-compose does)
       id -u ubuntu >/dev/null 2>&1 || adduser --disabled-password --gecos \"\" ubuntu
 
-      # set default user ssh authorized_keys
-      rm -rf /home/\$$DEFAULT_USERNAME/.ssh
-      mkdir -p /home/\$$DEFAULT_USERNAME/.ssh
-      chmod 700 /home/\$$DEFAULT_USERNAME/.ssh
-
-      # Clear authorized_keys before appending to avoid duplicates
-      > /home/\$$DEFAULT_USERNAME/.ssh/authorized_keys
-      for file in /tmp/team_ssh_public_keys/*; do
-          [ -f \"\$$file\" ] || continue
-          cat \$$file >> /home/\$$DEFAULT_USERNAME/.ssh/authorized_keys
-          echo \"\" >> /home/\$$DEFAULT_USERNAME/.ssh/authorized_keys
-      done
-
-      # Deduplicate authorized_keys entries
-      TEMP_AUTH_KEYS=\"/home/\$$DEFAULT_USERNAME/.ssh/authorized_keys.tmp\"
-      awk '!seen[\$$0]++' /home/\$$DEFAULT_USERNAME/.ssh/authorized_keys > \$$TEMP_AUTH_KEYS
-      mv \$$TEMP_AUTH_KEYS /home/\$$DEFAULT_USERNAME/.ssh/authorized_keys
-
-      chmod 600 /home/\$$DEFAULT_USERNAME/.ssh/authorized_keys
-      chown -R \$$DEFAULT_USERNAME:\$$DEFAULT_USERNAME /home/\$$DEFAULT_USERNAME/.ssh
-
+      /opt/scripts/setup-ssh-keys.sh \$$DEFAULT_USERNAME
       /lib/systemd/systemd
       "
 

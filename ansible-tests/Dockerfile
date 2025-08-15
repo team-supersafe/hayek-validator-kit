@@ -108,6 +108,11 @@ FROM ubuntu-base AS naked-builder
 RUN mkdir -p /opt/code/tools
 WORKDIR /opt/code/tools
 
+# Copy SSH setup script
+RUN mkdir -p /opt/scripts
+COPY scripts/setup-ssh-keys.sh /opt/scripts/setup-ssh-keys.sh
+RUN chmod +x /opt/scripts/setup-ssh-keys.sh
+
 # Give ubuntu passwordless sudo access for ansible playbooks testing
 RUN echo "ubuntu ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 

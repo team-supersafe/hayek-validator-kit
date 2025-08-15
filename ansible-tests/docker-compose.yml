@@ -34,22 +34,7 @@ services:
       DEFAULT_USERNAME: ubuntu
     command: |
       bash -c "
-      rm -rf /home/$$DEFAULT_USERNAME/.ssh
-      mkdir -p /home/$$DEFAULT_USERNAME/.ssh
-      chmod 700 /home/$$DEFAULT_USERNAME/.ssh
-
-      # Pull team keys into authorized_keys if present in mounted path
-      if [ -d /tmp/team_ssh_public_keys ]; then
-        > /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
-        for file in /tmp/team_ssh_public_keys/*; do
-          cat $$file >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
-          echo "" >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
-        done
-      fi
-
-      chmod 600 /home/$$DEFAULT_USERNAME/.ssh/authorized_keys || true
-      chown -R $$DEFAULT_USERNAME:$$DEFAULT_USERNAME /home/$$DEFAULT_USERNAME/.ssh
-
+      /opt/scripts/setup-ssh-keys.sh $$DEFAULT_USERNAME
       /lib/systemd/systemd
       "
 
@@ -58,7 +43,7 @@ services:
       context: .
       target: molecule-runner
     image: molecule-test-runner
-    container_name: molecule-test-runner
+    container_name: test-runner
     depends_on:
       - molecule-host-alpha
     stdin_open: true
