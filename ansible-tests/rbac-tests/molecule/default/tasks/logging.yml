@@ -38,7 +38,7 @@
         {%- if result.rc == 0 and result.item.expect == 'success' -%}
           {%- set _ = log_lines.append("  Status: ✅ SUCCESS (as expected)") -%}
         {%- elif result.rc != 0 and result.item.expect == 'block' -%}
-          {%- set _ = log_lines.append("  Status: 🛡️ BLOCKED (security working)") -%}
+          {%- set _ = log_lines.append("  Status: 🛡️ BLOCKED (as expected)") -%}
         {%- elif result.rc == 0 and result.item.expect == 'block' -%}
           {%- set _ = log_lines.append("  Status: ⚠️ SECURITY VIOLATION (should be blocked!)") -%}
         {%- elif result.rc != 0 and result.item.expect == 'success' -%}

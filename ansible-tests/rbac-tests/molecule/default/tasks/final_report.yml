@@ -114,7 +114,7 @@
         {%- set _ = lines.append("• Positive tests passed: " + (security_summary.positive_tests.total | string) + " tests") -%}
         {%- set _ = lines.append("• Negative tests passed: " + (security_summary.negative_tests.total | string) + " tests") -%}
         {%- set _ = lines.append("• Execution tests passed: " + (security_summary.execution_tests.total | string) + " tests") -%}
-        {%- set _ = lines.append("• sudo -n blocks: " + (security_summary.execution_tests.expected_blocks | string) + " (security working)") -%}
+        {%- set _ = lines.append("• sudo -n blocks: " + (security_summary.execution_tests.expected_blocks | string) + " (as expected)") -%}
         {%- set _ = lines.append("• Template validation passed") -%}
         {%- set _ = lines.append("") -%}
         {%- set _ = lines.append("🛡️ SECURITY ANALYSIS:") -%}

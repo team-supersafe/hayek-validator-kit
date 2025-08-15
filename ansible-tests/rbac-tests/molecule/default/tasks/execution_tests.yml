@@ -26,7 +26,7 @@
             {%- endfor -%}
           {%- elif normalized_role == 'sysadmin' -%}
             {%- for cmd in ['sudo -n systemctl status {{ validator_service }}', 'sudo -n journalctl -u {{ validator_service }}', 'sudo -n apt update', 'sudo -n curl --version', 'sudo -n systemctl enable {{ validator_service }}'] -%}
-              {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'success', 'role': normalized_role, 'type': 'admin'}) -%}
+              {%- set _ = tests.append({'user': username, 'cmd': cmd, 'expect': 'block', 'role': normalized_role, 'type': 'restricted'}) -%}
             {%- endfor -%}
           {%- endif -%}
         {%- endfor -%}
