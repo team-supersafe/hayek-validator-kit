@@ -115,7 +115,7 @@ RUN echo '# Welcome message for test-runner' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;90m  → Creates container and applies RBAC configuration\\033[0m"' >> ~/.bashrc \
     && echo '    echo -e ""' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;32m# Idempotency test:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  molecule test -s default -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
+    && echo '    echo -e "  molecule idempotence -s default -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;90m  → Verifies that changes are idempotent\\033[0m"' >> ~/.bashrc \
     && echo '    echo -e ""' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;32m# Verification on active container:\\033[0m"' >> ~/.bashrc \
