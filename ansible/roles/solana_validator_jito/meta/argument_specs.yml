@@ -1,0 +1,49 @@
+---
+argument_specs:
+  main:
+    short_description: "Install Jito Solana validator"
+    author: "Hayek Validator Team"
+    description:
+      - "Installs and configures a Jito Solana validator"
+      - "Supports both co-hosted and shared relayer configurations"
+      - "Automatically installs dependencies (rust_env, solana_cli)"
+      - "Configures validator keys and startup scripts"
+    options:
+      validator_name:
+        type: str
+        required: true
+        description: "Name of the validator instance"
+      validator_type:
+        type: str
+        required: true
+        choices: ["primary", "hot-spare"]
+        description: "Type of validator (primary or hot-spare)"
+      jito_version:
+        type: str
+        required: true
+        description: "Version of Jito to install"
+      jito_relayer_type:
+        type: str
+        required: true
+        choices: ["co-hosted", "shared"]
+        description: "Type of Jito relayer configuration"
+      solana_cluster:
+        type: str
+        required: true
+        choices: ["localnet", "testnet", "mainnet"]
+        description: "Target Solana cluster"
+      force_host_cleanup:
+        type: bool
+        required: false
+        default: false
+        description: "Force cleanup of existing validator data"
+      build_from_source:
+        type: bool
+        required: false
+        default: false
+        description: "Build from source instead of using precompiled binaries"
+      use_official_repo:
+        type: bool
+        required: false
+        default: false
+        description: "Use official repository instead of forked repository when building from source"

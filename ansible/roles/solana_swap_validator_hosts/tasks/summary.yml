@@ -19,7 +19,7 @@
       Please review that:
       1. The running identity on {{ source_host }} ({{ source_validator_name }}) is the hot-spare identity
       2. Primary Target Identity is running only in {{ destination_host }} ({{ destination_validator_name }})
-      {% if deprovision_source_host is defined and deprovision_source_host == "true" %}
+      {% if deprovision_source_host | default(false) | bool %}
       3. Host {{ source_host }} has been deprovisioned
       {% endif %}
       ===============================================

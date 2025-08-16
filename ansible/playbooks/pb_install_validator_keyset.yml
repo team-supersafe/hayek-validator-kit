@@ -11,7 +11,7 @@
 #   -i solana_localnet.yml \
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
-#   -e "keyset_source_name=canopy" \
+#   -e "validator_keyset_name=canopy" \ # Name of the validator keyset to install (e.g. canopy, penny, etc.)
 #   -e "validator_type=primary"
 
 - name: Set validator keys on target host
@@ -24,12 +24,12 @@
       ansible.builtin.assert:
         that:
           - target_host is defined
-          - keyset_source_name is defined
+          - validator_keyset_name is defined
           - validator_type is defined
         fail_msg: >
           Missing required variables. Must provide:
             - target_host
-            - keyset_source_name
+            - validator_keyset_name
             - validator_type (must be 'primary' or 'hot-spare')
 
     - name: Debug ansible_limit and target_host
