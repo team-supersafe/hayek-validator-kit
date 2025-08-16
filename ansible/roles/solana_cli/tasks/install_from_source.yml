@@ -28,13 +28,17 @@
 
 - name: Prepare Agave source code (download and extract)
   block:
+    - name: Set local boolean for repository selection
+      ansible.builtin.set_fact:
+        use_official_repo_bool: "{{ use_official_repo | default(false) | bool }}"
+
     - name: Debug repository selection for download
       ansible.builtin.debug:
-        msg: "Using {{ (use_official_repo | default(false) | bool) | ternary('official', 'forked') }} Agave repository for download: {{ (use_official_repo | default(false) | bool) | ternary(agave_official_repo, agave_forked_repo) }}"
+        msg: "Using {{ use_official_repo_bool | ternary('official', 'forked') }} Agave repository for download: {{ use_official_repo_bool | ternary(agave_official_repo, agave_forked_repo) }}"
 
     - name: Set download URL based on repository selection
       ansible.builtin.set_fact:
-        agave_download_url: "{{ (use_official_repo | default(false) | bool) | ternary(agave_official_repo, agave_forked_repo) }}/archive/refs/tags/v{{ agave_version }}.tar.gz"
+        agave_download_url: "{{ use_official_repo_bool | ternary(agave_official_repo, agave_forked_repo) }}/archive/refs/tags/v{{ agave_version }}.tar.gz"
 
     - name: Debug download URL
       ansible.builtin.debug:
@@ -50,11 +54,11 @@
     - name: Parse forked repo name from agave_forked_repo URL
       ansible.builtin.set_fact:
         agave_forked_repo_name: "{{ agave_forked_repo | regex_replace('.*/', '') }}"
-      when: not (use_official_repo | default(false) | bool)
+      when: not use_official_repo_bool
 
     - name: Set extracted Agave directory name
       ansible.builtin.set_fact:
-        agave_extracted_dir_name: "{{ (use_official_repo | default(false) | bool) | ternary('agave', agave_forked_repo_name) }}"
+        agave_extracted_dir_name: "{{ use_official_repo_bool | ternary('agave', agave_forked_repo_name) }}"
 
     - name: Read version from Cargo.toml to verify
       ansible.builtin.shell: grep '^version =' Cargo.toml | head -n1 | awk -F '"' '{print $2}'

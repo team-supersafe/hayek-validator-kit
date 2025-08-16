@@ -1,4 +1,8 @@
 ---
+- name: Set local boolean for build method
+  ansible.builtin.set_fact:
+    build_from_source_bool: "{{ build_from_source | default(false) | bool }}"
+
 - name: Install build prerequisites
   become: true
   ansible.builtin.apt:
@@ -20,17 +24,17 @@
 
 - name: Install Jito-Solana from binaries
   import_tasks: install/install_jito_from_binaries.yml
-  when: not (build_from_source | default(false) | bool)
+  when: not build_from_source_bool
 
 - name: Build and install Jito from source
   import_tasks: install/install_jito_from_source.yml
-  when: build_from_source | default(false) | bool
+  when: build_from_source_bool
 
 - name: Installation complete
   debug:
     msg: >-
       Jito-Solana {{ jito_version }} has been successfully installed
-      {% if build_from_source | default(false) | bool %}
+      {% if build_from_source_bool %}
       (built from source)
       {% else %}
       (from binaries)
