@@ -3,11 +3,15 @@
   ansible.builtin.set_fact:
     jito_tag: "v{{ jito_version }}-jito"
 
+- name: Set local variable for solana_installed_release_dir
+  ansible.builtin.set_fact:
+    solana_installed_release_dir: "{{ solana_installed_releases_dir }}/{{ jito_tag }}"
+
 - name: Prepare build environment
   block:
     - name: Create solana releases directory
       ansible.builtin.file:
-        path: "{{ solana_installed_releases_dir }}/{{ jito_tag }}"
+        path: "{{ solana_installed_release_dir }}"
         state: directory
         mode: "0755"
         owner: "{{ solana_user }}"
@@ -31,38 +35,120 @@
       ansible.builtin.fail:
         msg: "Failed to prepare build environment. Error: {{ ansible_failed_result }}"
 
+- name: Check if build directory exists and read current version
+  block:
+    - name: Check if build directory exists
+      ansible.builtin.stat:
+        path: "{{ jito_build_dir }}"
+      register: build_dir_stat
+
+    - name: Read current version from Cargo.toml if build directory exists
+      ansible.builtin.shell: grep '^version' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
+      args:
+        chdir: "{{ jito_build_dir }}"
+      register: current_cargo_version
+      when: build_dir_stat.stat.exists
+      ignore_errors: true
+      changed_when: false
+
+    - name: Set fact for version mismatch
+      ansible.builtin.set_fact:
+        version_mismatch: "{{ build_dir_stat.stat.exists and (current_cargo_version is failed or current_cargo_version.stdout != jito_version) }}"
+
+    - name: Debug Cargo.toml version
+      ansible.builtin.debug:
+        msg: "Cargo.toml version: {{ current_cargo_version.stdout }} | Expected: {{ jito_version }}. {{ version_mismatch | ternary('Version mismatch detected.', 'No version mismatch detected.') }}"
+      when: build_dir_stat.stat.exists
+
+- name: Clean up build directory if version mismatch detected
+  ansible.builtin.file:
+    path: "{{ jito_build_dir }}"
+    state: absent
+  when: version_mismatch | default(false)
+
 - name: Clone and build Jito-Solana
   block:
-    - name: Clone/Pull jito-solana repository with submodules
+    - name: Set local boolean for repository selection
+      ansible.builtin.set_fact:
+        use_official_repo_bool: "{{ use_official_repo | default(false) | bool }}"
+
+    - name: Debug repository selection
+      ansible.builtin.debug:
+        msg: "Using {{ use_official_repo_bool | ternary('official', 'forked') }} Jito-Solana repository: {{ use_official_repo_bool | ternary(jito_official_repo, jito_forked_repo) }}"
+
+    - name: Clone/Pull Jito-Solana repository with submodules
       ansible.builtin.git:
-        repo: "{{ jito_repo_url }}"
-        dest: "{{ jito_repo_dest }}"
-        version: "tags/{{ jito_tag }}"
+        repo: "{{ use_official_repo_bool | ternary(jito_official_repo, jito_forked_repo) }}.git"
+        dest: "{{ jito_build_dir }}"
+        version: "{{ jito_tag }}"
         recursive: true
-        update: true
+        force: true
+
+    - name: Consolidated git verification (tag, commit, version)
+      ansible.builtin.shell: |
+        set -e
+        current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "none")
+        current_commit=$(git rev-parse HEAD)
+        tag_commit=$(git rev-list -n 1 "{{ jito_tag }}" 2>/dev/null || echo "none")
+
+        if [ "$current_tag" != "{{ jito_tag }}" ]; then
+          echo "ERROR: Expected tag {{ jito_tag }}, but got $current_tag"
+          exit 1
+        fi
+
+        if [ "$current_commit" != "$tag_commit" ]; then
+          echo "ERROR: Tag {{ jito_tag }} does not point to current commit"
+          echo "Current commit: $current_commit"
+          echo "Tag commit: $tag_commit"
+          exit 1
+        fi
+
+        echo "Git verification passed: tag $current_tag, commit $current_commit"
+      args:
+        chdir: "{{ jito_build_dir }}"
+      register: git_verification
+      changed_when: false
 
     - name: Get the latest commit hash
       ansible.builtin.command: git rev-parse HEAD
       args:
-        chdir: "{{ jito_repo_dest }}"
+        chdir: "{{ jito_build_dir }}"
       register: ci_commit
+      ignore_errors: "{{ ansible_check_mode }}"
+
+    - name: Read version from Cargo.toml
+      ansible.builtin.shell: grep '^version' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
+      args:
+        chdir: "{{ jito_build_dir }}"
+      register: cargo_toml_version
+      changed_when: false
+
+    - name: Debug Cargo.toml version
+      ansible.builtin.debug:
+        msg: "Cargo.toml version: {{ cargo_toml_version.stdout }} | Expected: {{ jito_version }}"
+
+    - name: Fail if Cargo.toml version does not match jito_version
+      ansible.builtin.fail:
+        msg: "Cargo.toml version ({{ cargo_toml_version.stdout }}) does not match expected jito_version ({{ jito_version }})!"
+      when: cargo_toml_version.stdout != jito_version
+      changed_when: false
       ignore_errors: "{{ ansible_check_mode }}"
 
     - name: Build Jito-Solana CLI
       ansible.builtin.shell: |
         set -e
         . $HOME/.cargo/env
-        scripts/cargo-install-all.sh --validator-only {{ solana_installed_releases_dir }}/{{ jito_tag }}
+        scripts/cargo-install-all.sh --validator-only {{ solana_installed_release_dir }}
       environment:
         CI_COMMIT: "{{ ci_commit.stdout }}"
       args:
-        chdir: "{{ jito_repo_dest }}"
-        creates: "{{ solana_installed_releases_dir }}/{{ jito_tag }}/bin/agave-validator"
+        chdir: "{{ jito_build_dir }}"
+        creates: "{{ solana_installed_release_dir }}/bin/agave-validator"
       ignore_errors: "{{ ansible_check_mode }}"
 
     - name: Create symlink to new release
       ansible.builtin.file:
-        src: "{{ solana_installed_releases_dir }}/{{ jito_tag }}"
+        src: "{{ solana_installed_release_dir }}"
         dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
         owner: "{{ solana_user }}"
         group: "{{ solana_user }}"

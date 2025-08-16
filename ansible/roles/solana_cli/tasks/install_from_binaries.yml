@@ -1,17 +1,7 @@
 ---
-# Priodically check anza downloads url formatting
-- name: Get Agave Download URL
-  ansible.builtin.shell: |
-    set -e
-    echo "https://github.com/anza-xyz/agave/releases/download/v{{ agave_version }}/solana-release-{{ host_arch }}.tar.bz2"
-  args:
-    executable: /bin/bash
-  register: agave_download_url_reg
-  changed_when: false
-
-- name: Set Solana Agave download URL as a fact
+- name: Set Solana Agave download URL
   ansible.builtin.set_fact:
-    agave_download_url: "{{ agave_download_url_reg.stdout }}"
+    agave_download_url: "https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download/v{{ agave_version }}/solana-release-{{ host_arch }}.tar.bz2"
 
 - name: Print the Agave download URL
   ansible.builtin.debug:
@@ -34,3 +24,10 @@
     remote_src: true
     creates: "{{ solana_installed_releases_dir }}/v{{ agave_version }}/solana-release/bin/agave-validator"
   ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode
+
+- name: Create symlink to new release
+  ansible.builtin.file:
+    src: "{{ solana_installed_releases_dir }}/v{{ agave_version }}/solana-release"
+    dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
+    state: link
+    force: true

@@ -1,3 +1,4 @@
 ---
-ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ keyset_source_name | default(validator_name) }}"
+jito_relayer_install_dir: "{{ solana_user_dir }}/.local/share/jito-relayer/install/active_release"
+ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_keyset_name | default(validator_name) }}"
 validator_keys_dir: "{{ keys_dir }}/{{ validator_name }}"

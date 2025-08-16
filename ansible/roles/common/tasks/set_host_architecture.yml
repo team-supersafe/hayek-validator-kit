@@ -1,54 +1,4 @@
 ---
-# Original code old-style (working)
-
-# - name: Set host architecture based on system facts
-#   ansible.builtin.shell: |
-#     set -e
-#     _ostype="$(uname -s)"
-#     _cputype="$(uname -m)"
-
-#     case "$_ostype" in
-#       Linux)
-#         _ostype="unknown-linux-gnu"
-#         ;;
-#       Darwin)
-#         if [[ "$_cputype" == "arm64" ]]; then
-#           _cputype="aarch64"
-#         fi
-#         _ostype="apple-darwin"
-#         ;;
-#       *)
-#         echo "unsupported"
-#         exit 1
-#         ;;
-#     esac
-
-#     echo "${_cputype}-${_ostype}"
-#   args:
-#     executable: /bin/bash
-#   register: host_arch_var
-#   changed_when: false
-#   failed_when: "'unsupported' in host_arch_var.stdout"
-
-# - name: Set host_architecture fact for future use
-#   ansible.builtin.set_fact:
-#     host_arch: "{{ host_arch_var.stdout }}"
-
-# - name: Set build_from_source fact to false by default
-#   ansible.builtin.set_fact:
-#     build_from_source: false
-
-# - name: Set build_from_source fact to true for aarch64
-#   ansible.builtin.set_fact:
-#     build_from_source: true
-#   when: "'aarch64-unknown-linux-gnu' in host_arch"
-
-# - name: Print Host Architecture
-#   ansible.builtin.debug:
-#     msg: "HOST ARCH = {{ host_arch }} | build_from_source = {{ build_from_source }}"
-
-# Code recently optimized from the above old code (now fixed)
-
 - name: Set host architecture based on system facts
   ansible.builtin.set_fact:
     host_arch: >-
@@ -72,11 +22,3 @@
   ansible.builtin.fail:
     msg: "Unsupported architecture: {{ ansible_architecture }} on {{ ansible_os_family }}"
   when: host_arch == 'unsupported'
-
-- name: Set build_from_source based on architecture
-  ansible.builtin.set_fact:
-    build_from_source: "{{ host_arch == 'aarch64-unknown-linux-gnu' }}"
-
-- name: Print Host Architecture
-  ansible.builtin.debug:
-    msg: "HOST ARCH = {{ host_arch }} | build_from_source = {{ build_from_source }}"

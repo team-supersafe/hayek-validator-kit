@@ -5,11 +5,11 @@
       - validator_name is defined
     fail_msg: "validator_name must be defined"
 
-- name: install_validator_keyset - Validate keyset_source_name is defined
+- name: install_validator_keyset - Validate validator_keyset_name is defined
   ansible.builtin.assert:
     that:
-      - keyset_source_name is defined
-    fail_msg: "keyset_source_name must be defined"
+      - validator_keyset_name is defined
+    fail_msg: "validator_keyset_name must be defined"
 
 - name: install_validator_keyset - Validate validator_type is defined
   ansible.builtin.assert:
@@ -52,7 +52,7 @@
     - name: install_validator_keyset - Set validator keys directory
       ansible.builtin.set_fact:
         validator_keys_dir: "{{ keys_dir }}/{{ validator_name }}"
-        ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ keyset_source_name }}"
+        ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_keyset_name }}"
 
     - name: install_validator_keyset - Check if hot-spare-identity.json exists in ansible_keys_dir
       ansible.builtin.stat:

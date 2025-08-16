@@ -23,7 +23,7 @@
 - name: Fail if validator service is already running
   ansible.builtin.fail:
     msg: "Validator service is already running. To force stop the existing service and proceed with installation, run the playbook with: -e \"force_host_cleanup=true\""
-  when: (force_host_cleanup is not defined or not force_host_cleanup|bool) and validator_service_status.status.ActiveState == "active"
+  when: not (force_host_cleanup | default(false) | bool) and validator_service_status.status.ActiveState == "active"
 
 # Check if the desired version of jito client is already installed
 - name: Check if Jito-Solana binary exists
@@ -59,8 +59,8 @@
 - name: Precheck - Set fact for Jito-Solana installation needed
   ansible.builtin.set_fact:
     jito_installation_needed: >-
-      {{ not solana_binary.stat.exists or 
-         not installed_jito_version is defined or 
+      {{ not solana_binary.stat.exists or
+         not installed_jito_version is defined or
          installed_jito_version != jito_version or
          installed_jito_client != 'JitoLabs' }}
   tags: [jito_client.precheck]

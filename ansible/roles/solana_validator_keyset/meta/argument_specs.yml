@@ -1,0 +1,23 @@
+---
+argument_specs:
+  main:
+    short_description: "Install validator keyset"
+    author: "Hayek Validator Team"
+    description:
+      - "Installs validator keys on a target host"
+      - "Stops existing validator services before installation"
+      - "Copies keys from ansible host to target host"
+      - "Configures validator startup scripts"
+    options:
+      validator_keyset_name:
+        type: str
+        required: true
+        description:
+        - "Name of the validator keyset to install"
+        - "Must match a directory name under ~/.validator-keys/ mapped from the ansible host"
+        - "e.g., 'canopy', 'hayek-testnet', 'hayek-mainnet', etc."
+      validator_type:
+        type: str
+        required: true
+        choices: ["primary", "hot-spare"]
+        description: "Type of validator (primary or hot-spare)"
