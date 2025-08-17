@@ -38,8 +38,9 @@
 #   -e "jito_version=2.2.15" \
 #   -e "jito_relayer_type=shared" \
 #   -e "jito_relayer_version=0.3.1" \
-#   -e "jito_force_build=true" \ # Optional: Force build Jito regardless of architecture
-#   -e "force_host_cleanup=true" \ # Optional: Use this if a validator service is already running
+#   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
+#   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
+#   -e "force_host_cleanup=true" \ # Optional: Use if target host is running a validator in a different cluster
 
 - name: Install Jito Client with Co-Hosted Relayer
   hosts: "{{ target_host }}"
@@ -69,7 +70,7 @@
             - jito_relayer_version
           Optional:
             - force_host_cleanup (set to true to force stop existing validator service)
-            - jito_force_build (set to true to force build Jito regardless of architecture)
+
 
     - name: Debug ansible_limit and target_host
       ansible.builtin.debug:
