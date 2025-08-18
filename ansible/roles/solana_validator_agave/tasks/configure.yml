@@ -1,62 +1,162 @@
 ---
-- name: Create validator startup script
-  ansible.builtin.template:
-    src: validator.startup.j2
-    dest: "{{ validator_script_path }}"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-    mode: '0755'
+- name: Set validator_keyset_name default if not defined
+  ansible.builtin.set_fact:
+    validator_keyset_name: "{{ validator_name }}"
+  when: validator_keyset_name is not defined
 
-- name: Create validator systemd service
-  ansible.builtin.template:
-    src: validator.service.j2
-    dest: "/etc/systemd/system/{{ validator_service_name }}.service"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
+- name: Install validator keyset using shared task
+  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/install_validator_keyset.yml
 
-- name: Create logrotate configuration
-  ansible.builtin.template:
-    src: validator.logrotate.j2
-    dest: "/etc/logrotate.d/{{ validator_service_name }}"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
+- name: Set validator script path
+  ansible.builtin.set_fact:
+    validator_script_path: "{{ scripts_dir }}/run-{{ validator_name }}.sh"
 
-- name: Create logrotate service
-  ansible.builtin.template:
-    src: validator-logrotate.service.j2
-    dest: "/etc/systemd/system/{{ validator_service_name }}-logrotate.service"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
+- name: Configure validator startup script
+  block:
+    - name: Get vote account pubkey
+      block:
+        - name: Get vote account public key
+          ansible.builtin.command: solana address -k {{ ansible_keys_dir }}/vote-account.json
+          register: vote_account_cmd
+          delegate_to: localhost
 
-- name: Create logrotate timer
-  ansible.builtin.template:
-    src: validator-logrotate.timer.j2
-    dest: "/etc/systemd/system/{{ validator_service_name }}-logrotate.timer"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
+        - name: Set vote account public key
+          ansible.builtin.set_fact:
+            vote_account_pubkey: "{{ vote_account_cmd.stdout }}"
 
-- name: Reload systemd daemon
-  ansible.builtin.systemd:
-    daemon_reload: true
-  become: true
+    - name: Get localnet genesis hash
+      block:
+        - name: Get genesis hash
+          ansible.builtin.command: solana -ul genesis-hash
+          register: cluster_genesis_hash
+          delegate_to: localhost
 
-- name: Enable and start validator service
-  ansible.builtin.systemd:
-    name: "{{ validator_service_name }}"
-    state: started
-    enabled: true
+        - name: Set expected genesis hash
+          ansible.builtin.set_fact:
+            expected_genesis_hash: "{{ cluster_genesis_hash.stdout }}"
 
-- name: Enable logrotate timer
-  ansible.builtin.systemd:
-    name: "{{ validator_service_name }}-logrotate.timer"
-    state: started
-    enabled: true
-  become: true
+        - name: Get entrypoint identity pubkey
+          ansible.builtin.shell: solana -ul validators --keep-unstaked-delinquents --output json | jq -r ".validators | .[0].identityPubkey"
+          register: entrypoint_identity_cmd
+          delegate_to: localhost
+
+        - name: Add entrypoint to known validators
+          ansible.builtin.set_fact:
+            known_validators: "{{ known_validators + [entrypoint_identity_cmd.stdout] }}"
+      when: solana_cluster == "localnet"
+
+    - name: Create validator startup script
+      ansible.builtin.template:
+        src: validator.startup.j2
+        dest: "{{ validator_script_path }}"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+        mode: "0755"
+
+    - name: Copy fix_core_afinity_bug_for_poh.sh script to remote
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../scripts/fix_core_afinity_bug_for_poh.sh"
+        dest: "{{ scripts_dir }}"
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      ignore_errors: "{{ ansible_check_mode }}"
+
+    - name: Copy schedule_set_hot_spare_identity.sh script to remote
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../scripts/schedule_set_hot_spare_identity.sh"
+        dest: "{{ scripts_dir }}"
+        mode: "0755"
+        owner: "{{ solana_user }}"
+        group: "{{ solana_user }}"
+      ignore_errors: "{{ ansible_check_mode }}"
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator startup script. Error: {{ ansible_failed_result }}"
+
+- name: Configure validator log rotation
+  block:
+    - name: Create logrotate configuration
+      ansible.builtin.template:
+        src: validator.logrotate.j2
+        dest: "/etc/logrotate.d/{{ validator_service_name }}"
+        mode: "0644"
+      become: true
+
+    - name: Verify logrotate configuration
+      ansible.builtin.command: logrotate -d /etc/logrotate.d/{{ validator_service_name }}
+      register: logrotate_check
+      changed_when: false
+      failed_when: false
+      become: true
+
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator log rotation. Error: {{ ansible_failed_result }}"
+
+- name: Set up validator logrotate systemd timer (localnet only)
+  block:
+    - name: Deploy validator logrotate systemd service
+      ansible.builtin.template:
+        src: validator-logrotate.service.j2
+        dest: /etc/systemd/system/validator-logrotate.service
+        mode: "0644"
+      become: true
+
+    - name: Deploy validator logrotate systemd timer
+      ansible.builtin.template:
+        src: validator-logrotate.timer.j2
+        dest: /etc/systemd/system/validator-logrotate.timer
+        mode: "0644"
+      become: true
+
+    - name: Reload systemd to pick up new timer
+      ansible.builtin.systemd:
+        daemon_reload: true
+      become: true
+
+    - name: Enable and start validator logrotate timer
+      ansible.builtin.systemd:
+        name: validator-logrotate.timer
+        enabled: true
+        state: started
+      become: true
+  when: solana_cluster == 'localnet'
+
+- name: Configure validator systemd service
+  block:
+    - name: Create systemd service directory
+      ansible.builtin.file:
+        path: /etc/systemd/system
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Create validator systemd service
+      ansible.builtin.template:
+        src: validator.service.j2
+        dest: "/etc/systemd/system/{{ validator_service_name }}.service"
+        mode: "0644"
+      become: true
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+      become: true
+
+    - name: Enable validator service
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        enabled: true
+        state: started
+      become: true
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator systemd service. Error: {{ ansible_failed_result }}"
+
+- name: Configuration complete
+  ansible.builtin.debug:
+    msg: "Agave validator configuration completed successfully"

@@ -1,42 +1,60 @@
 ---
-- name: Check if required variables are defined
+- name: precheck - Ensure the validator_keys_dir is defined and valid
   ansible.builtin.assert:
     that:
-      - validator_name is defined
-      - validator_type is defined
-      - solana_cluster is defined
-    fail_msg: "Required variables validator_name, validator_type, and solana_cluster must be defined"
+      - validator_keys_dir is defined
+      - validator_keys_dir == keys_dir + "/" + validator_name
+    fail_msg: >
+      "Variable 'validator_keys_dir' must be defined."
+    success_msg: "validator_keys_dir is set to {{ validator_keys_dir }}"
 
-- name: Check if validator keys directory exists
-  ansible.builtin.stat:
-    path: "{{ validator_keys_dir }}"
-  register: validator_keys_dir_stat
-
-- name: Assert validator keys directory exists
-  ansible.builtin.assert:
-    that:
-      - validator_keys_dir_stat.stat.exists
-    fail_msg: "Validator keys directory {{ validator_keys_dir }} does not exist"
-
-- name: Check if identity key exists
-  ansible.builtin.stat:
-    path: "{{ validator_keys_dir }}/identity.json"
-  register: identity_key_stat
-
-- name: Assert identity key exists
-  ansible.builtin.assert:
-    that:
-      - identity_key_stat.stat.exists
-    fail_msg: "Identity key {{ validator_keys_dir }}/identity.json does not exist"
-
-- name: Check if vote account pubkey is defined
-  ansible.builtin.assert:
-    that:
-      - vote_account_pubkey is defined
-    fail_msg: "vote_account_pubkey must be defined"
-
-- name: Check if expected genesis hash is defined
+- name: precheck - Check if expected genesis hash is defined
   ansible.builtin.assert:
     that:
       - expected_genesis_hash is defined
     fail_msg: "expected_genesis_hash must be defined"
+
+- name: precheck - Gather facts for localhost
+  ansible.builtin.setup:
+  delegate_to: localhost
+  run_once: true
+
+- name: Check required validator keypairs
+  block:
+    - name: precheck - Check if primary-target-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/primary-target-identity.json"
+      register: primary_target_identity_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: precheck - Fail if primary-target-identity.json is missing
+      ansible.builtin.fail:
+        msg: "primary-target-identity.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+      when: not primary_target_identity_file.stat.exists
+
+    # - name: precheck - Get primary target identity pubkey
+    #   ansible.builtin.command: solana-keygen pubkey {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/primary-target-identity.json
+    #   register: primary_target_pubkey
+    #   delegate_to: localhost
+    #   run_once: true
+    #   when: validator_type == 'primary'
+
+    - name: precheck - Check if vote-account.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/vote-account.json"
+      register: vote_account_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: precheck - Fail if vote-account.json is missing
+      ansible.builtin.fail:
+        msg: "vote-account.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+      when: not vote_account_file.stat.exists
+
+- name: precheck - Get host architecture
+  ansible.builtin.import_tasks: ../../common/tasks/set_host_architecture.yml
+
+# Disk space requirements (experimental)
+- name: precheck - Check minimum disk space
+  ansible.builtin.import_tasks: ../../common/tasks/check_minimum_disk_space.yml

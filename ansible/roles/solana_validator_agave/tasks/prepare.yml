@@ -1,40 +1,87 @@
 ---
-- name: Create logs directory
+- name: Determine if we should cleanup the host from existing validator data
+  ansible.builtin.set_fact:
+    should_cleanup_host_data: "{{ force_host_cleanup | default(false) }}"
+
+- name: Stop validator service
+  block:
+    - name: prepare - Check if validator service exists and is running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+      register: service_status
+      changed_when: false
+      failed_when: false
+
+    - name: prepare - Stop validator service if running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        state: stopped
+        enabled: false
+      register: stop_result
+      retries: 3
+      delay: 10
+      until: stop_result is success
+      when: service_status.status.ActiveState == "active"
+      become: true
+
+- name: prepare - Remove old validator logrotate config if it exists
+  ansible.builtin.file:
+    path: "/etc/logrotate.d/{{ validator_service_name }}"
+    state: absent
+  become: true
+
+- name: prepare - Remove old validator logrotate systemd service if it exists (localnet only)
+  ansible.builtin.file:
+    path: /etc/systemd/system/validator-logrotate.service
+    state: absent
+  become: true
+  when: solana_cluster == 'localnet'
+
+- name: prepare - Remove old validator logrotate systemd timer if it exists (localnet only)
+  ansible.builtin.file:
+    path: /etc/systemd/system/validator-logrotate.timer
+    state: absent
+  become: true
+  when: solana_cluster == 'localnet'
+
+- name: Clear logs and key store
+  ansible.builtin.shell: |
+    #!/bin/bash
+    set -e
+
+    echo "Cleaning logs directory..."
+    rm -rf {{ logs_dir }}/*
+
+    echo "Cleaning scripts directory..."
+    rm -rf {{ scripts_dir }}/*
+
+    echo "Cleaning keys directory..."
+    rm -rf {{ keys_dir }}/*
+  delegate_to: "{{ target_host }}"
+
+- name: Ensure logs directory exists
   ansible.builtin.file:
     path: "{{ logs_dir }}"
     state: directory
+    mode: "0755"
     owner: "{{ solana_user }}"
     group: "{{ solana_user }}"
-    mode: '0755'
+  become: true
 
-- name: Create ledger directory
+- name: Ensure keys directory exists
   ansible.builtin.file:
-    path: "{{ ledger_path }}"
+    path: "{{ keys_dir }}"
     state: directory
+    mode: "0755"
     owner: "{{ solana_user }}"
     group: "{{ solana_user }}"
-    mode: '0755'
+  become: true
 
-- name: Create accounts directory
+- name: Ensure scripts directory exists
   ansible.builtin.file:
-    path: "{{ accounts_path }}"
+    path: "{{ scripts_dir }}"
     state: directory
+    mode: "0755"
     owner: "{{ solana_user }}"
     group: "{{ solana_user }}"
-    mode: '0755'
-
-- name: Create snapshots directory
-  ansible.builtin.file:
-    path: "{{ snapshots_path }}"
-    state: directory
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-    mode: '0755'
-
-- name: Set validator script path
-  ansible.builtin.set_fact:
-    validator_script_path: "{{ validator_scripts_dir }}/{{ validator_name }}-{{ solana_cluster }}.sh"
-
-- name: Set systemd service name
-  ansible.builtin.set_fact:
-    validator_service_name: "{{ validator_name }}-{{ solana_cluster }}"
+  become: true

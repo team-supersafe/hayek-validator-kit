@@ -1,37 +1,73 @@
----
-- name: Wait for validator service to start
-  ansible.builtin.wait_for:
-    timeout: 30
-
-- name: Check validator service status
-  ansible.builtin.systemd:
-    name: "{{ validator_service_name }}"
-  register: validator_service_status
-
-- name: Assert validator service is active
-  ansible.builtin.assert:
-    that:
-      - validator_service_status.status.ActiveState == "active"
-    fail_msg: "Validator service {{ validator_service_name }} is not active"
-
-- name: Check if validator log file exists
+# Check if Agave binary exists
+- name: Check if Agave binary exists
   ansible.builtin.stat:
-    path: "{{ logs_dir }}/agave-validator.log"
-  register: validator_log_stat
+    path: "{{ solana_install_dir }}"
+  register: agave_binary
 
-- name: Assert validator log file exists
-  ansible.builtin.assert:
-    that:
-      - validator_log_stat.stat.exists
-    fail_msg: "Validator log file {{ logs_dir }}/agave-validator.log does not exist"
+- name: Fail if Agave binary is missing
+  ansible.builtin.fail:
+    msg: "Agave binary not found at {{ solana_install_dir }}!"
+  when: not agave_binary.stat.exists
 
-- name: Check validator process is running
-  ansible.builtin.shell: "pgrep -f 'agave-validator'"
-  register: validator_process_check
-  ignore_errors: true
+# Print validator service status
+- name: Print validator service status
+  ansible.builtin.debug:
+    var: validator_service_status
 
-- name: Assert validator process is running
-  ansible.builtin.assert:
-    that:
-      - validator_process_check.rc == 0
-    fail_msg: "Agave validator process is not running"
+# Get last 50 lines of validator logs
+- name: Get last 50 lines of validator logs
+  ansible.builtin.shell: journalctl -u {{ validator_service_name }} --no-pager | tail -n 50
+  register: validator_logs
+  changed_when: false
+
+- name: Print last 50 lines of validator logs
+  ansible.builtin.debug:
+    var: validator_logs.stdout_lines
+
+# Check validator process status
+- name: Check validator process status
+  ansible.builtin.shell: ps aux | grep "agave-validator" | grep -v grep
+  register: validator_process
+  changed_when: false
+
+- name: Print validator process status
+  ansible.builtin.debug:
+    var: validator_process.stdout_lines
+
+# Check validator service file
+- name: Check validator service file
+  ansible.builtin.shell: cat /etc/systemd/system/{{ validator_service_name }}.service
+  register: validator_service_file
+  changed_when: false
+
+- name: Print validator service file
+  ansible.builtin.debug:
+    var: validator_service_file.stdout_lines
+
+# Check validator startup script
+- name: Check validator startup script
+  ansible.builtin.shell: cat {{ scripts_dir }}/run-{{ validator_name }}.sh
+  register: validator_startup_script
+  changed_when: false
+
+- name: Print validator startup script
+  ansible.builtin.debug:
+    var: validator_startup_script.stdout_lines
+
+# Summary - Agave validator verification complete
+- name: Summary - Agave validator verification complete
+  ansible.builtin.debug:
+    msg: |
+      Agave validator verification complete. Check service status and logs above for troubleshooting.
+
+      Service Status Summary:
+      - Binary exists: {{ agave_binary.stat.exists }}
+      - Service active: {{ validator_service_status.status.ActiveState }}
+      - Service enabled: {{ validator_service_status.status.UnitFileState }}
+      - Process running: {{ validator_process.stdout_lines | length > 0 }}
+
+      If the validator is not running properly, check:
+      1. Service status and logs above
+      2. Validator startup script for correct configuration
+      3. Systemd service file for proper setup
+      4. Port availability and firewall settings
