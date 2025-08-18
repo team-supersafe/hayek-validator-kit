@@ -1,0 +1,8 @@
+---
+# Agave Validator Default Configuration
+# ------------------------------------
+
+# Logging configuration
+logrotate_max_size: "100M"
+logrotate_rotate_count: 5
+logrotate_schedule: "daily"

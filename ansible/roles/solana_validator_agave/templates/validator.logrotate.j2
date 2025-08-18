@@ -1,0 +1,13 @@
+{{ logs_dir }}/agave-validator.log {
+    daily
+    rotate {{ logrotate_rotate_count }}
+    size {{ logrotate_max_size }}
+    missingok
+    notifempty
+    compress
+    delaycompress
+    create 644 {{ solana_user }} {{ solana_user }}
+    postrotate
+        systemctl reload {{ validator_service_name }}
+    endscript
+}

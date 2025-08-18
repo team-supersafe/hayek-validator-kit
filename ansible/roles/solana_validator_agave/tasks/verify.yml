@@ -1,0 +1,37 @@
+---
+- name: Wait for validator service to start
+  ansible.builtin.wait_for:
+    timeout: 30
+
+- name: Check validator service status
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+  register: validator_service_status
+
+- name: Assert validator service is active
+  ansible.builtin.assert:
+    that:
+      - validator_service_status.status.ActiveState == "active"
+    fail_msg: "Validator service {{ validator_service_name }} is not active"
+
+- name: Check if validator log file exists
+  ansible.builtin.stat:
+    path: "{{ logs_dir }}/agave-validator.log"
+  register: validator_log_stat
+
+- name: Assert validator log file exists
+  ansible.builtin.assert:
+    that:
+      - validator_log_stat.stat.exists
+    fail_msg: "Validator log file {{ logs_dir }}/agave-validator.log does not exist"
+
+- name: Check validator process is running
+  ansible.builtin.shell: "pgrep -f 'agave-validator'"
+  register: validator_process_check
+  ignore_errors: true
+
+- name: Assert validator process is running
+  ansible.builtin.assert:
+    that:
+      - validator_process_check.rc == 0
+    fail_msg: "Agave validator process is not running"

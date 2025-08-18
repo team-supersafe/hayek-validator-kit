@@ -1,0 +1,10 @@
+[Unit]
+Description=Run logrotate for {{ validator_service_name }} {{ logrotate_schedule }}
+Requires={{ validator_service_name }}-logrotate.service
+
+[Timer]
+OnCalendar={{ logrotate_schedule }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

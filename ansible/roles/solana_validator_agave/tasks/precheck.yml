@@ -1,0 +1,42 @@
+---
+- name: Check if required variables are defined
+  ansible.builtin.assert:
+    that:
+      - validator_name is defined
+      - validator_type is defined
+      - solana_cluster is defined
+    fail_msg: "Required variables validator_name, validator_type, and solana_cluster must be defined"
+
+- name: Check if validator keys directory exists
+  ansible.builtin.stat:
+    path: "{{ validator_keys_dir }}"
+  register: validator_keys_dir_stat
+
+- name: Assert validator keys directory exists
+  ansible.builtin.assert:
+    that:
+      - validator_keys_dir_stat.stat.exists
+    fail_msg: "Validator keys directory {{ validator_keys_dir }} does not exist"
+
+- name: Check if identity key exists
+  ansible.builtin.stat:
+    path: "{{ validator_keys_dir }}/identity.json"
+  register: identity_key_stat
+
+- name: Assert identity key exists
+  ansible.builtin.assert:
+    that:
+      - identity_key_stat.stat.exists
+    fail_msg: "Identity key {{ validator_keys_dir }}/identity.json does not exist"
+
+- name: Check if vote account pubkey is defined
+  ansible.builtin.assert:
+    that:
+      - vote_account_pubkey is defined
+    fail_msg: "vote_account_pubkey must be defined"
+
+- name: Check if expected genesis hash is defined
+  ansible.builtin.assert:
+    that:
+      - expected_genesis_hash is defined
+    fail_msg: "expected_genesis_hash must be defined"

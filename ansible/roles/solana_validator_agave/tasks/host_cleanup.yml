@@ -1,0 +1,24 @@
+---
+- name: Stop existing validator service if running
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+    state: stopped
+    enabled: false
+  ignore_errors: true
+
+- name: Remove existing validator service file
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ validator_service_name }}.service"
+    state: absent
+  ignore_errors: true
+
+- name: Remove existing validator script
+  ansible.builtin.file:
+    path: "{{ validator_script_path }}"
+    state: absent
+  ignore_errors: true
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true

@@ -1,0 +1,40 @@
+---
+- name: Create logs directory
+  ansible.builtin.file:
+    path: "{{ logs_dir }}"
+    state: directory
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+    mode: '0755'
+
+- name: Create ledger directory
+  ansible.builtin.file:
+    path: "{{ ledger_path }}"
+    state: directory
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+    mode: '0755'
+
+- name: Create accounts directory
+  ansible.builtin.file:
+    path: "{{ accounts_path }}"
+    state: directory
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+    mode: '0755'
+
+- name: Create snapshots directory
+  ansible.builtin.file:
+    path: "{{ snapshots_path }}"
+    state: directory
+    owner: "{{ solana_user }}"
+    group: "{{ solana_user }}"
+    mode: '0755'
+
+- name: Set validator script path
+  ansible.builtin.set_fact:
+    validator_script_path: "{{ validator_scripts_dir }}/{{ validator_name }}-{{ solana_cluster }}.sh"
+
+- name: Set systemd service name
+  ansible.builtin.set_fact:
+    validator_service_name: "{{ validator_name }}-{{ solana_cluster }}"

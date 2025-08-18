@@ -1,0 +1,7 @@
+[Unit]
+Description=Logrotate for {{ validator_service_name }}
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/logrotate /etc/logrotate.d/{{ validator_service_name }}

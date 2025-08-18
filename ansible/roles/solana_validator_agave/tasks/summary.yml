@@ -1,0 +1,33 @@
+---
+- name: Display Agave validator installation summary
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      Agave Validator Installation Summary
+      ========================================
+
+      Validator Name: {{ validator_name }}
+      Validator Type: {{ validator_type }}
+      Solana Cluster: {{ solana_cluster }}
+      Target Host: {{ target_host }}
+
+      Service Name: {{ validator_service_name }}
+      Service Status: Active
+
+      Directories Created:
+      - Logs: {{ logs_dir }}
+      - Ledger: {{ ledger_path }}
+      - Accounts: {{ accounts_path }}
+      - Snapshots: {{ snapshots_path }}
+
+      Files Created:
+      - Startup Script: {{ validator_script_path }}
+      - Systemd Service: /etc/systemd/system/{{ validator_service_name }}.service
+      - Logrotate Config: /etc/logrotate.d/{{ validator_service_name }}
+
+      Next Steps:
+      1. Monitor validator logs: tail -f {{ logs_dir }}/agave-validator.log
+      2. Check service status: systemctl status {{ validator_service_name }}
+      3. View validator info: solana validators
+
+      ========================================

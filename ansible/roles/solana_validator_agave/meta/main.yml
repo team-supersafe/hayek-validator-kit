@@ -2,6 +2,11 @@
 dependencies:
   - role: rust_env
   - role: solana_cli
+    vars:
+      agave_version: "{{ agave_version }}"
+      build_from_source: "{{ build_from_source | default(false) }}"
+      use_official_repo: "{{ use_official_repo | default(false) }}"
   - role: solana_validator_shared
     vars:
       validator_name: "{{ validator_name }}"
+      validator_type: "{{ validator_type }}"
