@@ -31,3 +31,12 @@ open_solana_ports_start: 8000 # Start of the range of ports to open for Solana s
 open_solana_ports_end: 8020 # End of the range of ports to open for Solana services
 gossip_port: 8001 # Gossip port
 minimal_snapshot_download_speed: 31457280 # Minimal snapshot download speed in bytes per second
+
+# Repositories for downloading sources and binaries
+# Official repositories
+agave_official_repo: https://github.com/anza-xyz/agave
+jito_official_repo: https://github.com/jito-foundation/jito-solana
+
+# Forked repositories (with potential modifications)
+agave_forked_repo: https://github.com/team-supersafe/forked-agave
+jito_forked_repo: https://github.com/team-supersafe/forked-jito-solana

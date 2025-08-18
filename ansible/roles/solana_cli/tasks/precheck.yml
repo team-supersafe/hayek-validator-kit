@@ -13,16 +13,49 @@
   debug:
     msg: "Start Solana CLI setup for version {{ agave_version }}"
 
-- name: Precheck - Try solana --version
+# Check if the desired version of Solana CLI is already installed
+- name: Check if Solana CLI binary exists
+  ansible.builtin.stat:
+    path: "{{ solana_install_dir }}/solana"
+  register: solana_binary
+  tags: [solana_cli.precheck]
+
+- name: Precheck - Get installed Solana CLI version
   ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
-  register: solana_check
+  register: installed_version
   changed_when: false
   failed_when: false
+  when: solana_binary.stat.exists
+  tags: [solana_cli.precheck]
 
-- name: Precheck - Set solana_cli_already_installed fact
+- name: Precheck - Extract installed version number
   ansible.builtin.set_fact:
-    solana_cli_already_installed: "{{ solana_check.rc == 0 | bool }}"
+    installed_solana_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
+  when: solana_binary.stat.exists and installed_version.stdout is defined
+  tags: [solana_cli.precheck]
 
-- name: Debug solana_cli_already_installed
+- name: Precheck - Set fact for Solana CLI installation needed
+  ansible.builtin.set_fact:
+    solana_cli_already_installed: >-
+      {{ solana_binary.stat.exists and
+         installed_solana_version is defined and
+         installed_solana_version == agave_version }}
+  tags: [solana_cli.precheck]
+
+- name: Precheck - Find solana binary in PATH
+  ansible.builtin.command: which solana
+  register: solana_which_result
+  changed_when: false
+  failed_when: false
+  tags: [solana_cli.precheck]
+
+- name: Debug installation status
   ansible.builtin.debug:
-    msg: "solana_cli_already_installed: {{ solana_cli_already_installed }}"
+    msg: |
+      Solana CLI installation status:
+      - Binary exists: {{ solana_binary.stat.exists }}
+      - Binary path: {{ solana_binary.stat.exists | ternary(solana_install_dir ~ '/solana', 'Not found') }}
+      - Installed version: {{ installed_solana_version | default('not found') }}
+      - Desired version: {{ agave_version }}
+      - Already installed: {{ solana_cli_already_installed }}
+  tags: [solana_cli.precheck]
