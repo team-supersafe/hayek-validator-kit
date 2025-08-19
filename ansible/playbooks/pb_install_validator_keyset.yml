@@ -8,7 +8,7 @@
 # Run from /ansible directory:
 #
 # ansible-playbook playbooks/pb_install_validator_keyset.yml \
-#   -i solana_localnet.yml \
+#   -i solana_setup_host.yml \
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
 #   -e "validator_keyset_name=canopy" \ # Name of the validator keyset to install (e.g. canopy, penny, etc.)

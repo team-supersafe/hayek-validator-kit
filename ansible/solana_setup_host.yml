@@ -1,26 +1,16 @@
 all:
   hosts:
-    hyk-lat-dal:
-      ansible_host: 67.213.118.77
+    validator-host:
+      ansible_host: 192.168.1.100
       ansible_port: 2522
 
   children:
-    # ───── Data Center Grouping ─────
-    dc_latitude:
-      hosts:
-        hyk-lat-dal:
-
-    # ───── City Grouping ─────
-    city_dal:
-      hosts:
-        hyk-lat-dal:
-
     # ───── Network Grouping ─────
     solana:
       hosts:
-        hyk-lat-dal:
+        validator-host:
 
     # ───── Solana Cluster Grouping ─────
-    solana_testnet:
+    solana_mainnet:
       hosts:
-        hyk-lat-dal:
+        validator-host:
