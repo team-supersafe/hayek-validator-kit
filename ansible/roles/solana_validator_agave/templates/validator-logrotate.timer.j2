@@ -1,9 +1,10 @@
+
 [Unit]
-Description=Run logrotate for {{ validator_service_name }} {{ logrotate_schedule }}
-Requires={{ validator_service_name }}-logrotate.service
+Description=Run logrotate for {{ validator_service_name }}
+Requires=validator-logrotate-{{ validator_service_name }}.service
 
 [Timer]
-OnCalendar={{ logrotate_schedule }}
+OnCalendar=daily
 Persistent=true
 
 [Install]

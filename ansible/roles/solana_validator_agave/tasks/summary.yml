@@ -1,5 +1,5 @@
 ---
-- name: Display Agave validator installation summary
+- name: summary - Display Agave validator installation summary
   ansible.builtin.debug:
     msg: |
       ========================================
@@ -24,10 +24,5 @@
       - Startup Script: {{ validator_script_path }}
       - Systemd Service: /etc/systemd/system/{{ validator_service_name }}.service
       - Logrotate Config: /etc/logrotate.d/{{ validator_service_name }}
-
-      Next Steps:
-      1. Monitor validator logs: tail -f {{ logs_dir }}/agave-validator.log
-      2. Check service status: systemctl status {{ validator_service_name }}
-      3. View validator info: solana validators
 
       ========================================

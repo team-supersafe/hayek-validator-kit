@@ -1,5 +1,5 @@
 ---
-- name: Clean validator data before start
+- name: host_cleanup - Clean validator data before start
   ansible.builtin.shell: |
     #!/bin/bash
     set -e
@@ -15,7 +15,7 @@
     rm -rf {{ snapshots_path }}/*
   delegate_to: "{{ target_host }}"
 
-- name: Ensure ledger directory exists
+- name: host_cleanup - Ensure ledger directory exists
   ansible.builtin.file:
     path: "{{ ledger_path }}"
     state: directory
@@ -25,7 +25,7 @@
   become: true
   delegate_to: "{{ target_host }}"
 
-- name: Ensure accounts directory exists
+- name: host_cleanup - Ensure accounts directory exists
   ansible.builtin.file:
     path: "{{ accounts_path }}"
     state: directory
@@ -35,7 +35,7 @@
   become: true
   delegate_to: "{{ target_host }}"
 
-- name: Ensure snapshots directory exists
+- name: host_cleanup - Ensure snapshots directory exists
   ansible.builtin.file:
     path: "{{ snapshots_path }}"
     state: directory
