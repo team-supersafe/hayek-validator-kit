@@ -1,10 +1,9 @@
-
 [Unit]
-Description=Run logrotate for {{ validator_service_name }}
+Description=Run logrotate for {{ validator_service_name }} every hour
 Requires=validator-logrotate-{{ validator_service_name }}.service
 
 [Timer]
-OnCalendar=daily
+OnCalendar=hourly
 Persistent=true
 
 [Install]

@@ -25,6 +25,11 @@ snapshots_path: "{{ mount_base_path }}/snapshots"
 # Solana service settings
 snapshot_interval_slots: 0 # 0 means no snapshots are taken
 
+# Logging configuration
+logrotate_max_size: "1G"
+logrotate_rotate_count: 1
+logrotate_schedule: "daily"
+
 # Solana service network settings
 solana_rpc_port: 8899 # RPC port
 open_solana_ports_start: 8000 # Start of the range of ports to open for Solana services

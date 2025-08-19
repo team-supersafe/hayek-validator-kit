@@ -1,6 +1,6 @@
 [Unit]
-Description=Logrotate for validator logs
+Description=Logrotate for {{ validator_service_name }}
 
 [Service]
 Type=oneshot
-ExecStart=/usr/sbin/logrotate -f /etc/logrotate.d/validator.logrotate
+ExecStart=/usr/sbin/logrotate -f /etc/logrotate.d/{{ validator_service_name }}
