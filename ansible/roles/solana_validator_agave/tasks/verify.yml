@@ -58,15 +58,3 @@
   ansible.builtin.debug:
     msg: |
       Agave validator verification complete. Check service status and logs above for troubleshooting.
-
-      Service Status Summary:
-      - Binary exists: {{ agave_binary.stat.exists }}
-      - Service active: {{ validator_service_status.status.ActiveState }}
-      - Service enabled: {{ validator_service_status.status.UnitFileState }}
-      - Process running: {{ validator_process.stdout_lines | length > 0 }}
-
-      If the validator is not running properly, check:
-      1. Service status and logs above
-      2. Validator startup script for correct configuration
-      3. Systemd service file for proper setup
-      4. Port availability and firewall settings

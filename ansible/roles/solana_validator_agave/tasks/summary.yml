@@ -10,19 +10,8 @@
       Validator Type: {{ validator_type }}
       Solana Cluster: {{ solana_cluster }}
       Target Host: {{ target_host }}
-
       Service Name: {{ validator_service_name }}
       Service Status: Active
-
-      Directories Created:
-      - Logs: {{ logs_dir }}
-      - Ledger: {{ ledger_path }}
-      - Accounts: {{ accounts_path }}
-      - Snapshots: {{ snapshots_path }}
-
-      Files Created:
-      - Startup Script: {{ validator_script_path }}
-      - Systemd Service: /etc/systemd/system/{{ validator_service_name }}.service
-      - Logrotate Config: /etc/logrotate.d/{{ validator_service_name }}
+      Validator Logs: {{ logs_dir }}
 
       ========================================

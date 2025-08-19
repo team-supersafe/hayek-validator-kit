@@ -71,11 +71,11 @@
         group: "{{ solana_user }}"
       ignore_errors: "{{ ansible_check_mode }}"
   rescue:
-    - name: configure - configure - Fail with error message
+    - name: configure - Fail with error message
       ansible.builtin.fail:
         msg: "Failed to configure validator startup script. Error: {{ ansible_failed_result }}"
 
-- name: configure - configure - Configure validator log rotation
+- name: configure - Configure validator log rotation
   block:
     - name: configure - Create logrotate configuration
       ansible.builtin.template:
