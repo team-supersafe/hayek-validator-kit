@@ -13,34 +13,46 @@
   debug:
     msg: "Start Solana CLI setup for version {{ agave_version }}"
 
-# Check if the desired version of Solana CLI is already installed
-- name: Check if Solana CLI binary exists
-  ansible.builtin.stat:
-    path: "{{ solana_install_dir }}/solana"
-  register: solana_binary
-  tags: [solana_cli.precheck]
+- name: Check if the desired version of Solana CLI is already installed
+  block:
+    - name: Check if Solana CLI binary exists
+      ansible.builtin.stat:
+        path: "{{ solana_install_dir }}/solana"
+      register: solana_binary
+      tags: [solana_cli.precheck]
 
-- name: Precheck - Get installed Solana CLI version
-  ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
-  register: installed_version
-  changed_when: false
-  failed_when: false
-  when: solana_binary.stat.exists
-  tags: [solana_cli.precheck]
+    - name: Precheck - Get installed Solana CLI version
+      ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
+      register: installed_version
+      changed_when: false
+      failed_when: false
+      when: solana_binary.stat.exists
+      tags: [solana_cli.precheck]
 
-- name: Precheck - Extract installed version number
-  ansible.builtin.set_fact:
-    installed_solana_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
-  when: solana_binary.stat.exists and installed_version.stdout is defined
-  tags: [solana_cli.precheck]
+    - name: Precheck - Extract installed version number
+      ansible.builtin.set_fact:
+        installed_solana_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
+      when: solana_binary.stat.exists and installed_version.stdout is defined
+      tags: [solana_cli.precheck]
 
-- name: Precheck - Set fact for Solana CLI installation needed
-  ansible.builtin.set_fact:
-    solana_cli_already_installed: >-
-      {{ solana_binary.stat.exists and
-         installed_solana_version is defined and
-         installed_solana_version == agave_version }}
-  tags: [solana_cli.precheck]
+    # Take into account client as well as version number
+    # solana-cli 2.2.14 (src:e2b57760; feat:798020478, client:Solana)
+    # solana-cli 2.2.16 (src:90240211; feat:3073396398, client:JitoLabs)
+    # Matching both we ensure solana cli installation is needed or not
+    - name: Precheck - Extract installed client identifier
+      ansible.builtin.set_fact:
+        installed_solana_client: "{{ installed_version.stdout | regex_search('client:([A-Za-z0-9]+)', '\\1') | first }}"
+      when: solana_binary.stat.exists and installed_version.stdout is defined
+      tags: [solana_cli.precheck]
+
+    - name: Precheck - Set fact for Solana CLI installation needed
+      ansible.builtin.set_fact:
+        solana_cli_already_installed: >-
+          {{ solana_binary.stat.exists and
+             installed_solana_version is defined and
+             installed_solana_version == agave_version and
+             installed_solana_client == 'Solana' }}
+      tags: [solana_cli.precheck]
 
 - name: Precheck - Find solana binary in PATH
   ansible.builtin.command: which solana
@@ -56,6 +68,8 @@
       - Binary exists: {{ solana_binary.stat.exists }}
       - Binary path: {{ solana_binary.stat.exists | ternary(solana_install_dir ~ '/solana', 'Not found') }}
       - Installed version: {{ installed_solana_version | default('not found') }}
+      - Installed client: {{ installed_solana_client | default('not found') }}
       - Desired version: {{ agave_version }}
+      - Desired client: Solana
       - Already installed: {{ solana_cli_already_installed }}
   tags: [solana_cli.precheck]
