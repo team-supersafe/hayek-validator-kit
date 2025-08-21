@@ -9,6 +9,6 @@
     content: |
       #!/bin/bash
       while true; do
-        echo "Unix Testing in Progress - $(date)" > /tmp/unix-test-status.txt
+        echo "Unix Testing in Progress - $(date)" > "$HOME/.unix-test-status.txt"
         sleep 30
       done
