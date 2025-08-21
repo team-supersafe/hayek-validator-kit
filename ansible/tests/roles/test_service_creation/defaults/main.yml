@@ -3,7 +3,7 @@
 service_name: "unix-test-service"
 service_description: "Unix Test Service"
 service_user: "sol"
-service_group: "validator_admins"
+service_group: "validator_operators"
 service_script_path: "/home/sol/unix-test.sh"
 service_port: 8080
 

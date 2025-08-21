@@ -163,11 +163,11 @@
 
 - name: Fail if RSA key is too short
   ansible.builtin.fail:
-    msg: "RSA key for user {{ item.key }} is too short (must be at least 2048 bits, got {{ rsa_key_info.results[ansible_loop.index0].stdout.split(' ')[0] }} bits)"
+    msg: "RSA key for user {{ item.key }} is too short (must be at least 2048 bits, got {{ rsa_key_info.results[loop.index0].stdout.split(' ')[0] }} bits)"
   when:
     - item.value.key is defined
     - item.value.key.startswith('ssh-rsa ')
-    - (rsa_key_info.results[ansible_loop.index0].stdout.split(' ')[0] | int) < 2048
+    - (rsa_key_info.results[loop.index0].stdout.split(' ')[0] | int) < 2048
   loop: "{{ users_csv.dict | dict2items }}"
   delegate_to: localhost
   become: false
