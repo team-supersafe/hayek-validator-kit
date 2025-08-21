@@ -29,9 +29,9 @@
 # Get unique groups from CSV
 - name: Get unique groups
   ansible.builtin.set_fact:
-    unique_groups: "{{ 
-      (users_csv.dict.values() | map(attribute='group_a') | list + 
-       users_csv.dict.values() | map(attribute='group_b') | list + 
+    unique_groups: "{{
+      (users_csv.dict.values() | map(attribute='group_a') | list +
+       users_csv.dict.values() | map(attribute='group_b') | list +
        users_csv.dict.values() | map(attribute='group_c') | list) |
       reject('equalto', '') |
       reject('none') |
@@ -62,7 +62,7 @@
     name: "{{ item.key }}"
     shell: /bin/bash
     state: present
-    groups: "{{ (item.value.group_a | default('') + ',' + item.value.group_b | default('') + ',' + item.value.group_c | default('')) | regex_replace('^,|,$', '') | regex_replace(',,', ',') | regex_replace('^$', '') }}"
+    groups: "{{ [item.value.group_a, item.value.group_b, item.value.group_c] | select('defined') | select('string') | reject('equalto', '') | reject('none') | map('lower') | list | join(',') }}"
     append: true
   loop: "{{ users_csv.dict | dict2items }}"
   no_log: true
@@ -70,7 +70,7 @@
 # Debug user group assignments
 - name: Debug user group assignments
   ansible.builtin.debug:
-    msg: "User {{ item.key }} assigned to groups: {{ (item.value.group_a | default('') + ',' + item.value.group_b | default('') + ',' + item.value.group_c | default('')) | regex_replace('^,|,$', '') | regex_replace(',,', ',') | regex_replace('^$', '') }}"
+    msg: "User {{ item.key }} assigned to groups: {{ [item.value.group_a, item.value.group_b, item.value.group_c] | select('defined') | select('string') | reject('equalto', '') | reject('none') | map('lower') | list | join(',') }}"
   loop: "{{ users_csv.dict | dict2items }}"
   no_log: false
 
