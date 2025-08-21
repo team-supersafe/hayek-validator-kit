@@ -53,7 +53,7 @@
         group: "{{ solana_user }}"
         mode: "0755"
 
-    - name: configure - Copy fix_core_afinity_bug_for_poh.sh script to remote
+    - name: configure - Copy fix_core_affinity_bug_for_poh.sh script to remote
       ansible.builtin.copy:
         src: "{{ playbook_dir }}/../scripts/fix_core_afinity_bug_for_poh.sh"
         dest: "{{ scripts_dir }}"
