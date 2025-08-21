@@ -1,6 +1,5 @@
 {{ logs_dir }}/agave-validator.log {
     rotate {{ logrotate_rotate_count }}
-    size {{ logrotate_max_size }}
     {% if solana_cluster == 'localnet' %}
     size {{ logrotate_max_size_localnet }}
     {% else %}
