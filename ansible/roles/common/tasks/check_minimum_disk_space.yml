@@ -1,0 +1,43 @@
+---
+# Check if there is sufficient disk space in the given user directory
+- name: Get initial disk space
+  ansible.builtin.shell: |
+    df -h "{{ solana_user_dir }}" | awk 'NR==2 {print $4}'
+  register: initial_space
+  changed_when: false
+
+- name: Print initial available space
+  ansible.builtin.debug:
+    msg: "Initial available space in /home/sol: {{ initial_space.stdout }}"
+
+- name: Set minimum required space (experimental)
+  ansible.builtin.set_fact:
+    min_required_space: "14G"  # This is an initial estimate, can be adjusted based on experience
+
+- name: Convert space to bytes for comparison
+  ansible.builtin.set_fact:
+    initial_space_bytes: >-
+      {% set size = initial_space.stdout | regex_replace('^([0-9.]+)\\s*([KMG])$', '\\1') | float %}
+      {% set unit = initial_space.stdout | regex_replace('^[0-9.]+\\s*([KMG])$', '\\1') %}
+      {% if unit == 'K' %}
+        {{ (size * 1024) | int }}
+      {% elif unit == 'M' %}
+        {{ (size * 1024 * 1024) | int }}
+      {% elif unit == 'G' %}
+        {{ (size * 1024 * 1024 * 1024) | int }}
+      {% endif %}
+    min_required_bytes: >-
+      {% set size = min_required_space | regex_replace('^([0-9.]+)\\s*([KMG])$', '\\1') | float %}
+      {% set unit = min_required_space | regex_replace('^[0-9.]+\\s*([KMG])$', '\\1') %}
+      {% if unit == 'K' %}
+        {{ (size * 1024) | int }}
+      {% elif unit == 'M' %}
+        {{ (size * 1024 * 1024) | int }}
+      {% elif unit == 'G' %}
+        {{ (size * 1024 * 1024 * 1024) | int }}
+      {% endif %}
+
+- name: Check if available space is sufficient
+  ansible.builtin.fail:
+    msg: "Insufficient disk space. Available: {{ initial_space.stdout }}, Minimum required: {{ min_required_space }}"
+  when: initial_space_bytes | int < min_required_bytes | int
