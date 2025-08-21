@@ -58,7 +58,6 @@
 # Log analysis (read-only)
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/grep -r {{ validator_log_dir }}
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/awk
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/sed
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/sort
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/uniq
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/wc -l
