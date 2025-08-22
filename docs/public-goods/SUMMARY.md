@@ -18,7 +18,6 @@
   * [User Access](validator-operations/host-infrastructure/user-access.md)
   * [Hardware Tuning](validator-operations/host-infrastructure/hardware-tunning-info.md)
   * [System Tuning](validator-operations/host-infrastructure/system-tuning.md)
-  * [Bastion Host Setup](validator-operations/host-infrastructure/bastion-host-setup.md)
   * [Infra Testing](validator-operations/host-infrastructure/infra-testing.md)
 * [Validator Clients](validator-operations/deploying-a-validator-client/README.md)
   * [Agave](validator-operations/deploying-a-validator-client/agave.md)
@@ -40,6 +39,9 @@
 
 ## Security Infrastructure
 
+* [Server Hardening](security-infrastructure/server-hardening.md)
+* [Bastion Host Setup](security-infrastructure/bastion-host-setup.md)
+* [Pentest to the server](security-infrastructure/pentest-to-the-server.md)
 * [Key Security 101](security-infrastructure/key-security-101.md)
 * [Ansible Vault](security-infrastructure/ansible-vault.md)
 * [1Password](security-infrastructure/1password.md)

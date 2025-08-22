@@ -243,7 +243,7 @@ sudo ufw reload
 
 Server-side checks:
 
-```
+```bash
 # Check WireGuard status
 sudo wg show
 
