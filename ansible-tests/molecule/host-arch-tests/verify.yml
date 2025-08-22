@@ -1,8 +1,8 @@
 ---
-- name: Verify RBAC and least-privilege
+- name: Verify host_arch is set
   hosts: all
-  gather_facts: false
+  gather_facts: true
   become: true
   tasks:
-    - name: Execute Complete RBAC Security Verification
+    - name: Execute Complete host_arch Verification
       include_tasks: tasks/main.yml

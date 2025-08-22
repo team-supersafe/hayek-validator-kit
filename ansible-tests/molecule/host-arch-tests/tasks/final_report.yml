@@ -1,155 +1,113 @@
 ---
 # ========================================
-# RBAC VERIFICATION - FINAL REPORTING AND DECISION
+# HOST ARCHITECTURE VERIFICATION - FINAL REPORT
 # ========================================
 
-- name: Display All Violations
-  ansible.builtin.debug:
-    msg: "{{ item.0.name }}: VIOLATION {{ item.1.item }} ({{
-      item.0.role if item.0.role != 'mixed'
-      else ('validator_viewers' if item.1.item in (classified_users.validator_viewers | default([]))
-            else 'validator_operators')
-    }}): {{ item.1.stdout.strip() }}"
-  with_subelements:
-    - "{{ violation_display_matrix }}"
-    - test_results
-    - flags:
-      skip_missing: true
-  when:
-    - item.1.stdout is defined
-    - item.1.stdout | length > 0
-
-- name: Build comprehensive security summary
+- name: Build architecture verification summary
   ansible.builtin.set_fact:
-    security_summary:
-      # Basic system checks
-      basic_checks_passed: true
+    architecture_summary:
+      # System information
+      system_arch: "{{ ansible_architecture }}"
+      os_family: "{{ ansible_os_family }}"
+      detected_host_arch: "{{ host_arch | default('undefined') }}"
+      
+      # Verification status
+      arch_defined: "{{ host_arch is defined }}"
+      arch_valid: "{{ host_arch in ['x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-apple-darwin', 'aarch64-apple-darwin'] if host_arch is defined else false }}"
+      arch_consistent: "{{ 
+        (ansible_architecture == 'x86_64' and ansible_os_family in ['Linux', 'Debian'] and host_arch == 'x86_64-unknown-linux-gnu') or
+        (ansible_architecture == 'aarch64' and ansible_os_family in ['Linux', 'Debian'] and host_arch == 'aarch64-unknown-linux-gnu') or
+        (ansible_architecture == 'x86_64' and ansible_os_family == 'Darwin' and host_arch == 'x86_64-apple-darwin') or
+        (ansible_architecture == 'arm64' and ansible_os_family == 'Darwin' and host_arch == 'aarch64-apple-darwin')
+        if host_arch is defined else false
+      }}"
 
-      # Positive tests summary
-      positive_tests:
-        total: "{{ positive_tests_summary.total_tests | default(0) }}"
-        failures: "{{ positive_tests_summary.failures | default(0) }}"
-        status: "{{ positive_tests_summary.status | default('UNKNOWN') }}"
-
-      # Negative tests summary
-      negative_tests:
-        total: "{{ negative_tests_summary.total_tests | default(0) }}"
-        violations: "{{ negative_tests_summary.violations | default(0) }}"
-        users_affected: "{{ negative_tests_summary.users_affected | default(0) }}"
-        status: "{{ negative_tests_summary.status | default('UNKNOWN') }}"
-
-      # Execution tests summary
-      execution_tests:
-        total: "{{ execution_tests_summary.total_tests | default(0) }}"
-        violations: "{{ execution_tests_summary.violations | default(0) }}"
-        expected_blocks: "{{ execution_tests_summary.expected_blocks | default(0) }}"
-        status: "{{ execution_tests_summary.status | default('UNKNOWN') }}"
-
-      # Template validation summary
-      template_validation:
-        violations: "{{ template_validation_summary.total_violations | default(0) }}"
-        status: "{{ template_validation_summary.status | default('UNKNOWN') }}"
-
-      # Overall status calculation
-      total_issues: "{{ (positive_tests_summary.failures | default(0) | int) + (negative_tests_summary.violations | default(0) | int) + (execution_tests_summary.violations | default(0) | int) + (template_validation_summary.total_violations | default(0) | int) }}"
-
-- name: Calculate overall security status
+- name: Calculate overall architecture verification status
   ansible.builtin.set_fact:
-    overall_security_status: "{{ 'PASSED' if (security_summary.total_issues | int == 0) else 'FAILED' }}"
+    architecture_verification_passed: "{{ 
+      architecture_summary.arch_defined and 
+      architecture_summary.arch_valid and 
+      architecture_summary.arch_consistent 
+    }}"
 
-- name: Build comprehensive unified security report
+- name: Build comprehensive architecture verification report
   ansible.builtin.set_fact:
-    violation_summary_lines: |
+    architecture_report_lines: |
       {%- set lines = [] -%}
-
-      {%- if security_summary.total_issues | int > 0 -%}
+      
+      {%- if architecture_verification_passed -%}
         {%- set _ = lines.append("========================================") -%}
-        {%- set _ = lines.append("🚨 RBAC SECURITY VIOLATIONS DETECTED") -%}
+        {%- set _ = lines.append("🎉 HOST ARCHITECTURE VERIFICATION PASSED") -%}
         {%- set _ = lines.append("========================================") -%}
         {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("🎯 FINAL ANSWER: SECURITY BREACH DETECTED ❌") -%}
+        {%- set _ = lines.append("🎯 FINAL ANSWER: ARCHITECTURE DETECTION WORKING ✅") -%}
         {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("📊 EXECUTION STATISTICS:") -%}
-        {%- set _ = lines.append("• Total commands tested: " + (security_summary.execution_tests.total | string)) -%}
-        {%- set _ = lines.append("• Security violations found: " + (security_summary.total_issues | string)) -%}
-        {%- set _ = lines.append("• Success rate: " + (((security_summary.execution_tests.total | int - security_summary.total_issues | int) / security_summary.execution_tests.total | int * 100) | round(1) | string) + "%") -%}
+        {%- set _ = lines.append("📊 SYSTEM INFORMATION:") -%}
+        {%- set _ = lines.append("• System Architecture: " + (architecture_summary.system_arch | string)) -%}
+        {%- set _ = lines.append("• OS Family: " + (architecture_summary.os_family | string)) -%}
+        {%- set _ = lines.append("• Detected host_arch: " + (architecture_summary.detected_host_arch | string)) -%}
         {%- set _ = lines.append("") -%}
-
-        {%- set _ = lines.append("🚨 DETAILED VIOLATION BREAKDOWN:") -%}
-        {%- set _ = lines.append("• Positive test failures: " + (security_summary.positive_tests.failures | string)) -%}
-        {%- set _ = lines.append("• Role hierarchy violations: " + (security_summary.negative_tests.violations | string)) -%}
-        {%- set _ = lines.append("• Execution test violations: " + (security_summary.execution_tests.violations | string)) -%}
-        {%- set _ = lines.append("• Template violations: " + (security_summary.template_validation.violations | string)) -%}
-        {%- set _ = lines.append("• Users affected: " + (security_summary.negative_tests.users_affected | string)) -%}
-        {%- set _ = lines.append("") -%}
-
-        {%- set _ = lines.append("⚠️ ACTION REQUIRED:") -%}
-        {%- set _ = lines.append("1. Review all violations listed above") -%}
-        {%- set _ = lines.append("2. Fix sudoers configuration for affected users") -%}
-        {%- set _ = lines.append("3. Verify role templates in /etc/sudoers.d/") -%}
-        {%- set _ = lines.append("4. Re-run verification until all tests pass") -%}
-        {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("🛑 VERDICT: SECURITY NEEDS IMMEDIATE ATTENTION ❌") -%}
-        {%- set _ = lines.append("DEPLOYMENT STATUS: BLOCKED") -%}
-        {%- set _ = lines.append("DO NOT DEPLOY TO PRODUCTION UNTIL RESOLVED!") -%}
-        {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("📄 DETAILED LOG:") -%}
-        {%- set _ = lines.append("• Full execution log: " + (csv_source_dir | default('~/new-metal-box')) + "/rbac_execution_log_" + (ansible_date_time.epoch | string) + ".txt") -%}
         {%- set _ = lines.append("========================================") -%}
       {%- else -%}
         {%- set _ = lines.append("========================================") -%}
-        {%- set _ = lines.append("🎉 RBAC SECURITY VERIFICATION PASSED") -%}
+        {%- set _ = lines.append("🚨 HOST ARCHITECTURE VERIFICATION FAILED") -%}
         {%- set _ = lines.append("========================================") -%}
         {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("🎯 FINAL ANSWER: ALL TESTS PASSED ✅") -%}
+        {%- set _ = lines.append("🚨 FINAL ANSWER: ARCHITECTURE DETECTION FAILED ❌") -%}
         {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("📊 EXECUTION STATISTICS:") -%}
-        {%- set _ = lines.append("• Total commands tested: " + (security_summary.execution_tests.total | string)) -%}
-        {%- set _ = lines.append("• Commands successful: " + ((security_summary.execution_tests.total | int - security_summary.execution_tests.expected_blocks | int) | string)) -%}
-        {%- set _ = lines.append("• Restricted commands blocked: " + (security_summary.execution_tests.expected_blocks | string)) -%}
-        {%- set _ = lines.append("• Security violations found: " + (security_summary.total_issues | string)) -%}
-        {%- set _ = lines.append("• Success rate: 100%") -%}
+        {%- set _ = lines.append("📊 SYSTEM INFORMATION:") -%}
+        {%- set _ = lines.append("• System Architecture: " + (architecture_summary.system_arch | string)) -%}
+        {%- set _ = lines.append("• OS Family: " + (architecture_summary.os_family | string)) -%}
+        {%- set _ = lines.append("• Detected host_arch: " + (architecture_summary.detected_host_arch | string)) -%}
         {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("✅ COMPREHENSIVE TEST RESULTS:") -%}
-        {%- set _ = lines.append("• Positive tests passed: " + (security_summary.positive_tests.total | string) + " tests") -%}
-        {%- set _ = lines.append("• Negative tests passed: " + (security_summary.negative_tests.total | string) + " tests") -%}
-        {%- set _ = lines.append("• Execution tests passed: " + (security_summary.execution_tests.total | string) + " tests") -%}
-        {%- set _ = lines.append("• sudo -n blocks: " + (security_summary.execution_tests.expected_blocks | string) + " (as expected)") -%}
-        {%- set _ = lines.append("• Template validation passed") -%}
+        {%- set _ = lines.append("❌ VERIFICATION RESULTS:") -%}
+        {%- set _ = lines.append("• host_arch variable defined: " + ("✅" if architecture_summary.arch_defined else "❌")) -%}
+        {%- set _ = lines.append("• host_arch value valid: " + ("✅" if architecture_summary.arch_valid else "❌")) -%}
+        {%- set _ = lines.append("• host_arch consistent with system: " + ("✅" if architecture_summary.arch_consistent else "❌")) -%}
         {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("🛡️ SECURITY ANALYSIS:") -%}
-        {%- set _ = lines.append("• All basic commands work for everyone") -%}
-        {%- set _ = lines.append("• All restricted commands properly blocked") -%}
-        {%- set _ = lines.append("• Admin commands work only for administrators") -%}
-        {%- set _ = lines.append("• sudo -n password prompts working correctly") -%}
-        {%- set _ = lines.append("• Least privilege principles enforced") -%}
-        {%- set _ = lines.append("• No unauthorized access detected") -%}
+        {%- set _ = lines.append("⚠️ ISSUES DETECTED:") -%}
+        {%- if not architecture_summary.arch_defined -%}
+          {%- set _ = lines.append("• host_arch variable is not defined") -%}
+        {%- endif -%}
+        {%- if not architecture_summary.arch_valid -%}
+          {%- set _ = lines.append("• host_arch has invalid value: " + (architecture_summary.detected_host_arch | string)) -%}
+        {%- endif -%}
+        {%- if not architecture_summary.arch_consistent -%}
+          {%- set _ = lines.append("• host_arch is inconsistent with system architecture") -%}
+        {%- endif -%}
         {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("🎯 VERDICT: SECURITY IS OK ✅") -%}
-        {%- set _ = lines.append("DEPLOYMENT STATUS: APPROVED") -%}
-        {%- set _ = lines.append("System ready for production deployment.") -%}
+        {%- set _ = lines.append("🔧 RECOMMENDED ACTIONS:") -%}
+        {%- set _ = lines.append("1. Check that set_host_architecture.yml is being executed") -%}
+        {%- set _ = lines.append("2. Verify the architecture detection logic") -%}
+        {%- set _ = lines.append("3. Ensure all supported architectures are covered") -%}
+        {%- set _ = lines.append("4. Re-run the test after fixing the issues") -%}
         {%- set _ = lines.append("") -%}
-        {%- set _ = lines.append("📄 DETAILED LOG:") -%}
-        {%- set _ = lines.append("• Full execution log: " + (csv_source_dir | default('~/new-metal-box')) + "/rbac_execution_log_" + (ansible_date_time.epoch | string) + ".txt") -%}
+        {%- set _ = lines.append("🛑 VERDICT: ARCHITECTURE DETECTION NEEDS ATTENTION ❌") -%}
+        {%- set _ = lines.append("VALIDATION STATUS: FAILED") -%}
+        {%- set _ = lines.append("The set_host_architecture.yml task is not working correctly!") -%}
+        {%- set _ = lines.append("") -%}
         {%- set _ = lines.append("========================================") -%}
       {%- endif -%}
       {{ lines }}
 
-- name: Display comprehensive unified security report
+- name: Display comprehensive architecture verification report
   ansible.builtin.debug:
-    msg: "{{ violation_summary_lines }}"
+    msg: "{{ architecture_report_lines }}"
 
-- name: Security Check Failed
+- name: Architecture Verification Failed
   ansible.builtin.fail:
     msg: |
-      DEPLOYMENT BLOCKED: {{ security_summary.total_issues }} security issues detected
-
-      Details:
-      - Positive test failures: {{ security_summary.positive_tests.failures }}
-      - Role hierarchy violations: {{ security_summary.negative_tests.violations }}
-      - Execution test violations: {{ security_summary.execution_tests.violations }}
-      - Template violations: {{ security_summary.template_validation.violations }}
-      - Users affected: {{ security_summary.negative_tests.users_affected }}
-
-      DO NOT DEPLOY TO PRODUCTION UNTIL RESOLVED!
-  when: security_summary.total_issues | int > 0
+      ARCHITECTURE VERIFICATION FAILED
+      
+      System Information:
+      - System Architecture: {{ architecture_summary.system_arch }}
+      - OS Family: {{ architecture_summary.os_family }}
+      - Detected host_arch: {{ architecture_summary.detected_host_arch }}
+      
+      Issues:
+      - host_arch defined: {{ architecture_summary.arch_defined }}
+      - host_arch valid: {{ architecture_summary.arch_valid }}
+      - host_arch consistent: {{ architecture_summary.arch_consistent }}
+      
+      The set_host_architecture.yml task is not functioning correctly!
+  when: not architecture_verification_passed

@@ -1,57 +1,13 @@
 ---
-
-- name: Initialize RBAC Configuration and Variables
-  include_tasks: setup_config.yml
+- name: Verify Host Architecture Detection
+  include_tasks: check_arch.yml
   tags:
-    - setup
-    - config
-    - always
+    - architecture
+    - host_arch
+    - verification
 
-- name: Perform Basic System Validation
-  include_tasks: basic_system_checks.yml
-  tags:
-    - basic
-    - system
-    - validation
-
-- name: Classify and Group Users by Roles
-  include_tasks: user_classification.yml
-  tags:
-    - users
-    - classification
-    - roles
-
-- name: Execute Positive Permission Tests
-  include_tasks: positive_tests.yml
-  tags:
-    - positive
-    - permissions
-    - authorized
-
-- name: Execute Negative Permission Tests
-  include_tasks: negative_tests.yml
-  tags:
-    - negative
-    - permissions
-    - unauthorized
-
-- name: Execute Real Command Execution Tests
-  include_tasks: execution_tests.yml
-  tags:
-    - execution
-    - commands
-    - real_testing
-
-- name: Validate Against Role Templates
-  include_tasks: template_validation.yml
-  tags:
-    - templates
-    - validation
-    - compliance
-
-- name: Generate Final Security Report and Decision
+- name: Generate Architecture Verification Report
   include_tasks: final_report.yml
   tags:
     - report
     - final
-    - decision

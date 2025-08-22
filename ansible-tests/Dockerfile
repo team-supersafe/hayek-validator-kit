@@ -59,6 +59,7 @@ RUN --mount=type=cache,target=/root/.cache \
 # Molecule runner image
 FROM ubuntu-base AS molecule-runner
 ARG SOLANA_RELEASE
+ARG DEFAULT_SCENARIO=rbac-tests
 
 # Install Docker CLI and Ansible/Molecule via Pip
 RUN --mount=type=cache,target=/var/cache/apt \
@@ -97,52 +98,10 @@ RUN --mount=type=cache,target=/root/.cache \
     && echo 'if [ -f ~/.bashrc ]; then source ~/.bashrc; fi' >> ~/.profile \
     && echo 'export PS1="\[\e[0;32m\]test-runner\[\e[m\]:\w\$ "' >> ~/.bashrc
 
-
-RUN echo '# Welcome message for test-runner' >> ~/.bashrc \
-    && echo 'show_test_help() {' >> ~/.bashrc \
-    && echo '    echo -e "\\n\\033[1;36m=========================================="' >> ~/.bashrc \
-    && echo '    echo -e "🧪 HAYEK VALIDATOR KIT - TEST RUNNER"' >> ~/.bashrc \
-    && echo '    echo -e "==========================================\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "\\n\\033[1;32m📋 Available Test Commands:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "\\n\\033[1;33m🔐 RBAC Tests (you are here):\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;32m# Full test suite with specific CSV file:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  molecule test -s rbac-tests -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;90m  → Runs complete suite: converge + verify + destroy\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e ""' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;32m# Initial setup (configuration only):\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  molecule converge -s rbac-tests -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;90m  → Creates container and applies RBAC configuration\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e ""' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;32m# Idempotency test:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  molecule idempotence -s rbac-tests -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;90m  → Verifies that changes are idempotent\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e ""' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;32m# Verification on active container:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  molecule verify                  # Run verification tests only"' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;90m  → Runs RBAC tests without recreating container\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e ""' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;32m# Direct container access:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  molecule login                   # SSH into testing container"' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;90m  → For manual debugging and exploration\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e ""' >> ~/.bashrc \
-    && echo '    echo -e "  \\033[1;32m# Cleanup:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  molecule destroy                 # Remove testing containers"' >> ~/.bashrc \
-    && echo '    echo -e "\\n\\033[1;33m📁 Important Paths:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  /hayek-validator-kit/            # Main project directory"' >> ~/.bashrc \
-    && echo '    echo -e "  /root/new-metal-box/             # CSV configuration files"' >> ~/.bashrc \
-    && echo '    echo -e "\\n\\033[1;32m💡 Quick Tip:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  • Use '\''help'\'' to show this message again"' >> ~/.bashrc \
-    && echo '    echo -e "\\n\\033[1;36m==========================================\\033[0m\\n"' >> ~/.bashrc \
-    && echo '}' >> ~/.bashrc \
-    && echo '' >> ~/.bashrc \
-    && echo '# Alias for easy access' >> ~/.bashrc \
-    && echo 'alias help="show_test_help"' >> ~/.bashrc \
-    && echo '' >> ~/.bashrc \
-    && echo '# Show welcome message on login' >> ~/.bashrc \
-    && echo 'show_test_help' >> ~/.bashrc \
-    && echo '' >> ~/.bashrc \
-    && echo '# Auto-navigate to Molecule tests directory' >> ~/.bashrc \
-    && echo 'cd /hayek-validator-kit/ansible-tests/ 2>/dev/null || echo "Molecule tests directory not found"' >> ~/.bashrc
+# Copy and execute welcome setup script
+COPY scripts/setup-welcome.sh /opt/scripts/setup-welcome.sh
+RUN chmod +x /opt/scripts/setup-welcome.sh \
+    && /opt/scripts/setup-welcome.sh ${DEFAULT_SCENARIO} /hayek-validator-kit /root/new-metal-box
 
 CMD [ "bash" ]
 
