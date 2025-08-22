@@ -4,7 +4,7 @@
   become: true
   gather_facts: false
   vars_files:
-    - "../../../../ansible/roles/iam_manager/defaults/main.yml"
+    - "../../../ansible/roles/iam_manager/defaults/main.yml"
   tasks:
     - name: Ensure remote tmp directory exists
       ansible.builtin.raw: mkdir -p /tmp/.ansible/tmp && chmod 1777 /tmp /tmp/.ansible /tmp/.ansible/tmp

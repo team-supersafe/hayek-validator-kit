@@ -1,8 +1,11 @@
 ---
+scenario:
+  name: rbac-tests
+
 dependency:
   name: shell
   command: |
-    cd "${MOLECULE_PROJECT_DIRECTORY}/../"
+    cd /hayek-validator-kit/ansible-tests
     DOCKER_BUILDKIT=1 docker build --target naked-builder -t molecule-host-alpha .
 
 driver:
@@ -40,7 +43,7 @@ provisioner:
     converge: converge.yml
     verify: verify.yml
   env:
-    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/../../ansible/roles"
+    ANSIBLE_ROLES_PATH: "/hayek-validator-kit/ansible/roles"
     # Temporary workaround for ansible-core 2.19 strict conditionals breaking molecule-docker playbooks
     ALLOW_BROKEN_CONDITIONALS: "1"
   config_options:

@@ -76,7 +76,7 @@ ENV PIP_PACKAGES="ansible passlib molecule molecule-plugins[docker] ansible-lint
 RUN pip3 install $PIP_PACKAGES
 
 RUN mkdir -p /opt/code/tools
-WORKDIR /hayek-validator-kit/ansible-tests/rbac-tests
+WORKDIR /hayek-validator-kit/ansible-tests/
 
 SHELL [ "/bin/bash", "-c" ]
 ENV LANG=C.UTF-8
@@ -106,15 +106,15 @@ RUN echo '# Welcome message for test-runner' >> ~/.bashrc \
     && echo '    echo -e "\\n\\033[1;32m📋 Available Test Commands:\\033[0m"' >> ~/.bashrc \
     && echo '    echo -e "\\n\\033[1;33m🔐 RBAC Tests (you are here):\\033[0m"' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;32m# Full test suite with specific CSV file:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  molecule test -s default -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
+    && echo '    echo -e "  molecule test -s rbac-tests -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;90m  → Runs complete suite: converge + verify + destroy\\033[0m"' >> ~/.bashrc \
     && echo '    echo -e ""' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;32m# Initial setup (configuration only):\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  molecule converge -s default -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
+    && echo '    echo -e "  molecule converge -s rbac-tests -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;90m  → Creates container and applies RBAC configuration\\033[0m"' >> ~/.bashrc \
     && echo '    echo -e ""' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;32m# Idempotency test:\\033[0m"' >> ~/.bashrc \
-    && echo '    echo -e "  molecule idempotence -s default -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
+    && echo '    echo -e "  molecule idempotence -s rbac-tests -- -e csv_file=iam_setup.csv"' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;90m  → Verifies that changes are idempotent\\033[0m"' >> ~/.bashrc \
     && echo '    echo -e ""' >> ~/.bashrc \
     && echo '    echo -e "  \\033[1;32m# Verification on active container:\\033[0m"' >> ~/.bashrc \
@@ -141,8 +141,8 @@ RUN echo '# Welcome message for test-runner' >> ~/.bashrc \
     && echo '# Show welcome message on login' >> ~/.bashrc \
     && echo 'show_test_help' >> ~/.bashrc \
     && echo '' >> ~/.bashrc \
-    && echo '# Auto-navigate to RBAC tests directory' >> ~/.bashrc \
-    && echo 'cd /hayek-validator-kit/ansible-tests/rbac-tests 2>/dev/null || echo "RBAC tests directory not found"' >> ~/.bashrc
+    && echo '# Auto-navigate to Molecule tests directory' >> ~/.bashrc \
+    && echo 'cd /hayek-validator-kit/ansible-tests/ 2>/dev/null || echo "Molecule tests directory not found"' >> ~/.bashrc
 
 CMD [ "bash" ]
 

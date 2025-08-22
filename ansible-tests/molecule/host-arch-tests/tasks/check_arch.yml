@@ -1,0 +1,8 @@
+---
+# ========================================
+# RBAC VERIFICATION - DETAILED COMMAND LOGGING
+# ========================================
+
+- name: Get current timestamp for logging
+  ansible.builtin.setup:
+    filter: ansible_date_time

@@ -4,7 +4,7 @@
   gather_facts: false
   become: true
   vars_files:
-    - "../../../../ansible/roles/iam_manager/defaults/main.yml"
+    - "../../../ansible/roles/iam_manager/defaults/main.yml"
   tasks:
     - name: Execute Complete RBAC Security Verification
       include_tasks: tasks/main.yml
