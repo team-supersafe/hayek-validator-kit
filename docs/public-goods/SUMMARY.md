@@ -19,7 +19,7 @@
   * [Hardware Tuning](validator-operations/host-infrastructure/hardware-tunning-info.md)
   * [System Tuning](validator-operations/host-infrastructure/system-tuning.md)
   * [Infra Testing](validator-operations/host-infrastructure/infra-testing.md)
-  * [Hot-Spare](validator-operations/host-infrastructure/hot-spare.md)
+  * [Hot-Spare Setup](validator-operations/host-infrastructure/hot-spare-setup.md)
 * [Validator Clients](validator-operations/deploying-a-validator-client/README.md)
   * [Agave](validator-operations/deploying-a-validator-client/agave.md)
   * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
