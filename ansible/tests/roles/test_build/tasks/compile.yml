@@ -1,0 +1,22 @@
+---
+# Configure and compile htop
+# =========================
+# This task executes the complete htop compilation process:
+# 1. autogen.sh - Generates configuration scripts
+# 2. configure - Configures compilation with installation directory
+# 3. make - Compiles the application using all available CPU cores
+#
+# Best practices:
+# - Use shell module for complex commands that require pipe
+# - Use $(nproc) to utilize all CPU cores
+# - Specify executable: /bin/bash for compatibility
+# - Use variables for installation directory
+
+- name: Configure and compile htop
+  ansible.builtin.shell:
+    cmd: |
+      cd /tmp/htop-{{ htop_version }}
+      ./autogen.sh
+      ./configure --prefix={{ htop_install_dir }} --disable-sensors --disable-unicode
+      make -j$(nproc)
+    executable: /bin/bash

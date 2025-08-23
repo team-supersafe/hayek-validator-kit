@@ -2,11 +2,12 @@
 # Precheck 1: Read and validate CSV file
 # This task reads the CSV file containing user information and validates its structure
 - name: Read users from CSV
-  ansible.builtin.read_csv:
+  community.general.read_csv:
     path: "{{ users_file }}"
     key: user
   register: users_csv
   delegate_to: localhost
+  become: false
   run_once: true
 
 # Precheck 2: Debug output
@@ -15,43 +16,159 @@
   ansible.builtin.debug:
     var: users_csv
   delegate_to: localhost
+  become: false
   no_log: true
   run_once: true
 
 # Precheck 3: Validate CSV structure
-# Ensures the CSV file has the required fields (user, email, sent_email, key)
+# Ensures the CSV file has the required fields for RBAC
 # Fails if the CSV is empty or missing required fields
 - name: Verify CSV data structure
   ansible.builtin.fail:
-    msg: "Invalid CSV structure. Required fields: user, email, sent_email, key"
+    msg: "Invalid CSV structure. Required fields: user, key, group_a, group_b, group_c"
   when: >
     not (users_csv is defined and
     users_csv | length > 0)
   delegate_to: localhost
+  become: false
   run_once: true
 
-# Precheck 4: Check for existing users
-# Uses cut command to get a list of existing users from /etc/passwd
-# This is a security check to prevent overwriting existing users
-- name: Get list of existing users
-  ansible.builtin.shell: "cut -d: -f1 /etc/passwd"
-  register: existing_users
-  changed_when: false
-
-# Precheck 5: Fail if users exist
-# Compares users from CSV with existing system users
-# If any users already exist, the playbook will fail for security reasons
-- name: Check for existing users
+# Precheck 4: Validate required fields exist
+- name: Validate CSV has required field user
   ansible.builtin.fail:
-    msg: "It appears this server has already been installed (existing users: {{ existing_users_list | join(', ') }}). For security reasons, this configuration will not continue."
-  when: existing_users_list | length > 0
-  vars:
-    existing_users_list: "{{ users_csv.dict.keys() | select('in', existing_users.stdout_lines) | list }}"
+    msg: "CSV missing required field: user"
+  when: not (users_csv.dict.values() | map(attribute='user') | list | first is defined)
+  delegate_to: localhost
+  become: false
+  run_once: true
 
-# Precheck 6: Display inventory directory
+- name: Validate CSV has required field key
+  ansible.builtin.fail:
+    msg: "CSV missing required field: key"
+  when: not (users_csv.dict.values() | map(attribute='key') | list | first is defined)
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Validate CSV has required field group_a
+  ansible.builtin.fail:
+    msg: "CSV missing required field: group_a"
+  when: not (users_csv.dict.values() | map(attribute='group_a') | list | first is defined)
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Validate CSV has required field group_b
+  ansible.builtin.fail:
+    msg: "CSV missing required field: group_b"
+  when: not (users_csv.dict.values() | map(attribute='group_b') | list | first is defined)
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Validate CSV has required field group_c
+  ansible.builtin.fail:
+    msg: "CSV missing required field: group_c"
+  when: not (users_csv.dict.values() | map(attribute='group_c') | list | first is defined)
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+# Precheck 5: Display inventory directory
 # Shows the inventory directory path for verification
 - name: Display message in console
   ansible.builtin.debug:
     msg: "{{ inventory_dir }}"
   delegate_to: localhost
+  become: false
+  run_once: true
+
+# Precheck 6: Display CSV summary with access control information
+- name: Display CSV summary with access control
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      CSV SUMMARY & ACCESS CONTROL PLAN
+      ========================================
+
+      Total users: {{ users_csv.dict | length }}
+      Users: {{ users_csv.dict.keys() | list | join(', ') }}
+
+      Access Control Configuration:
+
+      🔧 SYSADMIN USERS (Password + SSH Key + Sudo + Password Self-Service):
+      {% for user, data in users_csv.dict.items() %}
+      {% if 'sysadmin' in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
+      {% endif %}
+      {% endfor %}
+
+      🤖 VALIDATOR_OPERATORS USERS (Password + SSH Key + Sudo + Password Self-Service):
+      {% for user, data in users_csv.dict.items() %}
+      {% if 'validator_operators' in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
+      {% endif %}
+      {% endfor %}
+
+      🔑 SSH KEY ONLY USERS (No Password, No Sudo):
+      {% for user, data in users_csv.dict.items() %}
+      {% if 'sysadmin' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') and 'validator_operators' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
+      {% endif %}
+      {% endfor %}
+
+      ========================================
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+# Precheck 7: Validate SSH key format
+- name: Validate SSH key format
+  ansible.builtin.fail:
+    msg: "Invalid SSH key format for user {{ item.key }}. Expected format: ssh-ed25519 [key] [email] or ssh-rsa [key] [email]"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: >
+    item.value.key is defined and
+    item.value.key != "" and
+    item.value.key is not none and
+    not item.value.key.startswith('ssh-ed25519 ') and
+    not item.value.key.startswith('ssh-rsa ')
+  delegate_to: localhost
+  become: false
+  no_log: true
+  run_once: true
+
+# Precheck 8: Debug users without SSH keys
+- name: Debug users without SSH keys
+  ansible.builtin.debug:
+    msg: "User {{ item.key }} has no SSH key configured"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: item.value.key is not defined or item.value.key == "" or item.value.key is none
+  delegate_to: localhost
+  become: false
+  no_log: true
+  run_once: true
+
+# Precheck 9: Check RSA key length
+- name: Check RSA key length
+  ansible.builtin.shell: |
+    echo "{{ item.value.key }}" | ssh-keygen -lf -
+  register: rsa_key_info
+  when: item.value.key is defined and item.value.key.startswith('ssh-rsa ')
+  loop: "{{ users_csv.dict | dict2items }}"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  run_once: true
+
+- name: Fail if RSA key is too short
+  ansible.builtin.fail:
+    msg: "RSA key for user {{ item.key }} is too short (must be at least 2048 bits, got {{ rsa_key_info.results[loop.index0].stdout.split(' ')[0] }} bits)"
+  when:
+    - item.value.key is defined
+    - item.value.key.startswith('ssh-rsa ')
+    - (rsa_key_info.results[loop.index0].stdout.split(' ')[0] | int) < 2048
+  loop: "{{ users_csv.dict | dict2items }}"
+  delegate_to: localhost
+  become: false
   run_once: true

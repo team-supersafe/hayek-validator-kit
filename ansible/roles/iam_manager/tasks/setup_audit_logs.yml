@@ -1,0 +1,46 @@
+---
+# Configure ISO 27001 compliant audit logging for password reset system
+# This implements comprehensive logging and monitoring for security compliance
+
+# Create audit log directory for ISO 27001 compliance
+- name: Create password audit log directory
+  ansible.builtin.file:
+    path: "{{ password_audit_log_dir | default('/var/log') }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  no_log: true
+
+# Create password audit log file with proper permissions
+- name: Create password audit log file
+  ansible.builtin.file:
+    path: "{{ password_audit_log | default('/var/log/password-reset.log') }}"
+    state: touch
+    mode: '0640'
+    owner: root
+    group: adm
+  changed_when: false
+  no_log: true
+
+# Configure logrotate for password reset logs (ISO 27001 compliance)
+- name: Configure logrotate for password reset logs
+  ansible.builtin.copy:
+    content: |
+      {{ password_audit_log | default('/var/log/password-reset.log') }} {
+          daily
+          missingok
+          rotate 90
+          compress
+          delaycompress
+          notifempty
+          create 640 root adm
+          postrotate
+              /usr/lib/rsyslog/rsyslog-rotate
+          endscript
+      }
+    dest: /etc/logrotate.d/password-reset
+    mode: '0644'
+    owner: root
+    group: root
+  no_log: true

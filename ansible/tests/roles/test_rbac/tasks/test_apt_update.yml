@@ -1,0 +1,15 @@
+---
+# Test apt-get update permissions
+# Expected: sysadmin, validator_admin can run apt-get update
+
+- name: Test sudo permissions for apt-get update
+  ansible.builtin.shell:
+    cmd: "timeout {{ timeout_sec }} sudo {{ '-n' if not is_sysadmin else '' }} apt-get update"
+    executable: /bin/bash
+  register: apt_update_result
+  ignore_errors: true
+  become: "{{ is_sysadmin | bool }}"
+
+- name: Display apt-get update result
+  ansible.builtin.debug:
+    msg: "User {{ ansible_user }} - Attempt to run apt-get update: {{ 'SUCCESS' if apt_update_result.rc == 0 else 'FAILED' }}"

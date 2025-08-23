@@ -1,0 +1,148 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    # Use the same variable pattern as production: csv_file
+    # This should be passed as extra variable: -e "csv_file=iam_setup.csv"
+    molecule_csv_file: "{{ csv_file | default('molecule_test_users.csv') }}"
+    # Source CSV directory - check multiple locations
+    molecule_csv_source_dir: "{{ csv_source_dir | default('~/new-metal-box') }}"
+    # Create temporary directory for CSV file
+    molecule_csv_dir: "/tmp/molecule"
+  pre_tasks:
+    - name: Check if CSV file exists in source directory
+      become: false
+      delegate_to: localhost
+      ansible.builtin.stat:
+        path: "{{ molecule_csv_source_dir }}/{{ molecule_csv_file }}"
+      register: source_csv_stat
+
+    - name: Fail if CSV file not found
+      ansible.builtin.fail:
+        msg: "CSV file {{ molecule_csv_file }} not found in {{ molecule_csv_source_dir }}. Available files: {{ available_csv_files.stdout_lines | default(['none']) }}"
+      when: not source_csv_stat.stat.exists
+      vars:
+        available_csv_files: "{{ lookup('pipe', 'ls ' + molecule_csv_source_dir + '/*.csv 2>/dev/null || echo') }}"
+
+    - name: Create molecule CSV directory
+      become: false
+      delegate_to: localhost
+      ansible.builtin.file:
+        path: "{{ molecule_csv_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy real CSV file to molecule directory
+      become: false
+      delegate_to: localhost
+      ansible.builtin.copy:
+        src: "{{ molecule_csv_source_dir }}/{{ molecule_csv_file }}"
+        dest: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
+        mode: '0644'
+
+    - name: Display CSV content for verification
+      become: false
+      delegate_to: localhost
+      ansible.builtin.debug:
+        msg: "Using CSV file: {{ molecule_csv_file }} from {{ molecule_csv_source_dir }}"
+
+
+
+  roles:
+    # Execute the current role being tested
+    # MOLECULE_PROJECT_DIRECTORY = /path/to/ansible/roles/iam_manager
+    # basename extracts just "iam_manager" from the full path
+    # This dynamically resolves to: role: "iam_manager"
+    # Which executes tasks/main.yml and all imported task files
+    - role: "iam_manager"
+      vars:
+        # Override the users_file to point to our test CSV using same pattern as production
+        users_file: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
+        # Allow re-running tests without failing on existing users
+        molecule_testing: true
+  post_tasks:
+    - name: Check if {{ solana_user }} user exists
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ solana_user }}"
+      register: sol_user_check
+      failed_when: false
+
+    - name: Create mock validator script (after iam_manager role)
+      ansible.builtin.copy:
+        dest: /usr/local/bin/mock-validator
+        content: |
+          #!/bin/bash
+          # Simple Mock Validator for RBAC Testing
+          LOG_FILE="${1:-/home/sol/logs/agave-validator.log}"
+
+          # Create initial log content
+          cat > "$LOG_FILE" << EOF
+          [$(date -u +"%Y-%m-%dT%H:%M:%S.%9NZ")] INFO solana_validator::main > Starting Solana Validator
+          [$(date -u +"%Y-%m-%dT%H:%M:%S.%9NZ")] INFO solana_validator::main > Validator startup complete
+          EOF
+
+          # Set correct group ownership for log file
+          chgrp validator_operators "$LOG_FILE" 2>/dev/null || true
+          chmod 0775 "$LOG_FILE" 2>/dev/null || true
+
+          # Keep running and append logs periodically
+          while true; do
+            echo "[$(date -u +"%Y-%m-%dT%H:%M:%S.%9NZ")] INFO solana_core::validator > Processing slot $((RANDOM % 1000000))" >> "$LOG_FILE"
+            # Ensure group ownership is maintained for new content
+            chgrp validator_operators "$LOG_FILE" 2>/dev/null || true
+            sleep 10
+          done
+        mode: '0775'
+        owner: "{{ solana_user }}"
+        group: validator_operators
+
+    - name: Create and configure validator log directory (after iam_manager role)
+      ansible.builtin.file:
+        path: "{{ validator_log_dir }}"
+        owner: "{{ solana_user }}"
+        group: validator_operators
+        mode: '0775'  # Set group sticky bit so files inherit group
+        state: directory
+      when: sol_user_check.ansible_facts.getent_passwd[solana_user] is defined
+
+    - name: Create {{ validator_service }} with {{ solana_user }} user and dynamic logging
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/{{ validator_service }}
+        content: |
+          [Unit]
+          Description=Mock Solana Validator Service with Dynamic Logging
+          After=network.target
+
+          [Service]
+          Type=simple
+          User={{ solana_user }}
+          Group=validator_operators
+          ExecStart=/usr/local/bin/mock-validator {{ validator_log_file }}
+          ExecStop=/bin/kill -TERM $MAINPID
+          Restart=always
+          RestartSec=5
+          StandardOutput=journal
+          StandardError=journal
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0775'
+        owner: "{{ solana_user }}"
+        group: validator_operators
+      register: final_service_updated
+      when: sol_user_check.ansible_facts.getent_passwd[solana_user] is defined
+
+    - name: Reload systemd daemon again
+      ansible.builtin.systemd:
+        daemon_reload: yes
+      when: final_service_updated.changed | default(false)
+
+    - name: Enable and start {{ validator_service }} with {{ solana_user }} user
+      ansible.builtin.systemd:
+        name: "{{ validator_service }}"
+        enabled: true
+        state: started
+        daemon_reload: true
+      when: sol_user_check.ansible_facts.getent_passwd[solana_user] is defined

@@ -1,0 +1,18 @@
+---
+# Create symbolic link for htop
+# ============================
+# This task creates a symbolic link from the user installation to /usr/local/bin
+# so that htop can be accessed system-wide while maintaining user ownership.
+#
+# Best practices:
+# - Use file module for symbolic links
+# - Check if link already exists before creating
+# - Use force: yes to overwrite existing links
+# - Maintain proper permissions and ownership
+
+- name: Create symbolic link for htop
+  ansible.builtin.file:
+    src: "{{ htop_install_dir }}/bin/htop"
+    dest: "/usr/local/bin/htop"
+    state: link
+    force: true

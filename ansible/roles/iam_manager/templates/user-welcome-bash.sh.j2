@@ -1,0 +1,37 @@
+#!/bin/bash
+# User Welcome Console Script - Password reset instructions
+# This file is managed by Ansible - DO NOT EDIT MANUALLY
+
+# Welcome message for all users
+echo ""
+echo "==============================================================================="
+echo "                              WELCOME TO THE SYSTEM"
+echo "==============================================================================="
+echo "Welcome, $USER!"
+echo "==============================================================================="
+echo ""
+
+# Password management section only for sysadmin or validator_operators groups
+if groups | grep -q sysadmin || groups | grep -q validator_operators; then
+    echo "==============================================================================="
+    echo "                              PASSWORD MANAGEMENT"
+    echo "==============================================================================="
+    echo "To change your password, use: sudo reset-my-password"
+    echo ""
+    echo "This command allows you to reset your password without entering your current"
+    echo "sudo password. It's a self-service feature for your convenience."
+    echo "==============================================================================="
+    echo ""
+fi
+
+# Additional information for all users
+echo "==============================================================================="
+echo "                              USEFUL COMMANDS"
+echo "==============================================================================="
+echo "To check your current permissions, run:"
+echo "  sudo -l -U $USER"
+echo ""
+echo "To view your permissions file:"
+echo "  cat ~/permissions.txt"
+echo "==============================================================================="
+echo ""

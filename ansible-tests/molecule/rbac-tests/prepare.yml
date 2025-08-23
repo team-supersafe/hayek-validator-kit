@@ -1,0 +1,53 @@
+---
+- name: Prepare
+  hosts: all
+  become: true
+  gather_facts: false
+  vars_files:
+    - "../../../ansible/roles/iam_manager/defaults/main.yml"
+  tasks:
+    - name: Ensure remote tmp directory exists
+      ansible.builtin.raw: mkdir -p /tmp/.ansible/tmp && chmod 1777 /tmp /tmp/.ansible /tmp/.ansible/tmp
+
+    - name: Update apt cache
+      ansible.builtin.raw: apt update -y
+
+    - name: Install base packages
+      ansible.builtin.raw: apt install -y sudo curl ca-certificates openssh-client python3 python3-apt
+
+    - name: Verify ubuntu user was created by container startup
+      ansible.builtin.shell: id ubuntu
+      register: ubuntu_user_check
+      changed_when: false
+
+    - name: Debug ubuntu user creation
+      ansible.builtin.debug:
+        msg: "Ubuntu user exists: {{ ubuntu_user_check.stdout }}"
+
+    - name: Verify SSH keys were configured by container startup
+      ansible.builtin.stat:
+        path: /home/ubuntu/.ssh/authorized_keys
+      register: ssh_keys_check
+
+    - name: Debug SSH keys setup
+      ansible.builtin.debug:
+        msg: "SSH keys configured: {{ ssh_keys_check.stat.exists }}"
+
+    - name: Ensure cgroups mount bind exists (already via molecule volumes)
+      ansible.builtin.stat:
+        path: /sys/fs/cgroup
+      register: cgroup_dir
+
+    - name: Debug cgroup mount presence
+      ansible.builtin.debug:
+        msg: "cgroup mounted: {{ cgroup_dir.stat.isdir }}"
+
+    - name: Install required packages for RBAC testing
+      ansible.builtin.apt:
+        name:
+          - htop
+          - nano
+          - curl
+        state: present
+        update_cache: yes
+      register: packages_installed

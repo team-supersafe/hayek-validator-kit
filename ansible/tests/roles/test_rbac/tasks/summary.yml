@@ -1,0 +1,78 @@
+---
+# Summary tasks for RBAC testing
+
+- name: Determine user role from groups
+  ansible.builtin.set_fact:
+    user_role: "{{ 'sysadmin' if 'sysadmin' in user_groups_result.stdout else 'validator_admin' if 'validator_admins' in user_groups_result.stdout else 'validator_operator' if 'validator_operators' in user_groups_result.stdout else 'validator_viewer' if 'validator_viewers' in user_groups_result.stdout else 'unknown' }}"
+
+- name: Set expected permissions based on role
+  ansible.builtin.set_fact:
+    expected_logrotate_permission: "{{ 'SUCCESS' if user_role == 'sysadmin' else 'FAILED' }}"
+    expected_cron_permission: "{{ 'SUCCESS' if user_role in ['sysadmin', 'validator_admin', 'validator_operator'] else 'FAILED' }}"
+    expected_apt_update_permission: "{{ 'SUCCESS' if user_role in ['sysadmin', 'validator_admin'] else 'FAILED' }}"
+    expected_apt_install_permission: "{{ 'SUCCESS' if user_role in ['sysadmin', 'validator_admin'] else 'FAILED' }}"
+    expected_free_h_permission: "{{ 'SUCCESS' if user_role in ['sysadmin', 'validator_admin', 'validator_operator', 'validator_viewer'] else 'FAILED' }}"
+
+- name: Set test results for summary
+  ansible.builtin.set_fact:
+    test_user: "{{ ansible_user }}"
+    test_groups: "{{ user_groups_result.stdout | default('No groups found') }}"
+    user_role: "{{ user_role }}"
+    logrotate_stop_result: "{{ 'SUCCESS' if logrotate_stop_result is defined and logrotate_stop_result.rc is defined and logrotate_stop_result.rc == 0 else 'FAILED' if logrotate_stop_result is defined and logrotate_stop_result.rc is defined and logrotate_stop_result.rc != 0 else 'UNKNOWN' }}"
+    cron_stop_result: "{{ 'SUCCESS' if cron_stop_result is defined and cron_stop_result.rc is defined and cron_stop_result.rc == 0 else 'FAILED' if cron_stop_result is defined and cron_stop_result.rc is defined and cron_stop_result.rc != 0 else 'UNKNOWN' }}"
+    apt_update_result: "{{ 'SUCCESS' if apt_update_result is defined and apt_update_result.rc is defined and apt_update_result.rc == 0 else 'FAILED' if apt_update_result is defined and apt_update_result.rc is defined and apt_update_result.rc != 0 else 'UNKNOWN' }}"
+    apt_install_result: "{{ 'SUCCESS' if apt_install_result is defined and apt_install_result.rc is defined and apt_install_result.rc == 0 else 'FAILED' if apt_install_result is defined and apt_install_result.rc is defined and apt_install_result.rc != 0 else 'UNKNOWN' }}"
+    free_h_result: "{{ 'SUCCESS' if free_h_result is defined and free_h_result.rc is defined and free_h_result.rc == 0 else 'FAILED' if free_h_result is defined and free_h_result.rc is defined and free_h_result.rc != 0 else 'UNKNOWN' }}"
+
+- name: Evaluate permission compliance
+  ansible.builtin.set_fact:
+    logrotate_compliance: "{{ 'CORRECT' if logrotate_stop_result == expected_logrotate_permission else 'INCORRECT' }}"
+    cron_compliance: "{{ 'CORRECT' if cron_stop_result == expected_cron_permission else 'INCORRECT' }}"
+    apt_update_compliance: "{{ 'CORRECT' if apt_update_result == expected_apt_update_permission else 'INCORRECT' }}"
+    apt_install_compliance: "{{ 'CORRECT' if apt_install_result == expected_apt_install_permission else 'INCORRECT' }}"
+    free_h_compliance: "{{ 'CORRECT' if free_h_result == expected_free_h_permission else 'INCORRECT' }}"
+
+- name: Display RBAC Test Summary
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      RBAC TEST SUMMARY
+      ========================================
+      Test User: {{ test_user }}
+      User Groups: {{ test_groups }}
+      Detected Role: {{ user_role }}
+
+      PERMISSION TEST RESULTS:
+      - systemctl stop logrotate: {{ logrotate_stop_result }}
+      - sudo systemctl stop cron: {{ cron_stop_result }}
+      - sudo apt-get update: {{ apt_update_result }}
+      - sudo apt-get install: {{ apt_install_result }}
+      - free -h: {{ free_h_result }}
+
+      EXPECTED PERMISSIONS ({{ user_role }}):
+      - systemctl stop logrotate: {{ expected_logrotate_permission }}
+      - sudo systemctl stop cron: {{ expected_cron_permission }}
+      - sudo apt-get update: {{ expected_apt_update_permission }}
+      - sudo apt-get install: {{ expected_apt_install_permission }}
+      - free -h: {{ expected_free_h_permission }}
+
+      COMPLIANCE CHECK:
+      - Logrotate permission: {{ logrotate_compliance }}
+      - Cron permission: {{ cron_compliance }}
+      - Apt update permission: {{ apt_update_compliance }}
+      - Apt install permission: {{ apt_install_compliance }}
+      - Free -h permission: {{ free_h_compliance }}
+
+      ========================================
+
+- name: Display Final Summary
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      FINAL SUMMARY
+      ========================================
+      User: {{ test_user }}
+      Role: {{ user_role }}
+      Groups: {{ test_groups }}
+      RBAC Compliance: {{ 'PASS' if logrotate_compliance == 'CORRECT' and cron_compliance == 'CORRECT' and apt_update_compliance == 'CORRECT' and apt_install_compliance == 'CORRECT' and free_h_compliance == 'CORRECT' else 'FAIL' }}
+      ========================================

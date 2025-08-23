@@ -1,0 +1,81 @@
+---
+# ========================================
+# RBAC VERIFICATION - BASIC SYSTEM CHECKS
+# ========================================
+
+- name: Assert expected groups exist
+  ansible.builtin.group:
+    name: "{{ item.name }}"
+    state: present
+  check_mode: true
+  register: group_check
+  loop: "{{ rbac_config.groups }}"
+
+- name: Fail if any expected group missing
+  ansible.builtin.fail:
+    msg: "Missing required group(s): {{ group_check.results | selectattr('failed', 'equalto', true) | map(attribute='item.name') | list | join(', ') }}"
+  when: group_check.results | selectattr('failed', 'equalto', true) | list | length > 0
+
+- name: Check sudoers files exist
+  ansible.builtin.stat:
+    path: "{{ sudoers_dir }}/{{ item }}"
+  register: sudoers_stats
+  loop: "{{ (rbac_config.groups | map(attribute='sudoers_file') | list) + rbac_config.additional_files }}"
+
+- name: Fail if any sudoers file missing
+  ansible.builtin.fail:
+    msg: "Missing sudoers file(s) in {{ sudoers_dir }}"
+  when: "sudoers_stats.results | selectattr('stat.exists', 'equalto', false) | list | length > 0"
+
+- name: Validate visudo syntax of all sudoers
+  ansible.builtin.command: visudo -cf /etc/sudoers
+  changed_when: false
+
+- name: Verify ubuntu user is properly disabled
+  ansible.builtin.shell: "getent passwd ubuntu"
+  register: ubuntu_user_check
+  failed_when: false
+  changed_when: false
+
+- name: Check ubuntu user shell status
+  ansible.builtin.debug:
+    msg: |
+      Ubuntu user status: {{ ubuntu_user_check.stdout if ubuntu_user_check.rc == 0 else 'User not found' }}
+      Shell: {{ ubuntu_user_check.stdout.split(':')[-1] if ubuntu_user_check.rc == 0 else 'N/A' }}
+
+- name: Verify ubuntu user has nologin shell
+  ansible.builtin.assert:
+    that:
+      - ubuntu_user_check.rc == 0
+      - "'/usr/sbin/nologin' in ubuntu_user_check.stdout or '/sbin/nologin' in ubuntu_user_check.stdout"
+    fail_msg: |
+      SECURITY VIOLATION: Ubuntu user is not properly disabled!
+      Current status: {{ ubuntu_user_check.stdout | default('User check failed') }}
+      Expected: Shell should be /usr/sbin/nologin or /sbin/nologin
+    success_msg: "✓ Ubuntu user is properly disabled with nologin shell"
+
+- name: Verify ubuntu user SSH access is blocked
+  ansible.builtin.shell: "grep -E '^DenyUsers.*ubuntu|^AllowUsers' /etc/ssh/sshd_config || echo 'No SSH restrictions found'"
+  register: ssh_config_check
+  changed_when: false
+
+- name: Check SSH configuration for ubuntu user
+  ansible.builtin.debug:
+    msg: |
+      SSH Configuration check: {{ ssh_config_check.stdout }}
+
+- name: Verify ubuntu user cannot SSH (if SSH restrictions are configured)
+  ansible.builtin.assert:
+    that:
+      - "ssh_config_check.stdout != 'No SSH restrictions found'"
+      - "'ubuntu' in ssh_config_check.stdout"
+    fail_msg: |
+      WARNING: Ubuntu user SSH access may not be explicitly blocked in /etc/ssh/sshd_config
+      Current SSH config: {{ ssh_config_check.stdout }}
+      Consider adding: DenyUsers ubuntu
+    success_msg: "✓ Ubuntu user SSH access is properly restricted"
+  when: "'DenyUsers' in ssh_config_check.stdout or 'AllowUsers' in ssh_config_check.stdout"
+
+- name: Display basic system checks passed
+  ansible.builtin.debug:
+    msg: "✓ All basic system checks passed: groups exist, sudoers files present, syntax valid, ubuntu user disabled"
