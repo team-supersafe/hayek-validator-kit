@@ -13,6 +13,130 @@ echo "Setting up welcome environment for scenario: $DEFAULT_SCENARIO"
 
 # Create the help function
 cat >> ~/.bashrc << 'EOF'
+
+# ============================================================================
+# SCENARIO CONFIGURATION DATABASE
+# ============================================================================
+# To add a new scenario, just add a new numbered block:
+# SCENARIO_[N]_NAME="folder-name-in-molecule"
+# SCENARIO_[N]_PARAMS="parameters for commands that need them"
+# SCENARIO_[N]_COMMANDS="comma-separated list of commands that need params"
+# SCENARIO_[N]_DESCRIPTION="Description for help text"
+#
+# IMPORTANT - SCENARIO_[N]_COMMANDS Explanation:
+# This defines WHICH molecule commands need the special parameters.
+# - If command is in the list AND params exist → Add parameters
+# - If command is NOT in the list → Run without parameters
+# - If COMMANDS is empty → ALL commands run without parameters
+#
+# Example:
+# SCENARIO_1_COMMANDS="test,converge,idempotence"
+# Result:
+#   molecule test -s rbac-tests → WITH params (test is in list)
+#   molecule verify -s rbac-tests → WITHOUT params (verify not in list)
+#   molecule login -s rbac-tests → WITHOUT params (login not in list)
+#
+# Common patterns:
+# - "test,converge,idempotence" → Setup/testing commands need params
+# - "test,converge" → Only initial setup needs params
+# - "" → Simple scenario, no special params needed
+
+# Scenario 1: RBAC Tests
+SCENARIO_1_NAME="rbac-tests"
+SCENARIO_1_PARAMS="-- -e csv_file=iam_setup.csv"
+SCENARIO_1_COMMANDS="test,converge,idempotence"
+SCENARIO_1_DESCRIPTION="RBAC Security Testing with CSV configuration"
+
+# Scenario 2: Host Architecture Tests
+SCENARIO_2_NAME="host-arch-tests"
+SCENARIO_2_PARAMS=""
+SCENARIO_2_COMMANDS=""
+SCENARIO_2_DESCRIPTION="Host architecture compatibility testing"
+
+# Scenario 3: Performance Tests (example - add when needed)
+# SCENARIO_3_NAME="performance-tests"
+# SCENARIO_3_PARAMS="-- -e duration=300 -e load_users=100"
+# SCENARIO_3_COMMANDS="test,converge"
+# SCENARIO_3_DESCRIPTION="Performance and load testing suite"
+
+# Scenario 4: Security Tests (example - add when needed)
+# SCENARIO_4_NAME="security-tests"
+# SCENARIO_4_PARAMS="-- -e security_level=strict -e scan_depth=full"
+# SCENARIO_4_COMMANDS="test,converge,idempotence"
+# SCENARIO_4_DESCRIPTION="Security vulnerability scanning and testing"
+
+# ============================================================================
+
+# Function to get scenario parameters by scenario name
+get_scenario_params() {
+    local scenario_name="$1"
+    local command_type="$2"
+
+    # Find the scenario number by iterating through configured scenarios
+    local i=1
+    while true; do
+        local name_var="SCENARIO_${i}_NAME"
+        local configured_name="${!name_var:-}"
+
+        # If no more scenarios configured, break
+        if [[ -z "$configured_name" ]]; then
+            break
+        fi
+
+        # If we found the matching scenario
+        if [[ "$configured_name" == "$scenario_name" ]]; then
+            local params_var="SCENARIO_${i}_PARAMS"
+            local commands_var="SCENARIO_${i}_COMMANDS"
+
+            local params="${!params_var:-}"
+            local commands="${!commands_var:-}"
+
+            # Check if this command type needs parameters
+            if [[ -n "$commands" && ",$commands," =~ ,"$command_type", ]]; then
+                echo "$params"
+                return
+            else
+                echo ""
+                return
+            fi
+        fi
+
+        ((i++))
+    done
+
+    # Scenario not found in configuration, return empty
+    echo ""
+}
+
+# Function to get scenario description by scenario name
+get_scenario_description() {
+    local scenario_name="$1"
+
+    # Find the scenario number by iterating through configured scenarios
+    local i=1
+    while true; do
+        local name_var="SCENARIO_${i}_NAME"
+        local configured_name="${!name_var:-}"
+
+        # If no more scenarios configured, break
+        if [[ -z "$configured_name" ]]; then
+            break
+        fi
+
+        # If we found the matching scenario
+        if [[ "$configured_name" == "$scenario_name" ]]; then
+            local desc_var="SCENARIO_${i}_DESCRIPTION"
+            echo "${!desc_var:-No description available}"
+            return
+        fi
+
+        ((i++))
+    done
+
+    # Scenario not found in configuration
+    echo "No description available"
+}
+
 # Welcome message for test-runner
 show_test_help() {
     local scenario="${MOLECULE_SCENARIO:-rbac-tests}"
@@ -48,7 +172,7 @@ show_test_help() {
     echo -e "  \033[1;90m  → Runs tests without recreating container\033[0m"
     echo -e ""
     echo -e "  \033[1;32m# Direct container access:\033[0m"
-    echo -e "  molecule login -s $scenario        # SSH into testing container"
+    echo -e "  molecule login -s $scenario        # Access testing container"
     echo -e "  \033[1;90m  → For manual debugging and exploration\033[0m"
     echo -e ""
     echo -e "  \033[1;32m# Cleanup:\033[0m"
@@ -95,15 +219,12 @@ list_scenarios() {
                 if [ "$scenario_name" = "${MOLECULE_SCENARIO:-rbac-tests}" ]; then
                     current_marker=" \033[1;32m← current\033[0m"
                 fi
-                echo -e "  \033[1;36m$scenario_name\033[0m$current_marker"
+                                echo -e "  \033[1;36m$scenario_name\033[0m$current_marker"
 
-                # Try to read scenario description from molecule.yml
-                local molecule_file="$scenario_dir/molecule.yml"
-                if [ -f "$molecule_file" ] && command -v yq >/dev/null 2>&1; then
-                    local description=$(yq eval '.scenario.description // ""' "$molecule_file" 2>/dev/null)
-                    if [ -n "$description" ]; then
-                        echo -e "    \033[1;90m$description\033[0m"
-                    fi
+                # Get description from configuration variables
+                local description=$(get_scenario_description "$scenario_name")
+                if [ -n "$description" ] && [ "$description" != "No description available" ]; then
+                    echo -e "    \033[1;90m$description\033[0m"
                 fi
             fi
         done
@@ -186,41 +307,40 @@ run_test() {
         "Setup only (converge)"
         "Verify only (verify)"
         "Idempotency test (idempotence)"
-        "SSH access (login)"
+        "Container access (login)"
         "Cleanup (destroy)"
         "Cancel"
     )
 
     # Step 3: Interactive selection
     select choice in "${options[@]}"; do
+        local cmd=""
+        local params=""
+
         case $REPLY in
             1)
-                local cmd="molecule test -s $scenario"
-                # Add CSV parameter for rbac-tests
-                if [ "$scenario" = "rbac-tests" ]; then
-                    cmd="$cmd -- -e csv_file=iam_setup.csv"
-                fi
+                cmd="molecule test -s $scenario"
+                params=$(get_scenario_params "$scenario" "test")
                 ;;
             2)
-                local cmd="molecule converge -s $scenario"
-                if [ "$scenario" = "rbac-tests" ]; then
-                    cmd="$cmd -- -e csv_file=iam_setup.csv"
-                fi
+                cmd="molecule converge -s $scenario"
+                params=$(get_scenario_params "$scenario" "converge")
                 ;;
             3)
-                local cmd="molecule verify -s $scenario"
+                cmd="molecule verify -s $scenario"
+                params=$(get_scenario_params "$scenario" "verify")
                 ;;
             4)
-                local cmd="molecule idempotence -s $scenario"
-                if [ "$scenario" = "rbac-tests" ]; then
-                    cmd="$cmd -- -e csv_file=iam_setup.csv"
-                fi
+                cmd="molecule idempotence -s $scenario"
+                params=$(get_scenario_params "$scenario" "idempotence")
                 ;;
             5)
-                local cmd="molecule login -s $scenario"
+                cmd="molecule login -s $scenario"
+                params=$(get_scenario_params "$scenario" "login")
                 ;;
             6)
-                local cmd="molecule destroy -s $scenario"
+                cmd="molecule destroy -s $scenario"
+                params=$(get_scenario_params "$scenario" "destroy")
                 ;;
             7)
                 echo -e "\033[1;90mOperation cancelled.\033[0m"
@@ -231,6 +351,11 @@ run_test() {
                 continue
                 ;;
         esac
+
+        # Add parameters if they exist
+        if [ -n "$params" ]; then
+            cmd="$cmd $params"
+        fi
 
         # Step 4: Confirm and execute
         echo -e "\n\033[1;32m🚀 About to execute:\033[0m"
