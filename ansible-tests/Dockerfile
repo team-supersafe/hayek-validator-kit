@@ -59,7 +59,7 @@ RUN --mount=type=cache,target=/root/.cache \
 # Molecule runner image
 FROM ubuntu-base AS molecule-runner
 ARG SOLANA_RELEASE
-ARG DEFAULT_SCENARIO=rbac-tests
+ARG DEFAULT_SCENARIO=iam_manager_tests
 
 # Install Docker CLI and Ansible/Molecule via Pip
 RUN --mount=type=cache,target=/var/cache/apt \

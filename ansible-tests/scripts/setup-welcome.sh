@@ -5,7 +5,6 @@
 set -euo pipefail
 
 # Default values
-DEFAULT_SCENARIO="${1:-iam_manager_tests}"
 PROJECT_DIR="${2:-/hayek-validator-kit}"
 CONFIG_DIR="${3:-/root/new-metal-box}"
 

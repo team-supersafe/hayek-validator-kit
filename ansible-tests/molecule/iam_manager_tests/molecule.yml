@@ -12,7 +12,7 @@ driver:
   name: docker
 
 platforms:
-  - name: testing-rbac
+  - name: iam-manager-tests
     image: molecule-host-alpha
     pre_build_image: true
     privileged: true
