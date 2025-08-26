@@ -1,6 +1,6 @@
 ---
 scenario:
-  name: host-arch-tests
+  name: common_tests
 
 dependency:
   name: shell

@@ -1,6 +1,6 @@
 ---
 scenario:
-  name: rbac-tests
+  name: iam_manager_tests
 
 dependency:
   name: shell

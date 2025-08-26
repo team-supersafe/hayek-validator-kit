@@ -4,8 +4,15 @@
 # Usage: setup-welcome.sh [scenario] [project_dir] [config_dir]
 set -euo pipefail
 
+# Function to get the first configured scenario as default (local copy for script setup)
+get_default_scenario_local() {
+    # Read the first scenario from the configuration that will be written to .bashrc
+    # This matches SCENARIO_1_NAME value
+    echo "rbac-tests"  # This should match SCENARIO_1_NAME below
+}
+
 # Default values
-DEFAULT_SCENARIO="${1:-rbac-tests}"
+DEFAULT_SCENARIO="${1:-$(get_default_scenario_local)}"
 PROJECT_DIR="${2:-/hayek-validator-kit}"
 CONFIG_DIR="${3:-/root/new-metal-box}"
 
@@ -66,6 +73,12 @@ SCENARIO_2_DESCRIPTION="Host architecture compatibility testing"
 # SCENARIO_4_DESCRIPTION="Security vulnerability scanning and testing"
 
 # ============================================================================
+
+# Function to get the first configured scenario as default
+get_default_scenario() {
+    local name_var="SCENARIO_1_NAME"
+    echo "${!name_var:-default}"
+}
 
 # Function to get scenario parameters by scenario name
 get_scenario_params() {
@@ -139,7 +152,8 @@ get_scenario_description() {
 
 # Welcome message for test-runner
 show_test_help() {
-    local scenario="${MOLECULE_SCENARIO:-rbac-tests}"
+    local default_scenario=$(get_default_scenario)
+    local scenario="${MOLECULE_SCENARIO:-$default_scenario}"
     local project_dir="${PROJECT_DIR:-/hayek-validator-kit}"
     local config_dir="${CONFIG_DIR:-/root/new-metal-box}"
 
@@ -149,22 +163,26 @@ show_test_help() {
     echo -e "\n\033[1;32m📋 Available Test Commands:\033[0m"
     echo -e "\n\033[1;33m🔐 Current Scenario: $scenario\033[0m"
 
-    # Add CSV parameter only for rbac-tests scenario
-    local csv_param=""
-    if [ "$scenario" = "rbac-tests" ]; then
-        csv_param=" -- -e csv_file=iam_setup.csv"
-    fi
+    # Get parameters for different commands dynamically
+    local test_params=$(get_scenario_params "$scenario" "test")
+    local converge_params=$(get_scenario_params "$scenario" "converge")
+    local idempotence_params=$(get_scenario_params "$scenario" "idempotence")
+    
+    # Add space before params if they exist
+    [[ -n "$test_params" ]] && test_params=" $test_params"
+    [[ -n "$converge_params" ]] && converge_params=" $converge_params"
+    [[ -n "$idempotence_params" ]] && idempotence_params=" $idempotence_params"
 
     echo -e "  \033[1;32m# Full test suite:\033[0m"
-    echo -e "  molecule test -s $scenario$csv_param"
+    echo -e "  molecule test -s $scenario$test_params"
     echo -e "  \033[1;90m  → Runs complete suite: converge + verify + destroy\033[0m"
     echo -e ""
     echo -e "  \033[1;32m# Initial setup (configuration only):\033[0m"
-    echo -e "  molecule converge -s $scenario$csv_param"
+    echo -e "  molecule converge -s $scenario$converge_params"
     echo -e "  \033[1;90m  → Creates container and applies configuration\033[0m"
     echo -e ""
     echo -e "  \033[1;32m# Idempotency test:\033[0m"
-    echo -e "  molecule idempotence -s $scenario$csv_param"
+    echo -e "  molecule idempotence -s $scenario$idempotence_params"
     echo -e "  \033[1;90m  → Verifies that changes are idempotent\033[0m"
     echo -e ""
     echo -e "  \033[1;32m# Verification on active container:\033[0m"
@@ -209,6 +227,7 @@ show_test_help() {
 # Function to list available scenarios
 list_scenarios() {
     local project_dir="${PROJECT_DIR:-/hayek-validator-kit}"
+    local default_scenario=$(get_default_scenario)
     echo -e "\n\033[1;33m📋 Available Test Scenarios:\033[0m"
 
     if [ -d "$project_dir/ansible-tests/molecule" ]; then
@@ -216,10 +235,10 @@ list_scenarios() {
             if [ -d "$scenario_dir" ]; then
                 local scenario_name=$(basename "$scenario_dir")
                 local current_marker=""
-                if [ "$scenario_name" = "${MOLECULE_SCENARIO:-rbac-tests}" ]; then
+                if [ "$scenario_name" = "${MOLECULE_SCENARIO:-$default_scenario}" ]; then
                     current_marker=" \033[1;32m← current\033[0m"
                 fi
-                                echo -e "  \033[1;36m$scenario_name\033[0m$current_marker"
+                echo -e "  \033[1;36m$scenario_name\033[0m$current_marker"
 
                 # Get description from configuration variables
                 local description=$(get_scenario_description "$scenario_name")
@@ -379,9 +398,9 @@ EOF
 # Add environment variables
 cat >> ~/.bashrc << EOF
 # Environment configuration
-export MOLECULE_SCENARIO="$DEFAULT_SCENARIO"
-export PROJECT_DIR="$PROJECT_DIR"
-export CONFIG_DIR="$CONFIG_DIR"
+export MOLECULE_SCENARIO="\$DEFAULT_SCENARIO"
+export PROJECT_DIR="\$PROJECT_DIR"
+export CONFIG_DIR="\$CONFIG_DIR"
 
 EOF
 
