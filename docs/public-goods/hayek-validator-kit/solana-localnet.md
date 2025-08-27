@@ -78,6 +78,92 @@ We use Docker to run Localnet:
 
 Congratulations! You are now running Solana Localnet, connected to your [Ansible Control](ansible-control.md) and ready to make a mess of your Localnet playground.
 
+### Deploy Localnet on Microsoft Windows
+
+### Follow the steps below:
+
+1. Install visual studio code for Windows: [https://code.visualstudio.com/download](https://code.visualstudio.com/download)
+2. Install WSL: [https://learn.microsoft.com/es-es/windows/wsl/install](https://learn.microsoft.com/es-es/windows/wsl/install)
+
+<pre class="language-powershell"><code class="lang-powershell"><strong>wsl –install
+</strong></code></pre>
+
+3. Open the “wsl distro" from the start menu (Ubuntu by default) and create your Linux username and password.&#x20;
+
+{% hint style="info" %}
+These credentials are independent of your Windows account.
+{% endhint %}
+
+3. Install ANSIBLE in the WSL environment:
+
+Run the following command to update the system repository information:
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+Install the prerequisite packages that allow you to add the official Ansible PPA:
+
+```bash
+sudo apt install software-properties-common
+```
+
+Add the PPA with the following command and install the package:
+
+```bash
+sudo apt-add-repository ppa:ansible/ansible
+sudo apt update
+sudo apt install ansible -y
+```
+
+5. Install the package dos2unix:&#x20;
+
+```bash
+sudo apt install dos2unix
+```
+
+{% hint style="info" %}
+Dos2unix is a command-line utility used to convert text files from DOS/MAC format, which uses carriage return and line feed (CRLF) for line endings, to Unix format, which uses only line feed (LF). This conversion helps ensure compatibility when transferring files between different operating systems.
+{% endhint %}
+
+6. Go to the solana-localnet folder, the path should look like this:
+
+```
+cd /mnt/c/Users/YOUR_WINDOWS_USERNAME/hayek-validator-kit/solana-localnet
+```
+
+Run the following command:
+
+```bash
+sudo dos2unix *.sh
+```
+
+7. In Visual Studio Code, create a **.env** file for the environment variables. Copy the fallowing, replace YOUR\_WINDOWS\_USERNAME and save:
+
+```
+ANSIBLE_REMOTE_USER=YOUR_WINDOWS_USERNAME
+SSH_AUTH_SOCK="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+```
+
+{% hint style="info" %}
+Don't forget to create and save your workspace in Visual Studio Code.
+{% endhint %}
+
+8. Install the following programs:
+
+* Docker desktop for windows: [https://docs.docker.com/desktop/setup/install/windows-install/](https://docs.docker.com/desktop/setup/install/windows-install/)
+* Python: [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)
+
+10. In Visual Studio Code use the option “reopen from container”.&#x20;
+
+{% hint style="info" %}
+This will use the Dev Containers extension to automatically run the services containers defined in docker-compose.yml and trigger the build process of the images in the Dockerfile if needed.
+{% endhint %}
+
+11. Check that the containers are running on Docker Desktop:
+
+<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+
 ### Resetting Localnet
 
 At times, and as you corrupt the state of your docker containers running in Localnet, you may need to reset your docker Localnet cluster to start fresh. You can accomplish this by selecting the options of "Reopen in Container" or "Rebuild Container" within VSCode.

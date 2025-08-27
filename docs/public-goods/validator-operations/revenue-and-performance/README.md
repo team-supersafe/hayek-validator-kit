@@ -18,7 +18,7 @@ Income for a validator is measured by epoch. Primary sources of income and expen
 
 Let´s take for example slot `349075076`  on `mainnet-beta`. The Hayek validator (with identity `hykfH9jUQqe2yqv3VqVAK5AmMYqrmMWmdwDcbfsm6My`) was assigned as leader in the leader schedule and it produced a block for which it was rewarded with `0.015671734 SOL` which increased its SOL balance to `44.112034624 SOL`, you can see this in the Solana explorer [here](https://explorer.solana.com/block/349075076/rewards):
 
-<figure><img src="../../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
 
 The following are the transactions from blocks `349075076` and `349075077` where the identity account `hykfH9jUQqe2yqv3VqVAK5AmMYqrmMWmdwDcbfsm6My` participated. Leader slot rewards are also included:
 
