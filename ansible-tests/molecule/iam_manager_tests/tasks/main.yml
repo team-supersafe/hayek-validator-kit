@@ -30,17 +30,21 @@
 - name: Verify Ubuntu User Disablement
   include_tasks: disable_ubuntu_tests.yml
 
+# ========================================
+# RBAC VERIFICATION TESTS
+# ========================================
+
 - name: Execute Positive Permission Tests
-  include_tasks: positive_tests.yml
+  include_tasks: rbac_tests/positive_tests.yml
 
 - name: Execute Negative Permission Tests
-  include_tasks: negative_tests.yml
+  include_tasks: rbac_tests/negative_tests.yml
 
 - name: Execute Real Command Execution Tests
-  include_tasks: execution_tests.yml
+  include_tasks: rbac_tests/execution_tests.yml
 
 - name: Validate Against Role Templates
-  include_tasks: template_validation.yml
+  include_tasks: rbac_tests/template_validation.yml
 
 - name: Generate Detailed Command Execution Logging
   include_tasks: logging.yml
