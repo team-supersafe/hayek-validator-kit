@@ -80,7 +80,7 @@ Congratulations! You are now running Solana Localnet, connected to your [Ansible
 
 ### Deploy Localnet on Microsoft Windows
 
-### Follow the steps below:
+There are some things that are unique to running Localnet on Windows (as opposed to MacOS or Linux). &#x20;
 
 1. Install visual studio code for Windows: [https://code.visualstudio.com/download](https://code.visualstudio.com/download)
 2. Install WSL: [https://learn.microsoft.com/es-es/windows/wsl/install](https://learn.microsoft.com/es-es/windows/wsl/install)
