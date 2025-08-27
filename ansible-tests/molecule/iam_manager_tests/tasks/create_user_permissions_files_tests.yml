@@ -27,12 +27,13 @@
   loop: "{{ users_needing_permissions }}"
 
 # Assert that ALL users (except sol) have permissions.txt
-- name: Test - Assert permissions.txt exists for all users except sol
+- name: Test - Assert permissions.txt exists for all users
   ansible.builtin.assert:
     that: item.stat.exists
     fail_msg: "❌ User {{ item.item }} is missing permissions.txt file"
     success_msg: "✅ User {{ item.item }} has permissions.txt file"
   loop: "{{ permission_files_check.results }}"
+  no_log: true
 
 # Verify all permission files are not empty
 - name: Test - Verify all permissions.txt files are not empty
@@ -59,20 +60,18 @@
 # Summary
 - name: Test - Display verification summary
   ansible.builtin.debug:
-    msg: |
-      =============================================================================
-      📄 USER PERMISSION FILES VERIFICATION - RESULTS
-      =============================================================================
-      ✅ Users in /home: {{ home_directories.files | length }}
-      ✅ Users that should have permissions.txt: {{ users_needing_permissions | length }}
-      ✅ Sol user excluded: ✓
-      
-      Users with permissions.txt:
-      {% for user in users_needing_permissions %}
-      • {{ user }}: /home/{{ user }}/permissions.txt ✓
-      {% endfor %}
-      
-      Excluded users:
-      • sol: No permissions.txt ✓
-      • ubuntu: System user ✓
-      =============================================================================
+    msg: 
+      - "============================================================================="
+      - "📄 USER PERMISSION FILES VERIFICATION - RESULTS"
+      - "============================================================================="
+      - "✅ Users in /home: {{ home_directories.files | length }}"
+      - "✅ Users that should have permissions.txt: {{ users_needing_permissions | length }}"
+      - "✅ Sol user excluded: ✓"
+      - ""
+      - "Users with permissions.txt:"
+      - "{% for user in users_needing_permissions %}   • {{ user }}: /home/{{ user }}/permissions.txt ✓{% endfor %}"
+      - ""
+      - "Excluded users:"
+      - "   • sol: No permissions.txt ✓"
+      - "   • ubuntu: System user ✓"
+      - "============================================================================="

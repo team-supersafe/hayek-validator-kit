@@ -66,17 +66,17 @@
 # Summary
 - name: Test - Display audit logs verification summary
   ansible.builtin.debug:
-    msg: |
-      =============================================================================
-      📊 AUDIT LOGS SETUP VERIFICATION - RESULTS
-      =============================================================================
-      ✅ Audit log directory: {{ password_audit_log_dir | default('/var/log') }} ✓
-      ✅ Password reset log: {{ password_audit_log | default('/var/log/password-reset.log') }} ✓
-      ✅ Logrotate config: /etc/logrotate.d/password-reset ✓
-      
-      File Verification Results:
-      • Directory exists (0755, root:root): ✓
-      • Log file exists (0640, root:adm): ✓
-      • Logrotate config exists (0644, root:root): ✓
-      • Configuration not empty: ✓
-      =============================================================================
+    msg: 
+      - "============================================================================="
+      - "📊 AUDIT LOGS SETUP VERIFICATION - RESULTS"
+      - "============================================================================="
+      - "✅ Audit log directory: {{ password_audit_log_dir | default('/var/log') }} ✓"
+      - "✅ Password reset log: {{ password_audit_log | default('/var/log/password-reset.log') }} ✓"
+      - "✅ Logrotate config: /etc/logrotate.d/password-reset ✓"
+      - ""
+      - "File Verification Results:"
+      - "• Directory exists (0755, root:root): ✓"
+      - "• Log file exists (0640, root:adm): ✓"
+      - "• Logrotate config exists (0644, root:root): ✓"
+      - "• Configuration not empty: ✓"
+      - "============================================================================="

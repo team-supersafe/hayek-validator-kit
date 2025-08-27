@@ -137,7 +137,8 @@
 
 - name: Display comprehensive unified security report
   ansible.builtin.debug:
-    msg: "{{ violation_summary_lines }}"
+    msg: "{{ item }}"
+  loop: "{{ violation_summary_lines }}"
 
 - name: Security Check Failed
   ansible.builtin.fail:

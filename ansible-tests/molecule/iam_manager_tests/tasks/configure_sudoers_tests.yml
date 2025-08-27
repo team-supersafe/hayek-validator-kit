@@ -112,23 +112,23 @@
 # Verifies all 5 files specified in the original task
 - name: Test - Display configure_sudoers verification summary
   ansible.builtin.debug:
-    msg: |
-      =============================================================================
-      🛡️ CONFIGURE_SUDOERS TASK VERIFICATION - RESULTS  
-      =============================================================================
-      Files created by configure_sudoers.yml task:
-      
-      ✅ Sudoers Files (mode 0440):
-         • /etc/sudoers.d/10-sysadmin: {{ '✓' if sysadmin_file_stat.stat.exists else '✗' }}
-         • /etc/sudoers.d/99-self-service: {{ '✓' if selfservice_file_stat.stat.exists else '✗' }}
-         • /etc/sudoers.d/30-validator-operators: {{ '✓' if validator_ops_file_stat.stat.exists else '✗' }}
-         • /etc/sudoers.d/40-validator-viewers: {{ '✓' if validator_viewers_file_stat.stat.exists else '✗' }}
-      
-      ✅ Profile Script (mode 0755):
-         • /etc/profile.d/sysadmin-welcome.sh: {{ '✓' if welcome_script_stat.stat.exists else '✗' }}
-      
-      ✅ Validation:
-         • All files have valid sudoers syntax: ✓
-      =============================================================================
-      CONFIGURE_SUDOERS TASK VERIFICATION COMPLETED!
-      =============================================================================
+    msg: 
+      - "============================================================================="
+      - "🛡️ CONFIGURE_SUDOERS TASK VERIFICATION - RESULTS"
+      - "============================================================================="
+      - "Files created by configure_sudoers.yml task:"
+      - ""
+      - "✅ Sudoers Files (mode 0440):"
+      - "   • /etc/sudoers.d/10-sysadmin: {{ '✓' if sysadmin_file_stat.stat.exists else '✗' }}"
+      - "   • /etc/sudoers.d/99-self-service: {{ '✓' if selfservice_file_stat.stat.exists else '✗' }}"
+      - "   • /etc/sudoers.d/30-validator-operators: {{ '✓' if validator_ops_file_stat.stat.exists else '✗' }}"
+      - "   • /etc/sudoers.d/40-validator-viewers: {{ '✓' if validator_viewers_file_stat.stat.exists else '✗' }}"
+      - ""
+      - "✅ Profile Script (mode 0755):"
+      - "   • /etc/profile.d/sysadmin-welcome.sh: {{ '✓' if welcome_script_stat.stat.exists else '✗' }}"
+      - ""
+      - "✅ Validation:"
+      - "   • All files have valid sudoers syntax: ✓"
+      - "============================================================================="
+      - "CONFIGURE_SUDOERS TASK VERIFICATION COMPLETED!"
+      - "============================================================================="

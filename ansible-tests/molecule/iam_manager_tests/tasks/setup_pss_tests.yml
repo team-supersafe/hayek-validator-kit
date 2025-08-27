@@ -75,23 +75,23 @@
 # Verifies all 4 specific tasks performed by setup_pss.yml
 - name: Test - Display setup_pss verification summary
   ansible.builtin.debug:
-    msg: |
-      =============================================================================
-      🔐 SETUP_PSS TASK VERIFICATION - RESULTS
-      =============================================================================
-      Tasks completed by setup_pss.yml:
-      
-      ✅ Task 1 - Create password security directory:
-         • {{ password_security_dir | default('/etc/password-security') }}: {{ '✓' if password_security_dir_stat.stat.exists else '✗' }} (mode 0700, root:root)
-      
-      ✅ Task 2 - Create password reset wrapper script:
-         • /usr/local/sbin/reset-my-password: {{ '✓' if reset_script_stat.stat.exists else '✗' }} (mode 0755, root:root)
-      
-      ✅ Task 3 - Set script immutability:
-         • chattr +i applied: {{ '✓' if (script_attributes.rc == 0 and 'i' in script_attributes.stdout) else '✗' }}
-      
-      ✅ Task 4 - Configure sudo defaults:
-         • Defaults passwd_timeout=0: {{ '✓' if sudo_defaults_check.rc == 0 else '✗' }}
-      =============================================================================
-      🎉 SETUP_PSS TASK VERIFICATION COMPLETED! 🎉
-      =============================================================================
+    msg: 
+      - "============================================="
+      - "🔐 SETUP_PSS TASK VERIFICATION - RESULTS"
+      - "============================================="
+      - "Tasks completed by setup_pss.yml:"
+      - ""
+      - "✅ Task 1 - Create password security directory:"
+      - "   • {{ password_security_dir | default('/etc/password-security') }}: {{ '✓' if password_security_dir_stat.stat.exists else '✗' }} (mode 0700, root:root)"
+      - ""
+      - "✅ Task 2 - Create password reset wrapper script:"
+      - "   • /usr/local/sbin/reset-my-password: {{ '✓' if reset_script_stat.stat.exists else '✗' }} (mode 0755, root:root)"
+      - ""
+      - "✅ Task 3 - Set script immutability:"
+      - "   • chattr +i applied: {{ '✓' if (script_attributes.rc == 0 and 'i' in script_attributes.stdout) else '✗' }}"
+      - ""
+      - "✅ Task 4 - Configure sudo defaults:"
+      - "   • Defaults passwd_timeout=0: {{ '✓' if sudo_defaults_check.rc == 0 else '✗' }}"
+      - "=========================================================="
+      - "🎉 SETUP_PSS TASK VERIFICATION COMPLETED! 🎉"
+      - "=========================================================="

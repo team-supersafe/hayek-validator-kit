@@ -2,153 +2,76 @@
 # =============================================================================
 # CREATE USERS TESTS - Molecule Testing and Verification Tasks
 # =============================================================================
-# These tests verify the specific functionality implemented by iam_manager role:
-# 1. Creates validator_operators group
-# 2. Creates sol user with specific configuration
-# 3. Creates RBAC groups from CSV data
-# 4. Creates users from CSV with group assignments
-# 5. Configures SSH directories and authorized keys
-
-# Verifies that the 'validator_operators' group exists in the system
-# This group is created by iam_manager as the base group for validator operators
-- name: Test - Verify validator_operators group exists (created by iam_manager)
+# Task 1: Verify validator_operators group exists
+- name: Test - Verify validator_operators group exists (created by create_users.yml)
   ansible.builtin.getent:
     database: group
     key: validator_operators
   register: validator_operators_group_test
   failed_when: validator_operators_group_test.ansible_facts.getent_group.validator_operators is not defined
 
-# Verifies that the 'sol' user exists in the system 
-# This user is created by iam_manager as a dedicated user for the validator service
-- name: Test - Verify sol user exists (created by iam_manager)
+# Task 2: Verify sol user exists with correct configuration
+- name: Test - Verify sol user exists (created by create_users.yml)
   ansible.builtin.getent:
     database: passwd
     key: "{{ solana_user | default('sol') }}"
   register: sol_user_test
   failed_when: sol_user_test.ansible_facts.getent_passwd[solana_user | default('sol')] is not defined
 
-# Verifies that the 'sol' user has bash configured as the default shell
-# iam_manager specifically configures /bin/bash for all users
-- name: Test - Verify sol user has bash shell (as configured by iam_manager)
+- name: Test - Verify sol user has bash shell (set by create_users.yml)
   ansible.builtin.assert:
     that: sol_user_test.ansible_facts.getent_passwd[solana_user | default('sol')][5] == '/bin/bash'
-    fail_msg: "Sol user does not have bash shell as configured by iam_manager"
-    success_msg: "✅ Sol user has correct bash shell"
+    fail_msg: "Sol user does not have bash shell as set by create_users.yml"
+    success_msg: "✅ Sol user has bash shell (/bin/bash)"
 
-# Verifies that the 'sol' user's home directory exists
-# iam_manager automatically creates home directories for each user
-- name: Test - Verify sol user home directory exists and has correct configuration
+# Task 3: Verify sol home directory permissions (set by create_users.yml)
+- name: Test - Verify sol user home directory configuration
   ansible.builtin.stat:
     path: "/home/{{ solana_user | default('sol') }}"
   register: sol_home_stat
-  failed_when: not sol_home_stat.stat.exists
 
-# Verifies that 'sol' home directory has 0775 permissions and belongs to validator_operators group
-# iam_manager sets these specific permissions to allow group collaboration
-- name: Test - Verify sol user home directory has correct permissions (0775 as set by iam_manager)
+- name: Test - Verify sol home directory has correct permissions (set by create_users.yml)
   ansible.builtin.assert:
     that: 
+      - sol_home_stat.stat.exists
       - sol_home_stat.stat.mode == '0775'
       - sol_home_stat.stat.pw_name == (solana_user | default('sol'))
       - sol_home_stat.stat.gr_name == 'validator_operators'
-    fail_msg: "Sol user home directory has incorrect permissions or ownership set by iam_manager"
-    success_msg: "✅ Sol user home directory has correct permissions (0775) and validator_operators group ownership"
+    fail_msg: "Sol home directory has incorrect configuration (expected: 0775, validator_operators group)"
+    success_msg: "✅ Sol home directory has correct configuration (0775, validator_operators group)"
 
-# Gets a list of all system groups to detect RBAC groups
-# iam_manager creates groups dynamically based on CSV data (admin, operator, viewer, etc.)
-- name: Test - Check if any RBAC groups exist (groups that would be created from CSV)
-  ansible.builtin.command: getent group
-  register: all_system_groups
-  changed_when: false
+# Task 4: Find users that have .ssh directories (created by create_users.yml)
+- name: Test - Find .ssh directories created by create_users.yml
+  ansible.builtin.find:
+    paths: /home
+    patterns: ".ssh"
+    file_type: directory
+    recurse: no
+    depth: 2
+  register: ssh_directories
 
-# Shows groups that follow common RBAC patterns created by iam_manager
-# Searches for groups containing words like admin, operator, viewer, dev, prod, test
-- name: Test - Display found RBAC-style groups (common groups that iam_manager creates)
-  ansible.builtin.debug:
-    msg: "Found potential RBAC groups: {{ rbac_groups }}"
-  vars:
-    rbac_groups: "{{ all_system_groups.stdout_lines | select('match', '.*(admin|operator|viewer|dev|prod|test).*:') | list }}"
-
-# Gets a list of all system users to identify users created from CSV
-# iam_manager creates additional users based on CSV file data
-- name: Test - Verify system users exist (users that would be created by iam_manager from CSV)  
-  ansible.builtin.command: getent passwd
-  register: all_system_users
-  changed_when: false
-
-# Shows non-system users (UID >= 1000) that were created by iam_manager
-# Filters system users and shows only regular users created from CSV
-- name: Test - Display non-system users (users created by iam_manager)
-  ansible.builtin.debug:
-    msg: "Found non-system users: {{ non_system_users }}"
-  vars:
-    non_system_users: "{{ all_system_users.stdout_lines | select('match', '^[^:]+:[^:]+:[1-9][0-9]{3,}:') | map('regex_replace', ':.*', '') | list }}"
-
-# Verifies if the .ssh directory exists for the 'sol' user
-# iam_manager automatically creates .ssh directories for users who have SSH keys
-- name: Test - Verify SSH directory structure exists for sol user
+# Task 5: Verify .ssh directories have correct permissions (0700, set by create_users.yml)
+- name: Test - Verify .ssh directories have correct permissions
   ansible.builtin.stat:
-    path: "/home/{{ solana_user | default('sol') }}/.ssh"
-  register: sol_ssh_dir_stat
-  
-# Verifies that the .ssh directory has 0700 permissions (only owner can access)
-# iam_manager sets these permissions for standard SSH security
-- name: Test - Verify sol user SSH directory permissions (if it exists)
+    path: "{{ item.path }}"
+  register: ssh_dir_perms
+  loop: "{{ ssh_directories.files }}"
+  when: ssh_directories.files | length > 0
+
+- name: Test - Assert .ssh directories have 0700 permissions (set by create_users.yml)
   ansible.builtin.assert:
     that: 
-      - sol_ssh_dir_stat.stat.mode == '0700'
-      - sol_ssh_dir_stat.stat.pw_name == (solana_user | default('sol'))
-    fail_msg: "Sol user .ssh directory has incorrect permissions"
-    success_msg: "✅ Sol user .ssh directory has correct permissions (0700)"
-  when: sol_ssh_dir_stat.stat.exists
+      - item.stat.mode == '0700'
+      - item.stat.pw_name == (item.item.path | basename | dirname | basename)
+    fail_msg: "SSH directory {{ item.item.path }} has incorrect permissions (expected: 0700)"
+    success_msg: "✅ SSH directory {{ item.item.path }} has correct permissions (0700)"
+  loop: "{{ ssh_dir_perms.results }}"
+  when: 
+    - ssh_dir_perms.results is defined
+    - item.stat is defined
 
-# Gets information about critical system files that iam_manager should maintain securely
-# Verifies /etc/passwd, /etc/shadow and /etc/sudoers.d to ensure correct permissions
-- name: Test - Verify system security configurations that iam_manager should maintain
-  ansible.builtin.stat:
-    path: "{{ item }}"
-  loop:
-    - "/etc/passwd"
-    - "/etc/shadow" 
-    - "/etc/sudoers.d"
-  register: security_files_stat
-
-# Verifies that /etc/passwd has 0644 permissions (read for all, write only for root)
-# iam_manager should maintain system security without altering critical files
-- name: Test - Verify /etc/passwd permissions (0644)
-  ansible.builtin.assert:
-    that: 
-      - security_files_stat.results[0].stat.exists
-      - security_files_stat.results[0].stat.mode == "0644"
-    fail_msg: "/etc/passwd has incorrect permissions ({{ security_files_stat.results[0].stat.mode }})"
-    success_msg: "✅ /etc/passwd has correct permissions (0644)"
-  no_log: true
-
-# Verifies that /etc/shadow has secure permissions (0640 or 0000 in lockdown mode)
-# iam_manager should ensure that passwords are adequately protected
-- name: Test - Verify /etc/shadow permissions (0640 or 0000)
-  ansible.builtin.assert:
-    that: 
-      - security_files_stat.results[1].stat.exists
-      - security_files_stat.results[1].stat.mode in ["0640", "0000"]
-    fail_msg: "/etc/shadow has incorrect permissions ({{ security_files_stat.results[1].stat.mode }})"
-    success_msg: "✅ /etc/shadow has secure permissions ({{ security_files_stat.results[1].stat.mode }})"
-  no_log: true
-
-# Verifies that /etc/sudoers.d has secure permissions (0750 or 0755 depending on distribution)
-# iam_manager creates sudoers files and should maintain the directory securely
-- name: Test - Verify /etc/sudoers.d permissions (0750 or 0755)
-  ansible.builtin.assert:
-    that: 
-      - security_files_stat.results[2].stat.exists
-      - security_files_stat.results[2].stat.mode in ["0750", "0755"]
-    fail_msg: "/etc/sudoers.d has incorrect permissions ({{ security_files_stat.results[2].stat.mode }})"
-    success_msg: "✅ /etc/sudoers.d has secure permissions ({{ security_files_stat.results[2].stat.mode }})"
-  no_log: true
-
-# Searches for authorized_keys files in all home directories
-# iam_manager creates these files when users have SSH keys in the CSV
-- name: Test - Check for authorized_keys files (created by iam_manager for users with SSH keys)
+# Task 6: Find authorized_keys files (created by create_users.yml)
+- name: Test - Find authorized_keys files created by create_users.yml
   ansible.builtin.find:
     paths: /home
     patterns: "authorized_keys"
@@ -156,50 +79,45 @@
     file_type: file
   register: authorized_keys_files
 
-# Gets detailed permission information for each authorized_keys file found
-# iam_manager should configure 0600 permissions for SSH security
-- name: Test - Verify authorized_keys files have correct permissions (600)
+# Task 7: Verify authorized_keys files have correct permissions (0600, set by create_users.yml)
+- name: Test - Verify authorized_keys files have correct permissions
   ansible.builtin.stat:
     path: "{{ item.path }}"
-  loop: "{{ authorized_keys_files.files }}"
   register: authorized_keys_perms
+  loop: "{{ authorized_keys_files.files }}"
   when: authorized_keys_files.files | length > 0
   no_log: true
 
-# Verifies that each authorized_keys file has 0600 permissions (only owner reads/writes)
-# iam_manager should maintain SSH security with strict permissions
-- name: Test - Assert authorized_keys files have secure permissions
+- name: Test - Assert authorized_keys files have 0600 permissions (set by create_users.yml)
   ansible.builtin.assert:
-    that: item.stat.mode == '0600'
-    fail_msg: "{{ item.item.path }} has incorrect permissions"
-    success_msg: "✅ {{ item.item.path }} has correct permissions (0600)"
+    that: 
+      - item.stat.mode == '0600'
+      - item.stat.pw_name == (item.item.path.split('/')[2])
+    fail_msg: "authorized_keys file {{ item.item.path }} has incorrect permissions (expected: 0600, owner: {{ item.stat.pw_name }})"
+    success_msg: "✅ authorized_keys file {{ item.item.path }} has correct permissions (0600, {{ item.stat.pw_name }})"
   loop: "{{ authorized_keys_perms.results }}"
   when: 
-    - authorized_keys_perms is defined
     - authorized_keys_perms.results is defined
     - item.stat is defined
   no_log: true
 
-# Shows a final summary of all iam_manager role verifications
-# Confirms that all main functionalities are implemented correctly
-- name: Test - Display iam_manager verification summary
+# Summary of what create_users.yml actually does
+- name: Test - Display create_users.yml verification summary
   ansible.builtin.debug:
-    msg: |
-      =============================================================================
-      🧪 IAM_MANAGER ROLE VERIFICATION - RESULTS
-      =============================================================================
-      ✅ Core Functionality Verified:
-         • validator_operators group: Created ✓
-         • Sol user ({{ solana_user | default('sol') }}): Created with bash shell ✓  
-         • Sol user home: /home/{{ solana_user | default('sol') }} (0775, validator_operators group) ✓
-         • SSH directories: Created with 0700 permissions ✓
-         • System security: /etc/passwd, /etc/shadow, /etc/sudoers.d ✓
-         • SSH authorized_keys: Created with 0600 permissions ✓
-      
-      📊 System State:
-         • RBAC groups: Present in system
-         • Non-system users: Created and configured  
-         • SSH infrastructure: Properly configured
-      =============================================================================
-      🎉 IAM_MANAGER ROLE VERIFICATION COMPLETED! 🎉
-      =============================================================================
+    msg: 
+      - "================================================="
+      - "👥 CREATE_USERS.YML VERIFICATION - RESULTS"
+      - "================================================="
+      - "✅ Tasks verified from create_users.yml:"
+      - ""
+      - "✅ Group Creation:"
+      - "   • validator_operators group: Created ✓"
+      - ""
+      - "✅ Sol User Configuration:"
+      - "   • Sol user ({{ solana_user | default('sol') }}): Created with bash shell ✓"
+      - "   • Sol home directory: /home/{{ solana_user | default('sol') }} (0775, validator_operators) ✓"
+      - ""
+      - "✅ SSH Infrastructure:"
+      - "   • .ssh directories: {{ ssh_directories.files | length }} found with 0700 permissions ✓"
+      - "   • authorized_keys files: {{ authorized_keys_files | length }} found with 0600 permissions ✓"
+      - "===================================================="

@@ -47,5 +47,4 @@
     mode: '0440'
     validate: 'visudo -cf %s'
   no_log: true
-
-
+  

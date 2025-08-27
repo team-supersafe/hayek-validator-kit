@@ -83,6 +83,7 @@
     fail_msg: "Ubuntu sudoers file still exists: {{ item.item }}"
     success_msg: "✅ Ubuntu sudoers file removed: {{ item.item }}"
   loop: "{{ ubuntu_sudoers_files_check.results }}"
+  no_log: true
 
 # Verify no ubuntu entries in sudoers files
 - name: Test - Search for ubuntu entries in all sudoers files
@@ -113,22 +114,22 @@
 # Summary
 - name: Test - Display ubuntu user disablement verification summary
   ansible.builtin.debug:
-    msg: |
-      =============================================================================
-      🔒 UBUNTU USER DISABLEMENT VERIFICATION - RESULTS
-      =============================================================================
-      ✅ User Status:
-         • Shell: /usr/sbin/nologin ✓
-         • Password: Locked ✓
-         • SSH Access: Denied ✓
-
-      ✅ Group Memberships:
-         • Removed from sudo group: ✓
-         • Removed from admin group: ✓
-         • Only in ubuntu group: ✓
-
-      ✅ Sudoers Cleanup:
-         • Ubuntu-specific files removed: ✓
-         • No ubuntu entries in sudoers.d files: ✓
-         • No ubuntu entries in main sudoers: ✓
-      =============================================================================
+    msg: 
+      - "===================================================="
+      - "🔒 UBUNTU USER DISABLEMENT VERIFICATION - RESULTS"
+      - "===================================================="
+      - "✅ User Status:"
+      - "   • Shell: /usr/sbin/nologin ✓"
+      - "   • Password: Locked ✓"
+      - "   • SSH Access: Denied ✓"
+      - ""
+      - "✅ Group Memberships:"
+      - "   • Removed from sudo group: ✓"
+      - "   • Removed from admin group: ✓"
+      - "   • Only in ubuntu group: ✓"
+      - ""
+      - "✅ Sudoers Cleanup:"
+      - "   • Ubuntu-specific files removed: ✓"
+      - "   • No ubuntu entries in sudoers.d files: ✓"
+      - "   • No ubuntu entries in main sudoers: ✓"
+      - "===================================================="
