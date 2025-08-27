@@ -62,7 +62,7 @@ You can use the Solana Explorer and Solscan apps to explore any accounts in your
 * [https://explorer.solana.com/?cluster=custom\&customUrl=http%3A%2F%2Flocalhost%3A8899](https://explorer.solana.com/?cluster=custom\&customUrl=http%3A%2F%2Flocalhost%3A8899)
 * [https://solscan.io/?cluster=custom\&customUrl=http://localhost:8899](https://solscan.io/?cluster=custom\&customUrl=http://localhost:8899)
 
-### Running Localnet
+### Running Localnet on Unix-based OS
 
 We use Docker to run Localnet:
 
@@ -78,55 +78,46 @@ We use Docker to run Localnet:
 
 Congratulations! You are now running Solana Localnet, connected to your [Ansible Control](ansible-control.md) and ready to make a mess of your Localnet playground.
 
-### Deploy Localnet on Microsoft Windows
+### Running Localnet on Windows
 
 There are some things that are unique to running Localnet on Windows (as opposed to MacOS or Linux). &#x20;
 
-1. Install visual studio code for Windows: [https://code.visualstudio.com/download](https://code.visualstudio.com/download)
-2. Install WSL: [https://learn.microsoft.com/es-es/windows/wsl/install](https://learn.microsoft.com/es-es/windows/wsl/install)
+1. Install VS Code for Windows: [https://code.visualstudio.com/download](https://code.visualstudio.com/download)
+2.  Install WSL: [https://learn.microsoft.com/es-es/windows/wsl/install](https://learn.microsoft.com/es-es/windows/wsl/install)&#x20;
 
-<pre class="language-powershell"><code class="lang-powershell"><strong>wsl –install
-</strong></code></pre>
+    ```powershell
+    wsl -install
+    ```
+3. Open the “wsl distro" from the start menu (Ubuntu by default) and create your Linux username and password. Note that these credentials are independent of your Windows account.
+4. Install ANSIBLE in the WSL environment:
+   1.  Run the following command to update the system repository information:&#x20;
 
-3. Open the “wsl distro" from the start menu (Ubuntu by default) and create your Linux username and password.&#x20;
+       ```bash
+       sudo apt update && sudo apt upgrade -y
+       ```
+   2.  Install the prerequisite packages that allow you to add the official Ansible PPA:&#x20;
 
-{% hint style="info" %}
-These credentials are independent of your Windows account.
-{% endhint %}
+       ```bash
+       sudo apt install software-properties-common
+       ```
+   3.  Add the PPA with the following command and install the package:&#x20;
 
-3. Install ANSIBLE in the WSL environment:
+       ```bash
+       sudo apt-add-repository ppa:ansible/ansible
+       sudo apt update
+       sudo apt install ansible -y
+       ```
+5.  Install the package dos2unix:&#x20;
 
-Run the following command to update the system repository information:
+    ```bash
+    sudo apt install dos2unix
+    ```
 
-```bash
-sudo apt update && sudo apt upgrade -y
-```
-
-Install the prerequisite packages that allow you to add the official Ansible PPA:
-
-```bash
-sudo apt install software-properties-common
-```
-
-Add the PPA with the following command and install the package:
-
-```bash
-sudo apt-add-repository ppa:ansible/ansible
-sudo apt update
-sudo apt install ansible -y
-```
-
-5. Install the package dos2unix:&#x20;
-
-```bash
-sudo apt install dos2unix
-```
-
-{% hint style="info" %}
+{% hint style="warning" %}
 Dos2unix is a command-line utility used to convert text files from DOS/MAC format, which uses carriage return and line feed (CRLF) for line endings, to Unix format, which uses only line feed (LF). This conversion helps ensure compatibility when transferring files between different operating systems.
 {% endhint %}
 
-6. Go to the solana-localnet folder, the path should look like this:
+6. Go to the `solana-localnet` folder, the path should look like this:
 
 ```
 cd /mnt/c/Users/YOUR_WINDOWS_USERNAME/hayek-validator-kit/solana-localnet
@@ -138,29 +129,22 @@ Run the following command:
 sudo dos2unix *.sh
 ```
 
-7. In Visual Studio Code, create a **.env** file for the environment variables. Copy the fallowing, replace YOUR\_WINDOWS\_USERNAME and save:
+7. In VS Code, create a **.env** file for the environment variables. Paste the following variables, taking care to replace YOUR\_WINDOWS\_USERNAME placeholder with the proper one:
 
 ```
 ANSIBLE_REMOTE_USER=YOUR_WINDOWS_USERNAME
 SSH_AUTH_SOCK="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
 ```
 
-{% hint style="info" %}
-Don't forget to create and save your workspace in Visual Studio Code.
+{% hint style="warning" %}
+Remember to create and save your workspace in Visual Studio Code.
 {% endhint %}
 
-8. Install the following programs:
-
-* Docker desktop for windows: [https://docs.docker.com/desktop/setup/install/windows-install/](https://docs.docker.com/desktop/setup/install/windows-install/)
-* Python: [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)
-
-10. In Visual Studio Code use the option “reopen from container”.&#x20;
-
-{% hint style="info" %}
-This will use the Dev Containers extension to automatically run the services containers defined in docker-compose.yml and trigger the build process of the images in the Dockerfile if needed.
-{% endhint %}
-
-11. Check that the containers are running on Docker Desktop:
+8. Install the following programs on the Windows host:
+   1. Docker desktop for windows: [https://docs.docker.com/desktop/setup/install/windows-install/](https://docs.docker.com/desktop/setup/install/windows-install/)
+   2. Python: [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)
+9. In VS Code use the option “reopen from container”.&#x20;
+10. Check that the containers are running on Docker Desktop:
 
 <figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
 
