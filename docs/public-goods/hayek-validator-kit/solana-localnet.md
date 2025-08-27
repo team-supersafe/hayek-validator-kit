@@ -152,9 +152,7 @@ Remember to create and save your workspace in Visual Studio Code.
 
 At times, and as you corrupt the state of your docker containers running in Localnet, you may need to reset your docker Localnet cluster to start fresh. You can accomplish this by selecting the options of "Reopen in Container" or "Rebuild Container" within VSCode.
 
-<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
-
-You can also stop the cluster from docker with
+You can also stop the cluster from docker with:
 
 ```bash
 cd solana-localnet
