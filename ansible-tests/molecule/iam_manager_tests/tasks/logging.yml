@@ -30,8 +30,12 @@
         {%- set _ = log_lines.append("  Exit Code: " + (result.rc | string)) -%}
         {%- if result.stdout -%}
           {%- if result.stdout | length > 100 -%}
-            {%- set stdout_clean = result.stdout | regex_replace('={10,}.*?={10,}', '[WELCOME_MSG]', multiline=True) | regex_replace('\n+', ' ') | truncate(200) -%}
-            {%- set _ = log_lines.append("  STDOUT: " + stdout_clean) -%}
+            {%- set stdout_clean = result.stdout | regex_replace('={50,}[\\s\\S]*?={50,}', '', multiline=True) | regex_replace('Welcome,.*?!', '') | regex_replace('To change your password.*?convenience\\.', '') | regex_replace('To check your current.*?permissions\\.txt', '') | regex_replace('\\s+', ' ') | trim -%}
+            {%- if stdout_clean | length > 0 -%}
+              {%- set _ = log_lines.append("  STDOUT: " + stdout_clean | truncate(200)) -%}
+            {%- else -%}
+              {%- set _ = log_lines.append("  STDOUT: [WELCOME MESSAGE FILTERED]") -%}
+            {%- endif -%}
           {%- else -%}
             {%- set _ = log_lines.append("  STDOUT: " + result.stdout | truncate(200)) -%}
           {%- endif -%}
