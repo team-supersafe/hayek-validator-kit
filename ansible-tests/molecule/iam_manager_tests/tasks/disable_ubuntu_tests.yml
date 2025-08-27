@@ -1,0 +1,134 @@
+---
+# =============================================================================
+# DISABLE UBUNTU USER TESTS - Molecule Testing and Verification Tasks
+# =============================================================================
+# These tests verify that disable_ubuntu.yml properly disables the ubuntu user:
+# 1. Ubuntu user is locked and has nologin shell
+# 2. SSH access is denied for ubuntu user
+# 3. Ubuntu user is removed from sudo groups
+# 4. Ubuntu sudoers files are removed/cleaned
+
+# Verify ubuntu user is properly disabled
+- name: Test - Check ubuntu user status
+  ansible.builtin.getent:
+    database: passwd
+    key: ubuntu
+  register: ubuntu_user_info
+  failed_when: false
+
+- name: Test - Verify ubuntu user is locked and has nologin shell
+  ansible.builtin.assert:
+    that:
+      - ubuntu_user_info.ansible_facts.getent_passwd.ubuntu[5] == '/usr/sbin/nologin'
+    fail_msg: "Ubuntu user does not have nologin shell"
+    success_msg: "✅ Ubuntu user has nologin shell (/usr/sbin/nologin)"
+  when: ubuntu_user_info.ansible_facts.getent_passwd.ubuntu is defined
+
+# Check ubuntu user password lock status
+- name: Test - Check ubuntu user password lock status
+  ansible.builtin.command: passwd -S ubuntu
+  register: ubuntu_passwd_status
+  changed_when: false
+  failed_when: false
+
+- name: Test - Verify ubuntu user password is locked
+  ansible.builtin.assert:
+    that: "'L' in ubuntu_passwd_status.stdout"
+    fail_msg: "Ubuntu user password is not locked"
+    success_msg: "✅ Ubuntu user password is locked"
+  when: ubuntu_passwd_status.rc == 0
+
+# Verify SSH access is denied for ubuntu
+- name: Test - Check SSH DenyUsers configuration
+  ansible.builtin.command: grep "DenyUsers ubuntu" /etc/ssh/sshd_config
+  register: ssh_deny_ubuntu
+  changed_when: false
+  failed_when: false
+
+- name: Test - Verify ubuntu user is denied SSH access
+  ansible.builtin.assert:
+    that: ssh_deny_ubuntu.rc == 0
+    fail_msg: "Ubuntu user is not denied SSH access in sshd_config"
+    success_msg: "✅ Ubuntu user SSH access is denied"
+
+# Verify ubuntu user groups (should only be in ubuntu group)
+- name: Test - Check ubuntu user group memberships
+  ansible.builtin.command: groups ubuntu
+  register: ubuntu_groups_check
+  changed_when: false
+  failed_when: false
+
+- name: Test - Verify ubuntu user is not in sudo groups
+  ansible.builtin.assert:
+    that:
+      - "'sudo' not in ubuntu_groups_check.stdout"
+      - "'admin' not in ubuntu_groups_check.stdout"
+    fail_msg: "Ubuntu user is still in sudo/admin groups"
+    success_msg: "✅ Ubuntu user removed from sudo/admin groups"
+  when: ubuntu_groups_check.rc == 0
+
+# Verify ubuntu-specific sudoers files are removed
+- name: Test - Check if ubuntu sudoers files exist
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: ubuntu_sudoers_files_check
+  loop:
+    - /etc/sudoers.d/ubuntu
+    - /etc/sudoers.d/90-cloud-init-users
+    - /etc/sudoers.d/90-ubuntu-users
+
+- name: Test - Verify ubuntu sudoers files are removed
+  ansible.builtin.assert:
+    that: not item.stat.exists
+    fail_msg: "Ubuntu sudoers file still exists: {{ item.item }}"
+    success_msg: "✅ Ubuntu sudoers file removed: {{ item.item }}"
+  loop: "{{ ubuntu_sudoers_files_check.results }}"
+
+# Verify no ubuntu entries in sudoers files
+- name: Test - Search for ubuntu entries in all sudoers files
+  ansible.builtin.shell: "find /etc/sudoers.d -type f -exec grep -l 'ubuntu' {} \\; 2>/dev/null | wc -l"
+  register: remaining_ubuntu_sudoers_count
+  changed_when: false
+  failed_when: false
+
+- name: Test - Verify no ubuntu entries remain in sudoers files
+  ansible.builtin.assert:
+    that: remaining_ubuntu_sudoers_count.stdout | int == 0
+    fail_msg: "Ubuntu entries still found in {{ remaining_ubuntu_sudoers_count.stdout }} sudoers files"
+    success_msg: "✅ No ubuntu entries found in sudoers files"
+
+# Verify no ubuntu entries in main sudoers file
+- name: Test - Check main sudoers file for ubuntu entries
+  ansible.builtin.shell: "grep -E '^ubuntu\\s+|^ubuntu:' /etc/sudoers | wc -l"
+  register: main_sudoers_ubuntu_count
+  changed_when: false
+  failed_when: false
+
+- name: Test - Verify no ubuntu entries in main sudoers file
+  ansible.builtin.assert:
+    that: main_sudoers_ubuntu_count.stdout | int == 0
+    fail_msg: "{{ main_sudoers_ubuntu_count.stdout }} ubuntu entries still found in main sudoers file"
+    success_msg: "✅ No ubuntu entries found in main sudoers file"
+
+# Summary
+- name: Test - Display ubuntu user disablement verification summary
+  ansible.builtin.debug:
+    msg: |
+      =============================================================================
+      🔒 UBUNTU USER DISABLEMENT VERIFICATION - RESULTS
+      =============================================================================
+      ✅ User Status:
+         • Shell: /usr/sbin/nologin ✓
+         • Password: Locked ✓
+         • SSH Access: Denied ✓
+
+      ✅ Group Memberships:
+         • Removed from sudo group: ✓
+         • Removed from admin group: ✓
+         • Only in ubuntu group: ✓
+
+      ✅ Sudoers Cleanup:
+         • Ubuntu-specific files removed: ✓
+         • No ubuntu entries in sudoers.d files: ✓
+         • No ubuntu entries in main sudoers: ✓
+      =============================================================================

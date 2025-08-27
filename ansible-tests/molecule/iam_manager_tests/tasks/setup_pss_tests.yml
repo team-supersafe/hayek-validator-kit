@@ -1,0 +1,97 @@
+---
+# =============================================================================
+# PASSWORD SELF-SERVICE SETUP TESTS - Molecule Testing and Verification Tasks
+# =============================================================================
+# These tests verify the specific functionality implemented by setup_pss.yml:
+# 1. Creates password security directory (mode 0700, root:root)
+# 2. Creates reset-my-password script (mode 0755, root:root)
+# 3. Sets script immutability with chattr +i
+# 4. Adds "Defaults passwd_timeout=0" to /etc/sudoers
+
+# Verifies that password security directory was created by setup_pss task
+# Task: Create password security directory (mode 0700, root:root)
+- name: Test - Verify password security directory exists with correct configuration
+  ansible.builtin.stat:
+    path: "{{ password_security_dir | default('/etc/password-security') }}"
+  register: password_security_dir_stat
+
+- name: Test - Assert password security directory matches setup_pss configuration
+  ansible.builtin.assert:
+    that:
+      - password_security_dir_stat.stat.exists
+      - password_security_dir_stat.stat.mode == '0700'
+      - password_security_dir_stat.stat.pw_name == 'root'
+      - password_security_dir_stat.stat.gr_name == 'root'
+    fail_msg: "Password security directory missing or incorrect (expected: mode 0700, root:root)"
+    success_msg: "✅ Password security directory created correctly (mode 0700, root:root)"
+
+# Verifies that reset-my-password script was created by setup_pss task
+# Task: Create password reset wrapper script (mode 0755, root:root)
+- name: Test - Verify reset-my-password script exists with correct configuration
+  ansible.builtin.stat:
+    path: /usr/local/sbin/reset-my-password
+  register: reset_script_stat
+
+- name: Test - Assert reset script matches setup_pss configuration
+  ansible.builtin.assert:
+    that:
+      - reset_script_stat.stat.exists
+      - reset_script_stat.stat.mode == '0755'
+      - reset_script_stat.stat.pw_name == 'root'
+      - reset_script_stat.stat.gr_name == 'root'
+    fail_msg: "/usr/local/sbin/reset-my-password missing or incorrect (expected: mode 0755, root:root)"
+    success_msg: "✅ /usr/local/sbin/reset-my-password created correctly (mode 0755, root:root)"
+
+# Verifies that script immutability was set by setup_pss task  
+# Task: Set script immutability (chattr +i)
+- name: Test - Check script immutability attribute set by setup_pss
+  ansible.builtin.command: lsattr /usr/local/sbin/reset-my-password
+  register: script_attributes
+  changed_when: false
+  failed_when: false
+
+- name: Test - Assert script has immutability attribute from chattr +i
+  ansible.builtin.assert:
+    that: "'i' in script_attributes.stdout"
+    fail_msg: "Script does not have immutability attribute (chattr +i not applied)"
+    success_msg: "✅ Script has immutability attribute (chattr +i applied)"
+  when: script_attributes.rc == 0
+
+# Verifies that sudo defaults line was added by setup_pss task
+# Task: Configure sudo defaults (add "Defaults passwd_timeout=0" to /etc/sudoers)
+- name: Test - Check sudo defaults line added by setup_pss
+  ansible.builtin.command: grep "Defaults passwd_timeout=0" /etc/sudoers
+  register: sudo_defaults_check
+  changed_when: false
+  failed_when: false
+
+- name: Test - Assert sudo passwd_timeout=0 line was added
+  ansible.builtin.assert:
+    that: sudo_defaults_check.rc == 0
+    fail_msg: "Defaults passwd_timeout=0 not found in /etc/sudoers"
+    success_msg: "✅ Defaults passwd_timeout=0 added to /etc/sudoers"
+
+# Shows summary of exactly what setup_pss.yml task created
+# Verifies all 4 specific tasks performed by setup_pss.yml
+- name: Test - Display setup_pss verification summary
+  ansible.builtin.debug:
+    msg: |
+      =============================================================================
+      🔐 SETUP_PSS TASK VERIFICATION - RESULTS
+      =============================================================================
+      Tasks completed by setup_pss.yml:
+      
+      ✅ Task 1 - Create password security directory:
+         • {{ password_security_dir | default('/etc/password-security') }}: {{ '✓' if password_security_dir_stat.stat.exists else '✗' }} (mode 0700, root:root)
+      
+      ✅ Task 2 - Create password reset wrapper script:
+         • /usr/local/sbin/reset-my-password: {{ '✓' if reset_script_stat.stat.exists else '✗' }} (mode 0755, root:root)
+      
+      ✅ Task 3 - Set script immutability:
+         • chattr +i applied: {{ '✓' if (script_attributes.rc == 0 and 'i' in script_attributes.stdout) else '✗' }}
+      
+      ✅ Task 4 - Configure sudo defaults:
+         • Defaults passwd_timeout=0: {{ '✓' if sudo_defaults_check.rc == 0 else '✗' }}
+      =============================================================================
+      🎉 SETUP_PSS TASK VERIFICATION COMPLETED! 🎉
+      =============================================================================

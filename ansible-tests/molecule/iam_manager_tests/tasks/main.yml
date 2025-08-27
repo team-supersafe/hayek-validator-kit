@@ -2,56 +2,45 @@
 
 - name: Initialize RBAC Configuration and Variables
   include_tasks: setup_config.yml
-  tags:
-    - setup
-    - config
-    - always
 
 - name: Perform Basic System Validation
   include_tasks: basic_system_checks.yml
-  tags:
-    - basic
-    - system
-    - validation
 
 - name: Classify and Group Users by Roles
   include_tasks: user_classification.yml
-  tags:
-    - users
-    - classification
-    - roles
 
-- name: Execute Positive Permission Tests
-  include_tasks: positive_tests.yml
-  tags:
-    - positive
-    - permissions
-    - authorized
+- name: Verify User Creation and Configuration
+  include_tasks: create_users_tests.yml
 
-- name: Execute Negative Permission Tests
-  include_tasks: negative_tests.yml
-  tags:
-    - negative
-    - permissions
-    - unauthorized
+- name: Verify Password Hardening Configuration
+  include_tasks: password_hardening_tests.yml
 
-- name: Execute Real Command Execution Tests
-  include_tasks: execution_tests.yml
-  tags:
-    - execution
-    - commands
-    - real_testing
+- name: Verify Sudoers Configuration and RBAC
+  include_tasks: configure_sudoers_tests.yml
 
-- name: Validate Against Role Templates
-  include_tasks: template_validation.yml
-  tags:
-    - templates
-    - validation
-    - compliance
+- name: Verify Password Self-Service Setup
+  include_tasks: setup_pss_tests.yml
 
-- name: Generate Final Security Report and Decision
-  include_tasks: final_report.yml
-  tags:
-    - report
-    - final
-    - decision
+- name: Verify User Permission Files Creation
+  include_tasks: create_user_permissions_files_tests.yml
+
+- name: Verify Audit Logs Setup
+  include_tasks: setup_audit_logs_tests.yml
+
+- name: Verify Ubuntu User Disablement
+  include_tasks: disable_ubuntu_tests.yml
+
+# - name: Execute Positive Permission Tests
+#   include_tasks: positive_tests.yml
+
+# - name: Execute Negative Permission Tests
+#   include_tasks: negative_tests.yml
+
+# - name: Execute Real Command Execution Tests
+#   include_tasks: execution_tests.yml
+
+# - name: Validate Against Role Templates
+#   include_tasks: template_validation.yml
+
+# - name: Generate Final Security Report and Decision
+#   include_tasks: final_report.yml

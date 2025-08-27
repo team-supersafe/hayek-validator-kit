@@ -1,0 +1,78 @@
+---
+# =============================================================================
+# USER PERMISSIONS FILES TESTS - Molecule Testing and Verification Tasks
+# =============================================================================
+# These tests verify that create_user_permissions_files.yml creates files that:
+# 1. All users in /home have permissions.txt (except sol)
+# 2. Files are not empty
+
+# Get all user directories in /home
+- name: Test - Find all user directories in /home
+  ansible.builtin.find:
+    paths: /home
+    file_type: directory
+    depth: 1
+  register: home_directories
+
+# Filter out sol user and system directories (should not have permissions.txt)
+- name: Test - Get users that should have permissions.txt (all except sol and system dirs)
+  ansible.builtin.set_fact:
+    users_needing_permissions: "{{ home_directories.files | map(attribute='path') | map('basename') | list | difference(['sol', 'ubuntu']) | select('match', '^[a-zA-Z].*$') | list }}"
+
+# Check if permissions.txt exists for each user (except sol)
+- name: Test - Check permissions.txt exists for all users except sol
+  ansible.builtin.stat:
+    path: "/home/{{ item }}/permissions.txt"
+  register: permission_files_check
+  loop: "{{ users_needing_permissions }}"
+
+# Assert that ALL users (except sol) have permissions.txt
+- name: Test - Assert permissions.txt exists for all users except sol
+  ansible.builtin.assert:
+    that: item.stat.exists
+    fail_msg: "❌ User {{ item.item }} is missing permissions.txt file"
+    success_msg: "✅ User {{ item.item }} has permissions.txt file"
+  loop: "{{ permission_files_check.results }}"
+
+# Verify all permission files are not empty
+- name: Test - Verify all permissions.txt files are not empty
+  ansible.builtin.assert:
+    that: item.stat.size > 0
+    fail_msg: "❌ User {{ item.item }} has empty permissions.txt file"
+    success_msg: "✅ User {{ item.item }} permissions.txt is not empty ({{ item.stat.size }} bytes)"
+  loop: "{{ permission_files_check.results }}"
+  when: item.stat.exists
+  no_log: true
+
+# Verify sol user does NOT have permissions.txt (should be excluded)
+- name: Test - Verify sol user does not have permissions.txt
+  ansible.builtin.stat:
+    path: "/home/sol/permissions.txt"
+  register: sol_permissions_check
+
+- name: Test - Assert sol user correctly has no permissions.txt
+  ansible.builtin.assert:
+    that: not sol_permissions_check.stat.exists
+    fail_msg: "❌ Sol user should NOT have permissions.txt file"
+    success_msg: "✅ Sol user correctly has no permissions.txt file"
+
+# Summary
+- name: Test - Display verification summary
+  ansible.builtin.debug:
+    msg: |
+      =============================================================================
+      📄 USER PERMISSION FILES VERIFICATION - RESULTS
+      =============================================================================
+      ✅ Users in /home: {{ home_directories.files | length }}
+      ✅ Users that should have permissions.txt: {{ users_needing_permissions | length }}
+      ✅ Sol user excluded: ✓
+      
+      Users with permissions.txt:
+      {% for user in users_needing_permissions %}
+      • {{ user }}: /home/{{ user }}/permissions.txt ✓
+      {% endfor %}
+      
+      Excluded users:
+      • sol: No permissions.txt ✓
+      • ubuntu: System user ✓
+      =============================================================================

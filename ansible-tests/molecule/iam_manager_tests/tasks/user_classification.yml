@@ -19,6 +19,7 @@
   loop: "{{ system_users.ansible_facts.getent_passwd | dict2items }}"
   when:
     - item.value[1] | int < 1000  # UID less than 1000 = system user
+  no_log: true
 
 - name: Find users in RBAC groups dynamically
   ansible.builtin.set_fact:
@@ -28,6 +29,7 @@
     - item.key not in (system_users_excluded | default([]))
     - item.value | length > 5
     - item.value[5] not in ['/bin/false', '/usr/sbin/nologin', '/bin/sync']  # Exclude non-login users
+  no_log: true
 
 - name: Get detailed group memberships for RBAC users
   ansible.builtin.command: "groups {{ item.key }}"
@@ -51,12 +53,14 @@
       'ansible_executor': classified_users.ansible_executor | default([]) + ([item.item.key] if 'ansible_executor' in item.stdout else [])
     }) }}"
   loop: "{{ user_group_details.results }}"
+  no_log: true
 
 - name: Identify users with full sudo privileges (to exclude from negative tests)
   ansible.builtin.set_fact:
     full_privilege_users: "{{ full_privilege_users | default([]) + [item.item.key] }}"
   loop: "{{ user_sudo_privileges.results }}"
   when: item.stdout != "" and ('ALL=(ALL) ALL' in item.stdout or 'ALL=(ALL) PASSWD' in item.stdout)
+  no_log: true
 
 - name: Filter out full privilege users from negative testing groups
   ansible.builtin.set_fact:

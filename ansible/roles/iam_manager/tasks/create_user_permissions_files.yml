@@ -10,8 +10,7 @@
   when: >
     item.value.group_a is defined or
     item.value.group_b is defined or
-    item.value.group_c is defined or
-    item.value.group_d is defined
+    item.value.group_c is defined
   no_log: true
 
 - name: Create user permission files with real permissions
@@ -26,8 +25,7 @@
   when: >
     item.item.value.group_a is defined or
     item.item.value.group_b is defined or
-    item.item.value.group_c is defined or
-    item.item.value.group_d is defined
+    item.item.value.group_c is defined
   no_log: true
 
 - name: Debug permission files created
@@ -37,6 +35,5 @@
   when: >
     item.item.value.group_a is defined or
     item.item.value.group_b is defined or
-    item.item.value.group_c is defined or
-    item.item.value.group_d is defined
+    item.item.value.group_c is defined
   no_log: true

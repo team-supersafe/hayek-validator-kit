@@ -32,7 +32,7 @@ platforms:
       # Create ubuntu user if it doesn't exist (like docker-compose does)
       id -u ubuntu >/dev/null 2>&1 || adduser --disabled-password --gecos \"\" ubuntu
 
-      /opt/scripts/setup-ssh-keys.sh \$$DEFAULT_USERNAME
+      /opt/scripts/setup-ssh-keys.sh ubuntu
       /lib/systemd/systemd
       "
 
