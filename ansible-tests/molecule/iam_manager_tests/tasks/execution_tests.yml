@@ -40,9 +40,6 @@
   failed_when: false
   changed_when: true
 
-- name: Generate detailed execution logs
-  ansible.builtin.include_tasks: logging.yml
-
 - name: Categorize sudo -n results intelligently
   ansible.builtin.set_fact:
     categorized_results: |
