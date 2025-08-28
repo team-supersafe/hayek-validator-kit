@@ -1,6 +1,6 @@
 # Hayek Validator Kit
 
-**Official Documentation:**  
+**Official Documentation:**
 👉 [docs.hayek.fi/public-goods](https://docs.hayek.fi/public-goods)
 
 This repository contains the open source Hayek Validator Kit. For setup, usage, and general guides, please refer to the official documentation above.
@@ -46,3 +46,5 @@ Please read our [Contributing Guidelines](CONTRIBUTING.md) before opening a pull
 
 - For setup and development instructions, see the [official documentation](https://docs.hayek.fi/public-goods).
 - Please ensure your code passes all pre-commit hooks and follows the style guide.
+- **Keep PRs small and focused** - aim for fewer than 200 lines changed per PR for faster reviews.
+- Use our PR size checker: `./scripts/check-pr-size.sh` before submitting.
