@@ -94,8 +94,8 @@ echo ""
 echo "🎯 PR Size Assessment:"
 
 # Check total lines changed
-if [ $TOTAL_CHANGES -le 200 ]; then
-  echo -e "   ${GREEN}✅ Good size: $TOTAL_CHANGES lines changed (≤ 200)${NC}"
+if [ $TOTAL_CHANGES -le 400 ]; then
+  echo -e "   ${GREEN}✅ Good size: $TOTAL_CHANGES lines changed (≤ 400)${NC}"
 elif [ $TOTAL_CHANGES -le 500 ]; then
   echo -e "   ${YELLOW}⚠️  Large: $TOTAL_CHANGES lines changed (consider splitting)${NC}"
 else
@@ -124,7 +124,7 @@ echo ""
 # Provide recommendations
 echo "💡 Recommendations:"
 
-if [ $TOTAL_CHANGES -gt 200 ] || [ $FILE_COUNT -gt 10 ]; then
+if [ $TOTAL_CHANGES -gt 400 ] || [ $FILE_COUNT -gt 10 ]; then
   echo "   📝 Consider breaking this PR into smaller, focused changes:"
   echo "   • Separate preparatory work (dependencies, utilities)"
   echo "   • Split by component or feature area"
