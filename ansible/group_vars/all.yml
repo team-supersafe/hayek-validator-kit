@@ -1,6 +1,6 @@
 # Global trivial stuff (non-secret) that apply to all hosts
 
-# Ansible home directory 
+# Ansible home directory
 ansible_home_dir: "{{ ansible_env.HOME }}"
 
 # Disk mount points configuration

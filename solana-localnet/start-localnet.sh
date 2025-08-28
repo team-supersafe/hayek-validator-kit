@@ -112,12 +112,12 @@ solana -u $CLUSTER_RPC airdrop 500000
 # Provision the demo Accounts and Keys on the Ansible Control.
 # They'll be used to configure the host-alpha node in the script below.
 # The demo keys are pre-generated with all addresses starting with "DEMO"
-# to facilitate communication and debugging between team members. This 
+# to facilitate communication and debugging between team members. This
 # allows deterministic behavior and documentation. For example, localnet
 # blockchain explorer urls in the documentation are the same for all team
 # members.
 
-# WARNING: The demo keys are under source control and should not be used in 
+# WARNING: The demo keys are under source control and should not be used in
 # any other cluster other than localnet. They are meant for development and
 # testing only.
 

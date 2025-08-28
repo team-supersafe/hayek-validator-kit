@@ -70,13 +70,13 @@
   ansible.builtin.debug:
     msg: |
       Jito-Solana validator verification complete. Check service status and logs above for troubleshooting.
-      
+
       Service Status Summary:
       - Binary exists: {{ solana_binary.stat.exists }}
       - Service active: {{ validator_service.status.ActiveState }}
       - Service enabled: {{ validator_service.status.UnitFileState }}
       - Process running: {{ validator_process.stdout_lines | length > 0 }}
-      
+
       If the validator is not running properly, check:
       1. Service status and logs above
       2. Validator startup script for correct configuration

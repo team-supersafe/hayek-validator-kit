@@ -45,7 +45,7 @@
 - name: confirm_swap - Make source vote pubkey available globally
   ansible.builtin.set_fact:
     source_vote_pubkey: "{{ source_vote_pubkey_result.stdout_lines[0] }}"
-  when: 
+  when:
     - source_vote_account_file.stat.exists
     - source_vote_pubkey_result is defined
     - source_vote_pubkey_result.stdout_lines is defined
@@ -106,7 +106,7 @@
 - name: confirm_swap - Make destination vote pubkey available globally
   ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ destination_vote_pubkey_result.stdout_lines[0] }}"
-  when: 
+  when:
     - destination_vote_account_file.stat.exists
     - destination_vote_pubkey_result is defined
     - destination_vote_pubkey_result.stdout_lines is defined

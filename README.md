@@ -1,6 +1,6 @@
 # Hayek Validator Kit
 
-**Official Documentation:**  
+**Official Documentation:**
 👉 [docs.hayek.fi/public-goods](https://docs.hayek.fi/public-goods)
 
 This repository contains the open source Hayek Validator Kit. For setup, usage, and general guides, please refer to the official documentation above.
