@@ -107,6 +107,10 @@ Use clear, descriptive titles:
 - `Update Jito installation documentation`
 - `Refactor common utilities in shared role`
 
+### Need More Guidance?
+
+For detailed guidance on creating effective PRs, see our [PR Best Practices Guide](docs/PR_BEST_PRACTICES.md).
+
 ## Reporting Issues
 
 If you find a bug or have a feature request, please open an issue and include:
