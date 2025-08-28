@@ -18,7 +18,7 @@ Brief description of what this PR accomplishes (1-2 sentences).
 
 **Please keep PRs focused and small for faster reviews.**
 
-- [ ] This PR changes **fewer than 200 lines** of code (excluding generated files)
+- [ ] This PR changes **fewer than 400 lines** of code (excluding generated files)
 - [ ] This PR addresses **only one logical change** or feature
 - [ ] This PR can be **reviewed in under 30 minutes**
 - [ ] This PR does **not mix multiple types of changes** (e.g., refactoring + new features)
