@@ -1,4 +1,4 @@
 ---
 dependencies:
- - role: rust_env
+ - role: rust_env 
  - role: common

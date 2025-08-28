@@ -46,7 +46,7 @@
     - name: swap - Parse vote account data before swap
       ansible.builtin.set_fact:
         vote_account_before: "{{ source_vote_account_before.stdout | from_json }}"
-      when:
+      when: 
         - inventory_hostname == source_host
         - source_vote_account_before.stdout is defined
         - source_vote_account_before.stdout != ''
