@@ -61,7 +61,7 @@ This script will:
 To ensure fast and effective reviews, please follow these guidelines:
 
 **Recommended PR Size:**
-- **Fewer than 200 lines changed** (excluding generated files, documentation)
+- **Fewer than 400 lines changed** (excluding generated files, documentation)
 - **Single logical change** per PR
 - **Reviewable in under 30 minutes**
 
