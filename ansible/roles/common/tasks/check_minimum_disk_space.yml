@@ -8,7 +8,7 @@
 
 - name: Print initial available space
   ansible.builtin.debug:
-    msg: "Initial available space in /home/sol: {{ initial_space.stdout }}"
+    msg: "Initial available space in {{ solana_user_dir }}: {{ initial_space.stdout }}"
 
 - name: Set minimum required space (experimental)
   ansible.builtin.set_fact:
