@@ -25,11 +25,6 @@
   vars:
     input_value: "{{ min_required_space }}"
     output_var: "min_required_bytes"
-- name: Print converted space values
-  ansible.builtin.debug:
-    msg:
-      - "Initial space in bytes: {{ initial_space_bytes }}"
-      - "Minimum required space in bytes: {{ min_required_bytes }}"
 
 - name: Check if available space is sufficient
   ansible.builtin.fail:
