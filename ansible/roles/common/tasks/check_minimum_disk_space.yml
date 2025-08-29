@@ -14,28 +14,22 @@
   ansible.builtin.set_fact:
     min_required_space: "14G"  # This is an initial estimate, can be adjusted based on experience
 
-- name: Convert space to bytes for comparison
-  ansible.builtin.set_fact:
-    initial_space_bytes: >-
-      {% set size = initial_space.stdout | regex_replace('^([0-9.]+)\\s*([KMG])$', '\\1') | float %}
-      {% set unit = initial_space.stdout | regex_replace('^[0-9.]+\\s*([KMG])$', '\\1') %}
-      {% if unit == 'K' %}
-        {{ (size * 1024) | int }}
-      {% elif unit == 'M' %}
-        {{ (size * 1024 * 1024) | int }}
-      {% elif unit == 'G' %}
-        {{ (size * 1024 * 1024 * 1024) | int }}
-      {% endif %}
-    min_required_bytes: >-
-      {% set size = min_required_space | regex_replace('^([0-9.]+)\\s*([KMG])$', '\\1') | float %}
-      {% set unit = min_required_space | regex_replace('^[0-9.]+\\s*([KMG])$', '\\1') %}
-      {% if unit == 'K' %}
-        {{ (size * 1024) | int }}
-      {% elif unit == 'M' %}
-        {{ (size * 1024 * 1024) | int }}
-      {% elif unit == 'G' %}
-        {{ (size * 1024 * 1024 * 1024) | int }}
-      {% endif %}
+- name: Convert initial space to bytes
+  include_tasks: convert_to_bytes.yml
+  vars:
+    input_value: "{{ initial_space.stdout }}"
+    output_var: "initial_space_bytes"
+
+- name: Convert minimum required space to bytes
+  include_tasks: convert_to_bytes.yml
+  vars:
+    input_value: "{{ min_required_space }}"
+    output_var: "min_required_bytes"
+- name: Print converted space values
+  ansible.builtin.debug:
+    msg:
+      - "Initial space in bytes: {{ initial_space_bytes }}"
+      - "Minimum required space in bytes: {{ min_required_bytes }}"
 
 - name: Check if available space is sufficient
   ansible.builtin.fail:

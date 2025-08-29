@@ -1,0 +1,13 @@
+---
+- name: Convert size string to bytes
+  set_fact:
+    "{{ output_var }}": >-
+      {% set size = input_value | regex_replace('^([0-9.]+)\\s*([KMG])$', '\\1') | float %}
+      {% set unit = input_value | regex_replace('^[0-9.]+\\s*([KMG])$', '\\1') %}
+      {% if unit == 'K' %}
+        {{ (size * 1024) | int }}
+      {% elif unit == 'M' %}
+        {{ (size * 1024 * 1024) | int }}
+      {% elif unit == 'G' %}
+        {{ (size * 1024 * 1024 * 1024) | int }}
+      {% endif %}
