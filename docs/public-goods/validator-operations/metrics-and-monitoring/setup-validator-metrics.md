@@ -16,173 +16,7 @@ We use **Watchtower** for monitoring the validator's health across the Solana cl
 * Telegraf
 * Discord
 
-## Hardware Alerts
-
-For hardware-related alerts, we rely on **Grafana Alerts**. These are configured to notify us when metrics exceed defined thresholds, including:
-
-* High CPU usage
-* High memory usage
-* NVMe disks reaching critical usage levels
-
-This setup ensures both the performance and reliability of our validator are actively monitored and issues are promptly addressed.
-
-### Setup Grafana
-
-You can install it yourself or you can use a provider template such as _**Vultr**_, which is easy by _**selecting the server, operating system and at the marketplace center find Grafana**_.\
-If you prefer to install Grafana you can use the official guide at\
-https://grafana.com/docs/grafana/latest/setup-grafana/installation/\
-else you can use Grafana Cloud if you don't want to pay for a private server, you have to be aware Grafana Cloud has some retention metrics limitations\
-https://grafana.com/docs/grafana-cloud/
-
-Once your Grafana is running you need to open port 3000 in your firewall
-
-UFW
-
-```bash
-ufw allow 3000/tcp
-ufw reload
-```
-
-Else for proper monitoring system you need to add an SSL certificate to your Grafana Server
-
-You can use an auto-signed certificate or much better you can use a free certificate through Let's Encrypt
-
-### Enable SSL
-
-Install Certbot
-
-```bash
-apt install certbot
-```
-
-_**For NGINX**_
-
-```bash
-apt install python3-certbot-nginx
-```
-
-Get Certificate
-
-```bash
-certbot --nginx -d your-domain.com -d www.yourdomain.com --email your@email.com --agree-tos --no-eff-email
-```
-
-_**For Apache**_
-
-```bash
-apt install python3-certbot-apache
-```
-
-Get Certificate
-
-```bash
-certbot --apache -d your-domain.com -d www.yourdomain.com --email your@email.com --agree-tos --no-eff-email
-```
-
-After getting the certificates you need to add them to Grafana, you must go to Grafana folder configuration and add the certificates path
-
-```bash
-nano /etc/grafana/grafana.ini
-## locate the certificates lines and add / edit the Let's Encrypt certificates
-cert_file = /etc/letsencrypt/live/yourdomain.com/fullchain.pem
-cert_key = /etc/letsencrypt/live/yourdomain.com/privkey.pem
-```
-
-You need to make sure the Grafana user has the read privileges over these files, for that identify which user Grafana is using for running the systemd service
-
-```bash
-systemctl show grafana-server -p User
-###output message
-#User=grafana
-```
-
-You need to grant read privileges for that user for certificates
-
-```bash
-chmod root:grafana /etc/letsencrypt/live/yourdomain.com/{fullchain.pem,privkey.pem}
-chmod 640 root:grafana /etc/letsencrypt/live/yourdomain.com/{fullchain.pem,privkey.pem}
-```
-
-Restart Grafana Service
-
-```bash
-systemctl restart grafana-server
-```
-
-Check your Grafana\
-https://yourdomain.com:3000
-
-If you install Grafana through provider templates such as Vultr they will provide you the credentials.
-
-If you used the self installation see the Grafana docs link above.
-
-## Setup InfluxDB
-
-InfluxDB will receive metrics from the Telegraf agent installed on the validator servers as well as from other sources.
-
-### Installation
-
-For DEB-based platforms (e.g. Ubuntu, Debian), add the InfluxData repository with the following commands:
-
-```bash
-wget -q https://repos.influxdata.com/influxdata-archive_compat.key
-echo '393e8779c89ac8d958f81f942f9ad7fb82a25e133faddaf92e15b16e6ac9ce4c influxdata-archive_compat.key' | sha256sum -c && cat influxdata-archive_compat.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg > /dev/null
-echo 'deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/debian stable main' | sudo tee /etc/apt/sources.list.d/influxdata.list
-```
-
-Update package lists and install InfluxDB:
-
-```bash
-sudo apt-get update
-sudo apt-get install influxdb -y
-```
-
-Start InfluxDB and enable it to run at system startup:
-
-```bash
-sudo systemctl enable influxdb
-sudo systemctl start influxdb
-```
-
-### Access to InfluxDB
-
-Connect to the InfluxDB shell:
-
-```bash
-influx
-```
-
-Or, if you need to connect with SSL (for self-signed or invalid certificates):
-
-```bash
-influx -ssl -unsafeSsl
-```
-
-#### Create Databases
-
-Our setup includes three main databases:
-
-1. **Validator Metrics Database**: Receives metrics from Telegraf agents installed on validator servers.
-2. **Monitoring Box Metrics Database**: Collects metrics from a separate monitoring system.
-3. **Solana Block Production Database**: Tracks block production statistics from Solana validators.
-
-For each database, follow these steps:
-
-```bash
-create database <database_name>
-use <database_name>
-```
-
-#### Create Users
-
-For each database, create a user and grant appropriate permissions:
-
-```bash
-create user <username> with password '<password>'
-grant all on <database_name> to <username>
-```
-
-## Setup Watchtower
+### Setup Watchtower
 
 The watchtower is recommended to be installed in a separate box. We use watchtower for monitoring and alerting identity keys for Mainnet and Testnet. Critical metrics such as Identity balance and validator health are checked every minute.
 
@@ -309,6 +143,156 @@ systemctl enable solana-alert-formatter-mainnet.service
 
 ```bash
 systemctl start solana-alert-formatter-mainnet.service
+```
+
+## Hardware Alerts
+
+For hardware-related alerts, we rely on **Grafana Alerts**. These are configured to notify us when metrics exceed defined thresholds, including:
+
+* High CPU usage
+* High memory usage
+* NVMe disks reaching critical usage levels
+
+This setup ensures both the performance and reliability of our validator are actively monitored and issues are promptly addressed.
+
+### Setup Grafana
+
+You can install it yourself or you can use a provider template such as _**Vultr**_, which is easy by _**selecting the server, operating system and at the marketplace center find Grafana**_.\
+If you prefer to install Grafana you can use the official guide at\
+https://grafana.com/docs/grafana/latest/setup-grafana/installation/\
+else you can use Grafana Cloud if you don't want to pay for a private server, you have to be aware Grafana Cloud has some retention metrics limitations\
+https://grafana.com/docs/grafana-cloud/
+
+Once your Grafana is running you need to open port 3000 in your firewall
+
+UFW
+
+```bash
+ufw allow 3000/tcp
+ufw reload
+```
+
+Else for proper monitoring system you need to add an SSL certificate to your Grafana Server. You can use an auto-signed certificate or much better you can use a free certificate through Let's Encrypt. You can enable SSL like this:
+
+```bash
+apt install certbot
+```
+
+If you are using NGINX, use this:
+
+```bash
+# install certbot
+apt install python3-certbot-nginx
+
+# Get your certificate
+certbot --nginx -d your-domain.com -d www.yourdomain.com --email your@email.com --agree-tos --no-eff-email
+```
+
+If you are using Apache, use this:
+
+```bash
+# install certbot
+apt install python3-certbot-apache
+
+# Get your certificate
+certbot --apache -d your-domain.com -d www.yourdomain.com --email your@email.com --agree-tos --no-eff-email
+```
+
+After getting the certificates you need to add them to Grafana, you must go to Grafana folder configuration and add the certificates path
+
+```bash
+nano /etc/grafana/grafana.ini
+## locate the certificates lines and add / edit the Let's Encrypt certificates
+cert_file = /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+cert_key = /etc/letsencrypt/live/yourdomain.com/privkey.pem
+```
+
+You need to make sure the Grafana user has the read privileges over these files, for that identify which user Grafana is using for running the systemd service
+
+```bash
+systemctl show grafana-server -p User
+###output message
+#User=grafana
+```
+
+You need to grant read privileges for that user for certificates
+
+```bash
+chmod root:grafana /etc/letsencrypt/live/yourdomain.com/{fullchain.pem,privkey.pem}
+chmod 640 root:grafana /etc/letsencrypt/live/yourdomain.com/{fullchain.pem,privkey.pem}
+```
+
+Restart Grafana Service
+
+```bash
+systemctl restart grafana-server
+```
+
+Check your Grafana\
+https://yourdomain.com:3000
+
+If you install Grafana through provider templates such as Vultr they will provide you the credentials.
+
+If you used the self installation see the Grafana docs link above.
+
+### Setup InfluxDB
+
+InfluxDB will receive metrics from the Telegraf agent installed on the validator servers as well as from other sources. For DEB-based platforms (e.g. Ubuntu, Debian), add the InfluxData repository with the following commands:
+
+```bash
+wget -q https://repos.influxdata.com/influxdata-archive_compat.key
+echo '393e8779c89ac8d958f81f942f9ad7fb82a25e133faddaf92e15b16e6ac9ce4c influxdata-archive_compat.key' | sha256sum -c && cat influxdata-archive_compat.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg > /dev/null
+echo 'deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/debian stable main' | sudo tee /etc/apt/sources.list.d/influxdata.list
+```
+
+Update package lists and install InfluxDB:
+
+```bash
+sudo apt-get update
+sudo apt-get install influxdb -y
+```
+
+Start InfluxDB and enable it to run at system startup:
+
+```bash
+sudo systemctl enable influxdb
+sudo systemctl start influxdb
+```
+
+Connect to the InfluxDB shell:
+
+```bash
+influx
+```
+
+Or, if you need to connect with SSL (for self-signed or invalid certificates):
+
+```bash
+influx -ssl -unsafeSsl
+```
+
+#### Create Databases
+
+Our setup includes three main databases:
+
+1. **Validator Metrics Database**: Receives metrics from Telegraf agents installed on validator servers.
+2. **Monitoring Box Metrics Database**: Collects metrics from a separate monitoring system.
+3. **Solana Block Production Database**: Tracks block production statistics from Solana validators.
+
+For each database, follow these steps:
+
+```bash
+create database <database_name>
+use <database_name>
+```
+
+#### Create Users
+
+For each database, create a user and grant appropriate permissions:
+
+```bash
+create user <username> with password '<password>'
+grant all on <database_name> to <username>
 ```
 
 ## Services Maintenance and Monitoring
