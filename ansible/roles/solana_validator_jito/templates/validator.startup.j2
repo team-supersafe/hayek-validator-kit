@@ -17,7 +17,7 @@ exec agave-validator \
 --ledger {{ ledger_path }} \
 --accounts {{ accounts_path }} \
 --snapshots {{ snapshots_path }} \
---snapshot-interval-slots {{ snapshot_interval_slots }} \
+--no-snapshots \
 --minimal-snapshot-download-speed {{ minimal_snapshot_download_speed }} \
 --private-rpc \
 --rpc-port {{ solana_rpc_port }} \
