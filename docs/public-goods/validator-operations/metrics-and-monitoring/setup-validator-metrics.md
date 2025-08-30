@@ -1,9 +1,5 @@
 # Setup Validator Metrics
 
-## Setup Validator Metrics - InfluxDB.
-
-## Hayek Monitoring Environment
-
 For monitoring our validator, we use **Telegraf**, a lightweight metrics collection agent. It runs directly on the validator nodes and gathers various hardware metrics such as:
 
 * CPU performance
@@ -13,14 +9,14 @@ For monitoring our validator, we use **Telegraf**, a lightweight metrics collect
 
 For validator-specific metrics (such as block production, vote credits, identity balance, etc.), we rely on the **Stakeconomy scripts**. All collected metrics are sent to an external time-series database powered by **InfluxDB**.
 
-### Alerting System
+## Validator Alerts
 
 We use **Watchtower** for monitoring the validator's health across the Solana cluster. Watchtower runs on a separate machine and continuously checks validator status. If it detects any issues (delinquency, low balance), it sends alerts through multiple channels such as:
 
 * Telegraf
 * Discord
 
-### Hardware Alerts
+## Hardware Alerts
 
 For hardware-related alerts, we rely on **Grafana Alerts**. These are configured to notify us when metrics exceed defined thresholds, including:
 
