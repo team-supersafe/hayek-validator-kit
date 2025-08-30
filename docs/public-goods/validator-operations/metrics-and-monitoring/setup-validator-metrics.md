@@ -295,7 +295,7 @@ create user <username> with password '<password>'
 grant all on <database_name> to <username>
 ```
 
-## Services Maintenance and Monitoring
+## Services Maintenance
 
 We must be aware that every time a service is changed, we need to reload the daemon and then restart the service.
 
@@ -329,7 +329,7 @@ Repeat the process for each identity (Mainnet, Testnet, Debug) by creating separ
 
 We pull metrics from several sources such as Stakewiz, Solana API, Solana CLI, Jpool, etc.
 
-### Validator and Block Production Metrics
+### Validator Metrics
 
 Create a service:
 
