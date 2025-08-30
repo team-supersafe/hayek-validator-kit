@@ -422,28 +422,19 @@ JPool doesn't have an API which we can use to get metrics and scores, so we had 
 
 First we need to create a Python virtual environment to install some dependencies.
 
-### Install Python Venv
-
 ```bash
+#Install Python Venv
 sudo apt update
 sudo apt install python3 python3-venv
 ```
-
-### Create Virtual Environment
 
 To isolate Python dependencies, create a virtual environment:
 
 ```bash
 sudo python3 -m venv /root/venv
-```
-
-### Activate virtual environment
-
-```bash
+# make it active
 source /root/venv/bin/activate
 ```
-
-### Install dependencies
 
 Install the required Python packages inside the virtual environment:
 
@@ -456,12 +447,10 @@ Install the required Python packages inside the virtual environment:
 ### Deactivate Environment
 
 ```bash
+# Deactivate Environment
 deactivate
-```
 
-### Create the service
-
-```bash
+# Create the service
 nano /etc/systemd/system/tvc-api.service
 ```
 
@@ -481,20 +470,18 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 ```
 
-### Script Execution Rights
-
 ```bash
+# Script Execution Rights
 chmod +x /usr/local/bin/get_tvc_rank.py
 ```
 
-### Enable the service
+<pre class="language-bash"><code class="lang-bash"><strong># Enable the service
+</strong><strong>systemctl enable tvc-api.service
+</strong></code></pre>
+
+
 
 ```bash
-systemctl enable tvc-api.service
-```
-
-### Start the service
-
-```bash
+# Start the service
 systemctl start tvc-api.service
 ```
