@@ -6,6 +6,21 @@
   register: initial_space
   changed_when: false
 
+- name: Validate df output format
+  ansible.builtin.fail:
+    msg: |
+      Unexpected df output format. Expected a size value like '80G', got: '{{ initial_space.stdout }}'
+
+      This may indicate that the df command output format has changed after a system update.
+      Please check the current df output format by running:
+        df -h "{{ solana_user_dir }}"
+
+      The script expects the 4th column to contain available space in format like '80G', '1.5T', etc.
+  when: >
+    initial_space.stdout is not defined or
+    initial_space.stdout == '' or
+    not (initial_space.stdout | regex_match('^[0-9.]+[KMG]?$'))
+
 - name: Print initial available space
   ansible.builtin.debug:
     msg: "Initial available space in {{ solana_user_dir }}: {{ initial_space.stdout }}"
