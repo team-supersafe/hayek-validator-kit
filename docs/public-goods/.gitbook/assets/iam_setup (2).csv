@@ -1,0 +1,4 @@
+user,key,group_a,group_b,group_c
+alice,ssh-ed25519 AAAAC3NzaUniqueKey1 alice@dev,sysadmin,,
+bob,ssh-ed25519 AAAAC3NzaUniqueKey2 bob@ops,validator_operators,,
+carla,ssh-ed25519 AAAAC3NzaUniqueKey3 carla@qa,validator_viewers,,
