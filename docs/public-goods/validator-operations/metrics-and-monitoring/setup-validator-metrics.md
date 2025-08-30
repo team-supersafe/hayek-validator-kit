@@ -73,7 +73,9 @@ systemctl start agave-watchtower-mainnet.service
 
 At this point we don't send alerts to Telegram and Discord yet. We want to capture the metrics for agave watchtower and format them with Python. Then, through another service, we send the alerts to Discord and Telegram.
 
-### Create Formatting Service for Mainnet
+### Formatting Service
+
+Create formatting service for Mainnet.
 
 1. Create the Python script
 
