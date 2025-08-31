@@ -30,7 +30,7 @@
   delegate_to: localhost
   run_once: true
 
-- name: jito_relayer_cohosted - relayer_keys - Copy Jito Relayer Block Engine key from ansible_keys_dir if it exists
+- name: jito_relayer_cohosted - relayer_keys - Copy Jito Relayer Block Engine key from ansible_keys_dir
   ansible.builtin.copy:
     src: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
     dest: "{{ validator_keys_dir }}/jito-relayer-block-eng.json"
