@@ -12,14 +12,14 @@
   when: force_host_cleanup | default(false) | bool
   tags: [solana_validator_jito, cleanup]
 
-# Jito client installation and configuration
-- name: Setup Jito client
-  import_tasks: jito_client/main.yml
-
 # Jito relayer installation and configuration
 - name: Co-hosted Relayer installation
   import_tasks: jito_relayer_cohosted/main.yml
   when: jito_relayer_type == 'co-hosted'
+
+# Jito client installation and configuration
+- name: Setup Jito client
+  import_tasks: jito_client/main.yml
 
 - name: Print Summary
   import_tasks: summary.yml
