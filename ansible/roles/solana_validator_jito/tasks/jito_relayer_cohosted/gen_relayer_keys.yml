@@ -25,7 +25,7 @@
   ansible.builtin.fail:
     msg: >-
       The Jito Relayer Block Engine keypair file ({{ ansible_keys_dir }}/jito-relayer-block-eng.json) must exist on the Ansible control host.
-      This keypair must be pre-generated and provided by Jito Labs. Playbook cannot continue.
+      This keypair must be pre-generated and its public key must be approved and whitelisted by Jito Labs.
   when: not local_key_exists.stat.exists
   delegate_to: localhost
   run_once: true
