@@ -2,7 +2,7 @@
 solana-test-validator \
     --slots-per-epoch 750 \
     --limit-ledger-size 10000000 \
-    --dynamic-port-range 8000-8020 \
+    --dynamic-port-range 8000-8030 \
     --rpc-port 8899 \
     --bind-address 0.0.0.0 \
     --gossip-host $(hostname -i | awk '{print $1}') \

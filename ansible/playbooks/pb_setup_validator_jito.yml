@@ -25,7 +25,8 @@
 #   -e "jito_version=2.3.6" \
 #   -e "jito_relayer_type=co-hosted" \
 #   -e "jito_relayer_version=0.4.2" \
-#   -e "jito_force_build=true"
+#   -e "build_from_source=true" \
+#   -e "use_official_repo=true"
 #
 # Example running against localnet host (create inventory from README reference)
 # ansible-playbook playbooks/pb_setup_validator_jito.yml \
