@@ -24,12 +24,12 @@ accounts_fstype: "ext4"
 snapshots_path: "{{ mount_base_path }}/snapshots"
 
 # Solana service settings
-snapshot_interval_slots: 0 # 0 means no snapshots are taken
+# snapshot_interval_slots: 0 # 0 means no snapshots are taken (deprecated starting with version 3.0.0)
 
 # Solana service network settings
 solana_rpc_port: 8899 # RPC port
 open_solana_ports_start: 8000 # Start of the range of ports to open for Solana services
-open_solana_ports_end: 8020 # End of the range of ports to open for Solana services
+open_solana_ports_end: 8030 # End of the range of ports to open for Solana services
 gossip_port: 8001 # Gossip port
 minimal_snapshot_download_speed: 31457280 # Minimal snapshot download speed in bytes per second
 
