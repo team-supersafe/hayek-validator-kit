@@ -30,13 +30,13 @@
     min_required_space: "14G"  # This is an initial estimate, can be adjusted based on experience
 
 - name: Convert initial space to bytes
-  include_tasks: convert_to_bytes.yml
+  ansible.builtin.include_tasks: convert_to_bytes.yml
   vars:
     input_value: "{{ initial_space.stdout }}"
     output_var: "initial_space_bytes"
 
 - name: Convert minimum required space to bytes
-  include_tasks: convert_to_bytes.yml
+  ansible.builtin.include_tasks: convert_to_bytes.yml
   vars:
     input_value: "{{ min_required_space }}"
     output_var: "min_required_bytes"
