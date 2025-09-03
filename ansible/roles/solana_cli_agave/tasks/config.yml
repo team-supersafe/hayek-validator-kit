@@ -20,7 +20,6 @@
     echo $PATH
   register: cli_shell_env_path
   changed_when: false
-  tags: [solana_cli, config]
 
 - name: Config - Show current PATH
   debug:
@@ -32,7 +31,6 @@
     PATH: "{{ cli_shell_env_path.stdout }}"
   register: solana_config_set
   changed_when: "'Config File' in solana_config_set.stdout"
-  tags: [solana_cli, config]
 
 - name: Config - Show current Solana CLI config
   ansible.builtin.command: solana config get
@@ -40,9 +38,7 @@
     PATH: "{{ cli_shell_env_path.stdout }}"
   register: solana_config_get
   changed_when: false
-  tags: [solana_cli, config]
 
 - name: Config - Print Solana CLI config
   ansible.builtin.debug:
     msg: "Current Solana CLI config:\n{{ solana_config_get.stdout }}"
-  tags: [solana_cli, config]

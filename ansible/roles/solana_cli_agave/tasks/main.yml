@@ -1,19 +1,19 @@
 ---
 - name: Precheck environment
   import_tasks: precheck.yml
-  tags: [solana, precheck]
+  tags: [solana_cli_agave, precheck]
 
 - name: Install Solana CLI
   import_tasks: install.yml
   when: not solana_cli_already_installed
-  tags: [solana, install]
+  tags: [solana_cli_agave, install]
 
 - name: Configure the Solana CLI post installation
   import_tasks: config.yml
   when: not solana_cli_already_installed
-  tags: [solana, config]
+  tags: [solana_cli_agave, config]
 
 - name: Verify Solana CLI installation is correct
   import_tasks: verify.yml
   when: not solana_cli_already_installed
-  tags: [solana, verify]
+  tags: [solana_cli_agave, verify]

@@ -18,7 +18,6 @@
   ansible.builtin.stat:
     path: "{{ solana_install_dir }}/solana"
   register: solana_binary
-  tags: [solana_cli.precheck]
 
 - name: Precheck - Get installed Solana CLI version
   ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
@@ -26,13 +25,11 @@
   changed_when: false
   failed_when: false
   when: solana_binary.stat.exists
-  tags: [solana_cli.precheck]
 
 - name: Precheck - Extract installed version number
   ansible.builtin.set_fact:
     installed_solana_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
   when: solana_binary.stat.exists and installed_version.stdout is defined
-  tags: [solana_cli.precheck]
 
 - name: Precheck - Set fact for Solana CLI installation needed
   ansible.builtin.set_fact:
@@ -40,14 +37,12 @@
       {{ solana_binary.stat.exists and
          installed_solana_version is defined and
          installed_solana_version == agave_version }}
-  tags: [solana_cli.precheck]
 
 - name: Precheck - Find solana binary in PATH
   ansible.builtin.command: which solana
   register: solana_which_result
   changed_when: false
   failed_when: false
-  tags: [solana_cli.precheck]
 
 - name: Debug installation status
   ansible.builtin.debug:
@@ -58,4 +53,3 @@
       - Installed version: {{ installed_solana_version | default('not found') }}
       - Desired version: {{ agave_version }}
       - Already installed: {{ solana_cli_already_installed }}
-  tags: [solana_cli.precheck]

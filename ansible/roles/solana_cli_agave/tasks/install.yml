@@ -41,7 +41,6 @@
     line: 'export PATH="{{ solana_install_dir }}:$PATH"'
     create: yes
     state: present
-  tags: [solana_cli, install]
 
 - name: Install - Ensure Solana CLI bin path is in .zshrc
   ansible.builtin.lineinfile:
@@ -49,4 +48,3 @@
     line: 'export PATH="{{ solana_install_dir }}:$PATH"'
     create: yes
     state: present
-  tags: [solana_cli, install]
