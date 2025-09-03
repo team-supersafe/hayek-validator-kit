@@ -3,7 +3,7 @@
 # This file handles architecture detection and delegates to the appropriate install method.
 
 # Ensure the host architecture is set (required for conditional installation logic)
-- import_tasks: ../common/tasks/set_host_architecture.yml
+- import_tasks: ../../common/tasks/set_host_architecture.yml
 
 - name: Install prerequisites
   become: true
