@@ -4,12 +4,12 @@
     - name: Create logrotate configuration
       ansible.builtin.template:
         src: validator.logrotate.j2
-        dest: /etc/logrotate.d/validator.logrotate
+        dest: "/etc/logrotate.d/{{ validator_service_name }}"
         mode: "0644"
       become: true
 
     - name: Verify logrotate configuration
-      ansible.builtin.command: logrotate -d /etc/logrotate.d/validator.logrotate
+      ansible.builtin.command: logrotate -d /etc/logrotate.d/{{ validator_service_name }}
       register: logrotate_check
       changed_when: false
       failed_when: false
@@ -25,14 +25,14 @@
     - name: Deploy validator logrotate systemd service
       ansible.builtin.template:
         src: validator-logrotate.service.j2
-        dest: /etc/systemd/system/validator-logrotate.service
+        dest: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.service"
         mode: "0644"
       become: true
 
     - name: Deploy validator logrotate systemd timer
       ansible.builtin.template:
         src: validator-logrotate.timer.j2
-        dest: /etc/systemd/system/validator-logrotate.timer
+        dest: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.timer"
         mode: "0644"
       become: true
 
@@ -43,7 +43,7 @@
 
     - name: Enable and start validator logrotate timer
       ansible.builtin.systemd:
-        name: validator-logrotate.timer
+        name: "validator-logrotate-{{ validator_service_name }}.timer"
         enabled: true
         state: started
       become: true

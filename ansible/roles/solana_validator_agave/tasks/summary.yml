@@ -1,0 +1,17 @@
+---
+- name: summary - Display Agave validator installation summary
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      Agave Validator Installation Summary
+      ========================================
+
+      Validator Name: {{ validator_name }}
+      Validator Type: {{ validator_type }}
+      Solana Cluster: {{ solana_cluster }}
+      Target Host: {{ target_host }}
+      Service Name: {{ validator_service_name }}
+      Service Status: Active
+      Validator Logs: {{ logs_dir }}
+
+      ========================================

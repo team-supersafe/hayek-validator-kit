@@ -35,3 +35,6 @@ jito_tip_payment_program_pubkey: "GJHtFqM9agxPmkeKjHny6qiRKrXZALvvFGiKf11QE7hy"
 jito_tip_distribution_program_pubkey: "F2Zu7QZiTYUhPd7u9ukRVwxh7B71oA3NMJcHuCHc29P2"
 jito_merkle_root_upload_authority: "GZctHpWXmsZC1YHACTGGcHhYxjdRqQvTpYkb9LMvxDib"
 jito_commission_bps: 0
+
+# Logging configuration
+logrotate_max_size_localnet: "100M"

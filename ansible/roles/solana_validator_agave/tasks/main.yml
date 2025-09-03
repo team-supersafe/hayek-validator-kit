@@ -6,3 +6,20 @@
 - name: Prepare variables needed for the role
   import_tasks: prepare.yml
   tags: [solana_validator_agave, prepare]
+
+- name: Cleanup the host from existing validator data
+  import_tasks: host_cleanup.yml
+  when: force_host_cleanup is defined and force_host_cleanup == "true"
+  tags: [solana_validator_agave, cleanup]
+
+- name: Configure and start Agave validator
+  import_tasks: configure.yml
+  tags: [solana_validator_agave, configure]
+
+- name: Verify Agave validator installation
+  import_tasks: verify.yml
+  tags: [solana_validator_agave, verify]
+
+- name: Print Summary
+  import_tasks: summary.yml
+  tags: [solana_validator_agave, summary]
