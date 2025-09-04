@@ -17,7 +17,12 @@ exec agave-validator \
 --ledger {{ ledger_path }} \
 --accounts {{ accounts_path }} \
 --snapshots {{ snapshots_path }} \
---snapshot-interval-slots {{ snapshot_interval_slots }} \
+{# TODO: Remove this conditional logic once all clusters/validators are running solana/jito >= 3.0.0 #}
+{% if jito_version is defined and jito_version is version('3.0.0', '>=') %}
+--no-snapshots \
+{% else %}
+--snapshot-interval-slots 0 \
+{% endif %}
 --minimal-snapshot-download-speed {{ minimal_snapshot_download_speed }} \
 --private-rpc \
 --rpc-port {{ solana_rpc_port }} \
