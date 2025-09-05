@@ -1,47 +1,69 @@
 ---
 # Check if there is sufficient disk space in the given user directory
-- name: Get initial disk space
-  ansible.builtin.shell: |
-    df -h "{{ solana_user_dir }}" | awk 'NR==2 {print $4}'
-  register: initial_space
-  changed_when: false
+- name: Validate solana_user_dir path
+  ansible.builtin.assert:
+    that:
+      - solana_user_dir is defined
+      - solana_user_dir != ''
+      - solana_user_dir is match('^/.*')
+    fail_msg: "solana_user_dir must be defined and be an absolute path"
 
-- name: Validate df output format
-  ansible.builtin.fail:
-    msg: |
-      Unexpected df output format. Expected a size value like '80G', got: '{{ initial_space.stdout }}'
+- name: Check disk space with mount facts (primary method)
+  block:
+    - name: Gather mount facts
+      ansible.builtin.setup:
+        gather_subset: mounts
 
-      This may indicate that the df command output format has changed after a system update.
-      Please check the current df output format by running:
-        df -h "{{ solana_user_dir }}"
+    - name: Get available disk space for user directory using mount facts
+      ansible.builtin.set_fact:
+        initial_space_bytes: >-
+          {{
+            (ansible_facts.mounts | default([]) |
+             selectattr('mount', 'equalto', solana_user_dir | realpath) |
+             first).size_available | default(
+               (ansible_facts.mounts | default([]) |
+                selectattr('mount', 'equalto', '/') |
+                first).size_available | default(omit)
+             )
+          }}
+      when: ansible_facts.mounts is defined and ansible_facts.mounts | length > 0
 
-      The script expects the 4th column to contain available space in format like '80G', '1.5T', etc.
-  when: >
-    initial_space.stdout is not defined or
-    initial_space.stdout == '' or
-    not (initial_space.stdout | regex_match('^[0-9.]+[KMG]?$'))
+    - name: Validate disk space was found using mount facts
+      ansible.builtin.assert:
+        that:
+          - initial_space_bytes is defined
+          - initial_space_bytes | int > 0
+        fail_msg: "Could not determine available disk space for {{ solana_user_dir }} using mount facts"
 
-- name: Print initial available space
-  ansible.builtin.debug:
-    msg: "Initial available space in {{ solana_user_dir }}: {{ initial_space.stdout }}"
+  rescue:
+    - name: Fallback to shell command
+      ansible.builtin.shell: |
+        df -k "{{ solana_user_dir }}" | tail -n1 | awk '{print $4}'
+      register: fallback_space
+      changed_when: false
 
-- name: Set minimum required space (experimental)
+    - name: Set fallback space
+      ansible.builtin.set_fact:
+        initial_space_bytes: "{{ fallback_space.stdout | int * 1024 }}"
+
+- name: Set minimum required space
   ansible.builtin.set_fact:
-    min_required_space: "14G"  # This is an initial estimate, can be adjusted based on experience
-
-- name: Convert initial space to bytes
-  ansible.builtin.include_tasks: convert_to_bytes.yml
-  vars:
-    input_value: "{{ initial_space.stdout }}"
-    output_var: "initial_space_bytes"
+    min_required_space: "{{ min_disk_space_required | default('14G') }}"
 
 - name: Convert minimum required space to bytes
-  ansible.builtin.include_tasks: convert_to_bytes.yml
-  vars:
-    input_value: "{{ min_required_space }}"
-    output_var: "min_required_bytes"
+  ansible.builtin.set_fact:
+    min_required_bytes: >-
+      {{
+        (min_required_space | regex_replace('G$', '') | regex_replace('M$', '') | regex_replace('K$', '') | float) *
+        (1024 ** (min_required_space | regex_search('[KMG]$') |
+         default('') | replace('K', '1') | replace('M', '2') | replace('G', '3') | int))
+      }}
 
 - name: Check if available space is sufficient
   ansible.builtin.fail:
-    msg: "Insufficient disk space. Available: {{ initial_space.stdout }}, Minimum required: {{ min_required_space }}"
+    msg: |
+      Insufficient disk space in {{ solana_user_dir }}:
+      - Available: {{ (initial_space_bytes | int / (1024**3)) | round(2) }}GB ({{ initial_space_bytes }} bytes)
+      - Minimum required: {{ min_required_space }} ({{ min_required_bytes }} bytes)
+      - Shortfall: {{ ((min_required_bytes - initial_space_bytes) | int / (1024**3)) | round(2) }}GB
   when: initial_space_bytes | int < min_required_bytes | int
