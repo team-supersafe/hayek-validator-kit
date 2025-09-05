@@ -60,21 +60,23 @@
       ansible.builtin.set_fact:
         agave_extracted_dir_name: "{{ use_official_repo_bool | ternary('agave', agave_forked_repo_name) }}"
 
-    - name: Read version from Cargo.toml to verify
-      ansible.builtin.shell: grep '^version =' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
-      args:
-        chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
-      register: cargo_toml_version
-      changed_when: false
+    - name: Slurp Cargo.toml to extract version
+      ansible.builtin.slurp:
+        src: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/Cargo.toml"
+      register: cargo_toml_slurp
+
+    - name: Extract version from Cargo.toml content
+      ansible.builtin.set_fact:
+        cargo_toml_version: "{{ (cargo_toml_slurp.content | b64decode) | regex_search('^version\\s*=\\s*\"([^\"]+)\"', '\\1', multiline=True) }}"
 
     - name: Debug Cargo.toml version
       ansible.builtin.debug:
-        msg: "Cargo.toml version: {{ cargo_toml_version.stdout }} | Expected: {{ agave_version }}"
+        msg: "Cargo.toml version: {{ cargo_toml_version }} | Expected: {{ agave_version }}"
 
     - name: Fail if Cargo.toml version does not match agave_version
       ansible.builtin.fail:
-        msg: "Cargo.toml version ({{ cargo_toml_version.stdout }}) does not match expected agave_version ({{ agave_version }})!"
-      when: cargo_toml_version.stdout != agave_version
+        msg: "Cargo.toml version ({{ cargo_toml_version }}) does not match expected agave_version ({{ agave_version }})!"
+      when: cargo_toml_version != agave_version
       changed_when: false
       ignore_errors: "{{ ansible_check_mode }}"
 
