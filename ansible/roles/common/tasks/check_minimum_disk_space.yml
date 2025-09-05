@@ -51,13 +51,10 @@
     min_required_space: "{{ min_disk_space_required | default('14G') }}"
 
 - name: Convert minimum required space to bytes
-  ansible.builtin.set_fact:
-    min_required_bytes: >-
-      {{
-        (min_required_space | regex_replace('G$', '') | regex_replace('M$', '') | regex_replace('K$', '') | float) *
-        (1024 ** (min_required_space | regex_search('[KMG]$') |
-         default('') | replace('K', '1') | replace('M', '2') | replace('G', '3') | int))
-      }}
+  ansible.builtin.include_tasks: convert_to_bytes.yml
+  vars:
+    input_value: "{{ min_required_space }}"
+    output_var: "min_required_bytes"
 
 - name: Check if available space is sufficient
   ansible.builtin.fail:
