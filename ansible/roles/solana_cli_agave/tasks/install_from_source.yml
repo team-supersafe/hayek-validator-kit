@@ -1,4 +1,4 @@
-- name: Start Building Agave message
+- name: Start building Agave message
   ansible.builtin.debug:
     msg: "Building Agave version {{ agave_version }} from source"
 
