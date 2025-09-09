@@ -13,12 +13,6 @@
       {%- endif -%}
   run_once: true
 
-- name: swap - Debug solana cluster parameter
-  ansible.builtin.debug:
-    msg: "solana_cluster_param: '{{ solana_cluster_param }}'"
-  delegate_to: localhost
-  run_once: true
-
 - name: swap - Ensure enough time left in epoch before swap
   block:
     - name: swap - Get current epoch info
@@ -28,12 +22,6 @@
       delegate_to: localhost
       changed_when: false
       check_mode: false
-
-    - name: swap - Debug epoch_info
-      ansible.builtin.debug:
-        msg: "epoch_info: {{ epoch_info.stdout }}"
-      delegate_to: localhost
-      run_once: true
 
     - name: swap - Fail if epoch info stdout is empty
       ansible.builtin.fail:
@@ -46,7 +34,7 @@
         epoch_info_json: "{{ epoch_info.stdout | from_json }}"
         slots_in_epoch: "{{ (epoch_info.stdout | from_json).slotsInEpoch | int }}"
         slot_index: "{{ (epoch_info.stdout | from_json).slotIndex | int }}"
-      when: 
+      when:
         - epoch_info.rc == 0
         - epoch_info.stdout is defined
         - epoch_info.stdout != ''
@@ -55,18 +43,10 @@
       ansible.builtin.set_fact:
         slots_remaining: "{{ slots_in_epoch | int - slot_index | int }}"
         seconds_remaining: "{{ (slots_in_epoch | int - slot_index | int) / slots_per_sec }}"
-      when: 
+      when:
         - epoch_info_json is defined
         - slots_in_epoch is defined
         - slot_index is defined
-
-    - name: swap - Debug calculated seconds and slots remaining
-      ansible.builtin.debug:
-        msg: "seconds_remaining: {{ seconds_remaining }}, slots_remaining: {{ slots_remaining }}"
-      when:
-        - inventory_hostname == source_host
-        - seconds_remaining is defined
-        - slots_remaining is defined
 
 - name: swap - Fail if less than 3 minutes remain in epoch
   ansible.builtin.fail:
@@ -75,7 +55,7 @@
       Please wait for the new epoch to start and try again when there are at least 3 minutes left in the epoch.
       It is less effective to calculate TVC loss close to the epoch boundary.
   run_once: true
-  when: 
+  when:
     - seconds_remaining is defined
     - seconds_remaining | float < swap_epoch_end_threshold_sec
 
@@ -187,14 +167,6 @@
         - not old_unstaked_identity.stat.exists
       register: generated_hotspare
 
-    - name: prepare - Display generated hot-spare pubkey
-      ansible.builtin.debug:
-        msg: "Generated new hot-spare identity with pubkey: {{ generated_hotspare.stdout_lines | select('match', '^pubkey:') | first | regex_replace('^pubkey: ', '') }}"
-      when:
-        - inventory_hostname == source_host
-        - generated_hotspare is defined
-        - generated_hotspare.changed
-
 - name: prepare - Check for primary target identity file on destination host
   block:
     - name: prepare - Check for new convention primary target identity
@@ -254,7 +226,7 @@
 - name: prepare - Set source host pubkey fact
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ source_staked_pubkey.stdout_lines[0] }}"
-  when: 
+  when:
     - inventory_hostname == source_host
     - source_staked_pubkey is defined
     - source_staked_pubkey.stdout_lines is defined
@@ -263,7 +235,7 @@
 - name: prepare - Set destination host pubkey fact
   ansible.builtin.set_fact:
     destination_primary_pubkey: "{{ destination_staked_pubkey.stdout_lines[0] }}"
-  when: 
+  when:
     - inventory_hostname == destination_host
     - destination_staked_pubkey is defined
     - destination_staked_pubkey.stdout_lines is defined
@@ -278,18 +250,131 @@
     - hostvars[source_host]['source_primary_pubkey'] is defined
     - hostvars[destination_host]['destination_primary_pubkey'] is defined
 
-- name: prepare - Assert that both primary pubkeys are available
+- name: prepare - Assert primary pubkeys are available
+  ansible.builtin.assert:
+    that:
+      - source_primary_pubkey is defined and source_primary_pubkey != ''
+      - destination_primary_pubkey is defined and destination_primary_pubkey != ''
+    fail_msg: "Primary pubkeys not set. Check identity files and solana-keygen commands."
+  when: not ansible_check_mode
+  run_once: true
+
+- name: prepare - Validate identity keypairs match between hosts
   ansible.builtin.fail:
-    msg: |
-      Critical error: Primary pubkeys are not properly set.
-      
-      Source primary pubkey: {{ source_primary_pubkey | default('NOT SET') }}
-      Destination primary pubkey: {{ destination_primary_pubkey | default('NOT SET') }}
-      
-      This indicates that the solana-keygen commands failed to execute properly
-      or the identity files are missing/corrupted.
+    msg: "Identity keypairs don't match between hosts. Source: {{ source_primary_pubkey }}, Destination: {{ destination_primary_pubkey }}"
   when:
     - not ansible_check_mode
-    - (source_primary_pubkey is not defined or source_primary_pubkey == '') or
-      (destination_primary_pubkey is not defined or destination_primary_pubkey == '')
+    - source_primary_pubkey != destination_primary_pubkey
   run_once: true
+
+- name: prepare - Check cluster delinquency
+  block:
+    - name: prepare - Get cluster validators info
+      ansible.builtin.shell: solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json
+      register: cluster_info
+      delegate_to: localhost
+      changed_when: false
+
+    - name: prepare - Calculate delinquency percentage
+      ansible.builtin.set_fact:
+        total_stake: "{{ (cluster_info.stdout | from_json).validators | sum(attribute='activatedStake') }}"
+        delinquent_stake: "{{ (cluster_info.stdout | from_json).validators | selectattr('delinquent', 'equalto', true) | sum(attribute='activatedStake') }}"
+        delinquency_pct: "{{ ((delinquent_stake | float / total_stake | float) * 100) | round(1) }}"
+      when: cluster_info.rc == 0
+
+    - name: prepare - Fail if delinquency too high
+      ansible.builtin.fail:
+        msg: "Cluster delinquency too high: {{ delinquency_pct }}%. Wait for cluster health to improve."
+      when:
+        - not ansible_check_mode
+        - delinquency_pct is defined
+        - delinquency_pct | float > 50
+
+- name: prepare - Check epoch timing and leader schedule
+  block:
+    - name: prepare - Get epoch info
+      ansible.builtin.shell: solana {{ solana_cluster_param }} epoch-info --output json
+      register: epoch_info
+      delegate_to: localhost
+      changed_when: false
+
+    - name: prepare - Calculate remaining time
+      ansible.builtin.set_fact:
+        current_slot: "{{ (epoch_info.stdout | from_json).slotIndex | int }}"
+        slots_remaining: "{{ (epoch_info.stdout | from_json).slotsInEpoch | int - (epoch_info.stdout | from_json).slotIndex | int }}"
+        seconds_remaining: "{{ (slots_remaining / slots_per_sec) | round(0) | int }}"
+      when: epoch_info.rc == 0
+
+    - name: prepare - Get leader schedule
+      ansible.builtin.shell: solana {{ solana_cluster_param }} leader-schedule --output json
+      register: leader_schedule
+      delegate_to: localhost
+      changed_when: false
+
+    - name: prepare - Find next leader slot
+      ansible.builtin.set_fact:
+        next_leader_slots: >-
+          {{ leader_schedule.stdout | from_json | dict2items |
+             selectattr('value', 'search', source_primary_pubkey) |
+             map(attribute='key') | map('int') | select('>=', current_slot) | list | sort }}
+      when:
+        - leader_schedule.rc == 0
+        - current_slot is defined
+
+    - name: prepare - Calculate time to leadership
+      ansible.builtin.set_fact:
+        next_leader_slot: "{{ next_leader_slots[0] | default('') }}"
+        seconds_to_leadership: "{{ ((next_leader_slots[0] | int - current_slot) / slots_per_sec) | round(0) | int if next_leader_slots[0] is defined else 0 }}"
+      when: next_leader_slots is defined
+
+    - name: prepare - Fail if too close to epoch end
+      ansible.builtin.fail:
+        msg: "Too close to epoch end: {{ seconds_remaining }}s remaining. Need at least {{ swap_epoch_end_threshold_sec }}s."
+      when:
+        - not ansible_check_mode
+        - seconds_remaining is defined
+        - seconds_remaining | int < swap_epoch_end_threshold_sec
+
+- name: prepare - Verify destination host sync
+  block:
+    - name: prepare - Get destination slot
+      ansible.builtin.shell: solana {{ solana_cluster_param }} slot
+      register: dest_slot
+      delegate_to: "{{ destination_host }}"
+      changed_when: false
+
+    - name: prepare - Get network slot
+      ansible.builtin.shell: solana {{ solana_cluster_param }} slot
+      register: network_slot
+      delegate_to: localhost
+      changed_when: false
+
+    - name: prepare - Calculate slot difference
+      ansible.builtin.set_fact:
+        slot_diff: "{{ network_slot.stdout | int - dest_slot.stdout | int }}"
+      when:
+        - dest_slot.rc == 0
+        - network_slot.rc == 0
+
+    - name: prepare - Fail if destination too far behind
+      ansible.builtin.fail:
+        msg: "Destination host too far behind: {{ slot_diff }} slots. Wait for sync."
+      when:
+        - not ansible_check_mode
+        - slot_diff is defined
+        - slot_diff | int > 50
+
+- name: prepare - Test host connectivity
+  block:
+    - name: prepare - Test SSH connection from source to destination
+      ansible.builtin.command: ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no sol@{{ hostvars[destination_host]['ansible_host'] | default(destination_host) }} "echo 'connection_test'"
+      register: ssh_test_result
+      delegate_to: "{{ source_host }}"
+      ignore_errors: true
+
+    - name: prepare - Fail if SSH connection fails
+      ansible.builtin.fail:
+        msg: "SSH connection from {{ source_host }} to {{ destination_host }} failed. Check network connectivity and SSH configuration."
+      when:
+        - not ansible_check_mode
+        - ssh_test_result.rc != 0
