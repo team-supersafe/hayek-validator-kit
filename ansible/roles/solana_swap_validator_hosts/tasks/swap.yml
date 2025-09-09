@@ -46,7 +46,7 @@
     - name: swap - Parse vote account data before swap
       ansible.builtin.set_fact:
         vote_account_before: "{{ source_vote_account_before.stdout | from_json }}"
-      when: 
+      when:
         - inventory_hostname == source_host
         - source_vote_account_before.stdout is defined
         - source_vote_account_before.stdout != ''
@@ -96,15 +96,17 @@
 
 - name: swap - Wait for Restart Window and Unstake Source Validator
   block:
-    - name: swap - Wait for safe restart window
+    - name: swap - Wait for safe restart window with timeout
       ansible.builtin.command: >
-        agave-validator --ledger {{ ledger_path }} wait-for-restart-window
+        timeout {{ wait_restart_window_timeout_seconds }} agave-validator --ledger {{ ledger_path }} wait-for-restart-window
         --max-delinquent-stake {{ restart_max_delinquent_stake }} --min-idle-time {{ restart_min_idle_time }}
         --skip-new-snapshot-check --skip-health-check
       environment:
         PATH: "{{ solana_install_dir }}"
       when: inventory_hostname == source_host
       register: wait_restart_result
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
       failed_when: wait_restart_result.rc != 0
 
     - name: swap - Switch to unstaked identity on source
@@ -112,6 +114,8 @@
       environment:
         PATH: "{{ solana_install_dir }}"
       when: inventory_hostname == source_host
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
 
     - name: swap - Update symlink to unstaked identity
       ansible.builtin.file:
@@ -157,6 +161,31 @@
       ignore_errors: "{{ ansible_check_mode }}"
       when: inventory_hostname == destination_host
       register: transfer_tower_result
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+
+    - name: swap - Handle tower transfer failure
+      block:
+        - name: swap - Restore primary identity symlink on source
+          ansible.builtin.file:
+            src: "{{ source_host_primary_target_identity_path }}"
+            dest: "{{ source_host_identity_link_path }}"
+            state: link
+            force: true
+          when: inventory_hostname == source_host
+
+        - name: swap - Restore primary identity on source
+          ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_primary_target_identity_path }}
+          environment:
+            PATH: "{{ solana_install_dir }}"
+          when: inventory_hostname == source_host
+
+        - name: swap - Fail with recovery message
+          ansible.builtin.fail:
+            msg: "Tower file transfer failed after {{ max_retry_attempts }} attempts. Primary identity restored on source host."
+      when:
+        - not ansible_check_mode
+        - transfer_tower_result is failed
 
     - name: set fact if tower transfer succeeded
       ansible.builtin.set_fact:
@@ -171,6 +200,8 @@
       environment:
         PATH: "{{ solana_install_dir }}"
       when: inventory_hostname == destination_host
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
 
     - name: swap - Update symlink to staked identity
       ansible.builtin.file:
@@ -180,3 +211,33 @@
         force: true
       when: inventory_hostname == destination_host
   when: tower_transfer_success | default(false)
+
+- name: swap - Stop jito-relayer on source host if running
+  block:
+    - name: swap - Check jito-relayer service status
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+      register: relayer_service_status
+      when: inventory_hostname == source_host
+      changed_when: false
+      failed_when: false
+
+    - name: swap - Stop and disable jito-relayer service
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+        state: stopped
+        enabled: false
+      register: relayer_stop_result
+      retries: 3
+      delay: 10
+      until: relayer_stop_result is success
+      when:
+        - inventory_hostname == source_host
+        - relayer_service_status.status.ActiveState == "active"
+      become: true
+
+    - name: swap - Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+      when: inventory_hostname == source_host
+      become: true

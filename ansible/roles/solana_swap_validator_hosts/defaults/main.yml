@@ -9,3 +9,7 @@ tower_file_suffix: ".bin"
 slots_per_sec: 2.5
 # Threshold (in seconds) before the epoch ends to trigger swap actions
 swap_epoch_end_threshold_sec: 180
+# Retry configuration for critical operations
+max_retry_attempts: 3
+retry_delay_seconds: 5
+wait_restart_window_timeout_seconds: 300
