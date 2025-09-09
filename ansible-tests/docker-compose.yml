@@ -52,10 +52,14 @@ services:
       - molecule_net
     volumes:
       - ..:/hayek-validator-kit
-      - ${HOME}/new-metal-box:/root/new-metal-box
+      - ${HOME}/new-metal-box:/new-metal-box
       - /var/run/docker.sock:/var/run/docker.sock
       - $SSH_AUTH_SOCK:/ssh-agent:ro
     environment:
       SSH_AUTH_SOCK: /ssh-agent
-    command: bash -li
+    command: |
+      bash -c "
+      /hayek-validator-kit/ansible-tests/scripts/generate-test-csv.sh
+      exec bash -li
+      "
 

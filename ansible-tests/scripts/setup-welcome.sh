@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Default values
 PROJECT_DIR="${2:-/hayek-validator-kit}"
-CONFIG_DIR="${3:-/root/new-metal-box}"
+CONFIG_DIR="${3:-/new-metal-box}"
 
 echo "Setting up welcome environment for scenario: $DEFAULT_SCENARIO"
 
@@ -140,7 +140,7 @@ get_scenario_description() {
 show_test_help() {
     local scenario="${MOLECULE_SCENARIO:-iam_manager_tests}"
     local project_dir="${PROJECT_DIR:-/hayek-validator-kit}"
-    local config_dir="${CONFIG_DIR:-/root/new-metal-box}"
+    local config_dir="${CONFIG_DIR:-/new-metal-box}"
 
     echo -e "\n\033[1;36m=========================================="
     echo -e "🧪 HAYEK VALIDATOR KIT - TEST RUNNER"
