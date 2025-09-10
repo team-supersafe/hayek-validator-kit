@@ -3,6 +3,11 @@
 # IAM MANAGER COMPLETE VERIFICATION - FINAL REPORTING
 # ========================================
 
+# Define report directory variable
+- name: Set report directory
+  ansible.builtin.set_fact:
+    reports_dir: "/test-reports"
+
 # ========================================
 # SECTION 1: IAM MANAGER TASKS VERIFICATION
 # ========================================
@@ -166,7 +171,7 @@
         {%- set _ = lines.append("DO NOT DEPLOY TO PRODUCTION UNTIL RESOLVED!") -%}
         {%- set _ = lines.append("") -%}
         {%- set _ = lines.append("📄 DETAILED LOG:") -%}
-        {%- set _ = lines.append("• Full execution log: " + (csv_source_dir | default('~/new-metal-box')) + "/rbac_execution_log_" + (ansible_date_time.epoch | string) + ".txt") -%}
+        {%- set _ = lines.append("• Full execution log: " + reports_dir + "/rbac_execution_log_" + (ansible_date_time.epoch | string) + ".txt") -%}
         {%- set _ = lines.append("========================================") -%}
       {%- else -%}
         {%- set _ = lines.append("========================================") -%}
@@ -207,7 +212,7 @@
         {%- set _ = lines.append("System ready for production deployment.") -%}
         {%- set _ = lines.append("") -%}
         {%- set _ = lines.append("📄 DETAILED LOG:") -%}
-        {%- set _ = lines.append("• Full execution log: " + (csv_source_dir | default('~/new-metal-box')) + "/rbac_execution_log_" + (ansible_date_time.epoch | string) + ".txt") -%}
+        {%- set _ = lines.append("• Full execution log: " + reports_dir + "/rbac_execution_log_" + (ansible_date_time.epoch | string) + ".txt") -%}
         {%- set _ = lines.append("========================================") -%}
       {%- endif -%}
 
@@ -249,7 +254,7 @@
       - "DO NOT DEPLOY TO PRODUCTION UNTIL RESOLVED!"
       - ""
       - "📄 DETAILED LOG:"
-      - "• Full execution log: {{ csv_source_dir | default('~/new-metal-box') }}/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
+      - "• Full execution log: {{ reports_dir }}/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
       - "========================================"
   when: security_summary.total_issues | int > 0
 
@@ -294,7 +299,7 @@
       - "System ready for production deployment."
       - ""
       - "📄 DETAILED LOG:"
-      - "• Full execution log: {{ csv_source_dir | default('~/new-metal-box') }}/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
+      - "• Full execution log: {{ reports_dir }}/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
       - "========================================"
   when: security_summary.total_issues | int == 0
 

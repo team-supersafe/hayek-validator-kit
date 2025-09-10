@@ -118,7 +118,7 @@
 - name: Save detailed execution log to file
   ansible.builtin.copy:
     content: "{{ detailed_execution_log | join('\n') }}"
-    dest: "/new-metal-box/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
+    dest: "/test-reports/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
     mode: '0644'
     force: false  # Don't overwrite if file exists
   delegate_to: localhost
@@ -130,7 +130,7 @@
   ansible.builtin.debug:
     msg: 
       - "📄 Log Status: {{ 'Created new log file' if (log_file_creation.changed | default(false)) else 'Log file already exists' }}"
-      - "📁 Location: /new-metal-box/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
+      - "📁 Location: /test-reports/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
 
 # ========================================
 # LOGGING VERIFICATION REPORTS
