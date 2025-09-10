@@ -1,0 +1,44 @@
+---
+- name: Config - Determine Solana cluster parameter
+  ansible.builtin.set_fact:
+    solana_cluster_param: >-
+      {%- if 'solana_mainnet' in group_names -%}
+      -um
+      {%- elif 'solana_testnet' in group_names -%}
+      -ut
+      {%- elif 'solana_localnet' in group_names -%}
+      -ul
+      {%- else -%}
+      -ul
+      {%- endif -%}
+  run_once: true
+
+- name: Config - Refresh shell environment
+  ansible.builtin.shell: |
+    . "$HOME/.zshrc"
+    . "$HOME/.bashrc"
+    echo $PATH
+  register: cli_shell_env_path
+  changed_when: false
+
+- name: Config - Show current PATH
+  debug:
+    msg: "PATH after sourcing: {{ cli_shell_env_path.stdout }}"
+
+- name: Config - Set Solana CLI to use a default cluster
+  ansible.builtin.command: solana config set {{ solana_cluster_param }}
+  environment:
+    PATH: "{{ cli_shell_env_path.stdout }}"
+  register: solana_config_set
+  changed_when: "'Config File' in solana_config_set.stdout"
+
+- name: Config - Show current Solana CLI config
+  ansible.builtin.command: solana config get
+  environment:
+    PATH: "{{ cli_shell_env_path.stdout }}"
+  register: solana_config_get
+  changed_when: false
+
+- name: Config - Print Solana CLI config
+  ansible.builtin.debug:
+    msg: "Current Solana CLI config:\n{{ solana_config_get.stdout }}"

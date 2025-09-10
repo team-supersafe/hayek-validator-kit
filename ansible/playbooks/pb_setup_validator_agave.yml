@@ -1,0 +1,30 @@
+---
+# Agave Validator Setup
+# -------------------
+# Sets up a Solana validator with Agave client.
+#
+# Usage:
+# ------
+# Run from /ansible directory:
+#
+# ansible-playbook playbooks/pb_setup_validator_agave.yml \
+#   -i solana_localnet.yml \
+#   --limit host-charlie \
+#   -e "target_host=host-charlie" \
+#   -e "validator_name=penny" \
+#   -e "validator_type=hot-spare" \
+#   -e "agave_version=2.3.6" \
+#   -e "solana_cluster=localnet" \
+#   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
+#   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
+#   -e "force_host_cleanup=true" \ # Optional: Use if target host is running a validator in a different cluster
+
+- name: Install Agave Validator
+  hosts: "{{ target_host }}"
+  user: "{{ solana_user }}"
+  become: false
+
+  # TODO: Add pre_tasks
+
+  roles:
+    - role: solana_validator_agave
