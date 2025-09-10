@@ -1,0 +1,66 @@
+---
+# Check if there is sufficient disk space in the given user directory
+- name: Validate solana_user_dir path
+  ansible.builtin.assert:
+    that:
+      - solana_user_dir is defined
+      - solana_user_dir != ''
+      - solana_user_dir is match('^/.*')
+    fail_msg: "solana_user_dir must be defined and be an absolute path"
+
+- name: Check disk space with mount facts (primary method)
+  block:
+    - name: Gather mount facts
+      ansible.builtin.setup:
+        gather_subset: mounts
+
+    - name: Get available disk space for user directory using mount facts
+      ansible.builtin.set_fact:
+        initial_space_bytes: >-
+          {{
+            (ansible_facts.mounts | default([]) |
+             selectattr('mount', 'equalto', solana_user_dir | realpath) |
+             first).size_available | default(
+               (ansible_facts.mounts | default([]) |
+                selectattr('mount', 'equalto', '/') |
+                first).size_available | default(omit)
+             )
+          }}
+      when: ansible_facts.mounts is defined and ansible_facts.mounts | length > 0
+
+    - name: Validate disk space was found using mount facts
+      ansible.builtin.assert:
+        that:
+          - initial_space_bytes is defined
+          - initial_space_bytes | int > 0
+        fail_msg: "Could not determine available disk space for {{ solana_user_dir }} using mount facts"
+
+  rescue:
+    - name: Fallback to shell command
+      ansible.builtin.shell: |
+        df -k "{{ solana_user_dir }}" | tail -n1 | awk '{print $4}'
+      register: fallback_space
+      changed_when: false
+
+    - name: Set fallback space
+      ansible.builtin.set_fact:
+        initial_space_bytes: "{{ fallback_space.stdout | int * 1024 }}"
+
+- name: Set minimum required space
+  ansible.builtin.set_fact:
+    min_required_space: "{{ min_disk_space_required | default('14G') }}"
+
+- name: Convert minimum required space to bytes
+  ansible.builtin.include_tasks: convert_to_bytes.yml
+  vars:
+    input_value: "{{ min_required_space }}"
+    output_var: "min_required_bytes"
+
+- name: Check if available space is sufficient
+  ansible.builtin.fail:
+    msg: |
+      Insufficient disk space in {{ solana_user_dir }}:
+      - Available: {{ (initial_space_bytes | int / (1024**3)) | round(2) }}GB ({{ initial_space_bytes }} bytes)
+      - Minimum required: {{ min_required_space }} ({{ min_required_bytes }} bytes)
+      - Shortfall: {{ ((min_required_bytes - initial_space_bytes) | int / (1024**3)) | round(2) }}GB
+  when: initial_space_bytes | int < min_required_bytes | int
