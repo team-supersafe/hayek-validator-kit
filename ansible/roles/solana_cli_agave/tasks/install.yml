@@ -23,7 +23,7 @@
 # Set local boolean for build method
 - name: Set local boolean for build method
   ansible.builtin.set_fact:
-    build_from_source_bool: "{{ build_from_source | default(false) | bool }}"
+    build_from_source_bool: "{{ build_from_source | default(true) | bool }}"
 
 # Choose installation method based on user preference
 - when: not build_from_source_bool

@@ -15,7 +15,7 @@ argument_specs:
       build_from_source:
         type: bool
         required: false
-        default: false
+        default: true
         description: "Build from source instead of using precompiled binaries"
       use_official_repo:
         type: bool
