@@ -1,5 +1,5 @@
 ---
-- name: swap - Determine Solana cluster parameter
+- name: prepare - Determine Solana cluster parameter
   ansible.builtin.set_fact:
     solana_cluster_param: >-
       {%- if 'solana_mainnet' in group_names -%}
@@ -7,15 +7,20 @@
       {%- elif 'solana_testnet' in group_names -%}
       -ut
       {%- elif 'solana_localnet' in group_names -%}
-      -ul
+      --url {{ lookup('env', 'RPC_URL') }}
       {%- else -%}
-      -ul
+      --url {{ lookup('env', 'RPC_URL') }}
       {%- endif -%}
   run_once: true
 
-- name: swap - Ensure enough time left in epoch before swap
+- name: precheck - Gather facts for localhost
+  ansible.builtin.setup:
+  delegate_to: localhost
+  run_once: true
+
+- name: prepare - Ensure enough time left in epoch before swap
   block:
-    - name: swap - Get current epoch info
+    - name: prepare - Get current epoch info
       ansible.builtin.shell: solana {{ solana_cluster_param }} epoch-info --output json
       register: epoch_info
       when: solana_cluster_param is defined
@@ -23,13 +28,13 @@
       changed_when: false
       check_mode: false
 
-    - name: swap - Fail if epoch info stdout is empty
+    - name: prepare - Fail if epoch info stdout is empty
       ansible.builtin.fail:
         msg: Epoch info command returned empty output.
       when: epoch_info.stdout is not defined or epoch_info.stdout == ''
       delegate_to: localhost
 
-    - name: swap - Parse epoch info
+    - name: prepare - Parse epoch info
       ansible.builtin.set_fact:
         epoch_info_json: "{{ epoch_info.stdout | from_json }}"
         slots_in_epoch: "{{ (epoch_info.stdout | from_json).slotsInEpoch | int }}"
@@ -39,7 +44,7 @@
         - epoch_info.stdout is defined
         - epoch_info.stdout != ''
 
-    - name: swap - Calculate seconds remaining in epoch
+    - name: prepare - Calculate seconds remaining in epoch
       ansible.builtin.set_fact:
         slots_remaining: "{{ slots_in_epoch | int - slot_index | int }}"
         seconds_remaining: "{{ (slots_in_epoch | int - slot_index | int) / slots_per_sec }}"
@@ -48,7 +53,7 @@
         - slots_in_epoch is defined
         - slot_index is defined
 
-- name: swap - Fail if less than 3 minutes remain in epoch
+- name: prepare - Fail if less than 3 minutes remain in epoch
   ansible.builtin.fail:
     msg: |
       Only {{ seconds_remaining | float | int }} seconds remain in the current epoch ({{ slots_remaining }} slots).
@@ -275,12 +280,29 @@
       delegate_to: localhost
       changed_when: false
 
-    - name: prepare - Calculate delinquency percentage
+    - name: prepare - Calculate total stake
       ansible.builtin.set_fact:
         total_stake: "{{ (cluster_info.stdout | from_json).validators | sum(attribute='activatedStake') }}"
+      when:
+        - cluster_info.rc == 0
+        - cluster_info.stdout is defined
+        - cluster_info.stdout != ''
+
+    - name: prepare - Calculate delinquent stake
+      ansible.builtin.set_fact:
         delinquent_stake: "{{ (cluster_info.stdout | from_json).validators | selectattr('delinquent', 'equalto', true) | sum(attribute='activatedStake') }}"
+      when:
+        - cluster_info.rc == 0
+        - cluster_info.stdout is defined
+        - cluster_info.stdout != ''
+
+    - name: prepare - Calculate delinquency percentage
+      ansible.builtin.set_fact:
         delinquency_pct: "{{ ((delinquent_stake | float / total_stake | float) * 100) | round(1) }}"
-      when: cluster_info.rc == 0
+      when:
+        - cluster_info.rc == 0
+        - total_stake is defined
+        - delinquent_stake is defined
 
     - name: prepare - Fail if delinquency too high
       ansible.builtin.fail:
@@ -302,8 +324,11 @@
       ansible.builtin.set_fact:
         current_slot: "{{ (epoch_info.stdout | from_json).slotIndex | int }}"
         slots_remaining: "{{ (epoch_info.stdout | from_json).slotsInEpoch | int - (epoch_info.stdout | from_json).slotIndex | int }}"
-        seconds_remaining: "{{ (slots_remaining / slots_per_sec) | round(0) | int }}"
-      when: epoch_info.rc == 0
+        seconds_remaining: "{{ (slots_remaining | int / slots_per_sec) | round(0) | int }}"
+      when:
+        - epoch_info.rc == 0
+        - epoch_info.stdout is defined
+        - epoch_info.stdout != ''
 
     - name: prepare - Get leader schedule
       ansible.builtin.shell: solana {{ solana_cluster_param }} leader-schedule --output json
@@ -316,15 +341,17 @@
         next_leader_slots: >-
           {{ leader_schedule.stdout | from_json | dict2items |
              selectattr('value', 'search', source_primary_pubkey) |
-             map(attribute='key') | map('int') | select('>=', current_slot) | list | sort }}
+             map(attribute='key') | map('int') | select('>=', current_slot | int) | list | sort }}
       when:
         - leader_schedule.rc == 0
+        - leader_schedule.stdout is defined
+        - leader_schedule.stdout != ''
         - current_slot is defined
 
     - name: prepare - Calculate time to leadership
       ansible.builtin.set_fact:
         next_leader_slot: "{{ next_leader_slots[0] | default('') }}"
-        seconds_to_leadership: "{{ ((next_leader_slots[0] | int - current_slot) / slots_per_sec) | round(0) | int if next_leader_slots[0] is defined else 0 }}"
+        seconds_to_leadership: "{{ ((next_leader_slots[0] | int - current_slot | int) / slots_per_sec) | round(0) | int if next_leader_slots[0] is defined else 0 }}"
       when: next_leader_slots is defined
 
     - name: prepare - Fail if too close to epoch end
@@ -337,34 +364,48 @@
 
 - name: prepare - Verify destination host sync
   block:
-    - name: prepare - Get destination slot
-      ansible.builtin.shell: solana {{ solana_cluster_param }} slot
-      register: dest_slot
+    - name: prepare - Check validator catchup status with timeout
+      ansible.builtin.shell: "{{ solana_install_dir }}/solana catchup --our-localhost"
+      register: catchup_job
       delegate_to: "{{ destination_host }}"
       changed_when: false
+      failed_when: false
+      ignore_errors: true
+      async: 30
+      poll: 0
 
-    - name: prepare - Get network slot
-      ansible.builtin.shell: solana {{ solana_cluster_param }} slot
-      register: network_slot
-      delegate_to: localhost
-      changed_when: false
+    - name: prepare - Wait for catchup job completion
+      ansible.builtin.async_status:
+        jid: "{{ catchup_job.ansible_job_id }}"
+      register: catchup_result
+      delegate_to: "{{ destination_host }}"
+      until: catchup_result.finished
+      retries: 1
+      delay: 0
+      failed_when: false
+      ignore_errors: true
 
-    - name: prepare - Calculate slot difference
+    - name: prepare - Parse catchup result for caught up status
       ansible.builtin.set_fact:
-        slot_diff: "{{ network_slot.stdout | int - dest_slot.stdout | int }}"
-      when:
-        - dest_slot.rc == 0
-        - network_slot.rc == 0
+        is_caught_up: "{{ catchup_result.stdout is search('has caught up') }}"
+        slot_behind: "{{ catchup_result.stdout | regex_search('(\\d+) slot\\(s\\) behind') | first | default('0') }}"
+      when: catchup_result.stdout is defined
 
-    - name: prepare - Fail if destination too far behind
+    - name: prepare - Handle timeout or error cases
+      ansible.builtin.set_fact:
+        is_caught_up: false
+        slot_behind: "unknown"
+      when: catchup_result.stdout is not defined or not catchup_result.finished
+
+    - name: prepare - Fail if validator is not caught up
       ansible.builtin.fail:
-        msg: "Destination host too far behind: {{ slot_diff }} slots. Wait for sync."
+        msg: "Destination validator is not caught up. Status: {{ catchup_result.stdout | default('timeout/error') }}. Wait for sync."
       when:
         - not ansible_check_mode
-        - slot_diff is defined
-        - slot_diff | int > 50
+        - not is_caught_up | default(false)
+        - slot_behind | default('0') | int > 50
 
-- name: prepare - Test host connectivity
+- name: prepare - Test host connectivity between source and destination
   block:
     - name: prepare - Test SSH connection from source to destination
       ansible.builtin.command: ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no sol@{{ hostvars[destination_host]['ansible_host'] | default(destination_host) }} "echo 'connection_test'"
@@ -374,7 +415,7 @@
 
     - name: prepare - Fail if SSH connection fails
       ansible.builtin.fail:
-        msg: "SSH connection from {{ source_host }} to {{ destination_host }} failed. Check network connectivity and SSH configuration."
+        msg: "SSH connection from {{ source_host }} to {{ destination_host }} failed. Check network connectivity, firewall settings, and SSH configuration."
       when:
         - not ansible_check_mode
         - ssh_test_result.rc != 0
