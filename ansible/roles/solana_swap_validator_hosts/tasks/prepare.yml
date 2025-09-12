@@ -362,18 +362,20 @@
         - seconds_remaining is defined
         - seconds_remaining | int < swap_epoch_end_threshold_sec
 
-- name: prepare - Test host connectivity between source and destination
+- name: prepare - Check SSH from source_host to destination_host
   block:
-    - name: prepare - Test SSH connection from source to destination
-      ansible.builtin.command: ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o LogLevel=ERROR -q sol@{{ hostvars[destination_host]['ansible_host'] | default(destination_host) }} "echo 'connection_test'"
-      register: ssh_test_result
+    - name: prepare - Test SSH from source_host to destination_host
+      ansible.builtin.shell: |
+        ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 {{ destination_host }} 'exit 0'
+      args:
+        warn: false
       delegate_to: "{{ source_host }}"
+      register: ssh_test_result
       ignore_errors: true
-      failed_when: false
 
-    - name: prepare - Fail if SSH connection fails
+    - name: prepare - Fail if SSH test fails
       ansible.builtin.fail:
-        msg: "SSH connection from {{ source_host }} to {{ destination_host }} failed. Check network connectivity, firewall settings, and SSH configuration."
+        msg: "SSH connection from {{ source_host }} to {{ destination_host }} failed. Check SSH keys, agent forwarding, and network access."
       when:
         - not ansible_check_mode
         - ssh_test_result.rc != 0
