@@ -13,3 +13,11 @@ swap_epoch_end_threshold_sec: 180
 max_retry_attempts: 3
 retry_delay_seconds: 5
 wait_restart_window_timeout_seconds: 300
+# Calculated retry count for async operations (timeout_seconds / 10)
+async_retry_count: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
+# Service names for systemd operations
+validator_service_name: "agave-validator"
+jito_relayer_service_name: "jito-relayer"
+# Timeout check conditions for async operations
+wait_restart_timeout_condition: "wait_restart_result.failed or (wait_restart_result.msg is defined and 'timeout' in wait_restart_result.msg | lower)"
+set_hot_spare_timeout_condition: "set_hot_spare_identity_result.failed or (set_hot_spare_identity_result.msg is defined and 'timeout' in set_hot_spare_identity_result.msg | lower)"
