@@ -118,30 +118,48 @@
       until: wait_restart_result.finished
       retries: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
       delay: 10
-      failed_when: wait_restart_result.failed
+      failed_when: wait_restart_result.failed or (wait_restart_result.msg is defined and 'timeout' in wait_restart_result.msg | lower)
 
-    - name: swap - Switch to unstaked identity on source
+    - name: swap - Handle wait-for-restart-window timeout
+      ansible.builtin.fail:
+        msg: "Wait-for-restart-window job timed out after {{ wait_restart_window_timeout_seconds }} seconds. Check validator status and cluster health."
+      when:
+        - inventory_hostname == source_host
+        - wait_restart_result is defined
+        - wait_restart_result.msg is defined
+        - "'timeout' in wait_restart_result.msg | lower"
+
+    - name: swap - Switch to hot-spare identity on source
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_hot_spare_identity_path }}
       environment:
         PATH: "{{ solana_install_dir }}"
       when: inventory_hostname == source_host
       async: "{{ wait_restart_window_timeout_seconds }}"
       poll: 0
-      register: set_unstaked_identity_job
+      register: set_hot_spare_identity_job
 
-    - name: swap - Check set-unstaked-identity job status
+    - name: swap - Check set-hot-spare-identity job status
       ansible.builtin.async_status:
-        jid: "{{ set_unstaked_identity_job.ansible_job_id }}"
+        jid: "{{ set_hot_spare_identity_job.ansible_job_id }}"
       when:
         - inventory_hostname == source_host
-        - set_unstaked_identity_job.ansible_job_id is defined
-      register: set_unstaked_identity_result
-      until: set_unstaked_identity_result.finished
+        - set_hot_spare_identity_job.ansible_job_id is defined
+      register: set_hot_spare_identity_result
+      until: set_hot_spare_identity_result.finished
       retries: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
       delay: 10
-      failed_when: set_unstaked_identity_result.failed
+      failed_when: set_hot_spare_identity_result.failed or (set_hot_spare_identity_result.msg is defined and 'timeout' in set_hot_spare_identity_result.msg | lower)
 
-    - name: swap - Update symlink to unstaked identity
+    - name: swap - Handle set-hot-spare-identity timeout
+      ansible.builtin.fail:
+        msg: "Set-hot-spare-identity job timed out after {{ wait_restart_window_timeout_seconds }} seconds. Check validator process status."
+      when:
+        - inventory_hostname == source_host
+        - set_hot_spare_identity_result is defined
+        - set_hot_spare_identity_result.msg is defined
+        - "'timeout' in set_hot_spare_identity_result.msg | lower"
+
+    - name: swap - Update symlink to hot-spare identity
       ansible.builtin.file:
         src: "{{ source_host_hot_spare_identity_path }}"
         dest: "{{ source_host_identity_link_path }}"
@@ -160,7 +178,7 @@
     - name: swap - Get tower filename
       check_mode: false
       ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path }}
-      register: staked_identity_pubkey_stdout
+      register: primary_target_identity_pubkey_stdout
       environment:
         PATH: "{{ solana_install_dir }}"
       delegate_to: "{{ source_host }}"
@@ -168,8 +186,8 @@
 
     - name: swap - Save tower filename
       ansible.builtin.set_fact:
-        tower_file_src: "{{ ledger_path }}/{{ tower_file_prefix }}{{ staked_identity_pubkey_stdout.stdout }}{{ tower_file_suffix }}"
-        tower_file_dest: "{{ ledger_path }}/{{ tower_file_prefix }}{{ staked_identity_pubkey_stdout.stdout }}{{ tower_file_suffix }}"
+        tower_file_src: "{{ ledger_path }}/{{ tower_file_prefix }}{{ primary_target_identity_pubkey_stdout.stdout }}{{ tower_file_suffix }}"
+        tower_file_dest: "{{ ledger_path }}/{{ tower_file_prefix }}{{ primary_target_identity_pubkey_stdout.stdout }}{{ tower_file_suffix }}"
       when: inventory_hostname == destination_host
 
     - name: swap - Rsync tower file from source to destination
@@ -234,7 +252,7 @@
 
 - name: swap - Promote Destination to Primary Target Validator
   block:
-    - name: swap - Switch to staked identity on destination
+    - name: swap - Switch to primary target identity on destination
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity --require-tower {{ destination_host_primary_target_identity_path }}
       environment:
         PATH: "{{ solana_install_dir }}"
@@ -288,12 +306,12 @@
 
         - name: swap - Fail with recovery message
           ansible.builtin.fail:
-            msg: "Failed to switch destination validator to staked identity. This usually means the validator process is not running or not accepting connections. Primary identity restored on source host."
+            msg: "Failed to switch destination validator to primary target identity. This usually means the validator process is not running or not accepting connections. Primary identity restored on source host."
       when:
         - not ansible_check_mode
         - set_identity_result is failed
 
-    - name: swap - Update symlink to staked identity
+    - name: swap - Update symlink to primary target identity
       ansible.builtin.file:
         src: "{{ destination_host_primary_target_identity_path }}"
         dest: "{{ destination_host_identity_link_path }}"
