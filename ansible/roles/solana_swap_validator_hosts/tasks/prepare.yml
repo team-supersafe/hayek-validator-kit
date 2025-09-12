@@ -30,6 +30,7 @@
       retries: "{{ max_retry_attempts }}"
       delay: "{{ retry_delay_seconds }}"
       until: epoch_info.rc == 0
+      run_once: true
 
     - name: prepare - Fail if epoch info stdout is empty
       ansible.builtin.fail:
@@ -106,6 +107,7 @@
   become: true
   ansible.builtin.apt:
     name: rsync
+    state: present
     update_cache: true
 
 - name: prepare - Check for primary target identity file on source host
@@ -174,6 +176,8 @@
         - not new_hot_spare_identity.stat.exists
         - not old_hot_spare_identity.stat.exists
       register: generated_hotspare
+      changed_when: generated_hotspare.rc == 0
+      failed_when: generated_hotspare.rc != 0
 
 - name: prepare - Check for primary target identity file on destination host
   block:
@@ -200,7 +204,6 @@
           {{ '' }}
           {%- endif -%}
       when: inventory_hostname == destination_host
-
 
     - name: prepare - Fail if no primary identity found on destination host
       ansible.builtin.fail:
@@ -325,15 +328,6 @@
 
 - name: prepare - Check epoch timing and leader schedule
   block:
-    - name: prepare - Get epoch info
-      ansible.builtin.shell: solana {{ solana_cluster_param }} epoch-info --output json
-      register: epoch_info
-      delegate_to: localhost
-      changed_when: false
-      retries: "{{ max_retry_attempts }}"
-      delay: "{{ retry_delay_seconds }}"
-      until: epoch_info.rc == 0
-
     - name: prepare - Calculate remaining time
       ansible.builtin.set_fact:
         current_slot: "{{ (epoch_info.stdout | from_json).slotIndex | int }}"
