@@ -65,6 +65,7 @@
       It is less effective to calculate TVC loss close to the epoch boundary.
   run_once: true
   when:
+    - not ansible_check_mode
     - seconds_remaining is defined
     - seconds_remaining | float < swap_epoch_end_threshold_sec
 
@@ -378,15 +379,14 @@
     - name: prepare - Test SSH from source_host to destination_host
       ansible.builtin.shell: |
         ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 {{ destination_host }} 'exit 0'
-      args:
-        warn: false
       delegate_to: "{{ source_host }}"
       register: ssh_test_result
       ignore_errors: true
+      failed_when: false
 
     - name: prepare - Fail if SSH test fails
       ansible.builtin.fail:
         msg: "SSH connection from {{ source_host }} to {{ destination_host }} failed. Check SSH keys, agent forwarding, and network access."
       when:
         - not ansible_check_mode
-        - ssh_test_result.rc != 0
+        - ssh_test_result is failed
