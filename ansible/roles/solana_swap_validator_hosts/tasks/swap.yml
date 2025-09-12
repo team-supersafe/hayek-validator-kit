@@ -122,9 +122,9 @@
         - wait_restart_job.ansible_job_id is defined
       register: wait_restart_result
       until: wait_restart_result.finished
-      retries: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
+      retries: "{{ async_retry_count }}"
       delay: 10
-      failed_when: wait_restart_result.failed or (wait_restart_result.msg is defined and 'timeout' in wait_restart_result.msg | lower)
+      failed_when: "{{ wait_restart_timeout_condition }}"
 
     - name: swap - Handle wait-for-restart-window timeout
       ansible.builtin.fail:
@@ -152,9 +152,9 @@
         - set_hot_spare_identity_job.ansible_job_id is defined
       register: set_hot_spare_identity_result
       until: set_hot_spare_identity_result.finished
-      retries: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
+      retries: "{{ async_retry_count }}"
       delay: 10
-      failed_when: set_hot_spare_identity_result.failed or (set_hot_spare_identity_result.msg is defined and 'timeout' in set_hot_spare_identity_result.msg | lower)
+      failed_when: "{{ set_hot_spare_timeout_condition }}"
 
     - name: swap - Handle set-hot-spare-identity timeout
       ansible.builtin.fail:
@@ -250,7 +250,7 @@
         - set_identity_job.ansible_job_id is defined
       register: set_identity_result
       until: set_identity_result.finished
-      retries: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
+      retries: "{{ async_retry_count }}"
       delay: 10
       failed_when: set_identity_result.failed
 
@@ -258,7 +258,7 @@
       block:
         - name: swap - Stop validator process on destination host (SAFETY FIRST)
           ansible.builtin.systemd:
-            name: "{{ validator_service_name | default('agave-validator') }}"
+            name: "{{ validator_service_name }}"
             state: stopped
           when: inventory_hostname == destination_host
           become: true
