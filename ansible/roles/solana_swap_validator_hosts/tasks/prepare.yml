@@ -78,15 +78,25 @@
   register: pubkey
   ignore_errors: "{{ ansible_check_mode }}"
 
+- name: prepare - Fail if public key file cannot be read
+  ansible.builtin.fail:
+    msg: "Failed to read SSH public key file {{ ssh_key_path }}.pub. Check if key generation succeeded."
+  when:
+    - not ansible_check_mode
+    - pubkey is failed or pubkey.content is not defined or pubkey.content == ''
+
 - name: prepare - Authorize key on both hosts
   delegate_to: "{{ item }}"
   ansible.posix.authorized_key:
     user: sol
     key: "{{ pubkey.content | b64decode }}"
+    state: present
+    exclusive: false
   loop: "{{ [source_host, destination_host] }}"
   when:
     - pubkey is defined
     - pubkey.content is defined
+    - pubkey.content != ''
   ignore_errors: "{{ ansible_check_mode }}"
 
 - name: prepare - Install prerequisites
