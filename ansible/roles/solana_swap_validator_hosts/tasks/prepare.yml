@@ -27,6 +27,9 @@
       delegate_to: localhost
       changed_when: false
       check_mode: false
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+      until: epoch_info.rc == 0
 
     - name: prepare - Fail if epoch info stdout is empty
       ansible.builtin.fail:
@@ -228,6 +231,9 @@
   when: inventory_hostname == source_host
   changed_when: false
   check_mode: false
+  retries: "{{ max_retry_attempts }}"
+  delay: "{{ retry_delay_seconds }}"
+  until: source_staked_pubkey.rc == 0
 
 - name: prepare - Get destination primary target identity pubkey
   ansible.builtin.command: solana-keygen pubkey {{ destination_host_primary_target_identity_path | trim }}
@@ -237,6 +243,9 @@
   when: inventory_hostname == destination_host
   changed_when: false
   check_mode: false
+  retries: "{{ max_retry_attempts }}"
+  delay: "{{ retry_delay_seconds }}"
+  until: destination_staked_pubkey.rc == 0
 
 - name: prepare - Set source host pubkey fact
   ansible.builtin.set_fact:
@@ -289,6 +298,9 @@
       register: cluster_info
       delegate_to: localhost
       changed_when: false
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+      until: cluster_info.rc == 0
 
     - name: prepare - Calculate total stake
       ansible.builtin.set_fact:
@@ -329,6 +341,9 @@
       register: epoch_info
       delegate_to: localhost
       changed_when: false
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+      until: epoch_info.rc == 0
 
     - name: prepare - Calculate remaining time
       ansible.builtin.set_fact:
@@ -345,6 +360,9 @@
       register: leader_schedule
       delegate_to: localhost
       changed_when: false
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+      until: leader_schedule.rc == 0
 
     - name: prepare - Find next leader slot
       ansible.builtin.set_fact:

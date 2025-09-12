@@ -18,6 +18,9 @@
       delegate_to: localhost
       changed_when: false
       check_mode: false
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+      until: fallback_vote_account_address.rc == 0
 
     - name: swap - Set source_vote_pubkey from fallback if needed
       ansible.builtin.set_fact:
@@ -42,6 +45,9 @@
       delegate_to: localhost
       changed_when: false
       check_mode: false
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+      until: source_vote_account_before.rc == 0
 
     - name: swap - Parse vote account data before swap
       ansible.builtin.set_fact:
@@ -183,6 +189,9 @@
         PATH: "{{ solana_install_dir }}"
       delegate_to: "{{ source_host }}"
       when: inventory_hostname == destination_host
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+      until: primary_target_identity_pubkey_stdout.rc == 0
 
     - name: swap - Save tower filename
       ansible.builtin.set_fact:
