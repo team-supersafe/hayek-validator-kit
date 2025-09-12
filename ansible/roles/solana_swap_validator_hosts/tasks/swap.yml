@@ -217,38 +217,10 @@
 
     - name: swap - Handle tower transfer failure
       block:
-        - name: swap - Restore primary identity symlink on source
-          ansible.builtin.file:
-            src: "{{ source_host_primary_target_identity_path }}"
-            dest: "{{ source_host_identity_link_path }}"
-            state: link
-            force: true
-          when: inventory_hostname == source_host
-
-        - name: swap - Restore primary identity on source
-          ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_primary_target_identity_path }}
-          environment:
-            PATH: "{{ solana_install_dir }}"
-          when: inventory_hostname == source_host
-          async: "{{ wait_restart_window_timeout_seconds }}"
-          poll: 0
-          register: restore_identity_job
-
-        - name: swap - Check restore-identity job status
-          ansible.builtin.async_status:
-            jid: "{{ restore_identity_job.ansible_job_id }}"
-          when:
-            - inventory_hostname == source_host
-            - restore_identity_job.ansible_job_id is defined
-          register: restore_identity_result
-          until: restore_identity_result.finished
-          retries: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
-          delay: 10
-          failed_when: restore_identity_result.failed
-
-        - name: swap - Fail with recovery message
-          ansible.builtin.fail:
-            msg: "Tower file transfer failed after {{ max_retry_attempts }} attempts. Primary identity restored on source host."
+        - name: swap - Restore primary identity on source host
+          include_tasks: restore_primary_identity.yml
+          vars:
+            failure_message: "Tower file transfer failed after {{ max_retry_attempts }} attempts. Primary identity restored on source host."
       when:
         - not ansible_check_mode
         - transfer_tower_result is failed
@@ -284,38 +256,18 @@
 
     - name: swap - Handle set-identity failure
       block:
-        - name: swap - Restore primary identity symlink on source
-          ansible.builtin.file:
-            src: "{{ source_host_primary_target_identity_path }}"
-            dest: "{{ source_host_identity_link_path }}"
-            state: link
-            force: true
-          when: inventory_hostname == source_host
+        - name: swap - Stop validator process on destination host (SAFETY FIRST)
+          ansible.builtin.systemd:
+            name: "{{ validator_service_name | default('agave-validator') }}"
+            state: stopped
+          when: inventory_hostname == destination_host
+          become: true
+          ignore_errors: true
 
-        - name: swap - Restore primary identity on source
-          ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_primary_target_identity_path }}
-          environment:
-            PATH: "{{ solana_install_dir }}"
-          when: inventory_hostname == source_host
-          async: "{{ wait_restart_window_timeout_seconds }}"
-          poll: 0
-          register: restore_identity_job
-
-        - name: swap - Check restore-identity job status
-          ansible.builtin.async_status:
-            jid: "{{ restore_identity_job.ansible_job_id }}"
-          when:
-            - inventory_hostname == source_host
-            - restore_identity_job.ansible_job_id is defined
-          register: restore_identity_result
-          until: restore_identity_result.finished
-          retries: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
-          delay: 10
-          failed_when: restore_identity_result.failed
-
-        - name: swap - Fail with recovery message
-          ansible.builtin.fail:
-            msg: "Failed to switch destination validator to primary target identity. This usually means the validator process is not running or not accepting connections. Primary identity restored on source host."
+        - name: swap - Restore primary identity on source host (NOW SAFE)
+          include_tasks: restore_primary_identity.yml
+          vars:
+            failure_message: "Failed to switch destination validator to primary target identity. Destination host validator process stopped. Primary identity restored on source host."
       when:
         - not ansible_check_mode
         - set_identity_result is failed

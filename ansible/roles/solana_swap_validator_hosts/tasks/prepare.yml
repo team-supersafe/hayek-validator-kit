@@ -134,11 +134,6 @@
           {%- endif -%}
       when: inventory_hostname == source_host
 
-    - name: prepare - Make source host primary target identity path available globally
-      ansible.builtin.set_fact:
-        source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] }}"
-      run_once: true
-
     - name: prepare - Fail if no primary identity found on source host
       ansible.builtin.fail:
         msg: "No primary identity file found on source host. Neither primary-target-identity.json nor staked-identity.json exists in {{ source_host_keys_dir }}"
@@ -169,11 +164,6 @@
           {{ source_host_keys_dir }}/hot-spare-identity.json
           {%- endif -%}
       when: inventory_hostname == source_host
-
-    - name: prepare - Make source host hot-spare identity path available globally
-      ansible.builtin.set_fact:
-        source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] }}"
-      run_once: true
 
     - name: prepare - Generate hot-spare identity if it doesn't exist
       ansible.builtin.command: solana-keygen new --no-bip39-passphrase -o {{ source_host_hot_spare_identity_path }}
@@ -211,10 +201,6 @@
           {%- endif -%}
       when: inventory_hostname == destination_host
 
-    - name: prepare - Make destination host primary target identity path available globally
-      ansible.builtin.set_fact:
-        destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] }}"
-      run_once: true
 
     - name: prepare - Fail if no primary identity found on destination host
       ansible.builtin.fail:
@@ -265,8 +251,11 @@
     - destination_staked_pubkey.stdout_lines is defined
     - destination_staked_pubkey.stdout_lines | length > 0
 
-- name: prepare - Make pubkey facts available globally
+- name: prepare - Make all host facts available globally
   ansible.builtin.set_fact:
+    source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] }}"
+    source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] }}"
+    destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] }}"
     source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] }}"
     destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] }}"
   run_once: true
