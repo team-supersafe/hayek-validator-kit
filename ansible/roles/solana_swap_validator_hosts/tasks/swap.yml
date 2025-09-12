@@ -267,21 +267,10 @@
         - name: swap - Restore primary identity on source host (NOW SAFE)
           include_tasks: restore_primary_identity.yml
           vars:
-            failure_message: "CRITICAL FAILURE: Failed to switch destination validator to primary target identity. This usually means the validator process is not running or not accepting connections. All changes have been rolled back - source host restored to primary identity, destination host validator stopped. Please investigate the issue and retry the swap operation."
+            failure_message: "CRITICAL FAILURE: Failed to switch destination validator to primary target identity. All changes have been rolled back - source host restored to primary identity. Please investigate the issue and retry the swap operation."
 
-        - name: swap - Stop playbook execution after rollback
-          ansible.builtin.fail:
-            msg: |
-              ===============================================
-              SWAP OPERATION FAILED - ROLLBACK COMPLETED
-              ===============================================
-              The validator identity switch failed on destination host.
-              All changes have been rolled back for safety:
-              - Source host: Restored to primary identity
-              - Destination host: Validator process stopped
-
-              Please investigate the issue and retry the swap operation.
-              ===============================================
+        - name: swap - Stop playbook
+          ansible.builtin.meta: end_play
       when:
         - not ansible_check_mode
         - set_identity_result is failed
