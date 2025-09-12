@@ -362,18 +362,14 @@
         - seconds_remaining is defined
         - seconds_remaining | int < swap_epoch_end_threshold_sec
 
-# TODO: Add proper validator catchup verification.
-# The solana catchup command is designed as a monitoring tool that runs indefinitely
-# until the validator catches up, making it unsuitable for automated validation.
-# Need to find an alternative approach to verify validator sync status.
-
 - name: prepare - Test host connectivity between source and destination
   block:
     - name: prepare - Test SSH connection from source to destination
-      ansible.builtin.command: ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no sol@{{ hostvars[destination_host]['ansible_host'] | default(destination_host) }} "echo 'connection_test'"
+      ansible.builtin.command: ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o LogLevel=ERROR -q sol@{{ hostvars[destination_host]['ansible_host'] | default(destination_host) }} "echo 'connection_test'"
       register: ssh_test_result
       delegate_to: "{{ source_host }}"
       ignore_errors: true
+      failed_when: false
 
     - name: prepare - Fail if SSH connection fails
       ansible.builtin.fail:
