@@ -362,48 +362,10 @@
         - seconds_remaining is defined
         - seconds_remaining | int < swap_epoch_end_threshold_sec
 
-- name: prepare - Verify destination host sync
-  block:
-    - name: prepare - Check validator catchup status with timeout
-      ansible.builtin.shell: "{{ solana_install_dir }}/solana catchup --our-localhost"
-      register: catchup_job
-      delegate_to: "{{ destination_host }}"
-      changed_when: false
-      failed_when: false
-      ignore_errors: true
-      async: 30
-      poll: 0
-
-    - name: prepare - Wait for catchup job completion
-      ansible.builtin.async_status:
-        jid: "{{ catchup_job.ansible_job_id }}"
-      register: catchup_result
-      delegate_to: "{{ destination_host }}"
-      until: catchup_result.finished
-      retries: 1
-      delay: 0
-      failed_when: false
-      ignore_errors: true
-
-    - name: prepare - Parse catchup result for caught up status
-      ansible.builtin.set_fact:
-        is_caught_up: "{{ catchup_result.stdout is search('has caught up') }}"
-        slot_behind: "{{ catchup_result.stdout | regex_search('(\\d+) slot\\(s\\) behind') | first | default('0') }}"
-      when: catchup_result.stdout is defined
-
-    - name: prepare - Handle timeout or error cases
-      ansible.builtin.set_fact:
-        is_caught_up: false
-        slot_behind: "unknown"
-      when: catchup_result.stdout is not defined or not catchup_result.finished
-
-    - name: prepare - Fail if validator is not caught up
-      ansible.builtin.fail:
-        msg: "Destination validator is not caught up. Status: {{ catchup_result.stdout | default('timeout/error') }}. Wait for sync."
-      when:
-        - not ansible_check_mode
-        - not is_caught_up | default(false)
-        - slot_behind | default('0') | int > 50
+# TODO: Add proper validator catchup verification.
+# The solana catchup command is designed as a monitoring tool that runs indefinitely
+# until the validator catches up, making it unsuitable for automated validation.
+# Need to find an alternative approach to verify validator sync status.
 
 - name: prepare - Test host connectivity between source and destination
   block:
