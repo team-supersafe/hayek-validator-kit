@@ -295,17 +295,10 @@
       delay: "{{ retry_delay_seconds }}"
       until: cluster_info.rc == 0
 
-    - name: prepare - Calculate total stake
+    - name: prepare - Set total and delinquent stake
       ansible.builtin.set_fact:
-        total_stake: "{{ (cluster_info.stdout | from_json).validators | sum(attribute='activatedStake') }}"
-      when:
-        - cluster_info.rc == 0
-        - cluster_info.stdout is defined
-        - cluster_info.stdout != ''
-
-    - name: prepare - Calculate delinquent stake
-      ansible.builtin.set_fact:
-        delinquent_stake: "{{ (cluster_info.stdout | from_json).validators | selectattr('delinquent', 'equalto', true) | sum(attribute='activatedStake') }}"
+        total_stake: "{{ (cluster_info.stdout | from_json).totalActiveStake | default(0) }}"
+        delinquent_stake: "{{ (cluster_info.stdout | from_json).totalDelinquentStake | default(0) }}"
       when:
         - cluster_info.rc == 0
         - cluster_info.stdout is defined
@@ -313,20 +306,11 @@
 
     - name: prepare - Calculate delinquency percentage
       ansible.builtin.set_fact:
-        delinquency_pct: "{{ ((delinquent_stake | float / total_stake | float) * 100) | round(1) }}"
+        delinquency_pct: >-
+          {{ (delinquent_stake | float / total_stake | float * 100) | round(1) if total_stake | float > 0 else 0 }}
       when:
-        - cluster_info.rc == 0
         - total_stake is defined
         - delinquent_stake is defined
-        - total_stake | float > 0
-
-    - name: prepare - Handle zero total stake scenario
-      ansible.builtin.set_fact:
-        delinquency_pct: 0
-      when:
-        - cluster_info.rc == 0
-        - total_stake is defined
-        - total_stake | float == 0
 
     - name: prepare - Fail if delinquency too high
       ansible.builtin.fail:
@@ -334,7 +318,7 @@
       when:
         - not ansible_check_mode
         - delinquency_pct is defined
-        - delinquency_pct | float > 50
+        - delinquency_pct | float >= cluster_delinquency_threshold
 
 - name: prepare - Check epoch timing and leader schedule
   block:
@@ -374,7 +358,6 @@
         next_leader_slot: "{{ next_leader_slots[0] | default('') }}"
         seconds_to_leadership: "{{ ((next_leader_slots[0] | int - current_slot | int) / slots_per_sec) | round(0) | int if next_leader_slots[0] is defined else 0 }}"
       when: next_leader_slots is defined
-
 
 - name: prepare - Check SSH from source_host to destination_host
   block:
