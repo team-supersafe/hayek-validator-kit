@@ -1,19 +1,21 @@
 ---
-# These are constants that rarely change and are specific to the swap operation
 ssh_key_path: "{{ solana_user_dir }}/.ssh/id_rsa"
 ssh_key_type: "rsa"
 ssh_key_size: 2048
-tower_file_prefix: "tower-1_9-"
+tower_file_prefix: "tower-1_9-" # Tower file name prefix
 tower_file_suffix: ".bin"
-# This is an estimated static value to calculate estimated remaining epoch time.
 slots_per_sec: 2.5
-# Threshold (in seconds) before the epoch ends to trigger swap actions
 swap_epoch_end_threshold_sec: 180
 # Retry configuration: max_retry_attempts=3, retry_delay_seconds=5, wait_restart_window_timeout_seconds=300
 max_retry_attempts: 3
 retry_delay_seconds: 5
 wait_restart_window_timeout_seconds: 300
-async_retry_count: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
+# Async retry configuration - independent of timeout duration for clarity
+async_max_retries: 30
+async_retry_delay_seconds: 10
+# Service operation configuration
+service_stop_retries: 3
+service_stop_delay_seconds: 10
 # Service names: validator_service_name="agave-validator", jito_relayer_service_name="jito-relayer"
 validator_service_name: "agave-validator"
 jito_relayer_service_name: "jito-relayer"

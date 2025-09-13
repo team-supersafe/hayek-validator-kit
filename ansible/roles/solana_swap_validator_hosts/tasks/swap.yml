@@ -106,8 +106,8 @@
         - wait_restart_job.ansible_job_id is defined
       register: wait_restart_result
       until: wait_restart_result.finished
-      retries: "{{ async_retry_count }}"
-      delay: 10
+      retries: "{{ async_max_retries }}"
+      delay: "{{ async_retry_delay_seconds }}"
       failed_when: "{{ wait_restart_timeout_condition }}"
 
     - name: swap - Handle wait-for-restart-window timeout
@@ -136,8 +136,8 @@
         - set_hot_spare_identity_job.ansible_job_id is defined
       register: set_hot_spare_identity_result
       until: set_hot_spare_identity_result.finished
-      retries: "{{ async_retry_count }}"
-      delay: 10
+      retries: "{{ async_max_retries }}"
+      delay: "{{ async_retry_delay_seconds }}"
       failed_when: "{{ set_hot_spare_timeout_condition }}"
 
     - name: swap - Handle set-hot-spare-identity timeout
@@ -234,8 +234,8 @@
         - set_identity_job.ansible_job_id is defined
       register: set_identity_result
       until: set_identity_result.finished
-      retries: "{{ async_retry_count }}"
-      delay: 10
+      retries: "{{ async_max_retries }}"
+      delay: "{{ async_retry_delay_seconds }}"
       failed_when: set_identity_result.failed
 
     - name: swap - Handle set-identity failure
@@ -286,8 +286,8 @@
         state: stopped
         enabled: false
       register: relayer_stop_result
-      retries: 3
-      delay: 10
+      retries: "{{ service_stop_retries }}"
+      delay: "{{ service_stop_delay_seconds }}"
       until: relayer_stop_result is success
       when:
         - inventory_hostname == source_host

@@ -24,8 +24,8 @@
     - restore_identity_job.ansible_job_id is defined
   register: restore_identity_result
   until: restore_identity_result.finished
-  retries: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
-  delay: 10
+  retries: "{{ async_max_retries }}"
+  delay: "{{ async_retry_delay_seconds }}"
   failed_when: restore_identity_result.failed
 
 - name: swap - Fail with recovery message
