@@ -69,11 +69,7 @@
         pre_swap_stats:
           epoch: "{{ vote_account_before.epochVotingHistory[-1] }}"
           credits_earned: "{{ vote_account_before.epochVotingHistory[-1].creditsEarned }}"
-          max_possible_credits: >-
-            {{
-              vote_account_before.epochVotingHistory[-1].slotsInEpoch *
-              vote_account_before.epochVotingHistory[-1].maxCreditsPerSlot
-            }}
+          max_possible_credits: "{{ vote_account_before.epochVotingHistory[-1].slotsInEpoch * vote_account_before.epochVotingHistory[-1].maxCreditsPerSlot }}"
       run_once: true
       when:
         - vote_account_before is defined
@@ -82,25 +78,13 @@
 
     - name: swap - Display pre-swap stats
       ansible.builtin.debug:
-        msg: |
-          ===============================================
-          PRE-SWAP STATS
-          ===============================================
-          {% if pre_swap_stats is defined %}
-          Epoch: {{ pre_swap_stats.epoch }}
-          Credits Earned: {{ pre_swap_stats.credits_earned }}
-          Max Possible Credits: {{ pre_swap_stats.max_possible_credits }}
-          {% else %}
-          Pre-swap stats could not be retrieved.
-          This may be due to network connectivity issues or the validator not being active.
-          {% endif %}
-          ===============================================
+        msg: "PRE-SWAP STATS: {% if pre_swap_stats is defined %}Epoch: {{ pre_swap_stats.epoch }}, Credits: {{ pre_swap_stats.credits_earned }}/{{ pre_swap_stats.max_possible_credits }}{% else %}Stats unavailable - check network/validator status{% endif %}"
       run_once: true
   when:
     - source_primary_pubkey is defined
     - source_primary_pubkey != ''
 
-- name: swap - Wait for Restart Window and Unstake Source Validator
+- name: swap - Wait for restart window and unstake source
   block:
     - name: swap - Wait for safe restart window with timeout
       ansible.builtin.command: >
@@ -179,7 +163,7 @@
         wait_and_unstake_success: true
       when: wait_and_unstake_step_result is not failed
 
-- name: swap - Transfer Tower File from Source to Destination
+- name: swap - Transfer tower file
   block:
     - name: swap - Get tower filename
       check_mode: false
@@ -231,7 +215,7 @@
       when: transfer_tower_result is not failed
   when: wait_and_unstake_success | default(false)
 
-- name: swap - Promote Destination to Primary Target Validator
+- name: swap - Promote destination to primary
   block:
     - name: swap - Switch to primary target identity on destination
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity --require-tower {{ destination_host_primary_target_identity_path }}

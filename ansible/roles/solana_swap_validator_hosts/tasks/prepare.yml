@@ -1,13 +1,5 @@
 ---
-- name: prepare - Validate RPC_URL environment variable for localnet
-  ansible.builtin.fail:
-    msg: "RPC_URL environment variable is required for solana_localnet but is not set or empty"
-  when:
-    - ('solana_localnet' in group_names or 'solana_mainnet' not in group_names and 'solana_testnet' not in group_names)
-    - lookup('env', 'RPC_URL') is not defined or lookup('env', 'RPC_URL') == ''
-  run_once: true
-
-- name: prepare - Determine Solana cluster parameter
+- name: prepare - Set cluster parameter
   ansible.builtin.set_fact:
     solana_cluster_param: >-
       {%- if 'solana_mainnet' in group_names -%}
@@ -15,18 +7,21 @@
       {%- elif 'solana_testnet' in group_names -%}
       -ut
       {%- elif 'solana_localnet' in group_names -%}
-      --url {{ lookup('env', 'RPC_URL') }}
+      --url {{ lookup('env', 'RPC_URL') | default('') }}
       {%- else -%}
-      --url {{ lookup('env', 'RPC_URL') }}
+      --url {{ lookup('env', 'RPC_URL') | default('') }}
       {%- endif -%}
   run_once: true
 
-- name: precheck - Gather facts for localhost
-  ansible.builtin.setup:
-  delegate_to: localhost
+- name: prepare - Validate RPC_URL for localnet
+  ansible.builtin.fail:
+    msg: "RPC_URL environment variable is required for solana_localnet"
+  when:
+    - ('solana_localnet' in group_names or ('solana_mainnet' not in group_names and 'solana_testnet' not in group_names))
+    - solana_cluster_param | regex_search('--url $')
   run_once: true
 
-- name: prepare - Ensure enough time left in epoch before swap
+- name: prepare - Check epoch timing
   block:
     - name: prepare - Get current epoch info
       ansible.builtin.shell: solana {{ solana_cluster_param }} epoch-info --output json
@@ -65,19 +60,16 @@
         - slots_in_epoch is defined
         - slot_index is defined
 
-- name: prepare - Fail if less than 3 minutes remain in epoch
+- name: prepare - Fail if insufficient time remains in epoch
   ansible.builtin.fail:
-    msg: |
-      Only {{ seconds_remaining | float | int }} seconds remain in the current epoch ({{ slots_remaining }} slots).
-      Please wait for the new epoch to start and try again when there are at least 3 minutes left in the epoch.
-      It is less effective to calculate TVC loss close to the epoch boundary.
+    msg: "Only {{ seconds_remaining | float | int }}s remain in epoch ({{ slots_remaining }} slots). Wait for new epoch with at least {{ swap_epoch_end_threshold_sec }}s left."
   run_once: true
   when:
     - not ansible_check_mode
     - seconds_remaining is defined
     - seconds_remaining | float < swap_epoch_end_threshold_sec
 
-- name: prepare - Generate SSH key for sol user if not present
+- name: prepare - Generate SSH key if missing
   community.crypto.openssh_keypair:
     path: "{{ ssh_key_path }}"
     type: "{{ ssh_key_type }}"
@@ -374,13 +366,6 @@
         seconds_to_leadership: "{{ ((next_leader_slots[0] | int - current_slot | int) / slots_per_sec) | round(0) | int if next_leader_slots[0] is defined else 0 }}"
       when: next_leader_slots is defined
 
-    - name: prepare - Fail if too close to epoch end
-      ansible.builtin.fail:
-        msg: "Too close to epoch end: {{ seconds_remaining }}s remaining. Need at least {{ swap_epoch_end_threshold_sec }}s."
-      when:
-        - not ansible_check_mode
-        - seconds_remaining is defined
-        - seconds_remaining | int < swap_epoch_end_threshold_sec
 
 - name: prepare - Check SSH from source_host to destination_host
   block:

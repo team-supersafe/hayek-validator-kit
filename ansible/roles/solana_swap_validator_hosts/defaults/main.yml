@@ -9,15 +9,14 @@ tower_file_suffix: ".bin"
 slots_per_sec: 2.5
 # Threshold (in seconds) before the epoch ends to trigger swap actions
 swap_epoch_end_threshold_sec: 180
-# Retry configuration for critical operations
+# Retry configuration: max_retry_attempts=3, retry_delay_seconds=5, wait_restart_window_timeout_seconds=300
 max_retry_attempts: 3
 retry_delay_seconds: 5
 wait_restart_window_timeout_seconds: 300
-# Calculated retry count for async operations (timeout_seconds / 10)
 async_retry_count: "{{ (wait_restart_window_timeout_seconds / 10) | int }}"
-# Service names for systemd operations
+# Service names: validator_service_name="agave-validator", jito_relayer_service_name="jito-relayer"
 validator_service_name: "agave-validator"
 jito_relayer_service_name: "jito-relayer"
-# Timeout check conditions for async operations
+# Timeout check condition template: "result.failed or (result.msg is defined and 'timeout' in result.msg | lower)"
 wait_restart_timeout_condition: "wait_restart_result.failed or (wait_restart_result.msg is defined and 'timeout' in wait_restart_result.msg | lower)"
 set_hot_spare_timeout_condition: "set_hot_spare_identity_result.failed or (set_hot_spare_identity_result.msg is defined and 'timeout' in set_hot_spare_identity_result.msg | lower)"
