@@ -318,6 +318,15 @@
         - cluster_info.rc == 0
         - total_stake is defined
         - delinquent_stake is defined
+        - total_stake | float > 0
+
+    - name: prepare - Handle zero total stake scenario
+      ansible.builtin.set_fact:
+        delinquency_pct: 0
+      when:
+        - cluster_info.rc == 0
+        - total_stake is defined
+        - total_stake | float == 0
 
     - name: prepare - Fail if delinquency too high
       ansible.builtin.fail:
