@@ -7,20 +7,16 @@ tower_file_suffix: ".bin"
 slots_per_sec: 2.5
 swap_epoch_end_threshold_sec: 180
 cluster_delinquency_threshold: 5 # Cluster delinquency threshold (percent).
-# Retry configuration: max_retry_attempts=3, retry_delay_seconds=5, wait_restart_window_timeout_seconds=300
+# Retry and async configuration
 max_retry_attempts: 3
 retry_delay_seconds: 5
 wait_restart_window_timeout_seconds: 300
-# Async retry configuration - independent of timeout duration for clarity
 async_max_retries: 30
 async_retry_delay_seconds: 10
-# Service operation configuration
 service_stop_retries: 3
 service_stop_delay_seconds: 10
-# Service names: validator_service_name="agave-validator", jito_relayer_service_name="jito-relayer"
 validator_service_name: "agave-validator"
 jito_relayer_service_name: "jito-relayer"
-# Timeout check condition template: "result.failed or (result.msg is defined and 'timeout' in result.msg | lower)"
 timeout_condition_template: "{{RESULT_VAR}}.failed or ({{RESULT_VAR}}.msg is defined and 'timeout' in {{RESULT_VAR}}.msg | lower)"
 wait_restart_timeout_condition: "{{ timeout_condition_template | replace('{{RESULT_VAR}}', 'wait_restart_result') }}"
 set_hot_spare_timeout_condition: "{{ timeout_condition_template | replace('{{RESULT_VAR}}', 'set_hot_spare_identity_result') }}"

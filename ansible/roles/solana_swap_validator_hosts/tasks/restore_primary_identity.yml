@@ -1,33 +1,28 @@
 ---
-- name: swap - Restore primary identity symlink on source
-  ansible.builtin.file:
-    src: "{{ source_host_primary_target_identity_path }}"
-    dest: "{{ source_host_identity_link_path }}"
-    state: link
-    force: true
-  when: inventory_hostname == source_host
-
 - name: swap - Restore primary identity on source
-  ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_primary_target_identity_path }}
-  environment:
-    PATH: "{{ solana_install_dir }}"
-  when: inventory_hostname == source_host
-  async: "{{ wait_restart_window_timeout_seconds }}"
-  poll: 0
-  register: restore_identity_job
-
-- name: swap - Check restore-identity job status
-  ansible.builtin.async_status:
-    jid: "{{ restore_identity_job.ansible_job_id }}"
-  when:
-    - inventory_hostname == source_host
-    - restore_identity_job.ansible_job_id is defined
-  register: restore_identity_result
-  until: restore_identity_result.finished
-  retries: "{{ async_max_retries }}"
-  delay: "{{ async_retry_delay_seconds }}"
-  failed_when: restore_identity_result.failed
-
-- name: swap - Fail with recovery message
-  ansible.builtin.fail:
-    msg: "{{ failure_message }}"
+  block:
+    - ansible.builtin.file:
+        src: "{{ source_host_primary_target_identity_path }}"
+        dest: "{{ source_host_identity_link_path }}"
+        state: link
+        force: true
+      when: inventory_hostname == source_host
+    - ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_primary_target_identity_path }}
+      environment:
+        PATH: "{{ solana_install_dir }}"
+      when: inventory_hostname == source_host
+      async: "{{ wait_restart_window_timeout_seconds }}"
+      poll: 0
+      register: restore_identity_job
+    - ansible.builtin.async_status:
+        jid: "{{ restore_identity_job.ansible_job_id }}"
+      when:
+        - inventory_hostname == source_host
+        - restore_identity_job.ansible_job_id is defined
+      register: restore_identity_result
+      until: restore_identity_result.finished
+      retries: "{{ async_max_retries }}"
+      delay: "{{ async_retry_delay_seconds }}"
+      failed_when: restore_identity_result.failed
+    - ansible.builtin.fail:
+        msg: "{{ failure_message }}"

@@ -158,11 +158,6 @@
       when: inventory_hostname == source_host
       register: wait_and_unstake_step_result
 
-    - name: set fact if Restart Window and Unstake Source succeeded
-      ansible.builtin.set_fact:
-        wait_and_unstake_success: true
-      when: wait_and_unstake_step_result is not failed
-
 - name: swap - Transfer tower file
   block:
     - name: swap - Get tower filename
@@ -210,10 +205,6 @@
         - not ansible_check_mode
         - transfer_tower_result is failed
 
-    - name: set fact if tower transfer succeeded
-      ansible.builtin.set_fact:
-        tower_transfer_success: true
-      when: transfer_tower_result is not failed
   when: wait_and_unstake_success | default(false)
 
 - name: swap - Promote destination to primary

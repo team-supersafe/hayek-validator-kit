@@ -128,13 +128,13 @@
     - name: prepare - Set source host primary target identity path
       ansible.builtin.set_fact:
         source_host_primary_target_identity_path: >-
-          {%- if new_primary_target_identity.stat.exists -%}
-          {{ source_host_keys_dir }}/primary-target-identity.json
-          {%- elif old_primary_target_identity.stat.exists -%}
-          {{ source_host_keys_dir }}/staked-identity.json
-          {%- else -%}
-          {{ '' }}
-          {%- endif -%}
+          {% if new_primary_target_identity.stat.exists is defined and new_primary_target_identity.stat.exists %}
+            {{ source_host_keys_dir }}/primary-target-identity.json
+          {% elif old_primary_target_identity.stat.exists is defined and old_primary_target_identity.stat.exists %}
+            {{ source_host_keys_dir }}/staked-identity.json
+          {% else %}
+            {{ '' }}
+          {% endif %}
       when: inventory_hostname == source_host
 
     - name: prepare - Fail if no primary identity found on source host
@@ -159,13 +159,7 @@
     - name: prepare - Set source host hot-spare identity path
       ansible.builtin.set_fact:
         source_host_hot_spare_identity_path: >-
-          {%- if new_hot_spare_identity.stat.exists -%}
-          {{ source_host_keys_dir }}/hot-spare-identity.json
-          {%- elif old_hot_spare_identity.stat.exists -%}
-          {{ source_host_keys_dir }}/unstaked-identity.json
-          {%- else -%}
-          {{ source_host_keys_dir }}/hot-spare-identity.json
-          {%- endif -%}
+          {{ source_host_keys_dir }}/hot-spare-identity.json if new_hot_spare_identity.stat.exists else (source_host_keys_dir + '/unstaked-identity.json' if old_hot_spare_identity.stat.exists else source_host_keys_dir + '/hot-spare-identity.json')
       when: inventory_hostname == source_host
 
     - name: prepare - Generate hot-spare identity if it doesn't exist
@@ -197,13 +191,13 @@
     - name: prepare - Set destination host primary target identity path
       ansible.builtin.set_fact:
         destination_host_primary_target_identity_path: >-
-          {%- if new_primary_target_identity.stat.exists -%}
-          {{ destination_host_keys_dir }}/primary-target-identity.json
-          {%- elif old_primary_target_identity.stat.exists -%}
-          {{ destination_host_keys_dir }}/staked-identity.json
-          {%- else -%}
-          {{ '' }}
-          {%- endif -%}
+          {% if new_primary_target_identity.stat.exists is defined and new_primary_target_identity.stat.exists %}
+            {{ destination_host_keys_dir }}/primary-target-identity.json
+          {% elif old_primary_target_identity.stat.exists is defined and old_primary_target_identity.stat.exists %}
+            {{ destination_host_keys_dir }}/staked-identity.json
+          {% else %}
+            {{ '' }}
+          {% endif %}
       when: inventory_hostname == destination_host
 
     - name: prepare - Fail if no primary identity found on destination host
@@ -221,9 +215,6 @@
   when: inventory_hostname == source_host
   changed_when: false
   check_mode: false
-  retries: "{{ max_retry_attempts }}"
-  delay: "{{ retry_delay_seconds }}"
-  until: source_staked_pubkey.rc == 0
 
 - name: prepare - Get destination primary target identity pubkey
   ansible.builtin.command: solana-keygen pubkey {{ destination_host_primary_target_identity_path | trim }}
@@ -233,11 +224,8 @@
   when: inventory_hostname == destination_host
   changed_when: false
   check_mode: false
-  retries: "{{ max_retry_attempts }}"
-  delay: "{{ retry_delay_seconds }}"
-  until: destination_staked_pubkey.rc == 0
 
-- name: prepare - Set source host pubkey fact
+- name: prepare - Set primary pubkey facts on each host
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ source_staked_pubkey.stdout_lines[0] }}"
   when:
@@ -246,7 +234,7 @@
     - source_staked_pubkey.stdout_lines is defined
     - source_staked_pubkey.stdout_lines | length > 0
 
-- name: prepare - Set destination host pubkey fact
+- name: prepare - Set primary pubkey facts on each host
   ansible.builtin.set_fact:
     destination_primary_pubkey: "{{ destination_staked_pubkey.stdout_lines[0] }}"
   when:
@@ -255,13 +243,10 @@
     - destination_staked_pubkey.stdout_lines is defined
     - destination_staked_pubkey.stdout_lines | length > 0
 
-- name: prepare - Make all host facts available globally
+- name: prepare - Gather both primary pubkeys globally
   ansible.builtin.set_fact:
-    source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] }}"
-    source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] }}"
-    destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] }}"
-    source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] }}"
-    destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] }}"
+    source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] | default('') }}"
+    destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] | default('') }}"
   run_once: true
   when:
     - hostvars[source_host]['source_primary_pubkey'] is defined

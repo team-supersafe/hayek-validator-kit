@@ -1,5 +1,17 @@
 ---
 # source
+- name: confirm_swap - Set source host hot-spare identity path
+  ansible.builtin.set_fact:
+    source_host_hot_spare_identity_path: >-
+      {% if new_hot_spare_identity.stat.exists is defined and new_hot_spare_identity.stat.exists %}
+        {{ source_host_keys_dir }}/hot-spare-identity.json
+      {% elif old_hot_spare_identity.stat.exists is defined and old_hot_spare_identity.stat.exists %}
+        {{ source_host_keys_dir }}/unstaked-identity.json
+      {% else %}
+        {{ source_host_keys_dir }}/hot-spare-identity.json
+      {% endif %}
+  when: inventory_hostname == source_host
+
 - name: confirm_swap - Get source hot-spare identity pubkey
   ansible.builtin.command: solana-keygen pubkey {{ source_host_hot_spare_identity_path }}
   register: source_hotspare_pubkey
@@ -107,6 +119,8 @@
   ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ destination_vote_pubkey_result.stdout_lines[0] }}"
   when: 
+    - destination_vote_account_file is defined
+    - destination_vote_account_file.stat is defined
     - destination_vote_account_file.stat.exists
     - destination_vote_pubkey_result is defined
     - destination_vote_pubkey_result.stdout_lines is defined
@@ -118,8 +132,16 @@
     destination_vote_pubkey: ""
   when:
     - destination_vote_account_file is defined
+    - destination_vote_account_file.stat is defined
     - not destination_vote_account_file.stat.exists
   run_once: true
+
+- name: confirm_swap - Make destination_host_primary_target_identity_path available globally
+  ansible.builtin.set_fact:
+    destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] | default('') }}"
+  run_once: true
+  when:
+    - hostvars[destination_host]['destination_host_primary_target_identity_path'] is defined
 
 - name: confirm_swap - Display Swap Operation Summary
   ansible.builtin.debug:
@@ -155,7 +177,7 @@
 
       Destination Validator:
       - Host: {{ destination_host }} ({{ destination_validator_name }})
-      - Primary Target Identity: {{ destination_host_primary_target_identity_path }}
+      - Primary Target Identity: {{ destination_host_primary_target_identity_path | default('NOT SET') }}
         {% if destination_primary_pubkey is defined and destination_primary_pubkey != '' %}
         Pubkey: {{ destination_primary_pubkey }}
         {% else %}
