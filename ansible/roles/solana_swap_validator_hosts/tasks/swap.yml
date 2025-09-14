@@ -86,6 +86,14 @@
 
 - name: swap - Wait for restart window and unstake source
   block:
+    - name: swap - Wait for validator RPC to be ready
+      ansible.builtin.wait_for:
+        host: "127.0.0.1"
+        port: "{{ solana_rpc_port }}"
+        delay: 10
+        timeout: 120
+      when: inventory_hostname == source_host
+
     - name: swap - Wait for safe restart window with timeout
       ansible.builtin.command: >
         agave-validator --ledger {{ ledger_path }} wait-for-restart-window
@@ -93,6 +101,7 @@
         --skip-new-snapshot-check --skip-health-check
       environment:
         PATH: "{{ solana_install_dir }}"
+        SOLANA_URL: "http://127.0.0.1:{{ solana_rpc_port }}"
       when: inventory_hostname == source_host
       async: "{{ wait_restart_window_timeout_seconds }}"
       poll: 0
@@ -108,7 +117,14 @@
       until: wait_restart_result.finished
       retries: "{{ async_max_retries }}"
       delay: "{{ async_retry_delay_seconds }}"
-      failed_when: "{{ wait_restart_timeout_condition }}"
+
+    - name: swap - Check if wait-for-restart-window actually failed
+      ansible.builtin.fail:
+        msg: "Wait-for-restart-window command failed with exit code {{ wait_restart_result.rc }}"
+      when:
+        - inventory_hostname == source_host
+        - wait_restart_result is defined
+        - wait_restart_result.rc != 0
 
     - name: swap - Handle wait-for-restart-window timeout
       ansible.builtin.fail:
@@ -138,7 +154,14 @@
       until: set_hot_spare_identity_result.finished
       retries: "{{ async_max_retries }}"
       delay: "{{ async_retry_delay_seconds }}"
-      failed_when: "{{ set_hot_spare_timeout_condition }}"
+
+    - name: swap - Check if set-hot-spare-identity actually failed
+      ansible.builtin.fail:
+        msg: "Set-hot-spare-identity command failed with exit code {{ set_hot_spare_identity_result.rc }}"
+      when:
+        - inventory_hostname == source_host
+        - set_hot_spare_identity_result is defined
+        - set_hot_spare_identity_result.rc != 0
 
     - name: swap - Handle set-hot-spare-identity timeout
       ansible.builtin.fail:
@@ -158,6 +181,11 @@
       when: inventory_hostname == source_host
       register: wait_and_unstake_step_result
 
+    - name: swap - set fact if Restart Window and Unstake Source succeeded
+      ansible.builtin.set_fact:
+        wait_and_unstake_success: true
+      when: wait_and_unstake_step_result is not failed
+
 - name: swap - Transfer tower file
   block:
     - name: swap - Get tower filename
@@ -174,9 +202,35 @@
 
     - name: swap - Save tower filename
       ansible.builtin.set_fact:
-        tower_file_path: "{{ ledger_path }}/{{ tower_file_prefix }}{{ primary_target_identity_pubkey_stdout.stdout }}{{ tower_file_suffix }}"
-        tower_file_src: "{{ tower_file_path }}"
-        tower_file_dest: "{{ tower_file_path }}"
+        tower_file_path: "{{ ledger_path }}/{{ tower_file_prefix }}{{ primary_target_identity_pubkey_stdout.stdout | default('') }}{{ tower_file_suffix }}"
+        tower_file_src: "{{ ledger_path }}/{{ tower_file_prefix }}{{ primary_target_identity_pubkey_stdout.stdout | default('') }}{{ tower_file_suffix }}"
+        tower_file_dest: "{{ ledger_path }}/{{ tower_file_prefix }}{{ primary_target_identity_pubkey_stdout.stdout | default('') }}{{ tower_file_suffix }}"
+      when:
+        - inventory_hostname == destination_host
+        - primary_target_identity_pubkey_stdout is defined
+        - primary_target_identity_pubkey_stdout.stdout is defined
+        - primary_target_identity_pubkey_stdout.stdout != ''
+
+    - name: swap - Make tower file paths available globally
+      ansible.builtin.set_fact:
+        tower_file_path: "{{ tower_file_path }}"
+        tower_file_src: "{{ tower_file_src }}"
+        tower_file_dest: "{{ tower_file_dest }}"
+      run_once: true
+      when:
+        - tower_file_path is defined
+        - tower_file_src is defined
+        - tower_file_dest is defined
+
+    - name: swap - Debug tower file paths
+      ansible.builtin.debug:
+        msg: |
+          Tower file transfer debug:
+          - tower_file_path: {{ tower_file_path | default('undefined') }}
+          - tower_file_src: {{ tower_file_src | default('undefined') }}
+          - tower_file_dest: {{ tower_file_dest | default('undefined') }}
+          - ledger_path: {{ ledger_path | default('undefined') }}
+          - primary_target_identity_pubkey_stdout: {{ primary_target_identity_pubkey_stdout.stdout | default('undefined') }}
       when: inventory_hostname == destination_host
 
     - name: swap - Rsync tower file from source to destination
@@ -195,17 +249,25 @@
       retries: "{{ max_retry_attempts }}"
       delay: "{{ retry_delay_seconds }}"
 
-    - name: swap - Handle tower transfer failure
-      block:
-        - name: swap - Restore primary identity on source host
-          include_tasks: restore_primary_identity.yml
-          vars:
-            failure_message: "Tower file transfer failed after {{ max_retry_attempts }} attempts. Primary identity restored on source host."
-      when:
-        - not ansible_check_mode
-        - transfer_tower_result is failed
+    - name: swap - set fact if tower transfer succeeded
+      ansible.builtin.set_fact:
+        tower_transfer_success: true
+      when: transfer_tower_result is not failed
 
   when: wait_and_unstake_success | default(false)
+
+- name: swap - Handle tower transfer failure
+  block:
+    - name: swap - Restore primary identity on source host
+      include_tasks: restore_primary_identity.yml
+      vars:
+        failure_message: "Tower file transfer failed after {{ max_retry_attempts }} attempts. Primary identity restored on source host."
+    - name: swap - Stop playbook
+      ansible.builtin.meta: end_play
+  when:
+    - not ansible_check_mode
+    - transfer_tower_result is defined
+    - transfer_tower_result is failed
 
 - name: swap - Promote destination to primary
   block:

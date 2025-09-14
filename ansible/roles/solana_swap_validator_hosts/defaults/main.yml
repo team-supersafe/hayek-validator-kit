@@ -17,6 +17,3 @@ service_stop_retries: 3
 service_stop_delay_seconds: 10
 validator_service_name: "agave-validator"
 jito_relayer_service_name: "jito-relayer"
-timeout_condition_template: "{{RESULT_VAR}}.failed or ({{RESULT_VAR}}.msg is defined and 'timeout' in {{RESULT_VAR}}.msg | lower)"
-wait_restart_timeout_condition: "{{ timeout_condition_template | replace('{{RESULT_VAR}}', 'wait_restart_result') }}"
-set_hot_spare_timeout_condition: "{{ timeout_condition_template | replace('{{RESULT_VAR}}', 'set_hot_spare_identity_result') }}"

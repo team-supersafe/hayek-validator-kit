@@ -43,13 +43,18 @@
           }}
       when: inventory_hostname == destination_host
 
+- name: precheck - Set validation facts for all hosts
+  ansible.builtin.set_fact:
+    source_validation: "{{ hostvars[source_host].source_dir_valid | default(false) }}"
+    destination_validation: "{{ hostvars[destination_host].destination_dir_valid | default(false) }}"
+
 - name: precheck - Fail if either directory validation failed
   ansible.builtin.fail:
     msg: >-
       Directory validation failed:
-      {% if not hostvars[source_host].source_dir_valid %}Source directory '{{ source_host_keys_dir }}' is invalid on {{ source_host }}{% endif %}
-      {% if not hostvars[destination_host].destination_dir_valid %}Destination directory '{{ destination_host_keys_dir }}' is invalid on {{ destination_host }}{% endif %}
-  when: not (hostvars[source_host].source_dir_valid and hostvars[destination_host].destination_dir_valid)
+      {% if not source_validation %}Source directory '{{ source_host_keys_dir }}' is invalid on {{ source_host }}{% endif %}
+      {% if not destination_validation %}Destination directory '{{ destination_host_keys_dir }}' is invalid on {{ destination_host }}{% endif %}
+  when: not (source_validation and destination_validation)
   run_once: true
 
 - name: precheck - Validate destination host validator status

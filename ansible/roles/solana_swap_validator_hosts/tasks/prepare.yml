@@ -119,19 +119,11 @@
       register: new_primary_target_identity
       when: inventory_hostname == source_host
 
-    - name: prepare - Check for old convention staked identity
-      ansible.builtin.stat:
-        path: "{{ source_host_keys_dir }}/staked-identity.json"
-      register: old_primary_target_identity
-      when: inventory_hostname == source_host
-
     - name: prepare - Set source host primary target identity path
       ansible.builtin.set_fact:
         source_host_primary_target_identity_path: >-
           {% if new_primary_target_identity.stat.exists is defined and new_primary_target_identity.stat.exists %}
             {{ source_host_keys_dir }}/primary-target-identity.json
-          {% elif old_primary_target_identity.stat.exists is defined and old_primary_target_identity.stat.exists %}
-            {{ source_host_keys_dir }}/staked-identity.json
           {% else %}
             {{ '' }}
           {% endif %}
@@ -139,7 +131,7 @@
 
     - name: prepare - Fail if no primary identity found on source host
       ansible.builtin.fail:
-        msg: "No primary identity file found on source host. Neither primary-target-identity.json nor staked-identity.json exists in {{ source_host_keys_dir }}"
+        msg: "No primary identity file found on source host in: {{ source_host_keys_dir }}"
       when:
         - inventory_hostname == source_host
         - source_host_primary_target_identity_path == ''
@@ -150,16 +142,9 @@
       register: new_hot_spare_identity
       when: inventory_hostname == source_host
 
-    - name: prepare - Check for old convention unstaked identity
-      ansible.builtin.stat:
-        path: "{{ source_host_keys_dir }}/unstaked-identity.json"
-      register: old_hot_spare_identity
-      when: inventory_hostname == source_host
-
     - name: prepare - Set source host hot-spare identity path
       ansible.builtin.set_fact:
-        source_host_hot_spare_identity_path: >-
-          {{ source_host_keys_dir }}/hot-spare-identity.json if new_hot_spare_identity.stat.exists else (source_host_keys_dir + '/unstaked-identity.json' if old_hot_spare_identity.stat.exists else source_host_keys_dir + '/hot-spare-identity.json')
+        source_host_hot_spare_identity_path: "{{ source_host_keys_dir }}/hot-spare-identity.json"
       when: inventory_hostname == source_host
 
     - name: prepare - Generate hot-spare identity if it doesn't exist
@@ -169,7 +154,6 @@
       when:
         - inventory_hostname == source_host
         - not new_hot_spare_identity.stat.exists
-        - not old_hot_spare_identity.stat.exists
       register: generated_hotspare
       changed_when: generated_hotspare.rc == 0
       failed_when: generated_hotspare.rc != 0
@@ -182,19 +166,11 @@
       register: new_primary_target_identity
       when: inventory_hostname == destination_host
 
-    - name: prepare - Check for old convention staked identity
-      ansible.builtin.stat:
-        path: "{{ destination_host_keys_dir }}/staked-identity.json"
-      register: old_primary_target_identity
-      when: inventory_hostname == destination_host
-
     - name: prepare - Set destination host primary target identity path
       ansible.builtin.set_fact:
         destination_host_primary_target_identity_path: >-
           {% if new_primary_target_identity.stat.exists is defined and new_primary_target_identity.stat.exists %}
             {{ destination_host_keys_dir }}/primary-target-identity.json
-          {% elif old_primary_target_identity.stat.exists is defined and old_primary_target_identity.stat.exists %}
-            {{ destination_host_keys_dir }}/staked-identity.json
           {% else %}
             {{ '' }}
           {% endif %}
@@ -202,7 +178,7 @@
 
     - name: prepare - Fail if no primary identity found on destination host
       ansible.builtin.fail:
-        msg: "No primary identity file found on destination host. Neither primary-target-identity.json nor staked-identity.json exists in {{ destination_host_keys_dir }}"
+        msg: "No primary identity file found on destination host in: {{ destination_host_keys_dir }}"
       when:
         - inventory_hostname == destination_host
         - destination_host_primary_target_identity_path == ''
@@ -247,6 +223,9 @@
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] | default('') }}"
     destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] | default('') }}"
+    source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] }}"
+    source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] }}"
+    destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] }}"
   run_once: true
   when:
     - hostvars[source_host]['source_primary_pubkey'] is defined
