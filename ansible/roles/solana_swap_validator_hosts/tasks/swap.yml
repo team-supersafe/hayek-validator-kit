@@ -1,12 +1,6 @@
 ---
 - name: swap - Get pre-swap vote account stats
   block:
-    - name: summary - Debug var source_primary_pubkey
-      ansible.builtin.debug:
-        msg: "Value of source_primary_pubkey: {{ source_primary_pubkey }}"
-      delegate_to: localhost
-      run_once: true
-
     - name: swap - Get vote account address from validator identity (fallback)
       ansible.builtin.shell: |
         solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json | jq -r '.validators[] | select(.identityPubkey == "{{ source_primary_pubkey }}") | .voteAccountPubkey'
@@ -30,12 +24,6 @@
         - fallback_vote_account_address is defined
         - fallback_vote_account_address.stdout is defined
         - fallback_vote_account_address.stdout != ''
-      run_once: true
-
-    - name: summary - Debug var source_vote_pubkey
-      ansible.builtin.debug:
-        msg: "Value of source_vote_pubkey: {{ source_vote_pubkey }}"
-      delegate_to: localhost
       run_once: true
 
     - name: swap - Get vote account data from source validator
@@ -75,11 +63,6 @@
         - vote_account_before is defined
         - vote_account_before.epochVotingHistory is defined
         - vote_account_before.epochVotingHistory | length > 0
-
-    - name: swap - Display pre-swap stats
-      ansible.builtin.debug:
-        msg: "PRE-SWAP STATS: {% if pre_swap_stats is defined %}Epoch: {{ pre_swap_stats.epoch }}, Credits: {{ pre_swap_stats.credits_earned }}/{{ pre_swap_stats.max_possible_credits }}{% else %}Stats unavailable - check network/validator status{% endif %}"
-      run_once: true
   when:
     - source_primary_pubkey is defined
     - source_primary_pubkey != ''
@@ -221,17 +204,6 @@
         - tower_file_path is defined
         - tower_file_src is defined
         - tower_file_dest is defined
-
-    - name: swap - Debug tower file paths
-      ansible.builtin.debug:
-        msg: |
-          Tower file transfer debug:
-          - tower_file_path: {{ tower_file_path | default('undefined') }}
-          - tower_file_src: {{ tower_file_src | default('undefined') }}
-          - tower_file_dest: {{ tower_file_dest | default('undefined') }}
-          - ledger_path: {{ ledger_path | default('undefined') }}
-          - primary_target_identity_pubkey_stdout: {{ primary_target_identity_pubkey_stdout.stdout | default('undefined') }}
-      when: inventory_hostname == destination_host
 
     - name: swap - Rsync tower file from source to destination
       ansible.posix.synchronize:

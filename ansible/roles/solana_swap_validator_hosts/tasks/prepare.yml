@@ -170,7 +170,7 @@
       ansible.builtin.set_fact:
         destination_host_primary_target_identity_path: >-
           {% if new_primary_target_identity.stat.exists is defined and new_primary_target_identity.stat.exists %}
-            {{ destination_host_keys_dir }}/primary-target-identity.json
+            {{ (destination_host_keys_dir ~ '/primary-target-identity.json') | trim | replace('\n', '') }}
           {% else %}
             {{ '' }}
           {% endif %}
@@ -223,9 +223,9 @@
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] | default('') }}"
     destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] | default('') }}"
-    source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] }}"
-    source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] }}"
-    destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] }}"
+    source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] | trim | replace('\n', '') }}"
+    source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] | trim | replace('\n', '') }}"
+    destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] | trim | replace('\n', '') }}"
   run_once: true
   when:
     - hostvars[source_host]['source_primary_pubkey'] is defined
