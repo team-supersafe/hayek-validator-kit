@@ -12,9 +12,6 @@
       delegate_to: localhost
       changed_when: false
       check_mode: false
-      retries: "{{ max_retry_attempts }}"
-      delay: "{{ retry_delay_seconds }}"
-      until: fallback_vote_account_address.rc == 0
 
     - name: swap - Set source_vote_pubkey from fallback if needed
       ansible.builtin.set_fact:
@@ -33,9 +30,6 @@
       delegate_to: localhost
       changed_when: false
       check_mode: false
-      retries: "{{ max_retry_attempts }}"
-      delay: "{{ retry_delay_seconds }}"
-      until: source_vote_account_before.rc == 0
 
     - name: swap - Parse vote account data before swap
       ansible.builtin.set_fact:
