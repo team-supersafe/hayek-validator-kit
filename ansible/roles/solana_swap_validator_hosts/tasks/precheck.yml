@@ -66,9 +66,11 @@
       changed_when: false
 
     - name: precheck - Check validator process status
-      ansible.builtin.shell: ps aux | grep "agave-validator" | grep -v grep
+      ansible.builtin.pids:
+        pattern: agave-validator
       register: validator_process
       changed_when: false
+      failed_when: validator_process.pids | length == 0
 
     - name: precheck - Assert validator systemd service is active
       ansible.builtin.assert:
