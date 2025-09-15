@@ -312,6 +312,8 @@
       when:
         - next_leader_slots is defined
         - next_leader_slots | length > 0
+        - current_slot is defined
+        - slots_per_sec is defined
 
     - name: prepare - Fail if not enough idle time before leadership
       ansible.builtin.fail:
