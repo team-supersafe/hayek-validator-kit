@@ -6,8 +6,6 @@
       -um
       {%- elif 'solana_testnet' in group_names -%}
       -ut
-      {%- elif 'solana_localnet' in group_names -%}
-      --url {{ lookup('env', 'RPC_URL') | default('') }}
       {%- else -%}
       --url {{ lookup('env', 'RPC_URL') | default('') }}
       {%- endif -%}
