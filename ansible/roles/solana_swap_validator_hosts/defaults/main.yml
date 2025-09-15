@@ -2,11 +2,10 @@
 ssh_key_path: "{{ solana_user_dir }}/.ssh/id_rsa"
 ssh_key_type: "rsa"
 ssh_key_size: 2048
-tower_file_prefix: "tower-1_9-" # Tower file name prefix
+tower_file_prefix: "tower-1_9-"
 tower_file_suffix: ".bin"
 slots_per_sec: 2.5
 swap_epoch_end_threshold_sec: 180
-cluster_delinquency_threshold: 5 # Cluster delinquency threshold (percent).
 # Retry and async configuration
 max_retry_attempts: 3
 retry_delay_seconds: 5

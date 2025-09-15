@@ -1,5 +1,5 @@
 ---
-- name: prepare - Set cluster parameter
+- name: prepare - Determine Solana cluster parameter
   ansible.builtin.set_fact:
     solana_cluster_param: >-
       {%- if 'solana_mainnet' in group_names -%}
@@ -21,7 +21,7 @@
     - solana_cluster_param | regex_search('--url $')
   run_once: true
 
-- name: prepare - Check epoch timing
+- name: prepare - Ensure enough time left in epoch before swap
   block:
     - name: prepare - Get current epoch info
       ansible.builtin.shell: solana {{ solana_cluster_param }} epoch-info --output json
@@ -282,20 +282,10 @@
       when:
         - not ansible_check_mode
         - delinquency_pct is defined
-        - delinquency_pct | float >= cluster_delinquency_threshold
+        - delinquency_pct | float >= restart_max_delinquent_stake
 
-- name: prepare - Check epoch timing and leader schedule
+- name: prepare - Check leader schedule
   block:
-    - name: prepare - Calculate remaining time
-      ansible.builtin.set_fact:
-        current_slot: "{{ (epoch_info.stdout | from_json).slotIndex | int }}"
-        slots_remaining: "{{ (epoch_info.stdout | from_json).slotsInEpoch | int - (epoch_info.stdout | from_json).slotIndex | int }}"
-        seconds_remaining: "{{ (slots_remaining | int / slots_per_sec) | round(0) | int }}"
-      when:
-        - epoch_info.rc == 0
-        - epoch_info.stdout is defined
-        - epoch_info.stdout != ''
-
     - name: prepare - Get leader schedule
       ansible.builtin.shell: solana {{ solana_cluster_param }} leader-schedule --output json
       register: leader_schedule
@@ -324,6 +314,14 @@
       when:
         - next_leader_slots is defined
         - next_leader_slots | length > 0
+
+    - name: prepare - Fail if not enough idle time before leadership
+      ansible.builtin.fail:
+        msg: >-
+          Not enough idle time before next leadership slot! Only {{ (seconds_to_leadership / 60) | round(1) }} minutes ({{ seconds_to_leadership }} seconds) left, but required minimum is {{ (restart_min_idle_time / 60) | round(1) }} minutes ({{ restart_min_idle_time }} seconds).
+      when:
+        - seconds_to_leadership is defined
+        - seconds_to_leadership < restart_min_idle_time
 
 - name: prepare - Check SSH from source_host to destination_host
   block:
