@@ -1,5 +1,5 @@
 ---
-- name: swap - Determine Solana cluster parameter
+- name: prepare - Determine Solana cluster parameter
   ansible.builtin.set_fact:
     solana_cluster_param: >-
       {%- if 'solana_mainnet' in group_names -%}
@@ -7,79 +7,69 @@
       {%- elif 'solana_testnet' in group_names -%}
       -ut
       {%- elif 'solana_localnet' in group_names -%}
-      -ul
+      --url {{ lookup('env', 'RPC_URL') | default('') }}
       {%- else -%}
-      -ul
+      --url {{ lookup('env', 'RPC_URL') | default('') }}
       {%- endif -%}
   run_once: true
 
-- name: swap - Debug solana cluster parameter
-  ansible.builtin.debug:
-    msg: "solana_cluster_param: '{{ solana_cluster_param }}'"
-  delegate_to: localhost
+- name: prepare - Validate RPC_URL for localnet
+  ansible.builtin.fail:
+    msg: "RPC_URL environment variable is required for solana_localnet"
+  when:
+    - ('solana_localnet' in group_names or ('solana_mainnet' not in group_names and 'solana_testnet' not in group_names))
+    - solana_cluster_param | regex_search('--url $')
   run_once: true
 
-- name: swap - Ensure enough time left in epoch before swap
+- name: prepare - Ensure enough time left in epoch before swap
   block:
-    - name: swap - Get current epoch info
+    - name: prepare - Get current epoch info
       ansible.builtin.shell: solana {{ solana_cluster_param }} epoch-info --output json
       register: epoch_info
       when: solana_cluster_param is defined
       delegate_to: localhost
       changed_when: false
       check_mode: false
-
-    - name: swap - Debug epoch_info
-      ansible.builtin.debug:
-        msg: "epoch_info: {{ epoch_info.stdout }}"
-      delegate_to: localhost
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+      until: epoch_info.rc == 0
       run_once: true
 
-    - name: swap - Fail if epoch info stdout is empty
+    - name: prepare - Fail if epoch info stdout is empty
       ansible.builtin.fail:
         msg: Epoch info command returned empty output.
       when: epoch_info.stdout is not defined or epoch_info.stdout == ''
       delegate_to: localhost
 
-    - name: swap - Parse epoch info
+    - name: prepare - Parse epoch info
       ansible.builtin.set_fact:
         epoch_info_json: "{{ epoch_info.stdout | from_json }}"
         slots_in_epoch: "{{ (epoch_info.stdout | from_json).slotsInEpoch | int }}"
         slot_index: "{{ (epoch_info.stdout | from_json).slotIndex | int }}"
-      when: 
+      when:
         - epoch_info.rc == 0
         - epoch_info.stdout is defined
         - epoch_info.stdout != ''
 
-    - name: swap - Calculate seconds remaining in epoch
+    - name: prepare - Calculate seconds remaining in epoch
       ansible.builtin.set_fact:
         slots_remaining: "{{ slots_in_epoch | int - slot_index | int }}"
         seconds_remaining: "{{ (slots_in_epoch | int - slot_index | int) / slots_per_sec }}"
-      when: 
+      when:
         - epoch_info_json is defined
         - slots_in_epoch is defined
         - slot_index is defined
 
-    - name: swap - Debug calculated seconds and slots remaining
-      ansible.builtin.debug:
-        msg: "seconds_remaining: {{ seconds_remaining }}, slots_remaining: {{ slots_remaining }}"
-      when:
-        - inventory_hostname == source_host
-        - seconds_remaining is defined
-        - slots_remaining is defined
-
-- name: swap - Fail if less than 3 minutes remain in epoch
+- name: prepare - Fail if insufficient time remains in epoch
   ansible.builtin.fail:
-    msg: |
-      Only {{ seconds_remaining | float | int }} seconds remain in the current epoch ({{ slots_remaining }} slots).
-      Please wait for the new epoch to start and try again when there are at least 3 minutes left in the epoch.
-      It is less effective to calculate TVC loss close to the epoch boundary.
+    msg: "Only {{ seconds_remaining | float | int }}s remain in epoch ({{ slots_remaining }} slots). Wait for new epoch with at least {{ swap_epoch_end_threshold_sec }}s left."
   run_once: true
-  when: 
+  when:
+    - not ansible_check_mode
     - seconds_remaining is defined
     - seconds_remaining | float < swap_epoch_end_threshold_sec
 
-- name: prepare - Generate SSH key for sol user if not present
+- name: prepare - Generate SSH key if missing
   community.crypto.openssh_keypair:
     path: "{{ ssh_key_path }}"
     type: "{{ ssh_key_type }}"
@@ -93,21 +83,32 @@
   register: pubkey
   ignore_errors: "{{ ansible_check_mode }}"
 
+- name: prepare - Fail if public key file cannot be read
+  ansible.builtin.fail:
+    msg: "Failed to read SSH public key file {{ ssh_key_path }}.pub. Check if key generation succeeded."
+  when:
+    - not ansible_check_mode
+    - pubkey is failed or pubkey.content is not defined or pubkey.content == ''
+
 - name: prepare - Authorize key on both hosts
   delegate_to: "{{ item }}"
   ansible.posix.authorized_key:
     user: sol
     key: "{{ pubkey.content | b64decode }}"
+    state: present
+    exclusive: false
   loop: "{{ [source_host, destination_host] }}"
   when:
     - pubkey is defined
     - pubkey.content is defined
+    - pubkey.content != ''
   ignore_errors: "{{ ansible_check_mode }}"
 
 - name: prepare - Install prerequisites
   become: true
   ansible.builtin.apt:
     name: rsync
+    state: present
     update_cache: true
 
 - name: prepare - Check for primary target identity file on source host
@@ -115,35 +116,22 @@
     - name: prepare - Check for new convention primary target identity
       ansible.builtin.stat:
         path: "{{ source_host_keys_dir }}/primary-target-identity.json"
-      register: new_staked_identity
-      when: inventory_hostname == source_host
-
-    - name: prepare - Check for old convention staked identity
-      ansible.builtin.stat:
-        path: "{{ source_host_keys_dir }}/staked-identity.json"
-      register: old_staked_identity
+      register: new_primary_target_identity
       when: inventory_hostname == source_host
 
     - name: prepare - Set source host primary target identity path
       ansible.builtin.set_fact:
         source_host_primary_target_identity_path: >-
-          {%- if new_staked_identity.stat.exists -%}
-          {{ source_host_keys_dir }}/primary-target-identity.json
-          {%- elif old_staked_identity.stat.exists -%}
-          {{ source_host_keys_dir }}/staked-identity.json
-          {%- else -%}
-          {{ '' }}
-          {%- endif -%}
+          {% if new_primary_target_identity.stat.exists is defined and new_primary_target_identity.stat.exists %}
+            {{ source_host_keys_dir }}/primary-target-identity.json
+          {% else %}
+            {{ '' }}
+          {% endif %}
       when: inventory_hostname == source_host
-
-    - name: prepare - Make source host primary target identity path available globally
-      ansible.builtin.set_fact:
-        source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] }}"
-      run_once: true
 
     - name: prepare - Fail if no primary identity found on source host
       ansible.builtin.fail:
-        msg: "No primary identity file found on source host. Neither primary-target-identity.json nor staked-identity.json exists in {{ source_host_keys_dir }}"
+        msg: "No primary identity file found on source host in: {{ source_host_keys_dir }}"
       when:
         - inventory_hostname == source_host
         - source_host_primary_target_identity_path == ''
@@ -151,31 +139,13 @@
     - name: prepare - Check for new convention hot-spare identity
       ansible.builtin.stat:
         path: "{{ source_host_keys_dir }}/hot-spare-identity.json"
-      register: new_unstaked_identity
-      when: inventory_hostname == source_host
-
-    - name: prepare - Check for old convention unstaked identity
-      ansible.builtin.stat:
-        path: "{{ source_host_keys_dir }}/unstaked-identity.json"
-      register: old_unstaked_identity
+      register: new_hot_spare_identity
       when: inventory_hostname == source_host
 
     - name: prepare - Set source host hot-spare identity path
       ansible.builtin.set_fact:
-        source_host_hot_spare_identity_path: >-
-          {%- if new_unstaked_identity.stat.exists -%}
-          {{ source_host_keys_dir }}/hot-spare-identity.json
-          {%- elif old_unstaked_identity.stat.exists -%}
-          {{ source_host_keys_dir }}/unstaked-identity.json
-          {%- else -%}
-          {{ source_host_keys_dir }}/hot-spare-identity.json
-          {%- endif -%}
+        source_host_hot_spare_identity_path: "{{ source_host_keys_dir }}/hot-spare-identity.json"
       when: inventory_hostname == source_host
-
-    - name: prepare - Make source host hot-spare identity path available globally
-      ansible.builtin.set_fact:
-        source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] }}"
-      run_once: true
 
     - name: prepare - Generate hot-spare identity if it doesn't exist
       ansible.builtin.command: solana-keygen new --no-bip39-passphrase -o {{ source_host_hot_spare_identity_path }}
@@ -183,52 +153,32 @@
         PATH: "{{ solana_install_dir }}"
       when:
         - inventory_hostname == source_host
-        - not new_unstaked_identity.stat.exists
-        - not old_unstaked_identity.stat.exists
+        - not new_hot_spare_identity.stat.exists
       register: generated_hotspare
-
-    - name: prepare - Display generated hot-spare pubkey
-      ansible.builtin.debug:
-        msg: "Generated new hot-spare identity with pubkey: {{ generated_hotspare.stdout_lines | select('match', '^pubkey:') | first | regex_replace('^pubkey: ', '') }}"
-      when:
-        - inventory_hostname == source_host
-        - generated_hotspare is defined
-        - generated_hotspare.changed
+      changed_when: generated_hotspare.rc == 0
+      failed_when: generated_hotspare.rc != 0
 
 - name: prepare - Check for primary target identity file on destination host
   block:
     - name: prepare - Check for new convention primary target identity
       ansible.builtin.stat:
         path: "{{ destination_host_keys_dir }}/primary-target-identity.json"
-      register: new_staked_identity
-      when: inventory_hostname == destination_host
-
-    - name: prepare - Check for old convention staked identity
-      ansible.builtin.stat:
-        path: "{{ destination_host_keys_dir }}/staked-identity.json"
-      register: old_staked_identity
+      register: new_primary_target_identity
       when: inventory_hostname == destination_host
 
     - name: prepare - Set destination host primary target identity path
       ansible.builtin.set_fact:
         destination_host_primary_target_identity_path: >-
-          {%- if new_staked_identity.stat.exists -%}
-          {{ destination_host_keys_dir }}/primary-target-identity.json
-          {%- elif old_staked_identity.stat.exists -%}
-          {{ destination_host_keys_dir }}/staked-identity.json
-          {%- else -%}
-          {{ '' }}
-          {%- endif -%}
+          {% if new_primary_target_identity.stat.exists is defined and new_primary_target_identity.stat.exists %}
+            {{ (destination_host_keys_dir ~ '/primary-target-identity.json') | trim | replace('\n', '') }}
+          {% else %}
+            {{ '' }}
+          {% endif %}
       when: inventory_hostname == destination_host
-
-    - name: prepare - Make destination host primary target identity path available globally
-      ansible.builtin.set_fact:
-        destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] }}"
-      run_once: true
 
     - name: prepare - Fail if no primary identity found on destination host
       ansible.builtin.fail:
-        msg: "No primary identity file found on destination host. Neither primary-target-identity.json nor staked-identity.json exists in {{ destination_host_keys_dir }}"
+        msg: "No primary identity file found on destination host in: {{ destination_host_keys_dir }}"
       when:
         - inventory_hostname == destination_host
         - destination_host_primary_target_identity_path == ''
@@ -251,45 +201,141 @@
   changed_when: false
   check_mode: false
 
-- name: prepare - Set source host pubkey fact
+- name: prepare - Set primary pubkey facts on each host
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ source_staked_pubkey.stdout_lines[0] }}"
-  when: 
+  when:
     - inventory_hostname == source_host
     - source_staked_pubkey is defined
     - source_staked_pubkey.stdout_lines is defined
     - source_staked_pubkey.stdout_lines | length > 0
 
-- name: prepare - Set destination host pubkey fact
+- name: prepare - Set primary pubkey facts on each host
   ansible.builtin.set_fact:
     destination_primary_pubkey: "{{ destination_staked_pubkey.stdout_lines[0] }}"
-  when: 
+  when:
     - inventory_hostname == destination_host
     - destination_staked_pubkey is defined
     - destination_staked_pubkey.stdout_lines is defined
     - destination_staked_pubkey.stdout_lines | length > 0
 
-- name: prepare - Make pubkey facts available globally
+- name: prepare - Gather both primary pubkeys globally
   ansible.builtin.set_fact:
-    source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] }}"
-    destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] }}"
+    source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] | default('') }}"
+    destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] | default('') }}"
+    source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] | trim | replace('\n', '') }}"
+    source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] | trim | replace('\n', '') }}"
+    destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] | trim | replace('\n', '') }}"
   run_once: true
   when:
     - hostvars[source_host]['source_primary_pubkey'] is defined
     - hostvars[destination_host]['destination_primary_pubkey'] is defined
 
-- name: prepare - Assert that both primary pubkeys are available
+- name: prepare - Assert primary pubkeys are available
+  ansible.builtin.assert:
+    that:
+      - source_primary_pubkey is defined and source_primary_pubkey != ''
+      - destination_primary_pubkey is defined and destination_primary_pubkey != ''
+    fail_msg: "Primary pubkeys not set. Check identity files and solana-keygen commands."
+  when: not ansible_check_mode
+  run_once: true
+
+- name: prepare - Validate identity keypairs match between hosts
   ansible.builtin.fail:
-    msg: |
-      Critical error: Primary pubkeys are not properly set.
-      
-      Source primary pubkey: {{ source_primary_pubkey | default('NOT SET') }}
-      Destination primary pubkey: {{ destination_primary_pubkey | default('NOT SET') }}
-      
-      This indicates that the solana-keygen commands failed to execute properly
-      or the identity files are missing/corrupted.
+    msg: "Identity keypairs don't match between hosts. Source: {{ source_primary_pubkey }}, Destination: {{ destination_primary_pubkey }}"
   when:
     - not ansible_check_mode
-    - (source_primary_pubkey is not defined or source_primary_pubkey == '') or
-      (destination_primary_pubkey is not defined or destination_primary_pubkey == '')
+    - source_primary_pubkey != destination_primary_pubkey
   run_once: true
+
+- name: prepare - Check cluster delinquency
+  block:
+    - name: prepare - Get cluster validators info
+      ansible.builtin.shell: solana {{ solana_cluster_param }} validators --keep-unstaked-delinquents --output json
+      register: cluster_info
+      delegate_to: localhost
+      changed_when: false
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+      until: cluster_info.rc == 0
+
+    - name: prepare - Set total and delinquent stake
+      ansible.builtin.set_fact:
+        total_stake: "{{ (cluster_info.stdout | from_json).totalActiveStake | default(0) }}"
+        delinquent_stake: "{{ (cluster_info.stdout | from_json).totalDelinquentStake | default(0) }}"
+      when:
+        - cluster_info.rc == 0
+        - cluster_info.stdout is defined
+        - cluster_info.stdout != ''
+
+    - name: prepare - Calculate delinquency percentage
+      ansible.builtin.set_fact:
+        delinquency_pct: >-
+          {{ (delinquent_stake | float / total_stake | float * 100) | round(1) if total_stake | float > 0 else 0 }}
+      when:
+        - total_stake is defined
+        - delinquent_stake is defined
+
+    - name: prepare - Fail if delinquency too high
+      ansible.builtin.fail:
+        msg: "Cluster delinquency too high: {{ delinquency_pct }}%. Wait for cluster health to improve."
+      when:
+        - not ansible_check_mode
+        - delinquency_pct is defined
+        - delinquency_pct | float >= restart_max_delinquent_stake
+
+- name: prepare - Check leader schedule
+  block:
+    - name: prepare - Get leader schedule
+      ansible.builtin.shell: solana {{ solana_cluster_param }} leader-schedule --output json
+      register: leader_schedule
+      delegate_to: localhost
+      changed_when: false
+      retries: "{{ max_retry_attempts }}"
+      delay: "{{ retry_delay_seconds }}"
+      until: leader_schedule.rc == 0
+
+    - name: prepare - Find next leader slot
+      ansible.builtin.set_fact:
+        next_leader_slots: >-
+          {{ leader_schedule.stdout | from_json | dict2items |
+             selectattr('value', 'search', source_primary_pubkey) |
+             map(attribute='key') | map('int') | select('>=', current_slot | int) | list | sort }}
+      when:
+        - leader_schedule.rc == 0
+        - leader_schedule.stdout is defined
+        - leader_schedule.stdout != ''
+        - current_slot is defined
+
+    - name: prepare - Calculate time to leadership
+      ansible.builtin.set_fact:
+        next_leader_slot: "{{ next_leader_slots[0] | default('') }}"
+        seconds_to_leadership: "{{ ((next_leader_slots[0] | int - current_slot | int) / slots_per_sec) | round(0) | int if next_leader_slots[0] is defined else 0 }}"
+      when:
+        - next_leader_slots is defined
+        - next_leader_slots | length > 0
+
+    - name: prepare - Fail if not enough idle time before leadership
+      ansible.builtin.fail:
+        msg: >-
+          Not enough idle time before next leadership slot! Only {{ (seconds_to_leadership / 60) | round(1) }} minutes ({{ seconds_to_leadership }} seconds) left, but required minimum is {{ (restart_min_idle_time / 60) | round(1) }} minutes ({{ restart_min_idle_time }} seconds).
+      when:
+        - seconds_to_leadership is defined
+        - seconds_to_leadership < restart_min_idle_time
+
+- name: prepare - Check SSH from source_host to destination_host
+  block:
+    - name: prepare - Test SSH from source_host to destination_host
+      ansible.builtin.shell: |
+        ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 {{ destination_host }} 'exit 0'
+      delegate_to: "{{ source_host }}"
+      register: ssh_test_result
+      ignore_errors: true
+      failed_when: false
+
+    - name: prepare - Fail if SSH test fails
+      ansible.builtin.fail:
+        msg: "SSH connection from {{ source_host }} to {{ destination_host }} failed. Check SSH keys, agent forwarding, and network access."
+      when:
+        - not ansible_check_mode
+        - ssh_test_result is failed

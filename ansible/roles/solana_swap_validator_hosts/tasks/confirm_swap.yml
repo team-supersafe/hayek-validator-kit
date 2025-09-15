@@ -107,6 +107,8 @@
   ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ destination_vote_pubkey_result.stdout_lines[0] }}"
   when: 
+    - destination_vote_account_file is defined
+    - destination_vote_account_file.stat is defined
     - destination_vote_account_file.stat.exists
     - destination_vote_pubkey_result is defined
     - destination_vote_pubkey_result.stdout_lines is defined
@@ -118,6 +120,7 @@
     destination_vote_pubkey: ""
   when:
     - destination_vote_account_file is defined
+    - destination_vote_account_file.stat is defined
     - not destination_vote_account_file.stat.exists
   run_once: true
 
@@ -155,7 +158,7 @@
 
       Destination Validator:
       - Host: {{ destination_host }} ({{ destination_validator_name }})
-      - Primary Target Identity: {{ destination_host_primary_target_identity_path }}
+      - Primary Target Identity: {{ destination_host_primary_target_identity_path | default('NOT SET') }}
         {% if destination_primary_pubkey is defined and destination_primary_pubkey != '' %}
         Pubkey: {{ destination_primary_pubkey }}
         {% else %}

@@ -20,9 +20,9 @@
     - name: precheck - Set source directory validation fact
       ansible.builtin.set_fact:
         source_dir_valid: >-
-          {{ 
-            source_validator_keys_dir.stat.isdir is defined and 
-            source_validator_keys_dir.stat.isdir 
+          {{
+            source_validator_keys_dir.stat.isdir is defined and
+            source_validator_keys_dir.stat.isdir
           }}
       when: inventory_hostname == source_host
 
@@ -37,9 +37,9 @@
     - name: precheck - Set destination directory validation fact
       ansible.builtin.set_fact:
         destination_dir_valid: >-
-          {{ 
-            destination_validator_keys_dir.stat.isdir is defined and 
-            destination_validator_keys_dir.stat.isdir 
+          {{
+            destination_validator_keys_dir.stat.isdir is defined and
+            destination_validator_keys_dir.stat.isdir
           }}
       when: inventory_hostname == destination_host
 
@@ -56,3 +56,30 @@
       {% if not destination_validation %}Destination directory '{{ destination_host_keys_dir }}' is invalid on {{ destination_host }}{% endif %}
   when: not (source_validation and destination_validation)
   run_once: true
+
+- name: precheck - Validate destination host validator status
+  block:
+    - name: precheck - Check validator systemd service status
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+      register: validator_service
+      changed_when: false
+
+    - name: precheck - Check validator process status
+      ansible.builtin.shell: ps aux | grep "agave-validator" | grep -v grep
+      register: validator_process
+      changed_when: false
+
+    - name: precheck - Assert validator systemd service is active
+      ansible.builtin.assert:
+        that:
+          - validator_service.status.ActiveState == "active"
+        fail_msg: "Validator systemd service is not active on destination host {{ destination_host }}. Current state: {{ validator_service.status.ActiveState }}"
+
+    - name: precheck - Assert validator process is running
+      ansible.builtin.assert:
+        that:
+          - validator_process.stdout is defined
+          - validator_process.stdout != ''
+        fail_msg: "Validator process is not running on destination host {{ destination_host }}"
+  when: inventory_hostname == destination_host
