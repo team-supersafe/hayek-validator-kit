@@ -269,7 +269,7 @@
     - name: prepare - Calculate delinquency percentage
       ansible.builtin.set_fact:
         delinquency_pct: >-
-          {{ (delinquent_stake | float / total_stake | float * 100) | round(1) if total_stake | float > 0 else 0 }}
+          {{ (delinquent_stake | float / total_stake | float * 100) | round(1) if total_stake is defined and total_stake | float > 0 else 0 }}
       when:
         - total_stake is defined
         - delinquent_stake is defined
