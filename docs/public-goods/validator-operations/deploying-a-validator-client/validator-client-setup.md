@@ -20,7 +20,7 @@ Irrespective of which setup you want to run, it is recommended you check that ce
 
 
     ```bash
-    bash ~/health_check.sh
+    bash /home/sol/health_check.sh
     ```
 *   Ensure your local computer has a directory called `~/.validator-keys` and that it contains a subdirectory with the name of the keyset to be installed on the target host, this is always the validator name. The following files are required:\
 
