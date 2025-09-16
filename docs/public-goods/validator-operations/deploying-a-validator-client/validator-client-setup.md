@@ -4,10 +4,10 @@
 
 When installing a validator there are two main scenarios you need to consider:
 
-1. Override a target host with a validator setup. This is good for:
+1. <mark style="background-color:blue;">**Scorched-Earth Setup**</mark>: Override a target host with a validator setup. This is good for:
    1. Setup a validator for the first time (override/repurpose the server host as a Solana validator)
    2. Upgrade a running validator without using a hot-spare host (will incurr in delinquency)
-2. Setup a hot-spare validator to swap with a primary validator host. This is good for upgrading software and hardware with minimum downtime, such as:
+2. <mark style="background-color:blue;">**Hot-Spare Setup**</mark>: Setup a hot-spare validator to swap with a primary validator host. This is good for upgrading software and hardware with minimum downtime, such as:
    1. Upgrading hardware on a Mainnet validator
    2. Upgrading software version on a Mainnet validator
    3. Moving the validator to different Geo/ASN/DC
