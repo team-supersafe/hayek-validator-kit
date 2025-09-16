@@ -10,6 +10,7 @@ When installing a validator there are two main scenarios you need to consider:
 2. Setup a hot-spare validator to swap with a primary validator host. This is good for upgrading software and hardware with minimum downtime, such as:
    1. Upgrading hardware on a Mainnet validator
    2. Upgrading software version on a Mainnet validator
+   3. Moving the validator to different Geo/ASN/DC
 
 ## Readiness & Health Checks
 
