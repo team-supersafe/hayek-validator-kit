@@ -317,7 +317,7 @@ htop 3.3.0 installed successfully:
 
 Now HTOP is available for any user. You can test by executing `htop -V` to verify the installation.
 
-### Executing provicion a service
+### Executing provision a service
 
 This playbook is responsible for configuring, enabling, and running a test service on the server. This service will run as the user `sol` and will execute a script located in `/home/sol/unix-test.sh`, which writes a log to a file every 30 seconds.
 
