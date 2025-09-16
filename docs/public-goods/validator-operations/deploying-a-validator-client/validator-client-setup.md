@@ -67,14 +67,14 @@ all:
 
 ```
 
-Replace the IP address with your real host IP address and match the city group based on the [jito Labs documentation](https://docs.jito.wtf/lowlatencytxnsend/#api). We have group vars for these cities: city\_dal, city\_lax, city\_man, city\_mia, city\_tlv, city\_waw. For more info on city grouping naming see: [#cities-and-countries](../hayek-validator-kit/validator-conventions.md#cities-and-countries "mention")
+Replace the IP address with your real host IP address and match the city group based on the [jito Labs documentation](https://docs.jito.wtf/lowlatencytxnsend/#api). We have group vars for these cities: city\_dal, city\_lax, city\_man, city\_mia, city\_tlv, city\_waw. For more info on city grouping naming see: [#cities-and-countries](../../hayek-validator-kit/validator-conventions.md#cities-and-countries "mention")
 
 Solana Cluster Grouping is essential to end up installing a validator node for the correct cluster.
 
 #### Steps to run the playbook
 
-1. Change to your local repo directory. If you haven't cloned the [hayek-validator-kit](https://app.gitbook.com/u/mWd8rWP4UVguErb6G6hVhYUW13D3) repo yet, do so by following these instructions [github-repo.md](../hayek-validator-kit/github-repo.md "mention")
-2. Connect to your Ansible Control. See [#connecting-to-ansible-control](../hayek-validator-kit/ansible-control.md#connecting-to-ansible-control "mention")
+1. Change to your local repo directory. If you haven't cloned the [hayek-validator-kit](https://app.gitbook.com/u/mWd8rWP4UVguErb6G6hVhYUW13D3) repo yet, do so by following these instructions [github-repo.md](../../hayek-validator-kit/github-repo.md "mention")
+2. Connect to your Ansible Control. See [#connecting-to-ansible-control](../../hayek-validator-kit/ansible-control.md#connecting-to-ansible-control "mention")
 3.  When the ansible control is ready, change to the `ansible` directory.\
 
 
@@ -131,7 +131,7 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
     \
     While the validator is starting up you can see several stages passing by, Connecting to RPC, Downloading snapshot, Loading ledger, Health check and slot processing status.\
     \
-    To have a better understanding on what to look for when inspecting the logs see: [#initial-startup-monitoring](metrics-and-monitoring/inspecting-logs.md#initial-startup-monitoring "mention") and for the Jito Relayer see: [#jito-relayer-logs](metrics-and-monitoring/inspecting-logs.md#jito-relayer-logs "mention")
+    To have a better understanding on what to look for when inspecting the logs see: [#initial-startup-monitoring](../metrics-and-monitoring/inspecting-logs.md#initial-startup-monitoring "mention") and for the Jito Relayer see: [#jito-relayer-logs](../metrics-and-monitoring/inspecting-logs.md#jito-relayer-logs "mention")
 
 ## Upgrading a running validator
 
@@ -141,7 +141,7 @@ When performing an upgrade of a validator client on a host, several steps are in
 
 `secondary-host`: Is a host setup as hot-spare to later perform the identity swap
 
-`demo-validator`: Is the keyset same for our validator. See [#naming-validators](../hayek-validator-kit/ansible-control.md#naming-validators "mention")
+`demo-validator`: Is the keyset same for our validator. See [#naming-validators](../../hayek-validator-kit/ansible-control.md#naming-validators "mention")
 
 Steps to upgrade a validator client:
 
