@@ -1,6 +1,6 @@
 # Validator Client Setup
 
-## Common Setup Scenarios
+## Setup Scenarios
 
 When installing a validator there are two main scenarios you need to consider:
 
@@ -12,7 +12,7 @@ When installing a validator there are two main scenarios you need to consider:
    2. Upgrading software version on a Mainnet validator
    3. Moving the validator to different Geo/ASN/DC
 
-## Readiness & Health Checks
+## Readiness Checks
 
 Irrespective of which setup you want to run, it is recommended you check that certain requirements are met with our built-in health checks:
 
