@@ -28,7 +28,15 @@ Irrespective of which setup you want to run, it is recommended you check that ce
 
 We will be using the playbook `pb_setup_validator_jito.yml` to setup a Jito-Solana client v3.0.2 with co-hosted relayer v0.4.2 on the host `validator-host` for our example. This validator will run a keyset named `demo-validator`.
 
-#### Configuring the Inventory
+### Pick your client
+
+add
+
+### Pick your version
+
+add
+
+### Configure Inventory
 
 Here is a typical inventory configuration:
 
@@ -62,7 +70,7 @@ Replace the IP address with your real host IP address and match the city group b
 
 Solana Cluster Grouping is essential to end up installing a validator node for the correct cluster.
 
-#### Steps to run the playbook
+### Run the playbook
 
 1. Change to your local repo directory. If you haven't cloned the [hayek-validator-kit](https://app.gitbook.com/u/mWd8rWP4UVguErb6G6hVhYUW13D3) repo yet, do so by following these instructions [github-repo.md](../../hayek-validator-kit/github-repo.md "mention")
 2. Connect to your Ansible Control. See [#connecting-to-ansible-control](../../hayek-validator-kit/ansible-control.md#connecting-to-ansible-control "mention")
