@@ -22,7 +22,7 @@ Irrespective of which setup you want to run, it is recommended you check that ce
     ```bash
     bash /home/sol/health_check.sh
     ```
-* Ensure that the network cluster delinquency is lower than the requirement set by Solana on the official communication channels before starting the installetion.
+* Ensure that the network cluster delinquency is lower than the requirement set by Solana on the official communication channels before starting the installation.
 
 ## Scorched-Earth Setup
 
