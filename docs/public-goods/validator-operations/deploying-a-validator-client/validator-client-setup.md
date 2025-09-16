@@ -14,7 +14,7 @@ When installing a validator there are two main scenarios you need to consider:
 
 ## Readiness & Health Checks
 
-Before setting up a validator in a host you need to check that certain requirements are met.
+Irrespective of which setup you want to run, it is recommended you check that certain requirements are met with our built-in health checks:
 
 *   Ensure the target host passes the health check by running:\
 
