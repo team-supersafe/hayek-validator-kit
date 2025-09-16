@@ -2,7 +2,7 @@
 
 ## Common Setup Scenarios
 
-When installing a validator there are several scenarios you might consider
+When installing a validator there are two main scenarios you need to consider:
 
 1. Override a target host with a validator setup. This is good for:
    1. Setup a validator for the first time (override/repurpose the server host as a Solana validator)
