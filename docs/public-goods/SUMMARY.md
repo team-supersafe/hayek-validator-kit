@@ -22,7 +22,6 @@
   * [Hot-Spare Setup](validator-operations/host-infrastructure/hot-spare-setup.md)
 * [Validator Setup](validator-operations/validator-setup/README.md)
   * [Validator Client Setup](validator-operations/validator-setup/validator-client-setup.md)
-  * [Upgrading a running validator](validator-operations/validator-setup/upgrading-a-running-validator.md)
 * [Validator Clients](validator-operations/deploying-a-validator-client/README.md)
   * [Agave](validator-operations/deploying-a-validator-client/agave.md)
   * [Firedancer](validator-operations/deploying-a-validator-client/firedancer.md)
