@@ -37,7 +37,7 @@ Irrespective of which setup you want to run, it is recommended you check that ce
     Check that each keypair file is the correct one by verifying its public key with the `solana-keygen pubkey` command
 * Ensure that the network cluster delinquency is lower than the requirement set by Solana on the official communication channels before starting the installetion.
 
-## Running the Setup Ansible Playbook
+## Scorched-Earth Setup
 
 We will be using the playbook `pb_setup_validator_jito.yml` to setup a Jito-Solana client v3.0.2 with co-hosted relayer v0.4.2 on the host `validator-host` for our example. This validator will run a keyset named `demo-validator`.
 
@@ -137,7 +137,7 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
     \
     To have a better understanding on what to look for when inspecting the logs see: [#initial-startup-monitoring](../metrics-and-monitoring/inspecting-logs.md#initial-startup-monitoring "mention") and for the Jito Relayer see: [#jito-relayer-logs](../metrics-and-monitoring/inspecting-logs.md#jito-relayer-logs "mention")
 
-## Upgrading a running validator
+## Hot-Spare Setup
 
 When performing an upgrade of a validator client on a host, several steps are involved including monitoring, the full workflow assumes the following terms:
 
