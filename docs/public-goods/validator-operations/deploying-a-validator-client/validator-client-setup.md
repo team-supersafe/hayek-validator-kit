@@ -4,9 +4,12 @@
 
 When installing a validator there are several scenarios you might consider
 
-* Setup a validator for the first time running a primary identity
-* Setup a hot-spare validator to later swap validator hosts. See [Broken link](broken-reference "mention")
-* Upgrade a running validator without using a hot-spare host (will incurr in delinquency)
+1. Override a target host with a validator setup. This is good for:
+   1. Setup a validator for the first time (override/repurpose the server host as a Solana validator)
+   2. Upgrade a running validator without using a hot-spare host (will incurr in delinquency)
+2. Setup a hot-spare validator to swap with a primary validator host. This is good for upgrading software and hardware with minimum downtime, such as:
+   1. Upgrading hardware on a Mainnet validator
+   2. Upgrading software version on a Mainnet validator
 
 ## Readiness & Health Checks
 
