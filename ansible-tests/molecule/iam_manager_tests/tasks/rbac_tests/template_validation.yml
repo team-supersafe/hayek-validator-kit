@@ -45,7 +45,7 @@
     - name: Test if validator_operators can install packages (should SUCCEED as expected)
       shell: |
         # Test apt install ability - operators SHOULD have this permission
-        timeout 5 sudo -u {{ item }} sudo apt install --dry-run htop >/dev/null 2>&1 && echo "OK: {{ item }} can install packages (as expected)" || echo "VIOLATION: {{ item }} cannot install packages when they should be able to"
+        timeout 5 sudo -u {{ item }} sudo apt install htop >/dev/null 2>&1 && echo "OK: {{ item }} can install packages (as expected)" || echo "VIOLATION: {{ item }} cannot install packages when they should be able to"
       register: operators_apt_execution_test
       failed_when: false
       loop: "{{ classified_users.validator_operators | default([]) }}"
