@@ -1,4 +1,5 @@
 ---
+
 # ========================================
 # RBAC VERIFICATION - DETAILED COMMAND LOGGING
 # ========================================
@@ -6,6 +7,11 @@
 - name: Get current timestamp for logging
   ansible.builtin.setup:
     filter: ansible_date_time
+
+# Ensure reports_dir variable is set for consistency
+- name: Set report directory variable
+  ansible.builtin.set_fact:
+    reports_dir: "/test-reports"
 
 - name: Create detailed command execution log
   ansible.builtin.set_fact:
@@ -118,7 +124,7 @@
 - name: Save detailed execution log to file
   ansible.builtin.copy:
     content: "{{ detailed_execution_log | join('\n') }}"
-    dest: "/test-reports/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
+    dest: "{{ reports_dir }}/rbac_execution_log_{{ ansible_date_time.epoch }}.txt"
     mode: '0644'
     force: false  # Don't overwrite if file exists
   delegate_to: localhost
