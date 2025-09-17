@@ -95,7 +95,7 @@
 
 - name: Extract SSH key part
   ansible.builtin.set_fact:
-    ssh_keys: "{{ ssh_keys | default({}) | combine({item.key: (item.value.key.split(' ')[:2] | join(' '))}) }}"
+    ssh_keys: "{{ ssh_keys | default({}) | combine({item.key: item.value.key}) }}"
   loop: "{{ users_csv.dict | dict2items }}"
   when: >
     item.value.key is defined and
