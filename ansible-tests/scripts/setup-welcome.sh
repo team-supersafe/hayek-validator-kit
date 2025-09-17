@@ -7,6 +7,7 @@ set -euo pipefail
 # Default values
 PROJECT_DIR="${2:-/hayek-validator-kit}"
 CONFIG_DIR="${3:-/new-metal-box}"
+DEFAULT_SCENARIO="${1:-iam_manager_tests}"
 
 echo "Setting up welcome environment for scenario: $DEFAULT_SCENARIO"
 
