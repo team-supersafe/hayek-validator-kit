@@ -34,7 +34,13 @@
       {{ tests | to_json }}
 
 - name: Execute command matrix with sudo -n for privilege testing
-  ansible.builtin.shell: "su - {{ item.user }} -c '{{ item.cmd | replace('{{ validator_service }}', validator_service) | replace('{{ validator_log_file }}', validator_log_file) | replace('{{ solana_user }}', solana_user) }}'"
+  ansible.builtin.command:
+    cmd: >
+      su
+      -
+      {{ item.user }}
+      -c
+      {{ item.cmd | replace('{{ validator_service }}', validator_service) | replace('{{ validator_log_file }}', validator_log_file) | replace('{{ solana_user }}', solana_user) }}
   register: execution_results
   loop: "{{ execution_matrix | from_json }}"
   failed_when: false
