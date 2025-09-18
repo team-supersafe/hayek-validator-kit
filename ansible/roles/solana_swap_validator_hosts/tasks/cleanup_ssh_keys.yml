@@ -1,0 +1,20 @@
+---
+- name: cleanup - Remove generated SSH key from destination host
+  block:
+    - name: cleanup - Remove generated SSH key from destination host authorized_keys
+      ansible.posix.authorized_key:
+        user: sol
+        key: "{{ ssh_key_content_for_cleanup | b64decode }}"
+        state: absent
+      become: true
+      delegate_to: "{{ destination_host }}"
+      when:
+        - ssh_key_was_generated | default(false) | bool
+        - ssh_key_content_for_cleanup is defined
+        - ssh_key_content_for_cleanup != ''
+        - not ansible_check_mode
+
+    - name: cleanup - Debug message for SSH key cleanup completion
+      ansible.builtin.debug:
+        msg: "Successfully removed generated SSH key from destination host {{ destination_host }} for security"
+      delegate_to: localhost
