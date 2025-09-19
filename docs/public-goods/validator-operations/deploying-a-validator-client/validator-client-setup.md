@@ -12,9 +12,13 @@ When installing a validator there are two main scenarios you need to consider:
    2. Upgrading software version on a Mainnet validator
    3. Moving the validator to different Geo/ASN/DC
 
-The following diagram shows the main difference betwen a Hot-Spare Setup and the Scorched-Earth Setup which is intrisically used to install the new validator client version in both hosts as hot-spare and swapping identities in both hosts after each setup to keep the service running with minimum downtime.
+The following diagram shows the main difference between the Scorched-Earth and Hot-Spare Setups:
 
-<figure><img src="../../.gitbook/assets/image (4).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+
+At times it may be necessary to continue using the same host in Mainnet due to preferences in ASN, Geo, or Data Center, or simply because it was pre-paid for a year at a better rate. If this is the case, you can run a 2x Hot-Spare Setup to restore your validator to your original host:
+
+<figure><img src="../../.gitbook/assets/image (2).png" alt="" width="375"><figcaption></figcaption></figure>
 
 ## Readiness Checks
 
@@ -31,10 +35,10 @@ bash /home/sol/health_check.sh
 ```
 
 A successful check will display a summary with no errors, similar to the following screenshot.\
-![](<../../.gitbook/assets/image (1).png>)
+![](<../../.gitbook/assets/image (1) (1).png>)
 
 If the script detects any issues (like in the following screenshot), it will provide a FAIL message along with a recommended action to resolve the problem. The script is designed to run all checks and report all failures, so you can address multiple issues at once.\
-![](../../.gitbook/assets/image.png)
+![](<../../.gitbook/assets/image (3).png>)
 
 The script verifies several key requirements are met on the host, such as Processor (CPU) instruction set, Memory (RAM), Storage, OS configurations, and Network throughput and connectivity.
 
