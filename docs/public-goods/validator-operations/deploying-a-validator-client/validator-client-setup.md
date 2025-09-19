@@ -20,82 +20,71 @@ The following diagram shows the main difference betwen a Hot-Spare Setup and the
 
 Irrespective of which setup you want to run, it is recommended you check that certain requirements are met with our built-in health checks:
 
-*   #### Ensure the Target Host Passes the Health Check
+### Host Health Check
 
-    \
-    Before proceeding with the installation, it is crucial to run the `health_check.sh` script to verify that the target host meets all the necessary requirements for a Solana validator. This script performs a series of checks on the system's hardware, operating system, and configuration.
+Before proceeding with the installation, it is crucial to run the `health_check.sh` script to verify that the target host meets all the necessary requirements for a Solana validator. This script performs a series of checks on the system's hardware, operating system, and configuration.
 
-    To run the check, execute the following command:
+To run the check, execute the following command:
 
+```bash
+bash /home/sol/health_check.sh
+```
+
+A successful check will display a summary with no errors, similar to the following screenshot.\
+![](<../../.gitbook/assets/image (1).png>)
+
+If the script detects any issues (like in the following screenshot), it will provide a FAIL message along with a recommended action to resolve the problem. The script is designed to run all checks and report all failures, so you can address multiple issues at once.\
+![](../../.gitbook/assets/image.png)
+
+The script verifies several key requirements are met on the host, such as Processor (CPU) instruction set, Memory (RAM), Storage, OS configurations, and Network throughput and connectivity.
+
+### Host Troubleshooting
+
+The health check script is a diagnostic tool, so any failures it reports should be addressed before continuing. While the script provides solutions, here are some common issues and their resolutions:
+
+* `FAIL: Automatic update services are enabled`
+  * Description: This is a common error that occurs when the system's package manager (e.g., `dnf-automatic`, `unattended-upgrades`) is configured to apply updates automatically. This is a problem because an automatic reboot could cause the validator to go offline and become delinquent.
+  * Solution: The script's output will provide the exact commands to disable the service depending on your operating system (e.g., `sudo systemctl disable --now unattended-upgrades`).
+* Hardware-related failures
+  * Description: Issues such as insufficient RAM, a non-ECC motherboard, not enough CPU cores available or base frequency below the requirements, or a lack of specific CPU instruction sets or will result in a failure. These are often difficult to fix with simple commands.
+  * Solution: For non-compliant hardware or incorrect BIOS configurations, you will need to contact your data center or hardware support team. These issues are outside the scope of software configuration and require a physical or remote change to the hardware setup.
+
+Visit the official documentation to know the [Hardware Recommendations](https://docs.anza.xyz/operations/requirements#hardware-recommendations) for a Validator and RPC Node Hardware Setups
+
+### Network Health Check
+
+Ensure that the network cluster delinquency is lower than the requirement set by Solana on the official communication channels before starting the installation. This is usually a percentage, like 3% or 5%, depending on the upgrade path:
+
+1. **Official Communication Channels**: Monitor the Solana Tech Cluster announcements on Discord for [Mainnet](https://discord.com/channels/428295358100013066/669406841830244375), [Testnet](https://app.gitbook.com/u/mWd8rWP4UVguErb6G6hVhYUW13D3), and [Devnet](https://discord.com/channels/428295358100013066/749059399875690557).
+2.  **Current Delinquent Stake**: Check the actual delinquent stake percentage in the cluster using the Solana CLI tool (use `-ut` for testnet `-ud` for devnet, and \* `-um` or no flag for mainnet):\
 
 
     ```bash
-    bash /home/sol/health_check.sh
+    solana -ut validators | grep "Delinquent Stake"
     ```
-
-    \
-    A successful check will display a summary with no errors, similar to the following screenshot.\
-    \
-    ![](<../../.gitbook/assets/image (1).png>)\
-    \
-    If the script detects any issues (like in the following screenshot), it will provide a FAIL message along with a recommended action to resolve the problem. The script is designed to run all checks and report all failures, so you can address multiple issues at once.\
-    \
-    ![](../../.gitbook/assets/image.png)
-
-    \
-    The script verifies several key areas, including:
-
-    * Processor (CPU): Checks for the required core count and clock speed, as well as support for specific instruction sets like AVX2 and SHA extensions. A failure here may indicate non-compliant hardware.
-    * Memory (RAM): Verifies that the amount of RAM is sufficient (256GB or more) and that Error Correction Code (ECC) memory is enabled, which is crucial for preventing data corruption.
-    * Storage: Ensures that a high-speed NVMe SSD is being used for the ledger and accounts, which is critical for high I/O operations per second (IOPS) and low latency.
-    * Operating System (OS) Configuration: Checks for specific settings that enhance performance and security, such as disabling automatic system updates to prevent unscheduled reboots and service disruptions.
-    * Network: Verifies network connectivity and configuration, ensuring the system can handle the high data exchange required for validation.
-
-    \
-    Common Issues and Solutions:
-
-    \
-    The health check script is a diagnostic tool, so any failures it reports should be addressed before continuing. While the script provides solutions, here are some common issues and their resolutions:
-
-    * `FAIL: Automatic update services are enabled`
-      * Description: This is a common error that occurs when the system's package manager (e.g., `dnf-automatic`, `unattended-upgrades`) is configured to apply updates automatically. This is a problem because an automatic reboot could cause the validator to go offline and become delinquent.
-      * Solution: The script's output will provide the exact commands to disable the service depending on your operating system (e.g., `sudo systemctl disable --now unattended-upgrades`).
-    * Hardware-related failures
-      * Description: Issues such as insufficient RAM, a non-ECC motherboard, not enough CPU cores available or base frequency below the requirements, or a lack of specific CPU instruction sets or will result in a failure. These are often difficult to fix with simple commands.
-      * Solution: For non-compliant hardware or incorrect BIOS configurations, you will need to contact your data center or hardware support team. These issues are outside the scope of software configuration and require a physical or remote change to the hardware setup.
-
-    Visit the official documentation to know the [Hardware Recommendations](https://docs.anza.xyz/operations/requirements#hardware-recommendations) for a Validator and RPC Node Hardware Setups
-* #### Ensure that the network cluster delinquency is lower than the requirement set by Solana on the official communication channels before starting the installation
-  1. **Official Communication Channels**: Monitor the Solana Tech Cluster announcements on Discord for [Mainnet](https://discord.com/channels/428295358100013066/669406841830244375), [Testnet](https://app.gitbook.com/u/mWd8rWP4UVguErb6G6hVhYUW13D3), and [Devnet](https://discord.com/channels/428295358100013066/749059399875690557).
-  2.  **Current Delinquent Stake**: Check the actual delinquent stake percentage in the cluster using the Solana CLI tool. To do this, use the `solana validators` command and pipe the output to `grep "Delinquent Stake"` to filter for the relevant information. You will also need to specify the correct cluster using the appropriate flag: \* `-ut` for testnet \* `-ud` for devnet \* `-um` or no flag for mainnet. Here's an example command for checking delinquency on the testnet:\
-
-
-      ```bash
-      solana -ut validators | grep "Delinquent Stake"
-      ```
 
 ## Scorched-Earth Setup
 
 The following choices will determine how to run the command to execute the playbook to setup a validator. The actual command uses placeholders to refer to these choices to easily copy the command template and just replace the placeholders with each decision you made.
 
-### Pick your client
+### Pick Client & Version
 
-\<validator\_client>\
+**\<validator\_client>**\
 &#xNAN;_&#x54;hese can be: agave, jito, firedancer, frankendancer_
 
-### Pick your version
-
-\<validator\_client\_version>\
+**\<validator\_client\_version>**\
 &#xNAN;_&#x54;o keep informed on the latest client releases visit these Solana Tech Cluster announcements' Discord channels:_ [_mainnet_](https://discord.com/channels/428295358100013066/669406841830244375)_,_ [_testnet_](https://discord.com/channels/428295358100013066/594138785558691840) _and_ [_devnet_](https://discord.com/channels/428295358100013066/749059399875690557)
 
-### Pick Relayer type
+### Relayer Type & Version
 
-\<relayer\_type>\
+{% hint style="info" %}
+You only need to pick the relayer config if you are installing the Jito Client.&#x20;
+{% endhint %}
+
+**\<relayer\_type>**\
 &#xNAN;_&#x54;hese can be: shared, co-hosted. The Jito Transaction Relayer is a Transaction Processing Unit (TPU) proxy for MEV-powered Solana validators._
 
-### Pick Relayer version
-
-\<relayer\_version>\
+**\<relayer\_version>**\
 &#xNAN;_&#x54;o keep informed on latest releases of the relayer visit the Jito-Solana_ [_validator-announcements_](https://discord.com/channels/938287290806042626/1148261936086142996) _Discord channel_
 
 ### Configure Inventory
@@ -132,19 +121,17 @@ Replace the `validator_host` with the target host name, replace the host IP addr
 
 Solana Cluster Grouping is essential to end up installing a validator node for the correct cluster.
 
-### Choose a validator name
+### Validator Name & Type
 
-\<validator\_name>\
+**\<validator\_name>**\
 &#xNAN;_&#x54;he validator name will reference the identity of the validator for the rest of its life from the moment it is first created so you might want to plan for a memorable, meaningful, short name. Consider only alphanumeric characters and dash or underscore characters._ [#naming-validators](../../hayek-validator-kit/ansible-control.md#naming-validators "mention")
 
-### Pick a validator type
-
-\<validator\_type>\
+**\<validator\_type>**\
 &#xNAN;_&#x54;hese can be: primary, hot-spare. The primary identity should hold balance and stake enough to be able to participate in consensus. The hot-spare doesn't need to have neither balance nor stake, it comes handy for the_ [#hot-spare-setup](validator-client-setup.md#hot-spare-setup "mention")
 
 ### Pick a cluster
 
-\<solana\_cluster>\
+**\<solana\_cluster>**\
 &#xNAN;_&#x54;hese can be: mainnet, testnet, devnet, localnet_
 
 ### Run the playbook
