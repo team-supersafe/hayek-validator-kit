@@ -75,12 +75,10 @@ The following choices will determine how to run the command to execute the playb
 **\<validator\_type>**\
 &#xNAN;_&#x54;hese can be: primary, hot-spare. The primary identity should hold balance and stake enough to be able to participate in consensus. The hot-spare doesn't need to have neither balance nor stake, it comes handy for the_ [#hot-spare-setup](validator-client-setup.md#hot-spare-setup "mention")
 
-### Pick Cluster
+### Cluster, Client & Version
 
 **\<solana\_cluster>**\
 &#xNAN;_&#x54;hese can be: mainnet, testnet, devnet, localnet_
-
-### Pick Client & Version
 
 **\<validator\_client>**\
 &#xNAN;_&#x54;hese can be: agave, jito, firedancer, frankendancer_
