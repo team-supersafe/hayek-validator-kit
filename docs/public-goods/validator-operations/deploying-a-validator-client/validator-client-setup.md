@@ -221,7 +221,7 @@ This setup is used when we want to achieve minimum downtime of the validator by 
 
 `hot-spare-host`: This is the hot spare for the primary host. We’ll install the desired client software version here, and once it’s ready, migrate the validator keyset over.
 
-Steps to upgrade a validator client:
+Steps to upgrade a validator client with a host-spare host:
 
 1. Run a [Scorched-Earth Setup](validator-client-setup.md#scorched-earth-setup) on your `hot-spare-host` with the desired client and version. The configuration should use the `validator_name` keyset, but using the `hot-spare-identity` as the primary identity on the `hot-spare-host`. See [Validator Name & Type](validator-client-setup.md#validator-name-and-type)&#x20;
 2. Run "pb\_hot\_swap\_validator\_hosts" between `primary-host` ↔️  `hot-spare-host`&#x20;
