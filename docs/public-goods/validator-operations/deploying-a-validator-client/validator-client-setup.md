@@ -16,10 +16,6 @@ The following diagram shows the main difference between the Scorched-Earth and H
 
 <figure><img src="../../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
 
-At times it may be necessary to continue using the same host in Mainnet due to preferences in ASN, Geo, or Data Center, or simply because it was pre-paid for a year at a better rate. If this is the case, you can run a 2x Hot-Spare Setup to restore your validator to your original host:
-
-<figure><img src="../../.gitbook/assets/image (2).png" alt="" width="375"><figcaption></figcaption></figure>
-
 ## Readiness Checks
 
 Irrespective of which setup you want to run, it is recommended you check that certain requirements are met with our built-in health checks:
@@ -71,6 +67,19 @@ Ensure that the network cluster delinquency is lower than the requirement set by
 
 The following choices will determine how to run the command to execute the playbook to setup a validator. The actual command uses placeholders to refer to these choices to easily copy the command template and just replace the placeholders with each decision you made.
 
+### Validator Name & Type
+
+**\<validator\_name>**\
+&#xNAN;_&#x54;he validator name will reference the identity of the validator for the rest of its life from the moment it is first created so you might want to plan for a memorable, meaningful, short name. Consider only alphanumeric characters and dash or underscore characters._ [#naming-validators](../../hayek-validator-kit/ansible-control.md#naming-validators "mention")
+
+**\<validator\_type>**\
+&#xNAN;_&#x54;hese can be: primary, hot-spare. The primary identity should hold balance and stake enough to be able to participate in consensus. The hot-spare doesn't need to have neither balance nor stake, it comes handy for the_ [#hot-spare-setup](validator-client-setup.md#hot-spare-setup "mention")
+
+### Pick Cluster
+
+**\<solana\_cluster>**\
+&#xNAN;_&#x54;hese can be: mainnet, testnet, devnet, localnet_
+
 ### Pick Client & Version
 
 **\<validator\_client>**\
@@ -121,28 +130,15 @@ all:
 
 ```
 
-Replace the `validator_host` with the target host name, replace the host IP address with your real target host's IP address and match the city group based on the [jito Labs documentation](https://docs.jito.wtf/lowlatencytxnsend/#api). We have group vars for these cities: city\_dal, city\_lax, city\_man, city\_mia, city\_tlv, city\_waw. For more information on city grouping naming see: [#cities-and-countries](../../hayek-validator-kit/validator-conventions.md#cities-and-countries "mention")
+Replace the `validator_host` with the target host name, replace the host IP address with your real target host's IP address and match the city group based on the [Jito Labs documentation](https://docs.jito.wtf/lowlatencytxnsend/#api). We have group vars for these cities: city\_dal, city\_lax, city\_man, city\_mia, city\_tlv, city\_waw. For more information on city grouping naming see: [#cities-and-countries](../../hayek-validator-kit/validator-conventions.md#cities-and-countries "mention")
 
 Solana Cluster Grouping is essential to end up installing a validator node for the correct cluster.
 
-### Validator Name & Type
-
-**\<validator\_name>**\
-&#xNAN;_&#x54;he validator name will reference the identity of the validator for the rest of its life from the moment it is first created so you might want to plan for a memorable, meaningful, short name. Consider only alphanumeric characters and dash or underscore characters._ [#naming-validators](../../hayek-validator-kit/ansible-control.md#naming-validators "mention")
-
-**\<validator\_type>**\
-&#xNAN;_&#x54;hese can be: primary, hot-spare. The primary identity should hold balance and stake enough to be able to participate in consensus. The hot-spare doesn't need to have neither balance nor stake, it comes handy for the_ [#hot-spare-setup](validator-client-setup.md#hot-spare-setup "mention")
-
-### Pick a cluster
-
-**\<solana\_cluster>**\
-&#xNAN;_&#x54;hese can be: mainnet, testnet, devnet, localnet_
-
-### Run the playbook
+### Run Playbook
 
 1. Change to your local repo directory. If you haven't cloned the [hayek-validator-kit](https://app.gitbook.com/u/mWd8rWP4UVguErb6G6hVhYUW13D3) repo yet, do so by following these instructions [github-repo.md](../../hayek-validator-kit/github-repo.md "mention")
 2. Connect to your Ansible Control. See [#connecting-to-ansible-control](../../hayek-validator-kit/ansible-control.md#connecting-to-ansible-control "mention")
-3.  When the ansible control is ready, change to the `ansible` directory.\
+3.  When the Ansible control is ready, change to the `ansible` directory.\
 
 
     ```bash
@@ -217,20 +213,20 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
 
 ## Hot-Spare Setup
 
-When performing an upgrade of a validator client on a host, several steps are involved including monitoring, the full workflow assumes the following terms:
+This setup is used when we want to achieve minimum downtime of the validator by preparing a hot-spare host with the desired state, and then migrating the primary identity to it.
 
-`primary-host`: Is the host runing your Primary Identity which you want to upgrade
+`primary-host`: Is the host running your Primary Identity which you want to upgrade
 
 `secondary-host`: Is a host setup as hot-spare to later perform the identity swap
 
-`validator_name`: Is the name of your validator. It works as the keyset same for your validator. See [#naming-validators](../../hayek-validator-kit/ansible-control.md#naming-validators "mention")
+`validator_name`: Is the name of your validator. It works as the keyset same for your validator. See examples on how we name validators in the Solana Localnet cluster [#naming-validators](../../hayek-validator-kit/ansible-control.md#naming-validators "mention")
 
 Steps to upgrade a validator client:
 
 1. Run a [Scorched-Earth Setup](validator-client-setup.md#scorched-earth-setup) on your `secondary-host` with the desired version as a hot-spare of `validator_name` keyset. See parameter `validator_type` at [#pick-a-validator-type](validator-client-setup.md#pick-a-validator-type "mention")
 2. Run "pb\_hot\_swap\_validator\_hosts" between `primary-host` ↔️  `secondary-host`&#x20;
 3. Monitor `validator_name` on its temporary hot-spare host (`secondary-host`)
-4. Run a [Scorched-Earth Setup](validator-client-setup.md#scorched-earth-setup) on your `primary-host` with the desired version as a hot-spare of `validator_name` keyset.
-5. Run `pb_hot_swap_validator_hosts` between `secondary-host` ↔️ `primary-host`
-6. Monitor `validator_name` now running on `primary-host`
 
+At times it may be necessary to continue using the same host in Mainnet due to preferences in ASN, Geo, or Data Center, or simply because it was pre-paid for a year at a better rate. If this is the case, you can run a 2x Hot-Spare Setup to restore your validator to your original host:
+
+<figure><img src="../../.gitbook/assets/image (2).png" alt="" width="375"><figcaption></figcaption></figure>
