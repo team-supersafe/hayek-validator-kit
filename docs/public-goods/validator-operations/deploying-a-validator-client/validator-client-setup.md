@@ -35,10 +35,10 @@ bash /home/sol/health_check.sh
 ```
 
 A successful check will display a summary with no errors, similar to the following screenshot.\
-![](<../../.gitbook/assets/image (1) (1).png>)
+<img src="../../.gitbook/assets/image (1) (1).png" alt="" data-size="original">
 
 If the script detects any issues (like in the following screenshot), it will provide a FAIL message along with a recommended action to resolve the problem. The script is designed to run all checks and report all failures, so you can address multiple issues at once.\
-![](<../../.gitbook/assets/image (3).png>)
+<img src="../../.gitbook/assets/image (3).png" alt="" data-size="original">
 
 The script verifies several key requirements are met on the host, such as Processor (CPU) instruction set, Memory (RAM), Storage, OS configurations, and Network throughput and connectivity.
 
