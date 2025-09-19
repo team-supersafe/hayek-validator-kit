@@ -119,7 +119,8 @@ COPY scripts/setup-ssh-keys.sh /opt/scripts/setup-ssh-keys.sh
 RUN chmod +x /opt/scripts/setup-ssh-keys.sh
 
 # Give ubuntu passwordless sudo access for ansible playbooks testing
-RUN echo "ubuntu ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+RUN touch /etc/sudoers.d/90-cloud-init-users
+RUN echo "ubuntu ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/90-cloud-init-users
 
 SHELL [ "/bin/bash", "-c" ]
 ENV LANG=C.UTF-8
