@@ -146,7 +146,7 @@ Remember to create and save your workspace in Visual Studio Code.
 9. In VS Code use the option “reopen from container”.&#x20;
 10. Check that the containers are running on Docker Desktop:
 
-<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/image (5).png" alt=""><figcaption></figcaption></figure>
 
 ### Resetting Localnet
 

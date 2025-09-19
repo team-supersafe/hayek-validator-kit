@@ -12,39 +12,101 @@ When installing a validator there are two main scenarios you need to consider:
    2. Upgrading software version on a Mainnet validator
    3. Moving the validator to different Geo/ASN/DC
 
+The following diagram shows the main difference betwen a Hot-Spare Setup and the Scorched-Earth Setup which is intrisically used to install the new validator client version in both hosts as hot-spare and swapping identities in both hosts after each setup to keep the service running with minimum downtime.
+
+<figure><img src="../../.gitbook/assets/image (4).png" alt=""><figcaption></figcaption></figure>
+
 ## Readiness Checks
 
 Irrespective of which setup you want to run, it is recommended you check that certain requirements are met with our built-in health checks:
 
-*   Ensure the target host passes the health check by running:\
+*   #### Ensure the Target Host Passes the Health Check
+
+    \
+    Before proceeding with the installation, it is crucial to run the `health_check.sh` script to verify that the target host meets all the necessary requirements for a Solana validator. This script performs a series of checks on the system's hardware, operating system, and configuration.
+
+    To run the check, execute the following command:
+
 
 
     ```bash
     bash /home/sol/health_check.sh
     ```
-* Ensure that the network cluster delinquency is lower than the requirement set by Solana on the official communication channels before starting the installation.
+
+    \
+    A successful check will display a summary with no errors, similar to the following screenshot.\
+    \
+    ![](<../../.gitbook/assets/image (1).png>)\
+    \
+    If the script detects any issues (like in the following screenshot), it will provide a FAIL message along with a recommended action to resolve the problem. The script is designed to run all checks and report all failures, so you can address multiple issues at once.\
+    \
+    ![](../../.gitbook/assets/image.png)
+
+    \
+    The script verifies several key areas, including:
+
+    * Processor (CPU): Checks for the required core count and clock speed, as well as support for specific instruction sets like AVX2 and SHA extensions. A failure here may indicate non-compliant hardware.
+    * Memory (RAM): Verifies that the amount of RAM is sufficient (256GB or more) and that Error Correction Code (ECC) memory is enabled, which is crucial for preventing data corruption.
+    * Storage: Ensures that a high-speed NVMe SSD is being used for the ledger and accounts, which is critical for high I/O operations per second (IOPS) and low latency.
+    * Operating System (OS) Configuration: Checks for specific settings that enhance performance and security, such as disabling automatic system updates to prevent unscheduled reboots and service disruptions.
+    * Network: Verifies network connectivity and configuration, ensuring the system can handle the high data exchange required for validation.
+
+    \
+    Common Issues and Solutions:
+
+    \
+    The health check script is a diagnostic tool, so any failures it reports should be addressed before continuing. While the script provides solutions, here are some common issues and their resolutions:
+
+    * `FAIL: Automatic update services are enabled`
+      * Description: This is a common error that occurs when the system's package manager (e.g., `dnf-automatic`, `unattended-upgrades`) is configured to apply updates automatically. This is a problem because an automatic reboot could cause the validator to go offline and become delinquent.
+      * Solution: The script's output will provide the exact commands to disable the service depending on your operating system (e.g., `sudo systemctl disable --now unattended-upgrades`).
+    * Hardware-related failures
+      * Description: Issues such as insufficient RAM, a non-ECC motherboard, not enough CPU cores available or base frequency below the requirements, or a lack of specific CPU instruction sets or will result in a failure. These are often difficult to fix with simple commands.
+      * Solution: For non-compliant hardware or incorrect BIOS configurations, you will need to contact your data center or hardware support team. These issues are outside the scope of software configuration and require a physical or remote change to the hardware setup.
+
+    Visit the official documentation to know the [Hardware Recommendations](https://docs.anza.xyz/operations/requirements#hardware-recommendations) for a Validator and RPC Node Hardware Setups
+* #### Ensure that the network cluster delinquency is lower than the requirement set by Solana on the official communication channels before starting the installation
+  1. **Official Communication Channels**: Monitor the Solana Tech Cluster announcements on Discord for [Mainnet](https://discord.com/channels/428295358100013066/669406841830244375), [Testnet](https://app.gitbook.com/u/mWd8rWP4UVguErb6G6hVhYUW13D3), and [Devnet](https://discord.com/channels/428295358100013066/749059399875690557).
+  2.  **Current Delinquent Stake**: Check the actual delinquent stake percentage in the cluster using the Solana CLI tool. To do this, use the `solana validators` command and pipe the output to `grep "Delinquent Stake"` to filter for the relevant information. You will also need to specify the correct cluster using the appropriate flag: \* `-ut` for testnet \* `-ud` for devnet \* `-um` or no flag for mainnet. Here's an example command for checking delinquency on the testnet:\
+
+
+      ```bash
+      solana -ut validators | grep "Delinquent Stake"
+      ```
 
 ## Scorched-Earth Setup
 
-We will be using the playbook `pb_setup_validator_jito.yml` to setup a Jito-Solana client v3.0.2 with co-hosted relayer v0.4.2 on the host `validator-host` for our example. This validator will run a keyset named `demo-validator`.
+The following choices will determine how to run the command to execute the playbook to setup a validator. The actual command uses placeholders to refer to these choices to easily copy the command template and just replace the placeholders with each decision you made.
 
 ### Pick your client
 
-add
+\<validator\_client>\
+&#xNAN;_&#x54;hese can be: agave, jito, firedancer, frankendancer_
 
 ### Pick your version
 
-add
+\<validator\_client\_version>\
+&#xNAN;_&#x54;o keep informed on the latest client releases visit these Solana Tech Cluster announcements' Discord channels:_ [_mainnet_](https://discord.com/channels/428295358100013066/669406841830244375)_,_ [_testnet_](https://discord.com/channels/428295358100013066/594138785558691840) _and_ [_devnet_](https://discord.com/channels/428295358100013066/749059399875690557)
+
+### Pick Relayer type
+
+\<relayer\_type>\
+&#xNAN;_&#x54;hese can be: shared, co-hosted. The Jito Transaction Relayer is a Transaction Processing Unit (TPU) proxy for MEV-powered Solana validators._
+
+### Pick Relayer version
+
+\<relayer\_version>\
+&#xNAN;_&#x54;o keep informed on latest releases of the relayer visit the Jito-Solana_ [_validator-announcements_](https://discord.com/channels/938287290806042626/1148261936086142996) _Discord channel_
 
 ### Configure Inventory
 
-Here is a typical inventory configuration:
+Here is a typical inventory configuration template:
 
 ```yaml
 ---
 all:
   hosts:
-    validator-host:
+    validator_host:
       ansible_host: 192.168.1.100
       ansible_port: 2522
 
@@ -52,23 +114,38 @@ all:
     # ───── City Grouping ─────
     city_dal:
       hosts:
-        validator-host:
+        validator_host:
 
     # ───── Network Grouping ─────
     solana:
       hosts:
-        validator-host:
+        validator_host:
 
     # ───── Solana Cluster Grouping ─────
     solana_testnet:
       hosts:
-        validator-host:
+        validator_host:
 
 ```
 
-Replace the IP address with your real host IP address and match the city group based on the [jito Labs documentation](https://docs.jito.wtf/lowlatencytxnsend/#api). We have group vars for these cities: city\_dal, city\_lax, city\_man, city\_mia, city\_tlv, city\_waw. For more info on city grouping naming see: [#cities-and-countries](../../hayek-validator-kit/validator-conventions.md#cities-and-countries "mention")
+Replace the `validator_host` with the target host name, replace the host IP address with your real target host's IP address and match the city group based on the [jito Labs documentation](https://docs.jito.wtf/lowlatencytxnsend/#api). We have group vars for these cities: city\_dal, city\_lax, city\_man, city\_mia, city\_tlv, city\_waw. For more information on city grouping naming see: [#cities-and-countries](../../hayek-validator-kit/validator-conventions.md#cities-and-countries "mention")
 
 Solana Cluster Grouping is essential to end up installing a validator node for the correct cluster.
+
+### Choose a validator name
+
+\<validator\_name>\
+&#xNAN;_&#x54;he validator name will reference the identity of the validator for the rest of its life from the moment it is first created so you might want to plan for a memorable, meaningful, short name. Consider only alphanumeric characters and dash or underscore characters._ [#naming-validators](../../hayek-validator-kit/ansible-control.md#naming-validators "mention")
+
+### Pick a validator type
+
+\<validator\_type>\
+&#xNAN;_&#x54;hese can be: primary, hot-spare. The primary identity should hold balance and stake enough to be able to participate in consensus. The hot-spare doesn't need to have neither balance nor stake, it comes handy for the_ [#hot-spare-setup](validator-client-setup.md#hot-spare-setup "mention")
+
+### Pick a cluster
+
+\<solana\_cluster>\
+&#xNAN;_&#x54;hese can be: mainnet, testnet, devnet, localnet_
 
 ### Run the playbook
 
@@ -82,26 +159,41 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
     ```
 
     \
-    From there you can run the setup playbook. Here is a sample playbook run command to install Jito-Solana client co-hosted relayer in host `validator-host` \
+    To run the playbook for  `validator_client = agave` use this command template replacing all `<placeholders>` with the actual choice for each placeholder:\
 
 
     ```bash
-    ansible-playbook playbooks/pb_setup_validator_jito.yml \
+    ansible-playbook playbooks/pb_setup_validator_agave.yml \
       -i solana_setup_host.yml \
-      --limit validator-host \
-      -e "target_host=validator-host" \
-      -e "validator_name=demo-validator" \
-      -e "validator_type=primary" \
-      -e "solana_cluster=testnet" \
-      -e "jito_version=3.0.2" \
-      -e "jito_relayer_type=co-hosted" \
-      -e "jito_relayer_version=0.4.2" \
+      --limit <validator_host> \
+      -e "target_host=<validator_host>" \
+      -e "validator_name=<validator_name>" \
+      -e "validator_type=<validator_type>" \
+      -e "solana_cluster=<solana_cluster>" \
       -e "build_from_source=true" \
       -e "use_official_repo=true"
     ```
 
     \
-    Adjust parameters to match any other scenario.
+    To run the playbook for  `validator_client = jito` use this command template replacing all `<placeholders>` with the actual choice for each placeholder:\
+
+
+    ```bash
+    ansible-playbook playbooks/pb_setup_validator_jito.yml \
+      -i solana_setup_host.yml \
+      --limit <validator_host> \
+      -e "target_host=<validator_host>" \
+      -e "validator_name=<validator_name>" \
+      -e "validator_type=<validator_type>" \
+      -e "solana_cluster=<solana_cluster>" \
+      -e "jito_version=<validator_client_version>" \
+      -e "jito_relayer_type=<relayer_type>" \
+      -e "jito_relayer_version=<relayer_version>" \
+      -e "build_from_source=true" \
+      -e "use_official_repo=true"
+    ```
+
+
 4.  After setup is completed open a SSH session to your host to monitor validator startup and verify that the co-hosted relayer is working properly.\
     \
     Check validator process status\
@@ -136,19 +228,18 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
 
 When performing an upgrade of a validator client on a host, several steps are involved including monitoring, the full workflow assumes the following terms:
 
-`primary-host`: Is the host runing our Primary Identity which we want to upgrade
+`primary-host`: Is the host runing your Primary Identity which you want to upgrade
 
 `secondary-host`: Is a host setup as hot-spare to later perform the identity swap
 
-`demo-validator`: Is the keyset same for our validator. See [#naming-validators](../../hayek-validator-kit/ansible-control.md#naming-validators "mention")
+`validator_name`: Is the name of your validator. It works as the keyset same for your validator. See [#naming-validators](../../hayek-validator-kit/ansible-control.md#naming-validators "mention")
 
 Steps to upgrade a validator client:
 
-1. Run `pb_setup_validator_jito` on `secondary-host` with **3.0.2** running co-hosted Jito relayer, and as a hot-spare of `demo-validator` keyset
-2. Monitor `demo-validator` on its temporary hot-spare host `secondary-host` (now running with co-hosted Jito relayer)
-3. Run "pb\_hot\_swap\_validator\_hosts" between `primary-host` ↔️  `secondary-host`
-4. Monitor `demo-validator` on its new primary-target host `secondary-host` (now running with co-hosted Jito relayer)
-5. Run `pb_setup_validator_jito` on `primary-host` with **3.0.2** running co-hosted Jito relayer, and as the hot-spare of `demo-validator` keyset
-6. Monitor `demo-validator` on its temporary hot-spare host `primary-host` (now running with co-hosted Jito relayer)
-7. Run `pb_hot_swap_validator_hosts` between `secondary-host` ↔️ `primary-host`
-8. Monitor `demo-validator` on its new primary-target host `primary-host` (now running with co-hosted Jito relayer)
+1. Run a [Scorched-Earth Setup](validator-client-setup.md#scorched-earth-setup) on your `secondary-host` with the desired version as a hot-spare of `validator_name` keyset. See parameter `validator_type` at [#pick-a-validator-type](validator-client-setup.md#pick-a-validator-type "mention")
+2. Run "pb\_hot\_swap\_validator\_hosts" between `primary-host` ↔️  `secondary-host`&#x20;
+3. Monitor `validator_name` on its temporary hot-spare host (`secondary-host`)
+4. Run a [Scorched-Earth Setup](validator-client-setup.md#scorched-earth-setup) on your `primary-host` with the desired version as a hot-spare of `validator_name` keyset.
+5. Run `pb_hot_swap_validator_hosts` between `secondary-host` ↔️ `primary-host`
+6. Monitor `validator_name` now running on `primary-host`
+
