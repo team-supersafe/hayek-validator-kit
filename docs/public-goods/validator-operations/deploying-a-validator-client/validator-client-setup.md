@@ -215,17 +215,17 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
 
 This setup is used when we want to achieve minimum downtime of the validator by preparing a hot-spare host with the desired state, and then migrating the primary identity to it.
 
-`primary-host`: Is the host running your Primary Identity which you want to upgrade
+`validator_name`: This is the name of your validator and serves to logically group the associated keyset.
 
-`secondary-host`: Is a host setup as hot-spare to later perform the identity swap
+`primary-host`: The host running your the keyset for your `validator_name`, which has the target validator identity we want to upgrade.
 
-`validator_name`: Is the name of your validator. It works as the keyset same for your validator. See examples on how we name validators in the Solana Localnet cluster [#naming-validators](../../hayek-validator-kit/ansible-control.md#naming-validators "mention")
+`hot-spare-host`: This is the hot spare for the primary host. We’ll install the desired client software version here, and once it’s ready, migrate the validator keyset over.
 
 Steps to upgrade a validator client:
 
-1. Run a [Scorched-Earth Setup](validator-client-setup.md#scorched-earth-setup) on your `secondary-host` with the desired version as a hot-spare of `validator_name` keyset. See parameter `validator_type` at [#pick-a-validator-type](validator-client-setup.md#pick-a-validator-type "mention")
-2. Run "pb\_hot\_swap\_validator\_hosts" between `primary-host` ↔️  `secondary-host`&#x20;
-3. Monitor `validator_name` on its temporary hot-spare host (`secondary-host`)
+1. Run a [Scorched-Earth Setup](validator-client-setup.md#scorched-earth-setup) on your `hot-spare-host` with the desired client and version. The configuration should use the `validator_name` keyset, but using the `hot-spare-identity` as the primary identity on the `hot-spare-host`. See [Validator Name & Type](validator-client-setup.md#validator-name-and-type)&#x20;
+2. Run "pb\_hot\_swap\_validator\_hosts" between `primary-host` ↔️  `hot-spare-host`&#x20;
+3. Monitor `validator_name` on its new host (`hot-spare-host`), which is now the `primary-host` for the validator.
 
 At times it may be necessary to continue using the same host in Mainnet due to preferences in ASN, Geo, or Data Center, or simply because it was pre-paid for a year at a better rate. If this is the case, you can run a 2x Hot-Spare Setup to restore your validator to your original host:
 
