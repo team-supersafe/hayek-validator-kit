@@ -3,12 +3,12 @@
 - name: Notify about upcoming ubuntu user disablement
   ansible.builtin.debug:
     msg: |
-      IMPORTANT WARNING: The ubuntu user will now be disabled.
-      After this task completes, you will LOSE CONNECTION to this server.
-      Please ensure you can connect with one of the newly created users:
-      {% for user in users_csv.dict.keys() %}
-      - {{ user }}
-      {% endfor %}
+          IMPORTANT: The ubuntu user will now be disabled.
+          If you executed this playbook using the 'ubuntu' user, you will no longer be able to start an SSH session as 'ubuntu', neither from outside nor inside the server.
+          From now on, you will only be able to establish SSH sessions using the following users:
+          {% for user in users_csv.dict.keys() %}
+          - {{ user }}
+          {% endfor %}
 
 - name: Pause for warning
   ansible.builtin.pause:

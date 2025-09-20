@@ -54,7 +54,7 @@ provisioner:
     group_vars:
       all:
         ansible_python_interpreter: /usr/bin/python3
-        ansible_user: ubuntu
+        ansible_user: root
         remote_tmp: /tmp/.ansible/tmp
         ansible_remote_tmp: /tmp/.ansible/tmp
         # Skip interactive pauses in testing
