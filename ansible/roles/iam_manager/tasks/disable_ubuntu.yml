@@ -21,7 +21,6 @@
     usermod -L ubuntu
     usermod -s /usr/sbin/nologin ubuntu
     gpasswd -d ubuntu sudo || true
-    gpasswd -d ubuntu admin || true
     sed -i '/^ubuntu[[:space:]]/d' /etc/sudoers || true
     rm -f /etc/sudoers.d/ubuntu /etc/sudoers.d/90-cloud-init-users /etc/sudoers.d/90-ubuntu-users
     find /etc/sudoers.d -type f -exec sed -i '/ubuntu/d' {} +
