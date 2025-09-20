@@ -1,5 +1,5 @@
----
 # Pause to let user read the warning
+
 - name: Notify about upcoming ubuntu user disablement
   ansible.builtin.debug:
     msg: |
@@ -10,22 +10,39 @@
           - {{ user }}
           {% endfor %}
 
+
 - name: Pause for warning
   ansible.builtin.pause:
     prompt: "Press Enter to continue and disable ubuntu user, or Ctrl+C to abort"
   when: not (skip_confirmation_pauses | default(false))
 
 
+
 - name: Disable ubuntu user completely (lock, remove sudo, block SSH, clean sudoers)
   ansible.builtin.shell: |
-    usermod -L ubuntu
-    usermod -s /usr/sbin/nologin ubuntu
-    gpasswd -d ubuntu sudo || true
-    sed -i '/^ubuntu[[:space:]]/d' /etc/sudoers || true
-    rm -f /etc/sudoers.d/ubuntu /etc/sudoers.d/90-cloud-init-users /etc/sudoers.d/90-ubuntu-users
-    find /etc/sudoers.d -type f -exec sed -i '/ubuntu/d' {} +
-    grep -q '^DenyUsers' /etc/ssh/sshd_config && sed -i '/ubuntu/d' /etc/ssh/sshd_config
-    echo 'DenyUsers ubuntu' >> /etc/ssh/sshd_config
-    systemctl reload sshd || true
+    # Lock user only if not locked
+    passwd -S ubuntu | grep -vq 'L' && usermod -L ubuntu || true
+    # Set shell only if not already nologin
+    [ "$(getent passwd ubuntu | cut -d: -f7)" != "/usr/sbin/nologin" ] && usermod -s /usr/sbin/nologin ubuntu || true
+    # Remove from sudo group only if present
+    id -nG ubuntu | grep -qw sudo && gpasswd -d ubuntu sudo || true
+    id -nG ubuntu | grep -qw admin && gpasswd -d ubuntu admin || true
+    # Remove from /etc/sudoers only if present
+    grep -q '^ubuntu[[:space:]]' /etc/sudoers && sed -i '/^ubuntu[[:space:]]/d' /etc/sudoers || true
+    # Remove sudoers.d files only if present
+    ls /etc/sudoers.d/90-cloud-init-users  2>/dev/null && rm -f /etc/sudoers.d/90-cloud-init-users || true
+    # Remove ubuntu from all sudoers.d files only if present
+    grep -q ubuntu /etc/sudoers.d/* 2>/dev/null && find /etc/sudoers.d -type f -exec sed -i '/ubuntu/d' {} + || true
+    # Ensure DenyUsers ubuntu in sshd_config only if not present
+    grep -q '^DenyUsers.*ubuntu' /etc/ssh/sshd_config || echo 'DenyUsers ubuntu' >> /etc/ssh/sshd_config
+  register: disable_ubuntu_result
   become: true
+  changed_when: false
+
+
+- name: Reload sshd only if DenyUsers ubuntu was added
+  ansible.builtin.shell: systemctl reload sshd
+  become: true
+  when: disable_ubuntu_result.changed
   ignore_errors: true
+  changed_when: false
