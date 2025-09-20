@@ -15,106 +15,18 @@
     prompt: "Press Enter to continue and disable ubuntu user (you will lose connection!), or Ctrl+C to abort"
   when: not (skip_confirmation_pauses | default(false))
 
-# Disable ubuntu user
-- name: Disable ubuntu user
-  ansible.builtin.user:
-    name: ubuntu
-    state: present
-    password_lock: true
-    shell: /usr/sbin/nologin
-  no_log: true
 
-- name: Block SSH login for ubuntu user
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^DenyUsers .*ubuntu.*'
-    line: 'DenyUsers ubuntu'
-    state: present
-    backup: true
-  register: ssh_config_changed
+- name: Disable ubuntu user completely (lock, remove sudo, block SSH, clean sudoers)
+  ansible.builtin.shell: |
+    usermod -L ubuntu
+    usermod -s /usr/sbin/nologin ubuntu
+    gpasswd -d ubuntu sudo || true
+    gpasswd -d ubuntu admin || true
+    sed -i '/^ubuntu[[:space:]]/d' /etc/sudoers || true
+    rm -f /etc/sudoers.d/ubuntu /etc/sudoers.d/90-cloud-init-users /etc/sudoers.d/90-ubuntu-users
+    find /etc/sudoers.d -type f -exec sed -i '/ubuntu/d' {} +
+    grep -q '^DenyUsers' /etc/ssh/sshd_config && sed -i '/ubuntu/d' /etc/ssh/sshd_config
+    echo 'DenyUsers ubuntu' >> /etc/ssh/sshd_config
+    systemctl reload sshd || true
   become: true
   ignore_errors: true
-  
-- name: "Check ubuntu user current group memberships"
-  ansible.builtin.shell: "groups ubuntu | cut -d':' -f2 | xargs"
-  register: ubuntu_current_groups
-  changed_when: false
-  failed_when: false
-  no_log: true
-
-- name: "Remove ubuntu user from sudo groups"
-  ansible.builtin.user:
-    name: ubuntu
-    groups: ""
-    append: false
-  no_log: true
-  ignore_errors: true
-  when: "'sudo' in ubuntu_current_groups.stdout or 'admin' in ubuntu_current_groups.stdout"
-
-- name: "Remove ubuntu user from sudoers and admin groups"
-  ansible.builtin.user:
-    name: ubuntu
-    groups: ubuntu
-    append: false
-  no_log: true
-  when: "'sudo' in ubuntu_current_groups.stdout or 'admin' in ubuntu_current_groups.stdout"
-
-- name: "Remove any ubuntu-specific sudoers files"
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - /etc/sudoers.d/ubuntu
-    - /etc/sudoers.d/90-cloud-init-users
-    - /etc/sudoers.d/90-ubuntu-users
-  no_log: true
-  ignore_errors: true
-
-- name: "Find ALL sudoers files that mention ubuntu"
-  ansible.builtin.shell: "find /etc/sudoers.d -type f -exec grep -l 'ubuntu' {} \\; 2>/dev/null || echo 'NO_FILES_FOUND'"
-  register: ubuntu_sudoers_files
-  changed_when: false
-  failed_when: false
-
-- name: "Display found ubuntu sudoers files"
-  ansible.builtin.debug:
-    msg: "Found sudoers files mentioning ubuntu: {{ ubuntu_sudoers_files.stdout_lines }}"
-  when: ubuntu_sudoers_files.stdout != "NO_FILES_FOUND"
-
-- name: "Remove ubuntu entries from found sudoers files"
-  ansible.builtin.lineinfile:
-    path: "{{ item }}"
-    regexp: ".*ubuntu.*"
-    state: absent
-    backup: true
-  loop: "{{ ubuntu_sudoers_files.stdout_lines }}"
-  when: 
-    - ubuntu_sudoers_files.stdout != "NO_FILES_FOUND"
-    - item != ""
-  no_log: true
-  ignore_errors: true
-
-- name: "Check if ubuntu user has sudo entries in main sudoers"
-  ansible.builtin.shell: "grep -E '^ubuntu\\s+|^ubuntu:' /etc/sudoers || echo 'NO_UBUNTU_ENTRIES'"
-  register: ubuntu_sudoers_check
-  changed_when: false
-  failed_when: false
-  no_log: true
-
-- name: "Warning if ubuntu found in main sudoers file"
-  ansible.builtin.debug:
-    msg: |
-      WARNING: Ubuntu user found in /etc/sudoers file!
-      Content: {{ ubuntu_sudoers_check.stdout }}
-      This should be manually reviewed and removed.
-  when: ubuntu_sudoers_check.stdout != "NO_UBUNTU_ENTRIES"
-
-- name: "Remove ubuntu entries from main sudoers file"
-  ansible.builtin.lineinfile:
-    path: /etc/sudoers
-    regexp: "^ubuntu\\s+.*"
-    state: absent
-    backup: true
-    validate: '/usr/sbin/visudo -cf %s'
-  when: ubuntu_sudoers_check.stdout != "NO_UBUNTU_ENTRIES"
-  no_log: true
