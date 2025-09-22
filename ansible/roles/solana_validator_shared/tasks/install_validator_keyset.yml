@@ -11,6 +11,12 @@
       - validator_keyset_name is defined
     fail_msg: "validator_keyset_name must be defined"
 
+- name: install_validator_keyset - Validate target_host_running_jito_relayer is defined
+  ansible.builtin.assert:
+    that:
+      - target_host_running_jito_relayer is defined
+    fail_msg: "target_host_running_jito_relayer must be defined (true or false) by the role or playbook that includes this task file."
+
 - name: install_validator_keyset - Validate validator_type is defined
   ansible.builtin.assert:
     that:
