@@ -6,12 +6,6 @@ description: How to create and manage access for users on a new server
 
 Once your raw metal server is ready to host a Solana validator, the system administrator must provision access for the validator operators. This guide walks you through the process of running the Ansible script to provision users on a newly provisioned metal server.
 
-## Pre-Requisites
-
-This page assumes you have access to a provisioned bare metal with the `ubuntu` user with `sudo` access as explained in the [Choosing Your Metal](choosing-your-metal.md) page.
-
-Since the user provisioning is done via an Ansible script, you must also have a running [Ansible Control](../../hayek-validator-kit/ansible-control.md).
-
 ## Architecture
 
 Our security strategy follows the principle of least privilege.
@@ -46,31 +40,41 @@ Each role operates under the principle of least privilege with deny-by-default a
 
 ## User Setup
 
+### Pre-Requisites
+
+This page assumes you have access to a provisioned bare metal with the `ubuntu` user with `sudo` access as explained in the [Choosing Your Metal](choosing-your-metal.md) page.
+
+Since the user provisioning is done via an Ansible script, you must also have a running [Ansible Control](../../hayek-validator-kit/ansible-control.md).
+
 ### 🎛️ Config File
 
 The `pb_setup_server_users.yml` expects a CSV with users and groups meta that will be used for the identity and access management provisioning.
 
 You can use the template below as a starting point and modify as needed. Once you are happy with the setup, put in this folder  `~/new-metal-box/iam_setup.csv`. You'll be using this path as a parameter when running the script.
 
-{% file src="../../.gitbook/assets/iam_setup.csv" %}
+{% file src="../../.gitbook/assets/iam_setup (2).csv" %}
 
 ### ❇️ Provisioning
 
-Before running the user provisioning playbook, ensure that your inventory file (`target_one_host.yml`) is updated with the IP address of the target server where you will install the users. Your inventory file should look like this:
+Before running the user provisioning playbook, ensure that your inventory file (`solana_new_metal_box.yml`) is updated with the IP address of the target server where you will install the users. Your inventory file should look like this:
 
 ```yaml
 all:
   hosts:
     new-metal-box:
-      ansible_host: 192.168.1.100
+      ansible_host: <target_ip_address>
       ansible_port: 22
 ```
 
 Replace `<target_ip_address>` with your actual values. Once the inventory is updated, you can run the playbook using:
 
+{% hint style="warning" %}
+Before running the playbook, establish an initial SSH connection (`ssh ubuntu@<target_ip_address>`) so the server fingerprint is registered on the ansible-control.
+{% endhint %}
+
 ```sh
 ansible-playbook playbooks/pb_setup_server_users.yml \
-  -i target_one_host.yml \
+  -i solana_new_metal_box.yml \
   -e "target_host=new-metal-box" \
   -e "ansible_user=ubuntu" \
   -e "csv_file=iam_setup.csv"
@@ -112,16 +116,17 @@ TASK [iam_manager : Notify about upcoming ubuntu user disablement] *************
 
 MSG:
 
-IMPORTANT WARNING: The ubuntu user will now be disabled.
-After this task completes, you will LOSE CONNECTION to this server.
-Please ensure you can connect with one of the newly created users:
-- alan
+IMPORTANT: The ubuntu user will now be disabled.
+If you executed this playbook using the 'ubuntu' user, you will no longer be able 
+to start an SSH session as 'ubuntu', neither from outside nor inside the server.
+From now on, you will only be able to establish SSH sessions using the following users:
 - alice
 - bob
+- carla
 
 TASK [iam_manager : Pause for warning] **********************************************************
 [iam_manager : Pause for warning]
-Press Enter to continue and disable ubuntu user (you will lose connection!), or Ctrl+C to abort:
+Press Enter to continue and disable ubuntu user, or Ctrl+C to abort:
 ```
 
 {% hint style="danger" %}
@@ -134,7 +139,7 @@ The playbook automatically configures the required sudo permissions for each rol
 
 #### Role Hierarchy and Permissions
 
-<table><thead><tr><th width="175.21484375">ROLE</th><th>FILE</th><th>INHERITANCE</th></tr></thead><tbody><tr><td><strong>sysadmin</strong></td><td><code>10-sysadmin</code></td><td>None (top level)</td></tr><tr><td><strong>validator_operators</strong></td><td><code>20-validator-operators</code></td><td>Inherits from viewers</td></tr><tr><td><strong>validator_viewers</strong></td><td><code>40-validator-viewers</code></td><td>Base level</td></tr></tbody></table>
+<table><thead><tr><th width="175.21484375">ROLE</th><th>FILE</th><th>INHERITANCE</th></tr></thead><tbody><tr><td><strong>sysadmin</strong></td><td><code>10-sysadmin</code></td><td>None (top level)</td></tr><tr><td><strong>validator_operators</strong></td><td><code>30-validator-operators</code></td><td>Inherits from viewers</td></tr><tr><td><strong>validator_viewers</strong></td><td><code>40-validator-viewers</code></td><td>Base level</td></tr></tbody></table>
 
 ## Password Self Service
 
