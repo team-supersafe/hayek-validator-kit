@@ -2,7 +2,9 @@
 # See https://stackoverflow.com/questions/76305311/is-there-a-default-value-for-localstacks-localstack-volume-dir-variable-if-o
 # See https://docs.docker.com/compose/install/
 
-# # Define a reusable command block using an anchor with a multiline command
+# Define a reusable command block using an anchor with a multiline command
+x-settings-needed-for-systemd: &settings-needed-for-systemd
+  privileged: true
 x-validator-variables: &validator-variables
   image: ${COMPOSE_PROJECT_NAME}-validator
   volumes:
@@ -11,6 +13,8 @@ x-validator-variables: &validator-variables
     - /mnt/accounts
     - /mnt/snapshots
     - type: bind
+      # NOTE: If SSH_AUTH_SOCK is not set on the host, /dev/null will be mounted, which is not a valid UNIX socket.
+      # Use /dev/null as a fallback if SSH_AUTH_SOCK is not set to avoid Docker errors when the SSH agent socket is unavailable
       source: ${SSH_AUTH_SOCK:-/dev/null}
       target: /ssh-agent
       read_only: true
@@ -76,7 +80,6 @@ networks:
 
 services:
   gossip-entrypoint:
-    privileged: true
     build:
       context: ./
       target: gossip-entrypoint-builder
@@ -118,7 +121,6 @@ services:
 
   # host-alpha will be hosting a voting non-delinquent validator named Canopy with a bunch of SOL stake
   host-alpha:
-    privileged: true
     build:
       context: ./
       target: validator-builder
@@ -129,17 +131,16 @@ services:
     networks:
       solana_network:
         ipv4_address: 172.25.0.11
-    <<: [ *validator-variables ]
+    <<: [ *validator-variables, *settings-needed-for-systemd ]
 
   # host-bravo is a validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.
   host-bravo:
-    # NO NEED TO BUILD, because we already have the image built in the validator-variables
-    # Remember we don't want to run the actual validator client here
+    # NO NEED TO BUILD, because we want to use the image `${COMPOSE_PROJECT_NAME}-validator`
+    # specified in *validator-variables and by now that image should be already built for host-alpha.
     # build:
     #   context: ./
     #   # dockerfile: ./validator/Dockerfile
     #   target: validator-builder
-    privileged: true
     container_name: "host-bravo"
     hostname: "host-bravo"
     ports:
@@ -147,14 +148,14 @@ services:
     networks:
       solana_network:
         ipv4_address: 172.25.0.12
-    <<: [ *validator-variables ]
+    <<: [ *validator-variables, *settings-needed-for-systemd ]
 
   # host-charlie is a naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.
   host-charlie:
-    privileged: true
     build:
       context: ./
       target: naked-builder
+    image: ${COMPOSE_PROJECT_NAME}-ubuntu-naked
     container_name: "host-charlie"
     hostname: "host-charlie"
     ports:
@@ -162,8 +163,42 @@ services:
     networks:
       solana_network:
         ipv4_address: 172.25.0.13
-    <<: [ *validator-variables ]
-    image: ubuntu
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - type: bind
+        source: ${SSH_AUTH_SOCK:-/dev/null}
+        target: /ssh-agent
+        read_only: true
+      - "../ansible/iam/users:/tmp/team_ssh_public_keys:ro" # Mount the team public keys as read-only
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent
+      DEFAULT_USERNAME: ubuntu # Set the username inside the container
+    command: |
+      bash -c "
+      # set default user ssh authorized_keys
+      rm -rf /home/$$DEFAULT_USERNAME/.ssh
+      mkdir -p /home/$$DEFAULT_USERNAME/.ssh
+      chmod 700 /home/$$DEFAULT_USERNAME/.ssh
+
+      # Clear authorized_keys before appending to avoid duplicates
+      > /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+      for file in /tmp/team_ssh_public_keys/*; do
+          cat $$file >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+          # Adding an empty line after each key is not strictly necessary for authorized_keys parsing,
+          # but it improves readability and maintains consistency with other containers.
+          echo "" >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+      done
+      # Deduplicate authorized_keys entries
+      TEMP_AUTH_KEYS="/home/$$DEFAULT_USERNAME/.ssh/authorized_keys.tmp"
+      awk '!seen[$0]++' /home/$$DEFAULT_USERNAME/.ssh/authorized_keys > $$TEMP_AUTH_KEYS
+      mv $$TEMP_AUTH_KEYS /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+
+      chmod 600 /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+      chown -R $$DEFAULT_USERNAME:$$DEFAULT_USERNAME /home/$$DEFAULT_USERNAME/.ssh
+
+      /lib/systemd/systemd
+      "
+    <<: [ *settings-needed-for-systemd ]
 
   ansible-control:
     build:
@@ -179,11 +214,13 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - ..:/hayek-validator-kit
-      - ~/.new-metal-box-secrets:/root/.new-metal-box-secrets
+      - ..:/hayek-validator-kit # the workspace folder where the repo will be mounted. Update ANSIBLE_WORKSPACE_DIR to match this path in start-localnet.sh
+      - ${HOME}/new-metal-box:/root/new-metal-box # Users CSV file
       - ~/.config/solana/id.json:/root/.config/solana/id_maybe.json:ro # Solana default CLI keypair
       - ~/.validator-keys:/root/.validator-keys # TODO: harden permissions
+      - $SSH_AUTH_SOCK:/ssh-agent:ro
     environment:
       - FOO="bar"
       - RPC_URL=http://gossip-entrypoint:8899
+      - SSH_AUTH_SOCK=/ssh-agent
     network_mode: "container:gossip-entrypoint"

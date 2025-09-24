@@ -1,0 +1,113 @@
+---
+# ========================================
+# HOST ARCHITECTURE VERIFICATION - FINAL REPORT
+# ========================================
+
+- name: Build architecture verification summary
+  ansible.builtin.set_fact:
+    architecture_summary:
+      # System information
+      system_arch: "{{ ansible_architecture }}"
+      os_family: "{{ ansible_os_family }}"
+      detected_host_arch: "{{ host_arch | default('undefined') }}"
+      
+      # Verification status
+      arch_defined: "{{ host_arch is defined }}"
+      arch_valid: "{{ host_arch in ['x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-apple-darwin', 'aarch64-apple-darwin'] if host_arch is defined else false }}"
+      arch_consistent: "{{ 
+        (ansible_architecture == 'x86_64' and ansible_os_family in ['Linux', 'Debian'] and host_arch == 'x86_64-unknown-linux-gnu') or
+        (ansible_architecture == 'aarch64' and ansible_os_family in ['Linux', 'Debian'] and host_arch == 'aarch64-unknown-linux-gnu') or
+        (ansible_architecture == 'x86_64' and ansible_os_family == 'Darwin' and host_arch == 'x86_64-apple-darwin') or
+        (ansible_architecture == 'arm64' and ansible_os_family == 'Darwin' and host_arch == 'aarch64-apple-darwin')
+        if host_arch is defined else false
+      }}"
+
+- name: Calculate overall architecture verification status
+  ansible.builtin.set_fact:
+    architecture_verification_passed: "{{ 
+      architecture_summary.arch_defined and 
+      architecture_summary.arch_valid and 
+      architecture_summary.arch_consistent 
+    }}"
+
+- name: Build comprehensive architecture verification report
+  ansible.builtin.set_fact:
+    architecture_report_lines: |
+      {%- set lines = [] -%}
+      
+      {%- if architecture_verification_passed -%}
+        {%- set _ = lines.append("========================================") -%}
+        {%- set _ = lines.append("🎉 HOST ARCHITECTURE VERIFICATION PASSED") -%}
+        {%- set _ = lines.append("========================================") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("🎯 FINAL ANSWER: ARCHITECTURE DETECTION WORKING ✅") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("📊 SYSTEM INFORMATION:") -%}
+        {%- set _ = lines.append("• System Architecture: " + (architecture_summary.system_arch | string)) -%}
+        {%- set _ = lines.append("• OS Family: " + (architecture_summary.os_family | string)) -%}
+        {%- set _ = lines.append("• Detected host_arch: " + (architecture_summary.detected_host_arch | string)) -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("========================================") -%}
+      {%- else -%}
+        {%- set _ = lines.append("========================================") -%}
+        {%- set _ = lines.append("🚨 HOST ARCHITECTURE VERIFICATION FAILED") -%}
+        {%- set _ = lines.append("========================================") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("🚨 FINAL ANSWER: ARCHITECTURE DETECTION FAILED ❌") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("📊 SYSTEM INFORMATION:") -%}
+        {%- set _ = lines.append("• System Architecture: " + (architecture_summary.system_arch | string)) -%}
+        {%- set _ = lines.append("• OS Family: " + (architecture_summary.os_family | string)) -%}
+        {%- set _ = lines.append("• Detected host_arch: " + (architecture_summary.detected_host_arch | string)) -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("❌ VERIFICATION RESULTS:") -%}
+        {%- set _ = lines.append("• host_arch variable defined: " + ("✅" if architecture_summary.arch_defined else "❌")) -%}
+        {%- set _ = lines.append("• host_arch value valid: " + ("✅" if architecture_summary.arch_valid else "❌")) -%}
+        {%- set _ = lines.append("• host_arch consistent with system: " + ("✅" if architecture_summary.arch_consistent else "❌")) -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("⚠️ ISSUES DETECTED:") -%}
+        {%- if not architecture_summary.arch_defined -%}
+          {%- set _ = lines.append("• host_arch variable is not defined") -%}
+        {%- endif -%}
+        {%- if not architecture_summary.arch_valid -%}
+          {%- set _ = lines.append("• host_arch has invalid value: " + (architecture_summary.detected_host_arch | string)) -%}
+        {%- endif -%}
+        {%- if not architecture_summary.arch_consistent -%}
+          {%- set _ = lines.append("• host_arch is inconsistent with system architecture") -%}
+        {%- endif -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("🔧 RECOMMENDED ACTIONS:") -%}
+        {%- set _ = lines.append("1. Check that set_host_architecture.yml is being executed") -%}
+        {%- set _ = lines.append("2. Verify the architecture detection logic") -%}
+        {%- set _ = lines.append("3. Ensure all supported architectures are covered") -%}
+        {%- set _ = lines.append("4. Re-run the test after fixing the issues") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("🛑 VERDICT: ARCHITECTURE DETECTION NEEDS ATTENTION ❌") -%}
+        {%- set _ = lines.append("VALIDATION STATUS: FAILED") -%}
+        {%- set _ = lines.append("The set_host_architecture.yml task is not working correctly!") -%}
+        {%- set _ = lines.append("") -%}
+        {%- set _ = lines.append("========================================") -%}
+      {%- endif -%}
+      {{ lines }}
+
+- name: Display comprehensive architecture verification report
+  ansible.builtin.debug:
+    msg: "{{ architecture_report_lines }}"
+
+- name: Architecture Verification Failed
+  ansible.builtin.fail:
+    msg: |
+      ARCHITECTURE VERIFICATION FAILED
+      
+      System Information:
+      - System Architecture: {{ architecture_summary.system_arch }}
+      - OS Family: {{ architecture_summary.os_family }}
+      - Detected host_arch: {{ architecture_summary.detected_host_arch }}
+      
+      Issues:
+      - host_arch defined: {{ architecture_summary.arch_defined }}
+      - host_arch valid: {{ architecture_summary.arch_valid }}
+      - host_arch consistent: {{ architecture_summary.arch_consistent }}
+      
+      The set_host_architecture.yml task is not functioning correctly!
+  when: not architecture_verification_passed

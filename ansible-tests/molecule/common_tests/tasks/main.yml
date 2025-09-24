@@ -1,0 +1,13 @@
+---
+- name: Verify Host Architecture Detection
+  include_tasks: check_arch.yml
+  tags:
+    - architecture
+    - host_arch
+    - verification
+
+- name: Generate Architecture Verification Report
+  include_tasks: final_report.yml
+  tags:
+    - report
+    - final

@@ -1,21 +1,40 @@
 ---
-- name: Determine if we should build from source
+- name: Set local boolean for build method
   ansible.builtin.set_fact:
-    should_build_from_source: "{{ jito_force_build | default(false) or build_from_source }}"
+    build_from_source_bool: "{{ build_from_source | default(false) | bool }}"
+
+- name: Install build prerequisites
+  become: true
+  ansible.builtin.apt:
+    name:
+      - at
+      - bzip2
+      - libssl-dev
+      - libudev-dev
+      - pkg-config
+      - zlib1g-dev
+      - llvm
+      - libclang-dev
+      - clang
+      - cmake
+      - make
+      - libprotobuf-dev
+      - protobuf-compiler
+    update_cache: true
 
 - name: Install Jito-Solana from binaries
   import_tasks: install/install_jito_from_binaries.yml
-  when: not should_build_from_source
+  when: not build_from_source_bool
 
 - name: Build and install Jito from source
   import_tasks: install/install_jito_from_source.yml
-  when: should_build_from_source
+  when: build_from_source_bool
 
 - name: Installation complete
   debug:
     msg: >-
       Jito-Solana {{ jito_version }} has been successfully installed
-      {% if should_build_from_source %}
+      {% if build_from_source_bool %}
       (built from source)
       {% else %}
       (from binaries)

@@ -12,6 +12,7 @@ build_dir: "{{ solana_user_dir }}/build"
 scripts_dir: "{{ solana_user_dir }}/bin"
 logs_dir: "{{ solana_user_dir }}/logs"
 solana_install_dir: "{{ solana_user_dir }}/.local/share/solana/install/active_release/bin"
+solana_installed_releases_dir: "{{ solana_user_dir }}/.local/share/solana/install/releases"
 
 # Disk mount points configuration
 ledger_path: "{{ mount_base_path }}/ledger"
@@ -23,11 +24,20 @@ accounts_fstype: "ext4"
 snapshots_path: "{{ mount_base_path }}/snapshots"
 
 # Solana service settings
-snapshot_interval_slots: 0 # 0 means no snapshots are taken
+# snapshot_interval_slots: 0 # 0 means no snapshots are taken (deprecated starting with version 3.0.0)
 
 # Solana service network settings
 solana_rpc_port: 8899 # RPC port
 open_solana_ports_start: 8000 # Start of the range of ports to open for Solana services
-open_solana_ports_end: 8020 # End of the range of ports to open for Solana services
+open_solana_ports_end: 8030 # End of the range of ports to open for Solana services
 gossip_port: 8001 # Gossip port
 minimal_snapshot_download_speed: 31457280 # Minimal snapshot download speed in bytes per second
+
+# Repositories for downloading sources and binaries
+# Official repositories
+agave_official_repo: https://github.com/anza-xyz/agave
+jito_official_repo: https://github.com/jito-foundation/jito-solana
+
+# Forked repositories (with potential modifications)
+agave_forked_repo: https://github.com/team-supersafe/forked-agave
+jito_forked_repo: https://github.com/team-supersafe/forked-jito-solana

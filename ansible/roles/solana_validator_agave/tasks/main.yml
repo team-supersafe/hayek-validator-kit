@@ -1,0 +1,8 @@
+---
+- name: Precheck parameters
+  import_tasks: precheck.yml
+  tags: [solana_validator_agave, precheck]
+
+- name: Prepare variables needed for the role
+  import_tasks: prepare.yml
+  tags: [solana_validator_agave, prepare]

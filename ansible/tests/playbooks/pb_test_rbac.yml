@@ -1,0 +1,58 @@
+---
+# Test RBAC functionality
+# --------------------
+# Usage:
+# ------
+# Run from /ansible/tests directory:
+#
+# ansible-playbook playbooks/pb_test_rbac.yml \
+#   -e "target_host=host-charlie" \
+#   -e "ansible_user=username"
+
+- name: Test RBAC functionality
+  hosts: "{{ target_host }}"
+  become: false
+  pre_tasks:
+    # Gather system facts to get server information
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    # Get IP information from ipinfo.io
+    - name: Get IP information from ipinfo.io
+      ansible.builtin.uri:
+        url: "https://ipinfo.io/{{ ansible_default_ipv4.address }}/json"
+        method: GET
+      register: ip_info
+      delegate_to: localhost
+      run_once: true
+
+    # Show server IP and location information for confirmation
+    - name: Show server IP and location for confirmation
+      ansible.builtin.pause:
+        prompt: |
+          IMPORTANT: You are about to run RBAC tests on the server with IP: {{ ansible_default_ipv4.address }}
+
+          Location Information:
+          - City: {{ ip_info.json.city | default('Unknown') }}
+          - Country: {{ ip_info.json.country | default('Unknown') }}
+          - Organization: {{ ip_info.json.org | default('Unknown') }}
+
+          To continue, please type exactly this IP: {{ ansible_default_ipv4.address }}
+
+          If you are not sure, press Ctrl+C to cancel.
+
+          Type IP here
+      register: ip_confirmation
+      when: ansible_env.TERM is defined and ansible_env.TERM != "dumb"
+
+    # Validate that the user typed the correct IP
+    - name: Validate IP input
+      ansible.builtin.fail:
+        msg: "Incorrect IP. Please run the playbook again and type the correct IP."
+      when:
+        - ansible_env.TERM is defined
+        - ansible_env.TERM != "dumb"
+        - ip_confirmation.user_input != ansible_default_ipv4.address
+
+  roles:
+    - test_rbac

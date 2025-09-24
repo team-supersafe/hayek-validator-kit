@@ -9,9 +9,10 @@
   become: true
   ansible.builtin.apt:
     name:
-      - jq
+      - at
       - build-essential
       - pkg-config
+      - libssl-dev
       - libudev-dev
       - llvm
       - libclang-dev
@@ -19,22 +20,19 @@
       - bzip2
     update_cache: true
 
-# Choose installation method based on architecture and user preference
-- when: build_from_source | bool
-  name: Install - Installing from source based on architecture
-  ansible.builtin.include_tasks: install_from_source.yml
-  
-- when: not build_from_source | bool
-  name: Install - Installing from url based on architecture
-  ansible.builtin.include_tasks: install_from_url.yml
+# Set local boolean for build method
+- name: Set local boolean for build method
+  ansible.builtin.set_fact:
+    build_from_source_bool: "{{ build_from_source | default(false) | bool }}"
 
-# Create symlink to new release
-- name: Create symlink to new release
-  ansible.builtin.file:
-    src: "{{ solana_installed_releases_dir }}/v{{ agave_version }}/solana-release"
-    dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
-    state: link
-    force: true
+# Choose installation method based on user preference
+- when: not build_from_source_bool
+  name: Install - Installing from binaries
+  ansible.builtin.include_tasks: install_from_binaries.yml
+
+- when: build_from_source_bool
+  name: Install - Installing from source
+  ansible.builtin.include_tasks: install_from_source.yml
 
 # Ensure Solana CLI bin path is in the user's .bashrc and .zshrc for persistent CLI access
 - name: Install - Ensure Solana CLI bin path is in .bashrc

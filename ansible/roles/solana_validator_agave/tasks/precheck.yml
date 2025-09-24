@@ -1,0 +1,53 @@
+---
+- name: precheck - Ensure the validator_keys_dir is defined and valid
+  ansible.builtin.assert:
+    that:
+      - validator_keys_dir is defined
+      - validator_keys_dir == keys_dir + "/" + validator_name
+    fail_msg: >
+      "Variable 'validator_keys_dir' must be defined."
+    success_msg: "validator_keys_dir is set to {{ validator_keys_dir }}"
+
+- name: precheck - Check if expected genesis hash is defined
+  ansible.builtin.assert:
+    that:
+      - expected_genesis_hash is defined
+    fail_msg: "expected_genesis_hash must be defined"
+
+- name: precheck - Gather facts for localhost
+  ansible.builtin.setup:
+  delegate_to: localhost
+  run_once: true
+
+- name: Check required validator keypairs
+  block:
+    - name: precheck - Check if primary-target-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/primary-target-identity.json"
+      register: primary_target_identity_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: precheck - Fail if primary-target-identity.json is missing
+      ansible.builtin.fail:
+        msg: "primary-target-identity.json not found in {{ ansible_keys_dir }}"
+      when: not primary_target_identity_file.stat.exists
+
+    - name: precheck - Check if vote-account.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/vote-account.json"
+      register: vote_account_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: precheck - Fail if vote-account.json is missing
+      ansible.builtin.fail:
+        msg: "vote-account.json not found in {{ ansible_keys_dir }}"
+      when: not vote_account_file.stat.exists
+
+- name: precheck - Get host architecture
+  ansible.builtin.import_tasks: ../../common/tasks/set_host_architecture.yml
+
+# Disk space requirements (experimental)
+- name: precheck - Check minimum disk space
+  ansible.builtin.import_tasks: ../../common/tasks/check_minimum_disk_space.yml

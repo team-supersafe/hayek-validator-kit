@@ -1,0 +1,50 @@
+---
+# Configure RBAC sudoers files
+# This task configures sudo access for all RBAC groups using templates
+
+# Configure full system access for sysadmin group (password required)
+- name: Configure full system access for sysadmin group
+  ansible.builtin.template:
+    src: 10-sysadmin.j2
+    dest: /etc/sudoers.d/10-sysadmin
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  no_log: true
+
+# Configure self-service password reset for sysadmin group (NOPASSWD)
+- name: Configure self-service password reset for sysadmin group
+  ansible.builtin.template:
+    src: 99-self-service.j2
+    dest: /etc/sudoers.d/99-self-service
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  no_log: true
+
+# Configure sysadmin-specific welcome script with password reset instructions
+- name: Configure sysadmin welcome script
+  ansible.builtin.template:
+    src: user-welcome-bash.sh.j2
+    dest: /etc/profile.d/sysadmin-welcome.sh
+    mode: '0755'
+    owner: root
+    group: root
+  no_log: true
+  
+# Configure sudo access for validator_operators group
+- name: Configure sudo access for validator_operators group
+  ansible.builtin.template:
+    src: 30-validator-operators.j2
+    dest: /etc/sudoers.d/30-validator-operators
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  no_log: true
+
+# Configure sudo access for validator_viewers group
+- name: Configure sudo access for validator_viewers group
+  ansible.builtin.template:
+    src: 40-validator-viewers.j2
+    dest: /etc/sudoers.d/40-validator-viewers
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  no_log: true
+  

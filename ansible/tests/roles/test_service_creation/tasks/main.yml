@@ -1,0 +1,14 @@
+---
+# Simple Unix test service creation
+
+- name: Create web service script
+  import_tasks: create_script.yml
+
+- name: Create systemd service
+  import_tasks: create_service.yml
+
+- name: Start the service
+  import_tasks: start_service.yml
+
+- name: Show service summary
+  import_tasks: verify_service.yml

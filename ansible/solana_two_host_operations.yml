@@ -1,0 +1,37 @@
+---
+all:
+  hosts:
+    source-host:
+      ansible_host: 192.168.1.10
+      ansible_port: 2522
+    destination-host:
+      ansible_host: 192.168.1.11
+      ansible_port: 2522
+
+  children:
+    # ───── Data Center Grouping ─────
+    dc_edgevana:
+      hosts:
+        destination-host:
+
+    dc_latitude:
+      hosts:
+        source-host:
+
+    # ───── City Grouping ─────
+    city_mia:
+      hosts:
+        source-host:
+        destination-host:
+
+    # ───── Network Grouping ─────
+    solana:
+      hosts:
+        source-host:
+        destination-host:
+
+    # ───── Solana Cluster Grouping ─────
+    solana_mainnet:
+      hosts:
+        source-host:
+        destination-host:

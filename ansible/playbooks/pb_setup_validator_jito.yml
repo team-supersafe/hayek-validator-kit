@@ -8,14 +8,29 @@
 # Run from /ansible directory:
 #
 # syntax check
-# ansible-playbook playbooks/pb_setup_validator_jito.yml
-#   -i solana_localnet.yml \
+# ansible-playbook playbooks/pb_setup_validator_jito.yml \
+#   -i solana_setup_host.yml \
 #   --limit host-charlie \
 #   --syntax-check \
 #   -e "target_host=host-charlie"
 #
+# Example running against production host
 # ansible-playbook playbooks/pb_setup_validator_jito.yml \
-#   -i solana_localnet.yml \
+#   -i solana_setup_host.yml \
+#   --limit hyk-lat-mia \
+#   -e "target_host=hyk-lat-mia" \
+#   -e "validator_name=hayek-mainnet" \
+#   -e "validator_type=hot-spare" \
+#   -e "solana_cluster=mainnet" \
+#   -e "jito_version=2.3.6" \
+#   -e "jito_relayer_type=co-hosted" \
+#   -e "jito_relayer_version=0.4.2" \
+#   -e "build_from_source=true" \
+#   -e "use_official_repo=true"
+#
+# Example running against localnet host (create inventory from README reference)
+# ansible-playbook playbooks/pb_setup_validator_jito.yml \
+#   -i solana_setup_host.yml \
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
 #   -e "validator_name=penny" \
@@ -24,8 +39,9 @@
 #   -e "jito_version=2.2.15" \
 #   -e "jito_relayer_type=shared" \
 #   -e "jito_relayer_version=0.3.1" \
-#   -e "jito_force_build=true" \ # Optional: Force build Jito regardless of architecture
-#   -e "force_host_cleanup=true" \ # Optional: Use this if a validator service is already running
+#   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
+#   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
+#   -e "force_host_cleanup=true" \ # Optional: Use if target host is running a validator in a different cluster
 
 - name: Install Jito Client with Co-Hosted Relayer
   hosts: "{{ target_host }}"
@@ -55,7 +71,7 @@
             - jito_relayer_version
           Optional:
             - force_host_cleanup (set to true to force stop existing validator service)
-            - jito_force_build (set to true to force build Jito regardless of architecture)
+
 
     - name: Debug ansible_limit and target_host
       ansible.builtin.debug:
