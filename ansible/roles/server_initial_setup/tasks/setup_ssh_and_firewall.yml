@@ -151,6 +151,27 @@
     name: fail2ban
     state: present
 
+# Ensure fail2ban config for Debian defaults
+- name: Ensure fail2ban config for Debian defaults
+  become: true
+  ansible.builtin.blockinfile:
+    path: /etc/fail2ban/jail.d/defaults-debian.conf
+    block: |
+      [DEFAULT]
+      banaction = nftables
+      banaction_allports = nftables[type=allports]
+      backend = systemd
+
+      [sshd]
+      enabled = true
+      port = '{{ firewall.ssh_port }}'
+      maxretry = {{ fail2ban.sshd.maxretry }}
+      findtime = {{ fail2ban.sshd.findtime }}
+      bantime = {{ fail2ban.sshd.bantime }}
+      ignoreip = {{ fail2ban.sshd.ignoreip }}
+    create: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+  notify: Restart fail2ban
 # Configure specific SSH security settings only
 - name: Remove all PermitRootLogin lines
   ansible.builtin.lineinfile:
