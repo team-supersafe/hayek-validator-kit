@@ -1,0 +1,158 @@
+---
+# ========================================
+# RBAC VERIFICATION - NEGATIVE TESTS
+# ========================================
+
+- name: Build dynamic negative test matrix
+  ansible.builtin.set_fact:
+    negative_test_matrix: |
+      {%- set tests = [] -%}
+      {%- for test in rbac_config.negative_tests -%}
+        {%- set base_pattern = rbac_config.command_patterns[test.pattern] if test.pattern in rbac_config.command_patterns else test.pattern -%}
+        {%- for role in test.roles -%}
+          {%- set filtered_role = role + '_filtered' -%}
+          {%- for user in filtered_users[filtered_role] | default([]) -%}
+            {%- set pattern = base_pattern.replace('USER_PLACEHOLDER', user) -%}
+            {%- set _ = tests.append({
+                'test_name': test.name,
+                'description': test.description,
+                'user': user,
+                'role': role,
+                'pattern': pattern
+            }) -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ tests }}
+
+- name: Execute negative tests dynamically
+  ansible.builtin.shell: "sudo -l -U {{ item.user }} | grep -E '{{ item.pattern }}'"
+  register: negative_test_results
+  loop: "{{ negative_test_matrix }}"
+  changed_when: false
+  failed_when: false  # Don't fail immediately, collect all violations
+  when: negative_test_matrix | length > 0
+
+- name: "RBAC Verification Summary"
+  ansible.builtin.debug:
+    msg:
+      - "Testing {{ (filtered_users.validator_operators_filtered | length) + (filtered_users.validator_viewers_filtered | length) }} users across {{ classified_users.keys() | length }} roles"
+
+- name: "Build dynamic violation display matrix"
+  ansible.builtin.set_fact:
+    violation_display_matrix: |
+      {%- set matrix = [] -%}
+      {%- for test_result in negative_test_results.results | default([]) -%}
+        {%- if test_result.stdout is defined and test_result.stdout | length > 0 -%}
+          {%- set test_info = negative_test_matrix[loop.index0] -%}
+          {%- set _ = matrix.append({
+              'name': test_info.description,
+              'test_results': [test_result],
+              'role': test_info.role,
+              'test_name': test_info.test_name
+          }) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ matrix }}
+
+- name: Analyze violations dynamically
+  ansible.builtin.set_fact:
+    dynamic_violation_analysis: |
+      {%- set analysis = {} -%}
+      {%- set all_violations = [] -%}
+      {%- set violation_types = {} -%}
+
+      {%- for violation_type in violation_display_matrix -%}
+        {%- set type_violations = [] -%}
+        {%- set type_users = [] -%}
+        {%- set type_commands = [] -%}
+
+        {%- for result in violation_type.test_results -%}
+          {%- if result.stdout is defined and result.stdout | length > 0 -%}
+            {%- set user_role = violation_type.role if violation_type.role != 'mixed'
+                else ('validator_viewers' if result.item in (classified_users.validator_viewers | default([]))
+                      else 'validator_operators') -%}
+            {%- set violation_detail = {
+                'user': result.item,
+                'role': user_role,
+                'commands': result.stdout.split('\n') | map('trim') | select('string') | list,
+                'violation_type': violation_type.name
+            } -%}
+            {%- set _ = type_violations.append(violation_detail) -%}
+            {%- set _ = all_violations.append(violation_detail) -%}
+            {%- if result.item not in type_users -%}
+              {%- set _ = type_users.append(result.item) -%}
+            {%- endif -%}
+            {%- for cmd in violation_detail.commands -%}
+              {%- if cmd not in type_commands -%}
+                {%- set _ = type_commands.append(cmd) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+        {%- endfor -%}
+
+        {%- if type_violations | length > 0 -%}
+          {%- set _ = violation_types.update({violation_type.name: {
+              'count': type_violations | length,
+              'users': type_users,
+              'commands': type_commands,
+              'violations': type_violations,
+              'affected_roles': type_violations | map(attribute='role') | unique | list
+          }}) -%}
+        {%- endif -%}
+      {%- endfor -%}
+
+      {%- set _ = analysis.update({
+          'total_violations': all_violations | length,
+          'total_users_affected': all_violations | map(attribute='user') | unique | list | length,
+          'violation_types': violation_types,
+          'all_violations': all_violations,
+          'affected_roles': all_violations | map(attribute='role') | unique | list
+      }) -%}
+      {{ analysis | to_json }}
+
+- name: Parse dynamic violation analysis
+  ansible.builtin.set_fact:
+    parsed_violation_analysis: "{{ dynamic_violation_analysis | from_json }}"
+
+- name: Set negative tests summary
+  ansible.builtin.set_fact:
+    negative_tests_summary:
+      total_tests: "{{ negative_test_matrix | length }}"
+      violations: "{{ parsed_violation_analysis.total_violations | default(0) }}"
+      users_affected: "{{ parsed_violation_analysis.total_users_affected | default(0) }}"
+      status: "{{ 'PASSED' if (parsed_violation_analysis.total_violations | default(0) | int == 0) else 'FAILED' }}"
+
+- name: Verify ubuntu user has NO sudo privileges
+  ansible.builtin.shell: "sudo -l -U ubuntu 2>/dev/null | grep -v 'may not run sudo' | grep -v 'is not allowed to run sudo' || echo 'NO_SUDO_ACCESS'"
+  register: ubuntu_sudo_check
+  changed_when: false
+  failed_when: false
+
+- name: Analyze ubuntu sudo privileges
+  ansible.builtin.debug:
+    msg: |
+      Ubuntu user sudo check result: {{ ubuntu_sudo_check.stdout }}
+      Return code: {{ ubuntu_sudo_check.rc }}
+
+- name: Assert ubuntu user has no sudo access
+  ansible.builtin.assert:
+    that:
+      - "ubuntu_sudo_check.stdout == 'NO_SUDO_ACCESS' or 'may not run sudo' in ubuntu_sudo_check.stdout or 'is not allowed to run sudo' in ubuntu_sudo_check.stdout"
+    fail_msg: |
+      CRITICAL SECURITY VIOLATION: Ubuntu user still has sudo privileges!
+      Sudo output: {{ ubuntu_sudo_check.stdout }}
+      This is a severe security risk - ubuntu user should be completely disabled.
+    success_msg: "✓ CRITICAL CHECK PASSED: Ubuntu user has no sudo privileges"
+
+- name: Update negative test summary to include ubuntu verification
+  ansible.builtin.set_fact:
+    negative_tests_summary:
+      total_tests: "{{ (negative_test_matrix | length) + 1 }}"
+      violations: "{{ parsed_violation_analysis.total_violations | default(0) | int + (1 if ubuntu_sudo_check.stdout != 'NO_SUDO_ACCESS' and 'may not run sudo' not in ubuntu_sudo_check.stdout and 'is not allowed to run sudo' not in ubuntu_sudo_check.stdout else 0) }}"
+      users_affected: "{{ parsed_violation_analysis.total_users_affected | default(0) }}"
+      status: "{{ 'PASSED' if ((parsed_violation_analysis.total_violations | default(0) | int + (1 if ubuntu_sudo_check.stdout != 'NO_SUDO_ACCESS' and 'may not run sudo' not in ubuntu_sudo_check.stdout and 'is not allowed to run sudo' not in ubuntu_sudo_check.stdout else 0)) == 0) else 'FAILED' }}"
+
+- name: Display negative tests summary
+  ansible.builtin.debug:
+    msg: "NEGATIVE TESTS: {{ negative_tests_summary.status }} ({{ negative_tests_summary.violations }} violations found in {{ negative_tests_summary.total_tests }} tests)"

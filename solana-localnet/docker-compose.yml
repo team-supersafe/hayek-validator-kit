@@ -215,7 +215,7 @@ services:
     tty: true
     volumes:
       - ..:/hayek-validator-kit # the workspace folder where the repo will be mounted. Update ANSIBLE_WORKSPACE_DIR to match this path in start-localnet.sh
-      - ~/.new-metal-box-secrets:/root/.new-metal-box-secrets
+      - ${HOME}/new-metal-box:/root/new-metal-box # Users CSV file
       - ~/.config/solana/id.json:/root/.config/solana/id_maybe.json:ro # Solana default CLI keypair
       - ~/.validator-keys:/root/.validator-keys # TODO: harden permissions
       - $SSH_AUTH_SOCK:/ssh-agent:ro

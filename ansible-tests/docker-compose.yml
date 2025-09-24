@@ -1,0 +1,65 @@
+version: "3.9"
+
+networks:
+  molecule_net:
+    name: molecule_net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+services:
+  molecule-host-alpha:
+    build:
+      context: .
+      target: naked-builder
+    image: molecule-host-alpha
+    container_name: molecule-host-alpha
+    hostname: molecule-host-alpha
+    privileged: true
+    networks:
+      molecule_net:
+        ipv4_address: 172.28.0.11
+    ports:
+      - "9422:22"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - "../ansible/iam/users:/tmp/team_ssh_public_keys:ro"
+      - type: bind
+        source: ${SSH_AUTH_SOCK:-/dev/null}
+        target: /ssh-agent
+        read_only: true
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent
+      DEFAULT_USERNAME: ubuntu
+    command: |
+      bash -c "
+      /opt/scripts/setup-ssh-keys.sh $$DEFAULT_USERNAME
+      /lib/systemd/systemd
+      "
+
+  test-runner:
+    build:
+      context: .
+      target: molecule-runner
+    image: molecule-test-runner
+    container_name: test-runner
+    depends_on:
+      - molecule-host-alpha
+    stdin_open: true
+    tty: true
+    networks:
+      - molecule_net
+    volumes:
+      - ..:/hayek-validator-kit
+      - ${HOME}/test-reports/:/test-reports/
+      - /var/run/docker.sock:/var/run/docker.sock
+      - $SSH_AUTH_SOCK:/ssh-agent:ro
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent
+    command: |
+      bash -c "
+      /hayek-validator-kit/ansible-tests/scripts/generate-test-csv.sh
+      exec bash -li
+      "
+

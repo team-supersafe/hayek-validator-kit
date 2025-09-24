@@ -1,0 +1,29 @@
+---
+# Create directories and install htop
+# =================================
+# This task creates the necessary directory structure and installs the compiled
+# binary in the correct location with appropriate permissions.
+#
+# Best practices:
+# - Create directories before copying files
+# - Set correct permissions (0775 allows execution for group)
+# - Define specific owner and group for security
+# - Use remote_src: yes to copy from remote server
+# - Use variables for paths and permissions
+
+- name: Create install directory
+  ansible.builtin.file:
+    path: "{{ htop_install_dir }}/bin"
+    state: directory
+    mode: '0775'
+    owner: sol
+    group: validator_admins
+
+- name: Install htop
+  ansible.builtin.copy:
+    src: "/tmp/htop-{{ htop_version }}/htop"
+    dest: "{{ htop_install_dir }}/bin/htop"
+    mode: '0775'
+    remote_src: yes
+    owner: sol
+    group: validator_admins

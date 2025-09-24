@@ -1,19 +1,17 @@
 ---
-# Playbook for initial setup of metal box server
-# This playbook configures a new metal box for validator operations
-# --------------------
+# Test Web Service Creation
+# -----------------------
 # Usage:
 # ------
-# Run from /ansible directory:
+# Run from /ansible/tests directory:
 #
-# ansible-playbook playbooks/pb_setup_metal_box.yml \
-#   -i solana_new_metal_box.yml \
-#   -e "target_host=new-metal-box" \
-#   -e "ansible_user=ubuntu"
+# ansible-playbook playbooks/pb_test_setup_service.yml \
+#   -e "target_host=host-charlie" \
+#   -e "ansible_user=username" \
+#   -K # Use -K to prompt for sudo password
 
-- name: Setup Metal Box Server
+- name: Test Web Service Creation
   hosts: "{{ target_host }}"
-  user: "{{ ansible_user }}"
   become: true
   pre_tasks:
     # Gather system facts to get server information
@@ -33,12 +31,18 @@
     - name: Show server IP and location for confirmation
       ansible.builtin.pause:
         prompt: |
-          IMPORTANT: You are about to run this playbook on the server with IP: {{ ansible_default_ipv4.address }}
+          IMPORTANT: You are about to create a web service on the server with IP: {{ ansible_default_ipv4.address }}
 
           Location Information:
           - City: {{ ip_info.json.city | default('Unknown') }}
           - Country: {{ ip_info.json.country | default('Unknown') }}
           - Organization: {{ ip_info.json.org | default('Unknown') }}
+
+          This will:
+          - Create a web service on port 80
+          - Run as user 'sol' with group 'validator_admins'
+          - Display "Unix Testing in Progress" message
+          - Enable automatic restart
 
           To continue, please type exactly this IP: {{ ansible_default_ipv4.address }}
 
@@ -57,5 +61,27 @@
         - ansible_env.TERM != "dumb"
         - ip_confirmation.user_input != ansible_default_ipv4.address
 
+    # Check if required user and group exist
+    - name: Check if user 'sol' exists
+      ansible.builtin.getent:
+        database: passwd
+        key: sol
+      register: sol_user_check
+      ignore_errors: true
+
+    - name: Check if group 'validator_admins' exists
+      ansible.builtin.getent:
+        database: group
+        key: validator_admins
+      register: validator_group_check
+      ignore_errors: true
+
+    - name: Show user/group status
+      ansible.builtin.debug:
+        msg: |
+          User/Group Status:
+          - User 'sol': {{ 'EXISTS' if sol_user_check.ansible_facts.getent_passwd is defined else 'DOES NOT EXIST' }}
+          - Group 'validator_admins': {{ 'EXISTS' if validator_group_check.ansible_facts.getent_group is defined else 'DOES NOT EXIST' }}
+
   roles:
-    - server_initial_setup
+    - test_service_creation

@@ -1,0 +1,12 @@
+---
+# Role-specific variables for test_build
+
+# Required packages for compilation
+htop_build_dependencies:
+  - build-essential
+  - autoconf
+  - automake
+  - libtool
+  - pkg-config
+  - libncurses5-dev
+  - libncursesw5-dev
