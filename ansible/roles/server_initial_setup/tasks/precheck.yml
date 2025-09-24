@@ -148,6 +148,15 @@
             - Snapshots: {{ mount_points.snapshots }} ({{ filesystem_formats.snapshots }})
 
     # Assertions that will stop the playbook if they fail
+
+    - name: Ensure ip_bastion variable is defined and not empty
+      ansible.builtin.assert:
+        that:
+          - ip_bastion is defined
+          - ip_bastion | length > 0
+        fail_msg: "ERROR! The variable 'ip_bastion' must be defined and not empty. Use -e 'ip_bastion=YOUR_BASTION_IP' when running the playbook."
+        success_msg: "ip_bastion variable is defined: {{ ip_bastion }}"
+    
     - name: Verify minimum number of disks
       ansible.builtin.assert:
         that: available_disks_list | length >= min_required_disks

@@ -9,7 +9,9 @@
 # ansible-playbook playbooks/pb_setup_metal_box.yml \
 #   -i solana_new_metal_box.yml \
 #   -e "target_host=new-metal-box" \
-#   -e "ansible_user=ubuntu"
+#   -e "ansible_user=ubuntu" \
+#   -e "bastion_host=your_bastion_host_ip" \
+#   -K
 
 - name: Setup Metal Box Server
   hosts: "{{ target_host }}"

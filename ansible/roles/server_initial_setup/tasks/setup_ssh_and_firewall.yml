@@ -7,6 +7,15 @@
   # Some metal providers don't use ssh.socket, so we ignore errors if it's not active
   ignore_errors: true
 
+# Capture the operator's public IP (the local machine running the playbook)
+- name: Get operator public IP
+  ansible.builtin.uri:
+    url: "https://ipinfo.io/json"
+    method: GET
+  register: operator_ipinfo
+  delegate_to: localhost
+  run_once: true
+
 - name: Find ssh.socket file location
   ansible.builtin.find:
     paths:
@@ -49,17 +58,34 @@
     line: 'Port {{ ssh_config.port }}'
   notify: Restart ssh
 
+
 # Configure firewall
 - name: Install UFW
   ansible.builtin.apt:
     name: ufw
     state: present
 
-- name: Allow SSH on port {{ firewall.ssh_port }}
+# Allow port 2522 only from the operator's public IP
+- name: "Allow operator ({{ ansible_user }}) public IP on port 2522 (operator access only)"
   community.general.ufw:
     rule: allow
     port: '{{ firewall.ssh_port }}'
     proto: tcp
+    from_ip: "{{ operator_ipinfo.json.ip }}"
+    comment: "Operator access only - ansible_user: {{ ansible_user }}"
+  when: operator_ipinfo is defined and operator_ipinfo.json.ip is defined
+  # Allows access to port 2522 only for the current operator: {{ ansible_user }}
+
+# Allow port 2522 from the bastion host IP if defined
+- name: "Allow bastion host ({{ bastion_host | default('not set') }}) on port 2522"
+  community.general.ufw:
+    rule: allow
+    port: '{{ firewall.ssh_port }}'
+    proto: tcp
+    from_ip: "{{ bastion_host }}"
+    comment: "Bastion host"
+  when: bastion_host is defined and bastion_host != ''
+  # Allows access to port 2522 for the bastion host
 
 - name: Allow TCP port ranges
   community.general.ufw:
