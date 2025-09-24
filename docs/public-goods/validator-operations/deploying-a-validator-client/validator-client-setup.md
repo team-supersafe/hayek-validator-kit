@@ -60,7 +60,7 @@ Ensure that the network cluster delinquency is lower than the requirement set by
 
 
     ```bash
-    solana -ut validators | grep "Delinquent Stake"
+    solana validators -ut | grep "Delinquent Stake"
     ```
 
 ## Scorched-Earth Setup
@@ -197,7 +197,9 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
     ```
 
     \
-    Now monitor the validator startup process\
+    To have a better understanding on what to look for when inspecting the logs see: [#initial-startup-monitoring](../metrics-and-monitoring/inspecting-logs.md#initial-startup-monitoring "mention") and for the Jito Relayer see: [#jito-relayer-logs](../metrics-and-monitoring/inspecting-logs.md#jito-relayer-logs "mention")\
+    \
+    Monitor the validator startup process\
 
 
     ```bash
@@ -205,9 +207,66 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
     ```
 
     \
-    While the validator is starting up you can see several stages passing by, Connecting to RPC, Downloading snapshot, Loading ledger, Health check and slot processing status.\
+    While the validator is starting up you can see several stages passing by, Connecting to RPC, Downloading snapshot, Loading ledger, Health check and slot processing status. This is known as the catchup process.\
     \
-    To have a better understanding on what to look for when inspecting the logs see: [#initial-startup-monitoring](../metrics-and-monitoring/inspecting-logs.md#initial-startup-monitoring "mention") and for the Jito Relayer see: [#jito-relayer-logs](../metrics-and-monitoring/inspecting-logs.md#jito-relayer-logs "mention")
+    The monitor process runs indefinitely showing the slot processing status. Here is how slot processing status looks like.\
+
+
+    ```bash
+    $ agave-validator -l /mnt/ledger/ monitor
+    Ledger location: /mnt/ledger/
+    Identity: hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ
+    Genesis Hash: 4uhcVJyU9pJkvQyS88uRDiswHXSCkY3zQawwpjk2NsNY
+    Version: 3.0.2
+    Shred Version: 9065
+    Gossip Address: 67.213.118.77:8001
+    TPU Address: 67.213.118.77:11222
+    ⠉ 160:31:18 | Processed Slot: 359481063 | Confirmed Slot: 359481063 | Finalized Slot: 359481029 | Full Snapshot Slot: 358092557 | Incremental Snapshot Slot: 358103854 | Transactions: 636783949018 | ◎116.007341756
+    ```
+
+    \
+    If you get connection errors see [#agave-monitor](client-troubleshooting.md#agave-monitor "mention")\
+    \
+    Typically if you are a few thousand slots behind or more, unless you have a really good hardware, it might not be feasible to catch up. See [https://youtu.be/HKR5dn5CSZo?si=F19E4xtqqKgd7kUm\&t=1974](https://youtu.be/HKR5dn5CSZo?si=F19E4xtqqKgd7kUm\&t=1974).\
+
+
+    Snapshot finder tool: [https://github.com/c29r3/solana-snapshot-finder](https://github.com/c29r3/solana-snapshot-finder) This is a python script that tests a bunch of RPC endpoints that are open to check what the best download speed is and then downloads the snapshot from that one.\
+
+
+    #### What to do if you can't catch up <a href="#what-to-do-if-you-cant-catch-up" id="what-to-do-if-you-cant-catch-up"></a>
+
+    * See [https://youtu.be/HKR5dn5CSZo?si=Kmul5ry-tsstZ0QL\&t=1958](https://youtu.be/HKR5dn5CSZo?si=Kmul5ry-tsstZ0QL\&t=1958)
+    * Wait! Catchup rate is variable and l've seen it improve very quickly after falling for a while
+    * Remove -no-snapshot-fetch and download a new snapshot (you will have a hole in your validator's ledger)
+    * Manually download a snapshot [https://github.com/c29r3/solana-snapshot-finder](https://github.com/c29r3/solana-snapshot-finder) is popular
+
+
+
+    #### Possible Reasons for falling behind (can't catch up) <a href="#possible-reasons-for-falling-behind-cant-catch-up" id="possible-reasons-for-falling-behind-cant-catch-up"></a>
+
+    * See [https://youtu.be/HKR5dn5CSZo?si=xvu47Bcre3L3jF2f\&t=2120](https://youtu.be/HKR5dn5CSZo?si=xvu47Bcre3L3jF2f\&t=2120)
+    * Snapshots you are downloading are too old (try using known validator, increase minimal download speed, snapshot finder)
+    * If snapshot is good, but you still can't catch up, it's likely a hardware perf issue
+      * Check CPU, Thermal Design Power (TDP), NVMe drives, IOPS, Network, etc.
+      * Try another server for a month?
+      * Consider upgrading
+
+    \
+    Whe monitor stage "Loading ledger" finishes you can use the following command to see the catchup rate in detail (use -ut for testnet -ud for devnet, and \* -um or no flag for mainnet):\
+    \
+    Typical output (while catching up and when is fully caughtup):\
+
+
+    ```bash
+    solana catchup -ut --our-localhost 8899
+    # ⠄ 77 slot(s) behind (us:320589449 them:320589526), our node is gaining at 6.0 slots/second (AVG: 5.0 slots/second, ETA: slot 320589524 in 
+
+    solana catchup -ut --our-localhost 8899
+    # hytUYBP59GaVyiqG2ebrDozwoziVd17V5HYRPHp5R2W has caught up (us:320587019 them:320587015)
+    ```
+
+    \
+    See [#check-catchup-speed](client-troubleshooting.md#check-catchup-speed "mention")
 
 ## Hot-Spare Setup
 
