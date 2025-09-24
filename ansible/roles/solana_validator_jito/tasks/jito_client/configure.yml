@@ -7,7 +7,6 @@
 - name: Set validator_keyset_name default if not defined
   ansible.builtin.set_fact:
     validator_keyset_name: "{{ validator_name }}"
-    target_host_running_jito_relayer: "{{ jito_relayer_type == 'co-hosted' }}"
   when: validator_keyset_name is not defined
 
 - name: Install validator keyset using shared task
