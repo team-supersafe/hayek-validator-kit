@@ -9,8 +9,8 @@
 # ansible-playbook playbooks/pb_setup_metal_box.yml \
 #   -i solana_new_metal_box.yml \
 #   -e "target_host=new-metal-box" \
-#   -e "ansible_user=ubuntu" \
-#   -e "bastion_host=your_bastion_host_ip" \
+#   -e "ansible_user=alice" \
+#   -e "csv_file=authorized_ips.csv" \
 #   -K
 
 - name: Setup Metal Box Server

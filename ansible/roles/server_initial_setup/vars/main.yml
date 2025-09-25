@@ -5,7 +5,7 @@ authorized_access_csv: "~/new-metal-box/{{ csv_file }}"
 # Fail2ban configuration
 fail2ban:
   sshd:
-    maxretry: 5
+    maxretry: 3
     findtime: 300
     bantime: 3600
     ignoreip: "127.0.0.1"

@@ -37,82 +37,82 @@
   become: false
   run_once: true
 
-# - name: Check CPU configuration for Solana servers
-#   block:
-#     # Check CPU governor setting
-#     - name: Check if CPU governor is set to performance mode
-#       ansible.builtin.shell: |
-#         for gov_file in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-#           if [ -f "$gov_file" ]; then
-#             cat "$gov_file"
-#           fi
-#         done | sort | uniq
-#       register: cpu_governor_check
-#       changed_when: false
-#       check_mode: false
+- name: Check CPU configuration for Solana servers
+  block:
+    # Check CPU governor setting
+    - name: Check if CPU governor is set to performance mode
+      ansible.builtin.shell: |
+        for gov_file in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+          if [ -f "$gov_file" ]; then
+            cat "$gov_file"
+          fi
+        done | sort | uniq
+      register: cpu_governor_check
+      changed_when: false
+      check_mode: false
 
-#     # Check CPU scaling driver
-#     - name: Check if p-state driver is active
-#       ansible.builtin.shell: |
-#         if [ -f "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver" ]; then
-#           cat "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver"
-#         else
-#           echo "scaling_driver file not found"
-#           exit 1
-#         fi
-#       register: pstate_check
-#       changed_when: false
-#       check_mode: false
+    # Check CPU scaling driver
+    - name: Check if p-state driver is active
+      ansible.builtin.shell: |
+        if [ -f "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver" ]; then
+          cat "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver"
+        else
+          echo "scaling_driver file not found"
+          exit 1
+        fi
+      register: pstate_check
+      changed_when: false
+      check_mode: false
 
-#     # Check AMD SMT/Hyperthreading status
-#     - name: Check if AMD SMT/Hyperthreading is enabled
-#       ansible.builtin.shell: |
-#         # Method 1: Check through SMT directory (modern kernels)
-#         if [ -d "/sys/devices/system/cpu/smt" ] && [ -f "/sys/devices/system/cpu/smt/control" ]; then
-#           cat "/sys/devices/system/cpu/smt/control"
-#           exit $?
-#         fi
+    # Check AMD SMT/Hyperthreading status
+    - name: Check if AMD SMT/Hyperthreading is enabled
+      ansible.builtin.shell: |
+        # Method 1: Check through SMT directory (modern kernels)
+        if [ -d "/sys/devices/system/cpu/smt" ] && [ -f "/sys/devices/system/cpu/smt/control" ]; then
+          cat "/sys/devices/system/cpu/smt/control"
+          exit $?
+        fi
 
-#         # Method 2: Check by counting siblings per core
-#         siblings_count=$(cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list | tr ',' ' ' | wc -w)
-#         if [ "$siblings_count" -gt 1 ]; then
-#           echo "on"
-#           exit 0
-#         else
-#           echo "off"
-#           exit 1
-#         fi
-#       register: smt_check
-#       changed_when: false
-#       check_mode: false
+        # Method 2: Check by counting siblings per core
+        siblings_count=$(cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list | tr ',' ' ' | wc -w)
+        if [ "$siblings_count" -gt 1 ]; then
+          echo "on"
+          exit 0
+        else
+          echo "off"
+          exit 1
+        fi
+      register: smt_check
+      changed_when: false
+      check_mode: false
 
-#     # Display verification results
-#     - name: Display CPU configuration status
-#       ansible.builtin.debug:
-#         msg: |
-#           CPU Configuration Status:
-#             - CPU Governor: {{ cpu_governor_check.stdout }}
-#             - CPU Scaling Driver: {{ pstate_check.stdout }}
-#             - AMD SMT/Hyperthreading: {{ smt_check.stdout }}
+    # Display verification results
+    - name: Display CPU configuration status
+      ansible.builtin.debug:
+        msg: |
+          CPU Configuration Status:
+            - CPU Governor: {{ cpu_governor_check.stdout }}
+            - CPU Scaling Driver: {{ pstate_check.stdout }}
+            - AMD SMT/Hyperthreading: {{ smt_check.stdout }}
 
-#     # Assertions that will stop the playbook if they fail
-#     - name: Verify CPU governor is set to performance mode
-#       ansible.builtin.assert:
-#         that: cpu_governor_check.stdout == "performance"
-#         fail_msg: "ERROR! CPU governor is not set to performance mode. Current value: {{ cpu_governor_check.stdout }}"
-#         success_msg: "CPU governor correctly set to performance mode"
+    # # Assertions that will stop the playbook if they fail
+    # - name: Verify CPU governor is set to performance mode
+    #   ansible.builtin.assert:
+    #     that: cpu_governor_check.stdout == "performance"
+    #     fail_msg: "ERROR! CPU governor is not set to performance mode. Current value: {{ cpu_governor_check.stdout }}"
+    #     success_msg: "CPU governor correctly set to performance mode"
 
-#     - name: Verify CPU is using p-state driver
-#       ansible.builtin.assert:
-#         that: "'pstate' in pstate_check.stdout"
-#         fail_msg: "ERROR! CPU is not using p-state driver. Current driver: {{ pstate_check.stdout }}"
-#         success_msg: "CPU correctly using p-state driver: {{ pstate_check.stdout }}"
+    # - name: Verify CPU is using p-state driver
+    #   ansible.builtin.assert:
+    #     that: "'pstate' in pstate_check.stdout"
+    #     fail_msg: "ERROR! CPU is not using p-state driver. Current driver: {{ pstate_check.stdout }}"
+    #     success_msg: "CPU correctly using p-state driver: {{ pstate_check.stdout }}"
 
-#     - name: Verify AMD SMT/Hyperthreading is enabled
-#       ansible.builtin.assert:
-#         that: smt_check.stdout == "on"
-#         fail_msg: "ERROR! AMD SMT/Hyperthreading is not enabled. Current status: {{ smt_check.stdout }}"
-#         success_msg: "AMD SMT/Hyperthreading correctly enabled"
+    - name: Verify AMD SMT/Hyperthreading is enabled
+      ansible.builtin.assert:
+        that: smt_check.stdout == "on"
+        fail_msg: "ERROR! AMD SMT/Hyperthreading is not enabled. Current status: {{ smt_check.stdout }}"
+        success_msg: "AMD SMT/Hyperthreading correctly enabled"
 
 - name: Check disk configuration for Solana servers
   block:
