@@ -1,0 +1,16 @@
+---
+# Install build dependencies
+# =========================
+# This task installs all necessary packages to compile htop from source.
+# Includes build tools, development libraries and dependencies.
+#
+# Best practices:
+# - Use update_cache: yes to ensure repositories are up to date
+# - Define dependencies in vars/main.yml for easy maintenance
+# - Use state: present to install only if not already present
+
+- name: Install build dependencies
+  ansible.builtin.apt:
+    name: "{{ htop_build_dependencies }}"
+    state: present
+    update_cache: true

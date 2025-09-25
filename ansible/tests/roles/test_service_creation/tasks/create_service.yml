@@ -1,0 +1,8 @@
+---
+# Create systemd service
+- name: Create systemd service
+  ansible.builtin.template:
+    src: service.j2
+    dest: "/etc/systemd/system/{{ service_name }}.service"
+    mode: '0644'
+    backup: true

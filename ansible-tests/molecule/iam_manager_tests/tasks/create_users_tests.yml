@@ -1,0 +1,123 @@
+---
+# =============================================================================
+# CREATE USERS TESTS - Molecule Testing and Verification Tasks
+# =============================================================================
+# Task 1: Verify validator_operators group exists
+- name: Test - Verify validator_operators group exists (created by create_users.yml)
+  ansible.builtin.getent:
+    database: group
+    key: validator_operators
+  register: validator_operators_group_test
+  failed_when: validator_operators_group_test.ansible_facts.getent_group.validator_operators is not defined
+
+# Task 2: Verify sol user exists with correct configuration
+- name: Test - Verify sol user exists (created by create_users.yml)
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ solana_user | default('sol') }}"
+  register: sol_user_test
+  failed_when: sol_user_test.ansible_facts.getent_passwd[solana_user | default('sol')] is not defined
+
+- name: Test - Verify sol user has bash shell (set by create_users.yml)
+  ansible.builtin.assert:
+    that: sol_user_test.ansible_facts.getent_passwd[solana_user | default('sol')][5] == '/bin/bash'
+    fail_msg: "Sol user does not have bash shell as set by create_users.yml"
+    success_msg: "✅ Sol user has bash shell (/bin/bash)"
+
+# Task 3: Verify sol home directory permissions (set by create_users.yml)
+- name: Test - Verify sol user home directory configuration
+  ansible.builtin.stat:
+    path: "/home/{{ solana_user | default('sol') }}"
+  register: sol_home_stat
+
+- name: Test - Verify sol home directory has correct permissions (set by create_users.yml)
+  ansible.builtin.assert:
+    that: 
+      - sol_home_stat.stat.exists
+      - sol_home_stat.stat.mode == '0775'
+      - sol_home_stat.stat.pw_name == (solana_user | default('sol'))
+      - sol_home_stat.stat.gr_name == 'validator_operators'
+    fail_msg: "Sol home directory has incorrect configuration (expected: 0775, validator_operators group)"
+    success_msg: "✅ Sol home directory has correct configuration (0775, validator_operators group)"
+
+# Task 4: Find users that have .ssh directories (created by create_users.yml)
+- name: Test - Find .ssh directories created by create_users.yml
+  ansible.builtin.find:
+    paths: /home
+    patterns: ".ssh"
+    file_type: directory
+    recurse: no
+    depth: 2
+  register: ssh_directories
+
+# Task 5: Verify .ssh directories have correct permissions (0700, set by create_users.yml)
+- name: Test - Verify .ssh directories have correct permissions
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  register: ssh_dir_perms
+  loop: "{{ ssh_directories.files }}"
+  when: ssh_directories.files | length > 0
+
+- name: Test - Assert .ssh directories have 0700 permissions (set by create_users.yml)
+  ansible.builtin.assert:
+    that: 
+      - item.stat.mode == '0700'
+      - item.stat.pw_name == (item.item.path | basename | dirname | basename)
+    fail_msg: "SSH directory {{ item.item.path }} has incorrect permissions (expected: 0700)"
+    success_msg: "✅ SSH directory {{ item.item.path }} has correct permissions (0700)"
+  loop: "{{ ssh_dir_perms.results }}"
+  when: 
+    - ssh_dir_perms.results is defined
+    - item.stat is defined
+
+# Task 6: Find authorized_keys files (created by create_users.yml)
+- name: Test - Find authorized_keys files created by create_users.yml
+  ansible.builtin.find:
+    paths: /home
+    patterns: "authorized_keys"
+    recurse: true
+    file_type: file
+  register: authorized_keys_files
+
+# Task 7: Verify authorized_keys files have correct permissions (0600, set by create_users.yml)
+- name: Test - Verify authorized_keys files have correct permissions
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  register: authorized_keys_perms
+  loop: "{{ authorized_keys_files.files }}"
+  when: authorized_keys_files.files | length > 0
+  no_log: true
+
+- name: Test - Assert authorized_keys files have 0600 permissions (set by create_users.yml)
+  ansible.builtin.assert:
+    that: 
+      - item.stat.mode == '0600'
+      - item.stat.pw_name == (item.item.path.split('/')[2])
+    fail_msg: "authorized_keys file {{ item.item.path }} has incorrect permissions (expected: 0600, owner: {{ item.stat.pw_name }})"
+    success_msg: "✅ authorized_keys file {{ item.item.path }} has correct permissions (0600, {{ item.stat.pw_name }})"
+  loop: "{{ authorized_keys_perms.results }}"
+  when: 
+    - authorized_keys_perms.results is defined
+    - item.stat is defined
+  no_log: true
+
+# Summary of what create_users.yml actually does
+- name: Test - Display create_users.yml verification summary
+  ansible.builtin.debug:
+    msg: 
+      - "================================================="
+      - "👥 CREATE_USERS.YML VERIFICATION - RESULTS"
+      - "================================================="
+      - "✅ Tasks verified from create_users.yml:"
+      - ""
+      - "✅ Group Creation:"
+      - "   • validator_operators group: Created ✓"
+      - ""
+      - "✅ Sol User Configuration:"
+      - "   • Sol user ({{ solana_user | default('sol') }}): Created with bash shell ✓"
+      - "   • Sol home directory: /home/{{ solana_user | default('sol') }} (0775, validator_operators) ✓"
+      - ""
+      - "✅ SSH Infrastructure:"
+      - "   • .ssh directories: {{ ssh_directories.files | length }} found with 0700 permissions ✓"
+      - "   • authorized_keys files: {{ authorized_keys_files | length }} found with 0600 permissions ✓"
+      - "===================================================="

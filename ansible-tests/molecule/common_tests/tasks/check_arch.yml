@@ -1,0 +1,53 @@
+---
+# ========================================
+# HOST ARCHITECTURE VERIFICATION
+# ========================================
+
+- name: Get current timestamp for logging
+  ansible.builtin.setup:
+    filter: ansible_date_time
+
+- name: Import host architecture detection task
+  ansible.builtin.import_tasks: ../../../../ansible/roles/common/tasks/set_host_architecture.yml
+
+- name: Verify host_arch variable was set correctly
+  ansible.builtin.assert:
+    that:
+      - host_arch is defined
+      - host_arch != ""
+      - host_arch != "unsupported"
+    fail_msg: "host_arch variable was not set correctly: {{ host_arch | default('undefined') }}"
+    success_msg: "✓ host_arch variable correctly set to: {{ host_arch }}"
+
+- name: Verify host_arch matches expected patterns
+  ansible.builtin.assert:
+    that:
+      - host_arch in ['x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-apple-darwin', 'aarch64-apple-darwin']
+    fail_msg: "host_arch has unexpected value: {{ host_arch }}"
+    success_msg: "✓ host_arch has valid value: {{ host_arch }}"
+
+- name: Verify architecture consistency with system facts
+  ansible.builtin.assert:
+    that:
+      - >-
+        (ansible_architecture == 'x86_64' and ansible_os_family in ['Linux', 'Debian'] and host_arch == 'x86_64-unknown-linux-gnu') or
+        (ansible_architecture == 'aarch64' and ansible_os_family in ['Linux', 'Debian'] and host_arch == 'aarch64-unknown-linux-gnu') or
+        (ansible_architecture == 'x86_64' and ansible_os_family == 'Darwin' and host_arch == 'x86_64-apple-darwin') or
+        (ansible_architecture == 'arm64' and ansible_os_family == 'Darwin' and host_arch == 'aarch64-apple-darwin')
+    fail_msg: |
+      Architecture mismatch detected:
+      - ansible_architecture: {{ ansible_architecture }}
+      - ansible_os_family: {{ ansible_os_family }}
+      - host_arch: {{ host_arch }}
+    success_msg: "✓ host_arch is consistent with system architecture ({{ ansible_architecture }}/{{ ansible_os_family }})"
+
+- name: Display architecture verification summary
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      HOST ARCHITECTURE VERIFICATION PASSED
+      ========================================
+      System Architecture: {{ ansible_architecture }}
+      OS Family: {{ ansible_os_family }}
+      Detected host_arch: {{ host_arch }}
+      ========================================

@@ -1,0 +1,10 @@
+# System Administrators - Full system access with self-service password reset
+# This file is managed by Ansible - DO NOT EDIT MANUALLY
+
+# Command alias for password self-service
+Cmnd_Alias PASSWD_SELF = /usr/local/sbin/reset-my-password
+
+# Full system access for sysadmin group
+# NOPASSWD only for password self-service, password required for all other commands
+%sysadmin ALL=(ALL) NOPASSWD: PASSWD_SELF
+%validator_operators ALL=(ALL) NOPASSWD: PASSWD_SELF
