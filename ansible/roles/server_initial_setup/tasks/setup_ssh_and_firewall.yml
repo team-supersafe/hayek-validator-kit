@@ -1,4 +1,12 @@
 ---
+# Capture the operator's public IP (the local machine running the playbook)
+- name: Get operator public IP
+  ansible.builtin.uri:
+    url: "https://ipinfo.io/json"
+    method: GET
+  register: operator_ipinfo
+  delegate_to: localhost
+  run_once: true
 
 # Check if ssh.socket unit file exists
 - name: Check if ssh.socket unit file exists
@@ -11,18 +19,10 @@
   ansible.builtin.shell: systemctl is-active ssh.socket
   register: ssh_socket_active
   changed_when: false
+  failed_when: false
   ignore_errors: true
+  no_log: true
   when: ssh_socket_unit.stat.exists
-
-# Capture the operator's public IP (the local machine running the playbook)
-- name: Get operator public IP
-  ansible.builtin.uri:
-    url: "https://ipinfo.io/json"
-    method: GET
-  register: operator_ipinfo
-  delegate_to: localhost
-  run_once: true
-
 
 # Find ssh.socket file location (only if unit file exists and socket is active)
 - name: Find ssh.socket file location
@@ -41,6 +41,7 @@
   ansible.builtin.shell: systemctl is-active ssh.service
   register: ssh_service_active
   changed_when: false
+  failed_when: false
 
 - name: Start and enable ssh.service if not active
   ansible.builtin.systemd:
