@@ -95,19 +95,7 @@
             - CPU Scaling Driver: {{ pstate_check.stdout }}
             - AMD SMT/Hyperthreading: {{ smt_check.stdout }}
 
-    # # Assertions that will stop the playbook if they fail
-    # - name: Verify CPU governor is set to performance mode
-    #   ansible.builtin.assert:
-    #     that: cpu_governor_check.stdout == "performance"
-    #     fail_msg: "ERROR! CPU governor is not set to performance mode. Current value: {{ cpu_governor_check.stdout }}"
-    #     success_msg: "CPU governor correctly set to performance mode"
-
-    # - name: Verify CPU is using p-state driver
-    #   ansible.builtin.assert:
-    #     that: "'pstate' in pstate_check.stdout"
-    #     fail_msg: "ERROR! CPU is not using p-state driver. Current driver: {{ pstate_check.stdout }}"
-    #     success_msg: "CPU correctly using p-state driver: {{ pstate_check.stdout }}"
-
+            
     - name: Verify AMD SMT/Hyperthreading is enabled
       ansible.builtin.assert:
         that: smt_check.stdout == "on"

@@ -25,6 +25,10 @@
 - name: Include security tasks
   ansible.builtin.import_tasks: setup_ssh_and_firewall.yml
 
+# Validates that all configurations were applied correctly before restart
+- name: Include post-configuration validation tasks
+  ansible.builtin.import_tasks: post_configuration_checks.yml
+
 # Prompts for server restart and handles reconnection
 - name: Include restart server tasks
   ansible.builtin.import_tasks: restart_server.yml

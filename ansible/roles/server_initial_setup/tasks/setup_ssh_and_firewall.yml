@@ -156,6 +156,12 @@
     name: fail2ban
     state: present
 
+# Clean existing fail2ban config before setting up new one
+- name: Remove existing fail2ban defaults config
+  ansible.builtin.file:
+    path: /etc/fail2ban/jail.d/defaults-debian.conf
+    state: absent
+
 # Ensure fail2ban config for Debian defaults
 - name: Ensure fail2ban config for Debian defaults
   become: true
@@ -177,6 +183,7 @@
     create: yes
     marker: "# {mark} ANSIBLE MANAGED BLOCK"
   notify: Restart fail2ban
+
 # Configure specific SSH security settings only
 - name: Remove all PermitRootLogin lines
   ansible.builtin.lineinfile:

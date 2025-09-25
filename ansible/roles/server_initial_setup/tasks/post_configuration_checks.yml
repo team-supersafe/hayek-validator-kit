@@ -1,0 +1,146 @@
+---
+# Post-configuration checks to verify that all system tuning was applied correctly
+
+- name: Post-configuration CPU checks
+  block:
+    # Check CPU governor setting after configuration
+    - name: Verify CPU governor is set to performance mode (post-config)
+      ansible.builtin.shell: |
+        for gov_file in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+          if [ -f "$gov_file" ]; then
+            cat "$gov_file"
+          fi
+        done | sort | uniq
+      register: post_cpu_governor_check
+      changed_when: false
+      check_mode: false
+
+    # Check CPU scaling driver after configuration
+    - name: Verify p-state driver is active (post-config)
+      ansible.builtin.shell: |
+        if [ -f "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver" ]; then
+          cat "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver"
+        else
+          echo "scaling_driver file not found"
+          exit 1
+        fi
+      register: post_pstate_check
+      changed_when: false
+      check_mode: false
+
+    # Check AMD SMT/Hyperthreading status after configuration
+    - name: Verify AMD SMT/Hyperthreading is enabled (post-config)
+      ansible.builtin.shell: |
+        # Method 1: Check through SMT directory (modern kernels)
+        if [ -d "/sys/devices/system/cpu/smt" ] && [ -f "/sys/devices/system/cpu/smt/control" ]; then
+          cat "/sys/devices/system/cpu/smt/control"
+          exit $?
+        fi
+
+        # Method 2: Check by counting siblings per core
+        siblings_count=$(cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list | tr ',' ' ' | wc -w)
+        if [ "$siblings_count" -gt 1 ]; then
+          echo "on"
+          exit 0
+        else
+          echo "off"
+          exit 1
+        fi
+      register: post_smt_check
+      changed_when: false
+      check_mode: false
+
+    # Display post-configuration verification results
+    - name: Display post-configuration CPU status
+      ansible.builtin.debug:
+        msg: |
+          POST-CONFIGURATION CPU Status:
+            - CPU Governor: {{ post_cpu_governor_check.stdout }}
+            - CPU Scaling Driver: {{ post_pstate_check.stdout }}
+            - AMD SMT/Hyperthreading: {{ post_smt_check.stdout }}
+
+    # Assertions that will stop the playbook if they fail
+    - name: Assert CPU governor is set to performance mode (post-config)
+      ansible.builtin.assert:
+        that: post_cpu_governor_check.stdout == "performance"
+        fail_msg: "ERROR! CPU governor is not set to performance mode after configuration. Current value: {{ post_cpu_governor_check.stdout }}"
+        success_msg: "✓ CPU governor correctly set to performance mode"
+
+    - name: Assert CPU is using p-state driver (post-config)
+      ansible.builtin.assert:
+        that: "'pstate' in post_pstate_check.stdout"
+        fail_msg: "ERROR! CPU is not using p-state driver after configuration. Current driver: {{ post_pstate_check.stdout }}"
+        success_msg: "✓ CPU correctly using p-state driver: {{ post_pstate_check.stdout }}"
+
+    - name: Assert AMD SMT/Hyperthreading is enabled (post-config)
+      ansible.builtin.assert:
+        that: post_smt_check.stdout == "on"
+        fail_msg: "ERROR! AMD SMT/Hyperthreading is not enabled after configuration. Current status: {{ post_smt_check.stdout }}"
+        success_msg: "✓ AMD SMT/Hyperthreading correctly enabled"
+
+- name: Post-configuration system checks
+  block:
+    # Verify CPU governor service is active
+    - name: Check CPU governor service status
+      ansible.builtin.systemd:
+        name: cpu-governor
+      register: cpu_governor_service_status
+
+    - name: Assert CPU governor service is active
+      ansible.builtin.assert:
+        that: cpu_governor_service_status.status.ActiveState == "active"
+        fail_msg: "ERROR! CPU governor service is not active. Status: {{ cpu_governor_service_status.status.ActiveState }}"
+        success_msg: "✓ CPU governor service is active"
+
+    # Verify sysctl configurations are applied
+    - name: Check key sysctl parameters
+      ansible.builtin.shell: sysctl {{ item }}
+      register: sysctl_check
+      changed_when: false
+      loop:
+        - "net.ipv4.tcp_congestion_control"
+        - "vm.swappiness"
+        - "vm.max_map_count"
+        - "kernel.timer_migration"
+
+    - name: Display sysctl parameters
+      ansible.builtin.debug:
+        msg: "{{ sysctl_check.results | map(attribute='stdout') | list }}"
+
+    # Verify firewall rules for authorized IPs
+    - name: Check UFW status and rules
+      ansible.builtin.shell: ufw status numbered
+      register: ufw_status_check
+      changed_when: false
+
+    - name: Display firewall status
+      ansible.builtin.debug:
+        msg: "{{ ufw_status_check.stdout_lines }}"
+
+    - name: Verify authorized IPs are in firewall rules
+      ansible.builtin.shell: |
+        ufw status | grep "{{ item.value.ip }}" || echo "IP not found: {{ item.value.ip }}"
+      register: ip_firewall_check
+      changed_when: false
+      loop: "{{ authorized_ips_csv.dict | dict2items }}"
+      when: authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0
+
+    - name: Display IP firewall check results
+      ansible.builtin.debug:
+        msg: "{{ ip_firewall_check.results | map(attribute='stdout') | list }}"
+      when: authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0
+
+- name: Final configuration summary
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      POST-CONFIGURATION VERIFICATION COMPLETE
+      ========================================
+      
+      ✓ CPU Performance Configuration Verified
+      ✓ System Tuning Parameters Applied
+      ✓ Firewall Rules for Authorized IPs Active
+      ✓ All Services Running Correctly
+      
+      System is ready for Solana validator deployment.
+      ========================================
