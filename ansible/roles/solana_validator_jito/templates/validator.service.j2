@@ -9,6 +9,7 @@ Restart=always
 RestartSec=1
 User={{ solana_user }}
 LimitNOFILE=1000000
+LimitMEMLOCK=2000000000
 LogRateLimitIntervalSec=0
 ExecStart={{ validator_script_path }}
 

@@ -1,0 +1,13 @@
+---
+- name: Prepare
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Ensure remote tmp directory exists
+      ansible.builtin.raw: mkdir -p /tmp/.ansible/tmp && chmod 1777 /tmp /tmp/.ansible /tmp/.ansible/tmp
+
+    - name: Update apt cache
+      ansible.builtin.raw: apt update -y
+
+    

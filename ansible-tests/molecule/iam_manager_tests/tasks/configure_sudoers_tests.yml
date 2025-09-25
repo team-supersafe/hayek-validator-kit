@@ -1,0 +1,134 @@
+---
+# =============================================================================
+# SUDOERS CONFIGURATION TESTS - Molecule Testing and Verification Tasks
+# =============================================================================
+# These tests verify the specific functionality implemented by configure_sudoers.yml:
+# 1. Creates /etc/sudoers.d/10-sysadmin (mode 0440)
+# 2. Creates /etc/sudoers.d/99-self-service (mode 0440) 
+# 3. Creates /etc/profile.d/sysadmin-welcome.sh (mode 0755)
+# 4. Creates /etc/sudoers.d/30-validator-operators (mode 0440)
+# 5. Creates /etc/sudoers.d/40-validator-viewers (mode 0440)
+
+# Verifies that 10-sysadmin file was created by configure_sudoers task
+# This file provides full system access for sysadmin group (password required)
+- name: Test - Verify 10-sysadmin sudoers file exists
+  ansible.builtin.stat:
+    path: /etc/sudoers.d/10-sysadmin
+  register: sysadmin_file_stat
+
+- name: Test - Assert 10-sysadmin has correct mode 0440
+  ansible.builtin.assert:
+    that:
+      - sysadmin_file_stat.stat.exists
+      - sysadmin_file_stat.stat.mode == '0440'
+    fail_msg: "/etc/sudoers.d/10-sysadmin missing or incorrect mode (expected 0440)"
+    success_msg: "✅ /etc/sudoers.d/10-sysadmin exists with mode 0440"
+
+# Verifies that 99-self-service file was created by configure_sudoers task  
+# This file provides self-service password reset for sysadmin group (NOPASSWD)
+- name: Test - Verify 99-self-service sudoers file exists
+  ansible.builtin.stat:
+    path: /etc/sudoers.d/99-self-service
+  register: selfservice_file_stat
+
+- name: Test - Assert 99-self-service has correct mode 0440
+  ansible.builtin.assert:
+    that:
+      - selfservice_file_stat.stat.exists
+      - selfservice_file_stat.stat.mode == '0440'
+    fail_msg: "/etc/sudoers.d/99-self-service missing or incorrect mode (expected 0440)"
+    success_msg: "✅ /etc/sudoers.d/99-self-service exists with mode 0440"
+
+# Verifies that sysadmin-welcome.sh script was created by configure_sudoers task
+# This script provides password reset instructions for sysadmin users
+- name: Test - Verify sysadmin-welcome.sh script exists  
+  ansible.builtin.stat:
+    path: /etc/profile.d/sysadmin-welcome.sh
+  register: welcome_script_stat
+
+- name: Test - Assert sysadmin-welcome.sh has correct mode 0755 and ownership
+  ansible.builtin.assert:
+    that:
+      - welcome_script_stat.stat.exists
+      - welcome_script_stat.stat.mode == '0755'
+      - welcome_script_stat.stat.pw_name == 'root'
+      - welcome_script_stat.stat.gr_name == 'root'
+    fail_msg: "/etc/profile.d/sysadmin-welcome.sh missing or incorrect configuration"
+    success_msg: "✅ /etc/profile.d/sysadmin-welcome.sh exists with mode 0755, root:root"
+
+# Verifies that 30-validator-operators file was created by configure_sudoers task
+# This file provides sudo access for validator_operators group
+- name: Test - Verify 30-validator-operators sudoers file exists
+  ansible.builtin.stat:
+    path: /etc/sudoers.d/30-validator-operators  
+  register: validator_ops_file_stat
+
+- name: Test - Assert 30-validator-operators has correct mode 0440
+  ansible.builtin.assert:
+    that:
+      - validator_ops_file_stat.stat.exists
+      - validator_ops_file_stat.stat.mode == '0440'
+    fail_msg: "/etc/sudoers.d/30-validator-operators missing or incorrect mode (expected 0440)"
+    success_msg: "✅ /etc/sudoers.d/30-validator-operators exists with mode 0440"
+
+# Verifies that 40-validator-viewers file was created by configure_sudoers task
+# This file provides sudo access for validator_viewers group  
+- name: Test - Verify 40-validator-viewers sudoers file exists
+  ansible.builtin.stat:
+    path: /etc/sudoers.d/40-validator-viewers
+  register: validator_viewers_file_stat
+
+- name: Test - Assert 40-validator-viewers has correct mode 0440
+  ansible.builtin.assert:
+    that:
+      - validator_viewers_file_stat.stat.exists
+      - validator_viewers_file_stat.stat.mode == '0440'
+    fail_msg: "/etc/sudoers.d/40-validator-viewers missing or incorrect mode (expected 0440)"
+    success_msg: "✅ /etc/sudoers.d/40-validator-viewers exists with mode 0440"
+
+# Validates that all sudoers files created have valid syntax
+# configure_sudoers task uses 'visudo -cf %s' validation during creation
+- name: Test - Validate syntax of all sudoers files created by configure_sudoers
+  ansible.builtin.command: visudo -cf {{ item }}
+  loop:
+    - /etc/sudoers.d/10-sysadmin
+    - /etc/sudoers.d/99-self-service  
+    - /etc/sudoers.d/30-validator-operators
+    - /etc/sudoers.d/40-validator-viewers
+  register: syntax_validation
+  changed_when: false
+  failed_when: false
+
+- name: Test - Assert all sudoers files have valid syntax
+  ansible.builtin.assert:
+    that: item.rc == 0
+    fail_msg: "{{ item.item }} has invalid sudoers syntax"
+    success_msg: "✅ {{ item.item | basename }} has valid sudoers syntax"
+  loop: "{{ syntax_validation.results }}"
+  when: syntax_validation.results is defined
+  no_log: true
+
+# Shows a summary of exactly what configure_sudoers task created
+# Verifies all 5 files specified in the original task
+- name: Test - Display configure_sudoers verification summary
+  ansible.builtin.debug:
+    msg: 
+      - "============================================================================="
+      - "🛡️ CONFIGURE_SUDOERS TASK VERIFICATION - RESULTS"
+      - "============================================================================="
+      - "Files created by configure_sudoers.yml task:"
+      - ""
+      - "✅ Sudoers Files (mode 0440):"
+      - "   • /etc/sudoers.d/10-sysadmin: {{ '✓' if sysadmin_file_stat.stat.exists else '✗' }}"
+      - "   • /etc/sudoers.d/99-self-service: {{ '✓' if selfservice_file_stat.stat.exists else '✗' }}"
+      - "   • /etc/sudoers.d/30-validator-operators: {{ '✓' if validator_ops_file_stat.stat.exists else '✗' }}"
+      - "   • /etc/sudoers.d/40-validator-viewers: {{ '✓' if validator_viewers_file_stat.stat.exists else '✗' }}"
+      - ""
+      - "✅ Profile Script (mode 0755):"
+      - "   • /etc/profile.d/sysadmin-welcome.sh: {{ '✓' if welcome_script_stat.stat.exists else '✗' }}"
+      - ""
+      - "✅ Validation:"
+      - "   • All files have valid sudoers syntax: ✓"
+      - "============================================================================="
+      - "CONFIGURE_SUDOERS TASK VERIFICATION COMPLETED!"
+      - "============================================================================="

@@ -1,0 +1,55 @@
+---
+- name: Precheck - Check if agave_version is defined
+  ansible.builtin.fail:
+    msg: "agave_version variable must be defined"
+  when: agave_version is not defined
+
+- name: Precheck - Validate agave_version format
+  ansible.builtin.fail:
+    msg: "agave_version must follow semantic versioning pattern (e.g. 1.2.3)"
+  when: not agave_version | regex_search('^[0-9]+\.[0-9]+\.[0-9]+$')
+
+- name: Precheck - Display version message
+  debug:
+    msg: "Start Solana CLI setup for version {{ agave_version }}"
+
+# Check if the desired version of Solana CLI is already installed
+- name: Check if Solana CLI binary exists
+  ansible.builtin.stat:
+    path: "{{ solana_install_dir }}/solana"
+  register: solana_binary
+
+- name: Precheck - Get installed Solana CLI version
+  ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
+  register: installed_version
+  changed_when: false
+  failed_when: false
+  when: solana_binary.stat.exists
+
+- name: Precheck - Extract installed version number
+  ansible.builtin.set_fact:
+    installed_solana_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
+  when: solana_binary.stat.exists and installed_version.stdout is defined
+
+- name: Precheck - Set fact for Solana CLI installation needed
+  ansible.builtin.set_fact:
+    solana_cli_already_installed: >-
+      {{ solana_binary.stat.exists and
+         installed_solana_version is defined and
+         installed_solana_version == agave_version }}
+
+- name: Precheck - Find solana binary in PATH
+  ansible.builtin.command: which solana
+  register: solana_which_result
+  changed_when: false
+  failed_when: false
+
+- name: Debug installation status
+  ansible.builtin.debug:
+    msg: |
+      Solana CLI installation status:
+      - Binary exists: {{ solana_binary.stat.exists }}
+      - Binary path: {{ solana_binary.stat.exists | ternary(solana_install_dir ~ '/solana', 'Not found') }}
+      - Installed version: {{ installed_solana_version | default('not found') }}
+      - Desired version: {{ agave_version }}
+      - Already installed: {{ solana_cli_already_installed }}

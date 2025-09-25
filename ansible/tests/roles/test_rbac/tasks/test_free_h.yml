@@ -1,0 +1,14 @@
+---
+# Test free -h permissions
+# Expected: All roles can run free -h
+
+- name: Test permissions for free -h
+  ansible.builtin.shell:
+    cmd: "timeout 5 free -h"
+    executable: /bin/bash
+  register: free_h_result
+  ignore_errors: true
+
+- name: Display free -h result
+  ansible.builtin.debug:
+    msg: "User {{ ansible_user }} - Attempt to run free -h: {{ 'SUCCESS' if free_h_result.rc == 0 else 'FAILED' }}"

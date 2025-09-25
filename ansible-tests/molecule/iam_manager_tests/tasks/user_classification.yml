@@ -1,0 +1,77 @@
+---
+# ========================================
+# RBAC VERIFICATION - USER CLASSIFICATION
+# ========================================
+
+- name: Get all users from the system
+  ansible.builtin.getent:
+    database: passwd
+  register: system_users
+
+- name: Get all groups from the system
+  ansible.builtin.getent:
+    database: group
+  register: system_groups
+
+- name: Detect system users dynamically
+  ansible.builtin.set_fact:
+    system_users_excluded: "{{ system_users_excluded | default([]) + [item.key] }}"
+  loop: "{{ system_users.ansible_facts.getent_passwd | dict2items }}"
+  when:
+    - item.value[1] | int < 1000  # UID less than 1000 = system user
+  no_log: true
+
+- name: Find users in RBAC groups dynamically
+  ansible.builtin.set_fact:
+    rbac_users: "{{ rbac_users | default({}) | combine({item.key: {'groups': [], 'uid': item.value[1], 'shell': item.value[5]}}) }}"
+  loop: "{{ system_users.ansible_facts.getent_passwd | dict2items }}"
+  when:
+    - item.key not in (system_users_excluded | default([]))
+    - item.value | length > 5
+    - item.value[5] not in ['/bin/false', '/usr/sbin/nologin', '/bin/sync']  # Exclude non-login users
+  no_log: true
+
+- name: Get detailed group memberships for RBAC users
+  ansible.builtin.command: "groups {{ item.key }}"
+  register: user_group_details
+  loop: "{{ rbac_users | dict2items }}"
+  changed_when: false
+
+- name: Check sudo privileges for each user to identify full privilege users
+  ansible.builtin.shell: "sudo -l -U {{ item.key }} 2>/dev/null | grep -E 'ALL=\\(ALL\\)\\s+(ALL|PASSWD)' || true"
+  register: user_sudo_privileges
+  loop: "{{ rbac_users | dict2items }}"
+  changed_when: false
+  failed_when: false
+
+- name: Parse group memberships and classify users (excluding full privilege users)
+  ansible.builtin.set_fact:
+    classified_users: "{{ classified_users | default({}) | combine({
+      'sysadmin': classified_users.sysadmin | default([]) + ([item.item.key] if 'sysadmin' in item.stdout else []),
+      'validator_operators': classified_users.validator_operators | default([]) + ([item.item.key] if 'validator_operators' in item.stdout else []),
+      'validator_viewers': classified_users.validator_viewers | default([]) + ([item.item.key] if 'validator_viewers' in item.stdout else []),
+      'ansible_executor': classified_users.ansible_executor | default([]) + ([item.item.key] if 'ansible_executor' in item.stdout else [])
+    }) }}"
+  loop: "{{ user_group_details.results }}"
+  no_log: true
+
+- name: Identify users with full sudo privileges (to exclude from negative tests)
+  ansible.builtin.set_fact:
+    full_privilege_users: "{{ full_privilege_users | default([]) + [item.item.key] }}"
+  loop: "{{ user_sudo_privileges.results }}"
+  when: item.stdout != "" and ('ALL=(ALL) ALL' in item.stdout or 'ALL=(ALL) PASSWD' in item.stdout)
+  no_log: true
+
+- name: Filter out full privilege users from negative testing groups
+  ansible.builtin.set_fact:
+    filtered_users: "{{ filtered_users | default({}) | combine({
+      'validator_operators_filtered': (classified_users.validator_operators | default([])) | difference(full_privilege_users | default([])),
+      'validator_viewers_filtered': (classified_users.validator_viewers | default([])) | difference(full_privilege_users | default([]))
+    }) }}"
+
+- name: Display classified users for verification
+  ansible.builtin.debug:
+    msg: |
+      Classified users: {{ classified_users }}
+      Full privilege users (excluded from negative tests): {{ full_privilege_users | default([]) }}
+      Filtered users for negative testing: {{ filtered_users }}

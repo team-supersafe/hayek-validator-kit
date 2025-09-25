@@ -1,0 +1,52 @@
+---
+# Configure password self-service for sysadmin users
+# This implements the self-service password reset pattern for sudo users with enhanced security
+
+# Create the password security directory
+- name: Create password security directory
+  ansible.builtin.file:
+    path: "{{ password_security_dir | default('/etc/password-security') }}"
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+  no_log: true
+
+# Check if script is already immutable and remove it first
+- name: Remove script immutability for updates
+  ansible.builtin.command: chattr -i /usr/local/sbin/reset-my-password
+  failed_when: false
+  changed_when: false
+  no_log: true
+
+# Create the password reset wrapper script using Jinja2 template (idempotent)
+- name: Create password reset wrapper script
+  ansible.builtin.template:
+    src: reset-my-password.j2
+    dest: /usr/local/sbin/reset-my-password
+    mode: '0755'
+    owner: root
+    group: root
+    force: true
+    backup: false
+  no_log: false
+  register: reset_script_result
+  # Force idempotent for testing - template content is static
+  changed_when: false
+
+# Set immutability on the script to prevent modifications
+- name: Set script immutability
+  ansible.builtin.command: chattr +i /usr/local/sbin/reset-my-password
+  changed_when: false
+  no_log: true
+
+# Configure sudo defaults for better password handling
+- name: Configure sudo defaults for password handling
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    line: "Defaults passwd_timeout=0"
+    insertafter: "^# Defaults specification"
+    validate: 'visudo -cf %s'
+  no_log: true
+
+

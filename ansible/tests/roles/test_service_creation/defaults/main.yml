@@ -1,0 +1,15 @@
+---
+# Simple web service configuration
+service_name: "unix-test-service"
+service_description: "Unix Test Service"
+service_user: "sol"
+service_group: "validator_operators"
+service_script_path: "/home/sol/unix-test.sh"
+service_port: 8080
+
+# Service configuration
+service_restart_sec: "10"
+service_timeout_stop_sec: "30"
+
+# Timeout
+timeout_sec: "30"

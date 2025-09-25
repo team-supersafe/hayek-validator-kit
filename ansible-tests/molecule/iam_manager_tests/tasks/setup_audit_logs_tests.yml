@@ -1,0 +1,82 @@
+---
+# =============================================================================
+# AUDIT LOGS SETUP TESTS - Molecule Testing and Verification Tasks
+# =============================================================================
+# These tests verify that setup_audit_logs.yml creates files that:
+# 1. Audit log directory exists with correct permissions
+# 2. Password reset log file exists and is not empty (if used)
+# 3. Logrotate configuration exists
+
+# Verify audit log directory exists (should already exist as /var/log)
+- name: Test - Verify audit log directory exists
+  ansible.builtin.stat:
+    path: "{{ password_audit_log_dir | default('/var/log') }}"
+  register: audit_log_dir_stat
+
+- name: Test - Assert audit log directory has correct configuration
+  ansible.builtin.assert:
+    that:
+      - audit_log_dir_stat.stat.exists
+      - audit_log_dir_stat.stat.isdir
+      - audit_log_dir_stat.stat.mode == '0755'
+      - audit_log_dir_stat.stat.pw_name == 'root'
+      - audit_log_dir_stat.stat.gr_name == 'root'
+    fail_msg: "Audit log directory missing or has incorrect configuration"
+    success_msg: "✅ Audit log directory exists with correct permissions (0755, root:root)"
+
+# Verify password reset log file exists
+- name: Test - Verify password reset log file exists
+  ansible.builtin.stat:
+    path: "{{ password_audit_log | default('/var/log/password-reset.log') }}"
+  register: password_log_file_stat
+
+- name: Test - Assert password reset log file has correct configuration
+  ansible.builtin.assert:
+    that:
+      - password_log_file_stat.stat.exists
+      - password_log_file_stat.stat.mode == '0640'
+      - password_log_file_stat.stat.pw_name == 'root'
+      - password_log_file_stat.stat.gr_name == 'adm'
+    fail_msg: "Password reset log file missing or has incorrect configuration"
+    success_msg: "✅ Password reset log file exists with correct permissions (0640, root:adm)"
+
+# Verify logrotate configuration exists
+- name: Test - Verify logrotate configuration exists
+  ansible.builtin.stat:
+    path: /etc/logrotate.d/password-reset
+  register: logrotate_config_stat
+
+- name: Test - Assert logrotate configuration has correct permissions
+  ansible.builtin.assert:
+    that:
+      - logrotate_config_stat.stat.exists
+      - logrotate_config_stat.stat.mode == '0644'
+      - logrotate_config_stat.stat.pw_name == 'root'
+      - logrotate_config_stat.stat.gr_name == 'root'
+    fail_msg: "Logrotate configuration missing or has incorrect permissions"
+    success_msg: "✅ Logrotate configuration exists with correct permissions (0644, root:root)"
+
+# Verify logrotate configuration content is not empty
+- name: Test - Verify logrotate configuration is not empty
+  ansible.builtin.assert:
+    that: logrotate_config_stat.stat.size > 0
+    fail_msg: "Logrotate configuration file is empty"
+    success_msg: "✅ Logrotate configuration file is not empty ({{ logrotate_config_stat.stat.size }} bytes)"
+
+# Summary
+- name: Test - Display audit logs verification summary
+  ansible.builtin.debug:
+    msg: 
+      - "============================================================================="
+      - "📊 AUDIT LOGS SETUP VERIFICATION - RESULTS"
+      - "============================================================================="
+      - "✅ Audit log directory: {{ password_audit_log_dir | default('/var/log') }} ✓"
+      - "✅ Password reset log: {{ password_audit_log | default('/var/log/password-reset.log') }} ✓"
+      - "✅ Logrotate config: /etc/logrotate.d/password-reset ✓"
+      - ""
+      - "File Verification Results:"
+      - "• Directory exists (0755, root:root): ✓"
+      - "• Log file exists (0640, root:adm): ✓"
+      - "• Logrotate config exists (0644, root:root): ✓"
+      - "• Configuration not empty: ✓"
+      - "============================================================================="
