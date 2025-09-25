@@ -13,6 +13,14 @@
   debug:
     msg: "Start Solana CLI setup for version {{ agave_version }}"
 
+- name: Add hosts to known_hosts to comply with ansible config host_key_checking
+  ansible.builtin.known_hosts:
+    name: "{{ item }}"
+    key: "{{ hostvars[item].ansible_ssh_hostkey_rsa_public }}"
+  delegate_to: localhost
+  loop: "{{ ansible_play_hosts_all }}"
+  when: hostvars[item].ansible_ssh_hostkey_rsa_public is defined
+
 - name: Check if the desired version of Solana CLI is already installed
   block:
     - name: Check if Solana CLI binary exists
