@@ -1,11 +1,18 @@
 ---
-# Configure SSH.SOCKET port
+
+# Check if ssh.socket unit file exists
+- name: Check if ssh.socket unit file exists
+  ansible.builtin.stat:
+    path: /lib/systemd/system/ssh.socket
+  register: ssh_socket_unit
+
+# Check if ssh.socket is active (only if unit file exists)
 - name: Check if ssh.socket is active
   ansible.builtin.shell: systemctl is-active ssh.socket
   register: ssh_socket_active
   changed_when: false
-  # Some metal providers don't use ssh.socket, so we ignore errors if it's not active
   ignore_errors: true
+  when: ssh_socket_unit.stat.exists
 
 # Capture the operator's public IP (the local machine running the playbook)
 - name: Get operator public IP
@@ -16,6 +23,8 @@
   delegate_to: localhost
   run_once: true
 
+
+# Find ssh.socket file location (only if unit file exists and socket is active)
 - name: Find ssh.socket file location
   ansible.builtin.find:
     paths:
@@ -23,7 +32,9 @@
       - /usr/lib/systemd/system
     patterns: "ssh.socket"
   register: ssh_socket_file
-  when: ssh_socket_active.stdout == "active"
+  when:
+    - ssh_socket_unit.stat.exists
+    - ssh_socket_active.stdout == "active"
 
 # Check and activate ssh.service if not active
 - name: Check if ssh.service is active
@@ -38,12 +49,15 @@
     enabled: true
   when: ssh_service_active.stdout != "active"
 
+
+# Change ListenStream to {{ ssh_config.port }} in ssh.socket if active and unit file exists
 - name: Change ListenStream to {{ ssh_config.port }} in ssh.socket if active
   ansible.builtin.lineinfile:
     path: "{{ ssh_socket_file.files[0].path }}"
     regexp: '^\s*ListenStream='
     line: 'ListenStream={{ ssh_config.port }}'
   when:
+    - ssh_socket_unit.stat.exists
     - ssh_socket_active.stdout == "active"
     - ssh_socket_file.files | length > 0
   notify:
@@ -72,7 +86,7 @@
     port: '{{ firewall.ssh_port }}'
     proto: tcp
     from_ip: "{{ operator_ipinfo.json.ip }}"
-    comment: "Operator access only - ansible_user: {{ ansible_user }}"
+    comment: "{{ ansible_user }}"
   when: operator_ipinfo is defined and operator_ipinfo.json.ip is defined
   # Allows access to port 2522 only for the current operator: {{ ansible_user }}
 
@@ -164,7 +178,7 @@
 
       [sshd]
       enabled = true
-      port = '{{ firewall.ssh_port }}'
+      port = {{ firewall.ssh_port }}
       maxretry = {{ fail2ban.sshd.maxretry }}
       findtime = {{ fail2ban.sshd.findtime }}
       bantime = {{ fail2ban.sshd.bantime }}
