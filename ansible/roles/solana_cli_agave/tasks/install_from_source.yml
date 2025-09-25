@@ -1,4 +1,4 @@
-- name: Start building Agave message
+- name: Start Building Agave
   ansible.builtin.debug:
     msg: "Building Agave version {{ agave_version }} from source"
 
@@ -65,9 +65,9 @@
         src: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/Cargo.toml"
       register: cargo_toml_slurp
 
-    - name: Extract version from Cargo.toml content
+    - name: Set Cargo.toml version fact (cargo_toml_version)
       ansible.builtin.set_fact:
-        cargo_toml_version: "{{ (cargo_toml_slurp.content | b64decode) | regex_search('^version\\s*=\\s*\"([^\"]+)\"', '\\1', multiline=True) }}"
+        cargo_toml_version: "{{ (cargo_toml_slurp.content | b64decode | from_yaml).package.version }}"
 
     - name: Debug Cargo.toml version
       ansible.builtin.debug:
