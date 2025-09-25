@@ -1,3 +1,7 @@
+---
+# CSV file containing user information (username, groups, email, etc.)
+authorized_access_csv: "~/new-metal-box/{{ csv_file }}"
+
 # Fail2ban configuration
 fail2ban:
   sshd:

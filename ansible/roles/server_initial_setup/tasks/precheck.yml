@@ -1,6 +1,42 @@
 ---
 # This role performs CPU configuration checks and stops the playbook if any check fails
 
+# Precheck: Read and validate authorized IPs CSV file
+- name: Read authorized IPs from CSV
+  community.general.read_csv:
+    path: "{{ authorized_access_csv }}"
+    key: ip
+  register: authorized_ips_csv
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Debug authorized IPs CSV content
+  ansible.builtin.debug:
+    var: authorized_ips_csv
+  delegate_to: localhost
+  become: false
+  no_log: true
+  run_once: true
+
+- name: Fail if authorized IPs CSV is missing or empty
+  ansible.builtin.fail:
+    msg: "Authorized IPs CSV file is missing or empty. Please provide a valid CSV with at least one IP."
+  when: >
+    not (authorized_ips_csv is defined and
+    authorized_ips_csv | length > 0)
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Fail if authorized IPs CSV missing required field 'ip'
+  ansible.builtin.fail:
+    msg: "Authorized IPs CSV missing required field: ip"
+  when: not (authorized_ips_csv.dict.values() | map(attribute='ip') | list | first is defined)
+  delegate_to: localhost
+  become: false
+  run_once: true
+
 # - name: Check CPU configuration for Solana servers
 #   block:
 #     # Check CPU governor setting
@@ -147,15 +183,6 @@
             - Accounts: {{ mount_points.accounts }} ({{ filesystem_formats.accounts }})
             - Snapshots: {{ mount_points.snapshots }} ({{ filesystem_formats.snapshots }})
 
-    # Assertions that will stop the playbook if they fail
-
-    - name: Ensure ip_bastion variable is defined and not empty
-      ansible.builtin.assert:
-        that:
-          - ip_bastion is defined
-          - ip_bastion | length > 0
-        fail_msg: "ERROR! The variable 'ip_bastion' must be defined and not empty. Use -e 'ip_bastion=YOUR_BASTION_IP' when running the playbook."
-        success_msg: "ip_bastion variable is defined: {{ ip_bastion }}"
     
     - name: Verify minimum number of disks
       ansible.builtin.assert:

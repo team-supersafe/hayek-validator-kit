@@ -15,7 +15,7 @@
       THE SERVER IS NOW RESTARTING
 
       To reconnect, please use:
-      ssh username@{{ ansible_default_ipv4.address }} -p 2522
+      ssh {{ ansible_user }}@{{ ansible_default_ipv4.address }} -p {{ firewall.ssh_port }}
 
       Please allow a few minutes for the server to complete the restart.
       -------------------------------------------------

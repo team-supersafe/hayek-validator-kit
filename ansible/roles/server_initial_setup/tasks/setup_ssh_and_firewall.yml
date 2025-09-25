@@ -1,13 +1,4 @@
 ---
-# Capture the operator's public IP (the local machine running the playbook)
-- name: Get operator public IP
-  ansible.builtin.uri:
-    url: "https://ipinfo.io/json"
-    method: GET
-  register: operator_ipinfo
-  delegate_to: localhost
-  run_once: true
-
 # Check if ssh.socket unit file exists
 - name: Check if ssh.socket unit file exists
   ansible.builtin.stat:
@@ -75,32 +66,31 @@
 
 
 # Configure firewall
-- name: Install UFW
+- name: Ensure UFW is installed
   ansible.builtin.apt:
     name: ufw
     state: present
 
-# Allow port 2522 only from the operator's public IP
-- name: "Allow operator ({{ ansible_user }}) public IP on port 2522 (operator access only)"
-  community.general.ufw:
-    rule: allow
-    port: '{{ firewall.ssh_port }}'
-    proto: tcp
-    from_ip: "{{ operator_ipinfo.json.ip }}"
-    comment: "{{ ansible_user }}"
-  when: operator_ipinfo is defined and operator_ipinfo.json.ip is defined
-  # Allows access to port 2522 only for the current operator: {{ ansible_user }}
+- name: Read authorized IPs from CSV (control node)
+  community.general.read_csv:
+    path: "{{ authorized_access_csv }}"
+    key: ip
+  register: authorized_ips_csv
+  delegate_to: localhost
+  run_once: true
 
-# Allow port 2522 from the bastion host IP if defined
-- name: "Allow bastion host ({{ bastion_host | default('not set') }}) on port 2522"
+- name: "Allow authorized IPs from CSV on port {{ firewall.ssh_port }}"
   community.general.ufw:
     rule: allow
     port: '{{ firewall.ssh_port }}'
     proto: tcp
-    from_ip: "{{ bastion_host }}"
-    comment: "Bastion host"
-  when: bastion_host is defined and bastion_host != ''
-  # Allows access to port 2522 for the bastion host
+    from_ip: "{{ item.value.ip }}"
+    comment: "{{ item.value.comment }}"
+  loop: "{{ authorized_ips_csv.dict | dict2items }}"
+  loop_control:
+    label: "{{ item.value.ip }} ({{ item.value.comment }})"
+  when: authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0
+
 
 - name: Allow TCP port ranges
   community.general.ufw:
