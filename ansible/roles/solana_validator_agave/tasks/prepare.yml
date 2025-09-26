@@ -72,13 +72,13 @@
     set -e
 
     echo "Cleaning logs directory..."
-    rm -rf {{ logs_dir }}/*
+    rm -rf "{{ logs_dir }}"/*
 
     echo "Cleaning scripts directory..."
-    rm -rf {{ scripts_dir }}/*
+    rm -rf "{{ scripts_dir }}"/*
 
     echo "Cleaning keys directory..."
-    rm -rf {{ keys_dir }}/*
+    rm -rf "{{ keys_dir }}"/*
   delegate_to: "{{ target_host }}"
 
 - name: prepare - Ensure logs directory exists
