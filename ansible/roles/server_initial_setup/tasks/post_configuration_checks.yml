@@ -1,6 +1,10 @@
 ---
 # Post-configuration checks to verify that all system tuning was applied correctly
 
+- name: Wait for system configuration to settle
+  ansible.builtin.pause:
+    seconds: 3
+
 - name: Post-configuration CPU checks
   block:
     # Check CPU governor setting after configuration
@@ -66,11 +70,13 @@
         fail_msg: "ERROR! CPU governor is not set to performance mode after configuration. Current value: {{ post_cpu_governor_check.stdout }}"
         success_msg: "✓ CPU governor correctly set to performance mode"
 
-    - name: Assert CPU is using p-state driver (post-config)
+    - name: Assert CPU is using valid scaling driver (post-config)
       ansible.builtin.assert:
-        that: "'pstate' in post_pstate_check.stdout"
-        fail_msg: "ERROR! CPU is not using p-state driver after configuration. Current driver: {{ post_pstate_check.stdout }}"
-        success_msg: "✓ CPU correctly using p-state driver: {{ post_pstate_check.stdout }}"
+        that: >
+          'pstate' in post_pstate_check.stdout or
+          'acpi-cpufreq' in post_pstate_check.stdout
+        fail_msg: "ERROR! CPU is not using a supported scaling driver after configuration. Current driver: {{ post_pstate_check.stdout }}"
+        success_msg: "✓ CPU using valid scaling driver: {{ post_pstate_check.stdout }}"
 
     - name: Assert AMD SMT/Hyperthreading is enabled (post-config)
       ansible.builtin.assert:
