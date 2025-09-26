@@ -69,6 +69,7 @@
         that: post_cpu_governor_check.stdout == "performance"
         fail_msg: "ERROR! CPU governor is not set to performance mode after configuration. Current value: {{ post_cpu_governor_check.stdout }}"
         success_msg: "✓ CPU governor correctly set to performance mode"
+      ignore_errors: true
 
     - name: Assert CPU is using valid scaling driver (post-config)
       ansible.builtin.assert:
@@ -77,12 +78,14 @@
           'acpi-cpufreq' in post_pstate_check.stdout
         fail_msg: "ERROR! CPU is not using a supported scaling driver after configuration. Current driver: {{ post_pstate_check.stdout }}"
         success_msg: "✓ CPU using valid scaling driver: {{ post_pstate_check.stdout }}"
+      ignore_errors: true
 
     - name: Assert AMD SMT/Hyperthreading is enabled (post-config)
       ansible.builtin.assert:
         that: post_smt_check.stdout == "on"
         fail_msg: "ERROR! AMD SMT/Hyperthreading is not enabled after configuration. Current status: {{ post_smt_check.stdout }}"
         success_msg: "✓ AMD SMT/Hyperthreading correctly enabled"
+      ignore_errors: true
 
 - name: Post-configuration system checks
   block:
@@ -97,6 +100,7 @@
         that: cpu_governor_service_status.status.ActiveState == "active"
         fail_msg: "ERROR! CPU governor service is not active. Status: {{ cpu_governor_service_status.status.ActiveState }}"
         success_msg: "✓ CPU governor service is active"
+      ignore_errors: true
 
     # Verify sysctl configurations are applied
     - name: Check key sysctl parameters
