@@ -6,13 +6,13 @@
 
     # Clean up the validator data directory
     echo "Cleaning ledger directory..."
-    rm -rf {{ ledger_path }}/*
+    rm -rf "{{ ledger_path }}"/*
 
     echo "Cleaning accounts directory..."
-    rm -rf {{ accounts_path }}/*
+    rm -rf "{{ accounts_path }}"/*
 
     echo "Cleaning snapshots directory..."
-    rm -rf {{ snapshots_path }}/*
+    rm -rf "{{ snapshots_path }}"/*
   delegate_to: "{{ target_host }}"
 
 - name: host_cleanup - Ensure ledger directory exists
