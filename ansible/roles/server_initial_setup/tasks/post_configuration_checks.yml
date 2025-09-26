@@ -1,6 +1,5 @@
 ---
 # Post-configuration checks to verify that all system tuning was applied correctly
-
 - name: Wait for system configuration to settle
   ansible.builtin.pause:
     seconds: 3
@@ -18,8 +17,6 @@
       register: post_cpu_governor_check
       changed_when: false
       check_mode: false
-
-
 
     # Check AMD SMT/Hyperthreading status after configuration
     - name: Verify AMD SMT/Hyperthreading is enabled (post-config)
@@ -58,8 +55,6 @@
         fail_msg: "ERROR! CPU governor is not set to performance mode after configuration. Current value: {{ post_cpu_governor_check.stdout }}"
         success_msg: "✓ CPU governor correctly set to performance mode"
       ignore_errors: true
-
-
 
     - name: Assert AMD SMT/Hyperthreading is enabled (post-config)
       ansible.builtin.assert:
