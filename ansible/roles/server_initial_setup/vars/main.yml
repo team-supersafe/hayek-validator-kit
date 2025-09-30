@@ -80,5 +80,5 @@ health_check:
   script_name: "health_check.sh"
   dest_path: "/home/{{ sol_owner }}/{{ health_check.script_name }}"
   owner: "{{ sol_owner }}"
-  group: "{{ sol_owner }}"
-  mode: "0750"
+  group: "validator_operators"
+  mode: "0775"
