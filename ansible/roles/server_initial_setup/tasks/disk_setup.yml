@@ -7,8 +7,8 @@
   ansible.builtin.shell: |
     # Get disks sorted by size and check if they are in use
     lsblk -b -d -o NAME,SIZE | grep -v "NAME" | sort -k2 -nr | while read name size; do
-      # Skip if disk is mounted or in use
-      if ! mount | grep -q "/dev/$name" && ! lsof | grep -q "/dev/$name"; then
+      # Skip if disk is mounted (check /proc/mounts for efficiency)
+      if ! grep -q "/dev/$name" /proc/mounts; then
         echo "$name"
       fi
     done
