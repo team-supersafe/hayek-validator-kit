@@ -32,7 +32,7 @@
 - name: Fail if authorized IPs CSV missing required field 'ip'
   ansible.builtin.fail:
     msg: "Authorized IPs CSV missing required field: ip"
-  when: not (authorized_ips_csv.dict.values() | map(attribute='ip') | list | first is defined)
+  when: (authorized_ips_csv.dict.values() | selectattr('ip', 'defined') | list | length) == 0
   delegate_to: localhost
   become: false
   run_once: true
