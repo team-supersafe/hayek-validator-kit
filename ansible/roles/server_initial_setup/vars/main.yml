@@ -48,9 +48,9 @@ firewall:
 
 # Directory permissions
 directory_permissions:
-  mode: '0755'
+  mode: '0775'
   owner: "{{ sol_owner }}"
-  group: "{{ sol_owner }}"
+  group: "validator_operators"
 
 # Mount directories list
 mount_directories:
