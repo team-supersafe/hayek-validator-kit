@@ -71,14 +71,6 @@
     name: ufw
     state: present
 
-- name: Read authorized IPs from CSV (control node)
-  community.general.read_csv:
-    path: "{{ authorized_access_csv }}"
-    key: ip
-  register: authorized_ips_csv
-  delegate_to: localhost
-  run_once: true
-
 - name: "Allow authorized IPs from CSV on port {{ firewall.ssh_port }}"
   community.general.ufw:
     rule: allow
