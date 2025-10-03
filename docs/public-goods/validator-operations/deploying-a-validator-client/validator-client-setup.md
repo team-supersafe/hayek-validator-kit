@@ -136,7 +136,8 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
 
 1. Change to your local repo directory. If you haven't cloned the [hayek-validator-kit](https://app.gitbook.com/u/mWd8rWP4UVguErb6G6hVhYUW13D3) repo yet, do so by following these instructions [github-repo.md](../../hayek-validator-kit/github-repo.md "mention")
 2. Connect to your Ansible Control. See [#connecting-to-ansible-control](../../hayek-validator-kit/ansible-control.md#connecting-to-ansible-control "mention")
-3.  When the Ansible control is ready, change to the `ansible` directory.\
+3. When the Ansible control is ready, open an SSH connection from your Ansible Control to the target host to add the fingerprint to our known hosts to avoid access permission problems when running the playbook, this will also ensures proper connectivity to the destination host.
+4.  Change to the `ansible` directory.\
 
 
     ```bash
@@ -179,7 +180,7 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
     ```
 
 
-4.  After setup is completed open a SSH session to your host to monitor validator startup and verify that the co-hosted relayer is working properly.\
+5.  After setup is completed open a SSH session to your host to monitor validator startup and verify that the co-hosted relayer is working properly.\
     \
     Check validator process status\
 
