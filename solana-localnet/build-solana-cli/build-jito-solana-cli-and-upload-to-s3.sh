@@ -121,6 +121,8 @@ CI_COMMIT=$(git rev-parse HEAD) scripts/cargo-install-all.sh --validator-only ./
 pretty_echo "Verifying Jito-Solana v${JITO_SOLANA_RELEASE} build..."
 "$BUILD_INSTALL_PATH"/solana-release/bin/agave-validator --version
 
+pretty_echo "Build completed successfully!"
+
 # compress the build
 pretty_echo "Compressing Jito-Solana v${JITO_SOLANA_RELEASE} build (bzip2)..."
 tar -cvjpf "${BINARY_NAME}" -C "$BUILD_INSTALL_PATH" ./solana-release
@@ -129,5 +131,3 @@ tar -cvjpf "${BINARY_NAME}" -C "$BUILD_INSTALL_PATH" ./solana-release
 BINARY_PATH="$BUILD_INSTALL_PATH/$BINARY_NAME"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 "$SCRIPT_DIR/upload-solana-binaries-to-s3.sh" jito-solana "$JITO_SOLANA_RELEASE" "$BINARY_PATH" "$ARCH"
-
-pretty_echo "Build completed successfully!"
