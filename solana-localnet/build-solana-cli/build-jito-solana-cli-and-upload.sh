@@ -33,27 +33,40 @@ echo
 if ! command -v aws &> /dev/null; then
     pretty_echo "Installing AWS CLI..."
     AWS_CLI_INSTALLER_FILENAME= && dpkgArch="$(dpkg --print-architecture)" \
-        && case "${dpkgArch##*-}" in \
-            amd64) AWS_CLI_INSTALLER_FILENAME='awscli-exe-linux-x86_64.zip';; \
-            arm64) AWS_CLI_INSTALLER_FILENAME='awscli-exe-linux-aarch64.zip';; \
-            *) echo "unsupported architecture"; exit 1 ;; \
-        esac \
-        && curl "https://awscli.amazonaws.com/${AWS_CLI_INSTALLER_FILENAME}" -o "awscliv2.zip" \
-        && unzip awscliv2.zip > /dev/null 2>&1 && \
-        ./aws/install
+    && case "${dpkgArch##*-}" in \
+        amd64) AWS_CLI_INSTALLER_FILENAME='awscli-exe-linux-x86_64.zip';; \
+        arm64) AWS_CLI_INSTALLER_FILENAME='awscli-exe-linux-aarch64.zip';; \
+        *) echo "unsupported architecture"; exit 1 ;; \
+    esac \
+    && curl "https://awscli.amazonaws.com/${AWS_CLI_INSTALLER_FILENAME}" -o "awscliv2.zip" \
+    && unzip awscliv2.zip > /dev/null 2>&1 && \
+    ./aws/install
 fi
 
 # check if jito-solana binary is already in the s3 bucket
 JITO_TAG="v${JITO_SOLANA_RELEASE}-jito"
-pretty_echo "Checking if Jito-Solana v${JITO_SOLANA_RELEASE}/${ARCH} exists in S3 bucket..."
 BINARY_NAME="${ARCH}-unknown-linux-gnu.tar.bz2"
 JITO_BINARY_S3_KEY="jito-solana/releases/download/${JITO_TAG}/solana-release-$BINARY_NAME"
 S3_DOWNLOAD_BASE_URL="https://solv-store.s3.us-east-1.amazonaws.com"
 
-if aws s3api head-object --bucket "$BUCKET_NAME" --key $JITO_BINARY_S3_KEY 2>/dev/null; then
-  echo -e "Jito-Solana v${JITO_SOLANA_RELEASE} already exists in S3 bucket.\nDownload at ${BLUE}${S3_DOWNLOAD_BASE_URL}/$JITO_BINARY_S3_KEY${NC}.\nExiting..."
-  exit 0
+pretty_echo "Checking if Jito-Solana v${JITO_SOLANA_RELEASE}/${ARCH} exists in S3 bucket..."
+if [ "${FORCE_UPLOAD:-false}" != "true" ] && aws s3api head-object --bucket "$BUCKET_NAME" --key "$JITO_BINARY_S3_KEY" 2>/dev/null; then
+    echo -e "Jito-Solana v${JITO_SOLANA_RELEASE} already exists in S3 bucket.\nDownload at ${BLUE}${S3_DOWNLOAD_BASE_URL}/$JITO_BINARY_S3_KEY${NC}.\nExiting..."
+    exit 0
 fi
+
+if [ "${FORCE_UPLOAD:-false}" = "true" ]; then
+    pretty_echo "FORCE_UPLOAD is set. Will overwrite existing S3 object if present."
+fi
+
+pretty_echo "Operating System:"
+if command -v lsb_release &> /dev/null; then
+        lsb_release -a
+else
+        echo "OS: $(uname -s) $(uname -r)"
+fi
+echo "Detected architecture: $ARCH"
+echo
 
 pretty_echo "Installing build dependencies..."
 sudo apt-get update

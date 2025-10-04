@@ -83,21 +83,6 @@ esac
 
 S3_DOWNLOAD_BASE_URL="https://solv-store.s3.us-east-1.amazonaws.com"
 
-# Check if binary already exists in S3 bucket
-pretty_echo "Checking if ${DISPLAY_NAME} v${VERSION}/${ARCH} exists in S3 bucket..."
-
-# Check if --force-upload was NOT provided AND the file exists in S3
-if [ "${FORCE_UPLOAD:-false}" != "true" ] && aws s3api head-object --bucket "$BUCKET_NAME" --key "$S3_KEY" 2>/dev/null; then
-    # File exists and we are NOT forcing an upload
-    echo -e "${DISPLAY_NAME} v${VERSION} already exists in S3 bucket.\nDownload at ${BLUE}${S3_DOWNLOAD_BASE_URL}/$S3_KEY${NC}.\n"
-    echo "Exiting..."
-    exit 0
-fi
-
-if [ "${FORCE_UPLOAD:-false}" = "true" ]; then
-    pretty_echo "Force upload requested. Overwriting existing S3 object if it exists."
-fi
-
 # Upload to S3
 pretty_echo "Uploading ${DISPLAY_NAME} v${VERSION} build to S3..."
 aws s3 cp "$BINARY_PATH" "s3://$BUCKET_NAME/$S3_KEY"
