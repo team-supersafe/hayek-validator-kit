@@ -45,14 +45,18 @@ AWS_CLI_INSTALLER_FILENAME= && dpkgArch="$(dpkg --print-architecture)" \
     ./aws/install
 
 # check if solana cli is already in the s3 bucket
-pretty_echo "Checking if Solana CLI v${SOLANA_RELEASE}/${ARCH} exists in S3 bucket..."
 BINARY_NAME="${ARCH}-unknown-linux-gnu.tar.bz2"
 SOLANA_BINARY_S3_KEY="agave/releases/download/v${SOLANA_RELEASE}/solana-release-$BINARY_NAME"
 S3_DOWNLOAD_BASE_URL="https://solv-store.s3.us-east-1.amazonaws.com"
 
-if aws s3api head-object --bucket "$BUCKET_NAME" --key $SOLANA_BINARY_S3_KEY 2>/dev/null; then
+pretty_echo "Checking if Solana CLI v${SOLANA_RELEASE}/${ARCH} exists in S3 bucket..."
+if [ "${FORCE_UPLOAD:-false}" != "true" ] && aws s3api head-object --bucket "$BUCKET_NAME" --key $SOLANA_BINARY_S3_KEY 2>/dev/null; then
   echo -e "Solana CLI v${SOLANA_RELEASE} already exists in S3 bucket.\nDownload at ${BLUE}${S3_DOWNLOAD_BASE_URL}/$SOLANA_BINARY_S3_KEY${NC}.\nExiting..."
   exit 0
+fi
+
+if [ "${FORCE_UPLOAD:-false}" = "true" ]; then
+    pretty_echo "FORCE_UPLOAD is set. Will overwrite existing S3 object if present."
 fi
 
 pretty_echo  "Installing Rust..."
