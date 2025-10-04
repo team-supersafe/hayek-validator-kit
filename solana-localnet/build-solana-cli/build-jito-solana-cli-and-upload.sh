@@ -29,10 +29,15 @@ fi
 echo "Detected architecture: $ARCH"
 echo
 
-# install AWS CLI if not present
-if ! command -v aws &> /dev/null; then
-    pretty_echo "Installing AWS CLI..."
-    AWS_CLI_INSTALLER_FILENAME= && dpkgArch="$(dpkg --print-architecture)" \
+pretty_echo  "Installing utilities..."
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends \
+    unzip \
+    curl
+
+# install AWS CLI. See https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+pretty_echo "Installing AWS CLI..."
+AWS_CLI_INSTALLER_FILENAME= && dpkgArch="$(dpkg --print-architecture)" \
     && case "${dpkgArch##*-}" in \
         amd64) AWS_CLI_INSTALLER_FILENAME='awscli-exe-linux-x86_64.zip';; \
         arm64) AWS_CLI_INSTALLER_FILENAME='awscli-exe-linux-aarch64.zip';; \
@@ -41,7 +46,6 @@ if ! command -v aws &> /dev/null; then
     && curl "https://awscli.amazonaws.com/${AWS_CLI_INSTALLER_FILENAME}" -o "awscliv2.zip" \
     && unzip awscliv2.zip > /dev/null 2>&1 && \
     ./aws/install
-fi
 
 # check if jito-solana binary is already in the s3 bucket
 JITO_TAG="v${JITO_SOLANA_RELEASE}-jito"
@@ -58,15 +62,6 @@ fi
 if [ "${FORCE_UPLOAD:-false}" = "true" ]; then
     pretty_echo "FORCE_UPLOAD is set. Will overwrite existing S3 object if present."
 fi
-
-pretty_echo "Operating System:"
-if command -v lsb_release &> /dev/null; then
-        lsb_release -a
-else
-        echo "OS: $(uname -s) $(uname -r)"
-fi
-echo "Detected architecture: $ARCH"
-echo
 
 pretty_echo "Installing build dependencies..."
 sudo apt-get update
@@ -111,11 +106,6 @@ pretty_echo "Cloning Jito-Solana v${JITO_SOLANA_RELEASE} source with submodules.
 mkdir -p /tmp/build
 cd /tmp/build
 
-# Remove existing directory if it exists
-if [ -d "jito-solana" ]; then
-    rm -rf jito-solana
-fi
-
 git clone https://github.com/jito-foundation/jito-solana.git --recurse-submodules
 cd jito-solana
 git checkout tags/$JITO_TAG
@@ -123,10 +113,7 @@ git submodule update --init --recursive
 
 # build
 pretty_echo "Building Jito-Solana v${JITO_SOLANA_RELEASE} for architecture: $ARCH"
-BUILD_INSTALL_PATH="$HOME/build/jito-solana"
-
-# Ensure the build directory exists
-mkdir -p "$BUILD_INSTALL_PATH"
+BUILD_INSTALL_PATH="/tmp/build/jito-solana"
 
 CI_COMMIT=$(git rev-parse HEAD) scripts/cargo-install-all.sh --validator-only ./solana-release
 
@@ -139,7 +126,7 @@ pretty_echo "Compressing Jito-Solana v${JITO_SOLANA_RELEASE} build (bzip2)..."
 tar -cvjpf "${BINARY_NAME}" -C "$BUILD_INSTALL_PATH" ./solana-release
 
 # upload to S3 using the standalone upload script
-BINARY_PATH="/tmp/build/jito-solana/$BINARY_NAME"
+BINARY_PATH="$BUILD_INSTALL_PATH/$BINARY_NAME"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 "$SCRIPT_DIR/upload-solana-binaries-to-s3.sh" jito-solana "$JITO_SOLANA_RELEASE" "$BINARY_PATH" "$ARCH"
 
