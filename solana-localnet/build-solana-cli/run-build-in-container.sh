@@ -29,8 +29,8 @@ if [ $# -lt 2 ]; then
     echo "  --force      Force build and upload even if archive exists in S3"
     echo ""
     echo "Examples:"
-    echo "  $0 agave 1.18.0"
-    echo "  $0 jito-solana 2.2.20 --force"
+    echo "  $0 agave 2.3.11"
+    echo "  $0 jito-solana 2.3.11 --force"
     exit 1
 fi
 
