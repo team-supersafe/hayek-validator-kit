@@ -263,6 +263,21 @@
     - source_primary_pubkey != destination_primary_pubkey
   run_once: true
 
+- name: prepare - Assert swap is not already completed
+  ansible.builtin.fail:
+    msg: >-
+      Swap operation aborted: The source host ({{ source_host }}) is NOT running the primary identity ({{ source_primary_pubkey }}),
+      and the destination host ({{ destination_host }}) IS already running it.
+      This indicates the swap has already been performed.
+  when:
+    - not ansible_check_mode
+    - source_primary_pubkey is defined
+    - source_ledger_identity is defined
+    - source_ledger_identity != source_primary_pubkey
+    - destination_ledger_identity is defined
+    - destination_ledger_identity == source_primary_pubkey
+  run_once: true
+
 - name: prepare - Check cluster delinquency
   block:
     - name: prepare - Get cluster validators info
