@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Argument validation
 if [ $# -lt 3 ]; then
     echo "Usage: $0 <BINARY_TYPE> <VERSION> <BINARY_PATH> [ARCH]"
     echo ""
@@ -15,20 +16,16 @@ if [ $# -lt 3 ]; then
     exit 1
 fi
 
+# Environment variable validation (required for upload)
+if [ -z "${AWS_ACCESS_KEY_ID}" ]; then echo "Error: AWS_ACCESS_KEY_ID is not set"; exit 1; fi
+if [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then echo "Error: AWS_SECRET_ACCESS_KEY is not set"; exit 1; fi
+if [ -z "${AWS_REGION}" ]; then echo "Error: AWS_REGION is not set"; exit 1; fi
+if [ -z "${BUCKET_NAME}" ]; then echo "Error: BUCKET_NAME is not set"; exit 1; fi
+
 BINARY_TYPE=$1
 VERSION=$2
 BINARY_PATH=$3
 ARCH=${4:-$(uname -m)}
-
-# Check required environment variables
-if [ -z "${SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID}" ]; then
-    echo "Error: SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID is not set"
-    exit 1
-fi
-if [ -z "${SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY}" ]; then
-    echo "Error: SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY is not set"
-    exit 1
-fi
 
 # Validate binary type
 case "$BINARY_TYPE" in
@@ -45,12 +42,6 @@ if [ ! -f "$BINARY_PATH" ]; then
     echo "Error: Binary file does not exist: $BINARY_PATH"
     exit 1
 fi
-
-# Set AWS environment variables
-export AWS_ACCESS_KEY_ID=$SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID
-export AWS_SECRET_ACCESS_KEY=$SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY
-export AWS_REGION=us-east-1
-export BUCKET_NAME=solv-store
 
 set -euo pipefail
 

@@ -54,8 +54,8 @@ docker run --rm -it \
   -v "./$SCRIPT_NAME:/tmp/$SCRIPT_NAME" \
   -v "./upload-solana-binaries-to-s3.sh:/tmp/upload-solana-binaries-to-s3.sh" \
   -e $ENV_VAR_NAME=$VERSION \
-  -e SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID=$SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID \
-  -e SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY=$SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY \
+  -e AWS_ACCESS_KEY_ID=$SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY=$SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY \
   -e AWS_REGION=us-east-1 \
   -e BUCKET_NAME=solv-store \
   solana-localnet-validator \
