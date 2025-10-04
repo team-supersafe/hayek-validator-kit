@@ -1,0 +1,38 @@
+---
+- name: Verify rust installation - Refresh shell environment and verify PATH
+  ansible.builtin.shell: |
+    . "$HOME/.cargo/env"
+    echo $PATH
+  register: rust_shell_env_path
+  changed_when: false
+  tags: [rust, verify]
+
+- name: Verify rust installation - Show current PATH
+  debug:
+    msg: "PATH after sourcing: {{ rust_shell_env_path.stdout }}"
+
+- name: Verify rust installation - Check if rustc is available
+  ansible.builtin.shell: |
+    rustc --version
+  environment:
+    PATH: "{{ rust_shell_env_path.stdout }}"
+  register: rustc_version
+  changed_when: false
+  failed_when: rustc_version.rc != 0
+
+- name: Verify rust installation - Print rustc version
+  debug:
+    msg: "Rust version: {{ rustc_version.stdout }}"
+
+- name: Verify rust installation - Check if cargo is available
+  ansible.builtin.shell: |
+    cargo --version
+  environment:
+    PATH: "{{ rust_shell_env_path.stdout }}"
+  register: cargo_version
+  changed_when: false
+  failed_when: cargo_version.rc != 0
+
+- name: Verify rust installation - Print cargo version
+  debug:
+    msg: "Cargo is installed: {{ cargo_version.stdout }}"
