@@ -53,7 +53,7 @@ case "$BINARY_TYPE" in
         SCRIPT_NAME="build-solana-cli-and-upload-to-s3.sh"
         ;;
     jito-solana)
-        SCRIPT_NAME="build-jito-solana-cli-and-upload.sh"
+        SCRIPT_NAME="build-jito-solana-cli-and-upload-to-s3.sh"
         ;;
 esac
 
