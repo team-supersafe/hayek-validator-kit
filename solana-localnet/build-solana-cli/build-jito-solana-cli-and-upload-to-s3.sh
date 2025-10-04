@@ -115,7 +115,7 @@ git submodule update --init --recursive
 pretty_echo "Building Jito-Solana v${JITO_SOLANA_RELEASE} for architecture: $ARCH"
 BUILD_INSTALL_PATH="/tmp/build/jito-solana"
 
-scripts/cargo-install-all.sh --validator-only ./solana-release
+./scripts/cargo-install-all.sh --validator-only "$BUILD_INSTALL_PATH"/solana-release
 
 # verify the build
 pretty_echo "Verifying Jito-Solana v${JITO_SOLANA_RELEASE} build..."
