@@ -102,5 +102,5 @@ tar -cvjpf "${BINARY_NAME}" -C /tmp/build/agave-${SOLANA_RELEASE} ./solana-relea
 
 # upload to S3 using the standalone upload script
 BINARY_PATH="/tmp/build/agave-${SOLANA_RELEASE}/$BINARY_NAME"
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-"$SCRIPT_DIR/upload-solana-binaries-to-s3.sh" solana-cli "$SOLANA_RELEASE" "$BINARY_PATH" "$ARCH"
+# Use absolute path for the upload script inside Docker
+/tmp/upload-solana-binaries-to-s3.sh solana-cli "$SOLANA_RELEASE" "$BINARY_PATH" "$ARCH"
