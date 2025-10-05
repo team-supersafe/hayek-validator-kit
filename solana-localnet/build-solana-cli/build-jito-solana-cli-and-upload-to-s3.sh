@@ -130,4 +130,4 @@ tar -cvjpf "${BINARY_NAME}" -C "$BUILD_INSTALL_PATH" ./solana-release
 # upload to S3 using the standalone upload script
 BINARY_PATH="$BUILD_INSTALL_PATH/$BINARY_NAME"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-"$SCRIPT_DIR/upload-solana-binaries-to-s3.sh" jito-solana "$JITO_SOLANA_RELEASE" "$BINARY_PATH" "$ARCH"
+/tmp/upload-solana-binaries-to-s3.sh jito-solana "$JITO_SOLANA_RELEASE" "$BINARY_PATH" "$ARCH"
