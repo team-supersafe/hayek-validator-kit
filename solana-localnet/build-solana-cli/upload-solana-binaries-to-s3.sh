@@ -81,7 +81,7 @@ case "$BINARY_TYPE" in
         ;;
 esac
 
-S3_DOWNLOAD_BASE_URL="https://solv-store.s3.us-east-1.amazonaws.com"
+S3_DOWNLOAD_BASE_URL="https://${BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com"
 
 # Upload to S3
 pretty_echo "Uploading ${DISPLAY_NAME} v${VERSION} build to S3..."
