@@ -9,6 +9,20 @@
   ansible.builtin.command: /tmp/rustup-init.sh -y
   args:
     creates: "{{ solana_user_dir }}/.cargo/bin/rustc"
+  environment:
+    CARGO_HOME: "{{ solana_user_dir }}/.cargo"
+    RUSTUP_HOME: "{{ solana_user_dir }}/.rustup"
+
+- name: Install - Fix ownership of Rust directories to sol:validator_operators
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ solana_user }}"
+    group: "validator_operators"
+    recurse: yes
+  become: true
+  loop:
+    - "{{ solana_user_dir }}/.cargo"
+    - "{{ solana_user_dir }}/.rustup"
 
 - name: Install - Persist Rust environment setup in shell profile
   ansible.builtin.lineinfile:
