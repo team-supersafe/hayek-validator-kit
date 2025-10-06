@@ -1,0 +1,3 @@
+rust_version: stable
+rust_user: "{{ solana_user | default('sol') }}"
+rust_verify: true
