@@ -9,21 +9,12 @@
 - name: Create sol user for validator service
   ansible.builtin.user:
     name: "{{ solana_user }}"
-    shell: /bin/bash
+    shell: /usr/sbin/nologin
     state: present
     system: true
     create_home: true
     home: /home/{{ solana_user }}
     append: true
-  no_log: true
-
-- name: Set group ownership and permissions for /home/{{ solana_user }}
-  ansible.builtin.file:
-    path: "/home/{{ solana_user }}"
-    owner: "{{ solana_user }}"
-    group: validator_operators
-    mode: '0775'
-    recurse: true
   no_log: true
 
 # Get unique groups from CSV
