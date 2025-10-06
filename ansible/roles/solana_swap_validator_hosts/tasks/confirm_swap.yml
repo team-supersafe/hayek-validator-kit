@@ -61,12 +61,20 @@
   run_once: true
 
 # destination
+- name: prepare - Check for hot-spare identity
+  ansible.builtin.stat:
+    path: "{{ destination_host_hot_spare_identity_path }}"
+  register: destination_host_hot_spare_identity
+  when: inventory_hostname == destination_host
+
 - name: confirm_swap - Get destination hot-spare identity pubkey
-  ansible.builtin.shell: "solana-keygen pubkey {{ destination_host_keys_dir }}/hot-spare-identity.json"
+  ansible.builtin.shell: "solana-keygen pubkey {{ destination_host_hot_spare_identity_path }}"
   register: destination_hotspare_pubkey_result
   environment:
     PATH: "{{ solana_install_dir }}"
-  when: inventory_hostname == destination_host
+  when:
+    - inventory_hostname == destination_host
+    - destination_host_hot_spare_identity.stat.exists
   changed_when: false
   check_mode: false
 
@@ -78,6 +86,13 @@
     - destination_hotspare_pubkey_result is defined
     - destination_hotspare_pubkey_result.stdout_lines is defined
     - destination_hotspare_pubkey_result.stdout_lines | length > 0
+
+- name: confirm_swap - Make destination hotspare pubkey available globally
+  ansible.builtin.set_fact:
+    destination_hotspare_pubkey: "{{ hostvars[destination_host]['destination_hotspare_pubkey'] }}"
+  when:
+    - hostvars[destination_host]['destination_hotspare_pubkey'] is defined
+  run_once: true
 
 - name: confirm_swap - Check if destination vote account exists
   ansible.builtin.stat:
@@ -134,54 +149,54 @@
       Source Validator:
       - Host: {{ source_host }} ({{ source_validator_name }})
       - Primary Target Identity: {{ source_host_primary_target_identity_path }}
-        {% if source_primary_pubkey is defined and source_primary_pubkey != '' %}
+      {% if source_primary_pubkey is defined and source_primary_pubkey != '' %}
         Pubkey: {{ source_primary_pubkey }}
-        {% else %}
+      {% else %}
         Pubkey: NOT SET
-        {% endif %}
+      {% endif %}
       - Hot-spare Identity: {{ source_host_hot_spare_identity_path }}
-        {% if source_hotspare_pubkey is defined and source_hotspare_pubkey != '' %}
+      {% if source_hotspare_pubkey is defined and source_hotspare_pubkey != '' %}
         Pubkey: {{ source_hotspare_pubkey }}
-        {% else %}
+      {% else %}
         Pubkey: NOT SET
-        {% endif %}
+      {% endif %}
       - Vote Account: {{ source_vote_account_path }}
-        {% if source_vote_account_file is defined and source_vote_account_file.stat is defined and source_vote_account_file.stat.exists %}
-          {% if source_vote_pubkey is defined and source_vote_pubkey != '' %}
-          Pubkey: {{ source_vote_pubkey }}
-          {% else %}
-          Pubkey: NOT SET
-          {% endif %}
-        {% else %}
+      {% if source_vote_account_file is defined and source_vote_account_file.stat is defined and source_vote_account_file.stat.exists %}
+      {% if source_vote_pubkey is defined and source_vote_pubkey != '' %}
+        Pubkey: {{ source_vote_pubkey }}
+      {% else %}
+        Pubkey: NOT SET
+      {% endif %}
+      {% else %}
         Status: Keypair was not found
-        {% endif %}
+      {% endif %}
 
       Destination Validator:
       - Host: {{ destination_host }} ({{ destination_validator_name }})
       - Primary Target Identity: {{ destination_host_primary_target_identity_path | default('NOT SET') }}
-        {% if destination_primary_pubkey is defined and destination_primary_pubkey != '' %}
+      {% if destination_primary_pubkey is defined and destination_primary_pubkey != '' %}
         Pubkey: {{ destination_primary_pubkey }}
-        {% else %}
+      {% else %}
         Pubkey: NOT SET
-        {% endif %}
+      {% endif %}
       - Hot-spare Identity: {{ destination_host_keys_dir }}/hot-spare-identity.json
-        {% if destination_hotspare_pubkey is defined and destination_hotspare_pubkey != '' %}
+      {% if destination_hotspare_pubkey is defined and destination_hotspare_pubkey != '' %}
         Pubkey: {{ destination_hotspare_pubkey }}
-        {% else %}
+      {% else %}
         Pubkey: NOT SET
-        {% endif %}
+      {% endif %}
       - Vote Account: {{ destination_host_keys_dir }}/vote-account.json
-        {% if destination_vote_account_file is defined and destination_vote_account_file.stat is defined and destination_vote_account_file.stat.exists %}
-          {% if destination_vote_pubkey is defined and destination_vote_pubkey != '' %}
-          Pubkey: {{ destination_vote_pubkey }}
-          {% else %}
-          Pubkey: NOT SET
-          {% endif %}
-        {% else %}
+      {% if destination_vote_account_file is defined and destination_vote_account_file.stat is defined and destination_vote_account_file.stat.exists %}
+      {% if destination_vote_pubkey is defined and destination_vote_pubkey != '' %}
+        Pubkey: {{ destination_vote_pubkey }}
+      {% else %}
+        Pubkey: NOT SET
+      {% endif %}
+      {% else %}
         Status: Keypair was not found
-        {% endif %}
+      {% endif %}
 
-      Operation Steps:
+      The script will run the next actions:
       1. Wait for safe restart window on source validator
       2. Switch source validator to hot-spare
       3. Transfer tower file to destination

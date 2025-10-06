@@ -132,7 +132,7 @@
     state: present
     update_cache: true
 
-- name: prepare - Check for primary target identity file on source host
+- name: prepare - Check for identity keypair files on source host
   block:
     - name: prepare - Check for primary target identity keypair file on source host
       ansible.builtin.stat:
@@ -172,7 +172,7 @@
       failed_when: generated_hotspare.rc != 0
   when: inventory_hostname == source_host
 
-- name: prepare - Check for primary target identity file on destination host
+- name: prepare - Check for identity keypair files on destination host
   block:
     - name: prepare - Check for primary target identity keypair file on destination host
       ansible.builtin.stat:
@@ -193,6 +193,10 @@
         msg: "No primary identity file found on destination host in: {{ destination_host_keys_dir }}"
       when:
         - destination_host_primary_target_identity_path == ''
+
+    - name: prepare - Set destination host hot-spare identity path
+      ansible.builtin.set_fact:
+        destination_host_hot_spare_identity_path: "{{ destination_host_keys_dir }}/hot-spare-identity.json"
   when: inventory_hostname == destination_host
 
 - name: prepare - Get source primary target identity pubkey
