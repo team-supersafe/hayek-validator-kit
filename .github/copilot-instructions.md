@@ -29,9 +29,13 @@ The Hayek Validator Kit is an infrastructure automation toolkit for deploying an
    ```bash
    cd ansible
    ansible-playbook --syntax-check playbooks/pb_setup_metal_box.yml
+   # Or check the main playbooks in ansible root:
+   ansible-playbook --syntax-check solana_setup_host.yml
+   ansible-playbook --syntax-check solana_new_metal_box.yml
    ```
    - Takes ~1 second when run from ansible/ directory
    - **IMPORTANT**: Must run from ansible/ directory for roles to be found
+   - Main playbooks are now in both ansible/playbooks/ and ansible/ root directories
 
 4. **Setup Docker environment for local development:**
    ```bash
@@ -63,6 +67,16 @@ The Hayek Validator Kit is an infrastructure automation toolkit for deploying an
    - Takes 2-5 minutes depending on system
 
 2. **Download and build Solana CLI:**
+   **Option A: Using provided build scripts (RECOMMENDED):**
+   ```bash
+   cd solana-localnet/build-solana-cli
+   ./run-build-in-container.sh
+   ```
+   - Uses containerized build environment
+   - Includes S3 upload functionality for pre-built binaries
+   - See docs.hayek.fi for detailed build instructions
+   
+   **Option B: Manual build (if needed):**
    ```bash
    export SOLANA_RELEASE=2.1.13
    mkdir -p /tmp/solana-build && cd /tmp/solana-build
@@ -107,6 +121,18 @@ The Hayek Validator Kit is an infrastructure automation toolkit for deploying an
    docker compose logs -f [service-name]
    ```
    - Available services: gossip-entrypoint, host-alpha, host-bravo, host-charlie, ansible-control
+   
+5. **Use convenient startup scripts:**
+   ```bash
+   # Start localnet from outside IDE
+   ./start-localnet-from-outside-ide.sh
+   
+   # Standard localnet startup
+   ./start-localnet.sh
+   
+   # Add penetration testing tools
+   ./add-pentest-to-localnet.sh
+   ```
 
 ## Validation
 
@@ -117,6 +143,9 @@ After making any changes to Ansible roles or Docker configurations:
    ```bash
    pre-commit run --all-files
    cd ansible && ansible-playbook --syntax-check playbooks/pb_setup_metal_box.yml
+   # Also check main playbooks:
+   cd ansible && ansible-playbook --syntax-check solana_setup_host.yml
+   cd ansible && ansible-playbook --syntax-check solana_new_metal_box.yml
    ```
 
 2. **Test Docker environment startup:**
@@ -144,17 +173,29 @@ After making any changes to Ansible roles or Docker configurations:
 ### Repository Structure
 ```
 .
-├── ansible/                 # Ansible roles and playbooks for remote provisioning
-│   ├── playbooks/          # Main Ansible playbooks
-│   ├── roles/              # Reusable Ansible roles
-│   └── group_vars/         # Environment-specific variables
-├── solana-localnet/        # Docker-based local development environment
-│   ├── docker-compose.yml  # Multi-container Solana testnet
-│   ├── Dockerfile          # Container build definitions
-│   └── validator-keys/     # Pre-generated validator keypairs
-├── .devcontainer/          # VS Code dev container configuration
-├── .pre-commit-config.yaml # Code quality hooks
-└── README.md               # Basic project information
+├── ansible/                     # Ansible roles and playbooks for remote provisioning
+│   ├── playbooks/              # Specialized Ansible playbooks
+│   ├── roles/                  # Reusable Ansible roles
+│   ├── group_vars/             # Environment-specific variables
+│   ├── host_vars/              # Host-specific variables
+│   ├── iam/                    # IAM and user management files
+│   ├── scripts/                # Utility scripts for operations
+│   ├── solana_setup_host.yml   # Main host setup playbook
+│   ├── solana_new_metal_box.yml # New server provisioning
+│   └── solana_two_host_operations.yml # Multi-host operations
+├── solana-localnet/            # Docker-based local development environment
+│   ├── docker-compose.yml      # Multi-container Solana testnet
+│   ├── Dockerfile              # Container build definitions
+│   ├── build-solana-cli/       # Solana CLI build automation
+│   ├── validator-keys/         # Pre-generated validator keypairs
+│   ├── start-localnet.sh       # Localnet startup script
+│   ├── start-localnet-from-outside-ide.sh # IDE-independent startup
+│   └── add-pentest-to-localnet.sh # Add security testing tools
+├── .devcontainer/              # VS Code dev container configuration
+├── .pre-commit-config.yaml     # Code quality hooks
+├── CONTRIBUTING.md             # Contribution guidelines
+├── ansible_health_check_prompt.md # Ansible diagnostics guide
+└── README.md                   # Basic project information
 ```
 
 ### Key Environment Variables
@@ -168,8 +209,9 @@ After making any changes to Ansible roles or Docker configurations:
 # Quick environment check
 docker --version && docker compose version && ansible --version && python3 --version
 
-# Ansible from project root
+# Ansible from project root - check various playbooks
 cd ansible && ansible-playbook --syntax-check playbooks/pb_setup_metal_box.yml
+cd ansible && ansible-playbook --syntax-check solana_setup_host.yml
 
 # Docker development environment
 cd solana-localnet && export COMPOSE_PROJECT_NAME=hayek-localnet ANSIBLE_REMOTE_USER=testuser SSH_AUTH_SOCK=/dev/null
@@ -201,6 +243,13 @@ docker compose logs -f gossip-entrypoint
 - **Docker Hub**: Base Ubuntu and Alpine images
 - **Rust/Cargo**: Crate dependencies for Solana CLI builds
 - **Alpine package mirrors**: For container dependency installation
-- **S3 (optional)**: Pre-built Solana binaries for ARM64 architecture
+- **S3**: Pre-built Solana binaries for ARM64 architecture (configured in build-solana-cli/)
+- **docs.hayek.fi**: External documentation for detailed setup instructions
 
 **Note**: Network connectivity issues may cause Docker builds or Solana CLI compilation to fail. This is environmental and not related to code changes.
+
+## Additional Resources
+- **External Documentation**: https://docs.hayek.fi/dev-public-goods/hayek-validator-kit/
+- **Contributing Guidelines**: See CONTRIBUTING.md for code standards and submission process
+- **Ansible Health Checks**: Use ansible_health_check_prompt.md for comprehensive codebase analysis
+- **Build Documentation**: See solana-localnet/build-solana-cli/README.md for CLI build instructions
