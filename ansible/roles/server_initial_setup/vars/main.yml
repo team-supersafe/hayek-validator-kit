@@ -88,7 +88,7 @@ filesystem_formats:
 # Script to monitor validator health
 health_check:
   script_name: "health_check.sh"
-  dest_path: "/home/{{ sol_owner }}/{{ health_check.script_name }}"
+  dest_path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
   owner: "{{ sol_owner }}"
   group: "{{ validator_group }}"
   mode: "0775"
