@@ -1,0 +1,21 @@
+---
+# Creates and configures the validator directory structure
+
+- name: Create validator directory
+  ansible.builtin.file:
+    path: "{{ validator_directory.path }}"
+    owner: "{{ validator_directory.owner }}"
+    group: "{{ validator_directory.group }}"
+    mode: "{{ validator_directory.mode }}"
+    state: directory
+  become: true
+
+- name: Create scripts subdirectory
+  ansible.builtin.file:
+    path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}"
+    owner: "{{ validator_directory.owner }}"
+    group: "{{ validator_directory.group }}"
+    mode: "{{ validator_directory.mode }}"
+    state: directory
+  become: true
+  

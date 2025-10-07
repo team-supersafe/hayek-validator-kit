@@ -16,6 +16,7 @@ timezone: "America/New_York"
 
 # User configuration for Solana validator
 sol_owner: "sol"
+validator_group: "validator_operators"
 
 # CPU configuration
 cpu_config:
@@ -50,7 +51,16 @@ firewall:
 directory_permissions:
   mode: '0775'
   owner: "{{ sol_owner }}"
-  group: "validator_operators"
+  group: "{{ validator_group }}"
+
+# Validator directory configuration
+validator_directory:
+  name: "validator"
+  path: "/opt/{{ validator_directory.name }}"
+  owner: "{{ sol_owner }}"
+  group: "{{ validator_group }}"
+  mode: '2775'
+  scripts_subdir: "scripts"
 
 # Mount directories list
 mount_directories:
@@ -80,5 +90,5 @@ health_check:
   script_name: "health_check.sh"
   dest_path: "/home/{{ sol_owner }}/{{ health_check.script_name }}"
   owner: "{{ sol_owner }}"
-  group: "validator_operators"
+  group: "{{ validator_group }}"
   mode: "0775"
