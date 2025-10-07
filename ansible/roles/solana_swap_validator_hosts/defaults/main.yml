@@ -1,11 +1,21 @@
 ---
-# These are constants that rarely change and are specific to the swap operation
+# SSH key configuration for host-to-host communication during swap
 ssh_key_path: "{{ solana_user_dir }}/.ssh/id_rsa"
 ssh_key_type: "rsa"
 ssh_key_size: 2048
+# Tower file naming convention for PoH verification data transfer
 tower_file_prefix: "tower-1_9-"
 tower_file_suffix: ".bin"
 # This is an estimated static value to calculate estimated remaining epoch time.
 slots_per_sec: 2.5
 # Threshold (in seconds) before the epoch ends to trigger swap actions
 swap_epoch_end_threshold_sec: 180
+# Retry and async configuration
+max_retry_attempts: 3
+retry_delay_seconds: 5
+wait_restart_window_timeout_seconds: 300
+async_max_retries: 30
+async_retry_delay_seconds: 10
+# Service management configuration for stopping services during swap
+service_stop_retries: 3
+service_stop_delay_seconds: 10
