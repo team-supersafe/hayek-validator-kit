@@ -23,23 +23,17 @@
     path: "{{ validator_root_dir }}/.rustup"
   register: rustup_dir_stat
 
-- name: Install - Fix ownership of .cargo directory to {{ solana_user }}:validator_operators
+- name: Install - Fix ownership of Rust directories to {{ solana_user }}:validator_operators
   ansible.builtin.file:
-    path: "{{ validator_root_dir }}/.cargo"
+    path: "{{ validator_root_dir }}/{{ item.dir }}"
     owner: "{{ solana_user }}"
     group: "validator_operators"
     recurse: true
   become: true
-  when: cargo_dir_stat.stat.exists
-
-- name: Install - Fix ownership of .rustup directory to {{ solana_user }}:validator_operators
-  ansible.builtin.file:
-    path: "{{ validator_root_dir }}/.rustup"
-    owner: "{{ solana_user }}"
-    group: "validator_operators"
-    recurse: true
-  become: true
-  when: rustup_dir_stat.stat.exists
+  loop:
+    - { dir: '.cargo', stat_var: 'cargo_dir_stat' }
+    - { dir: '.rustup', stat_var: 'rustup_dir_stat' }
+  when: hostvars[inventory_hostname][item.stat_var].stat.exists
 - name: Install - Add Rust environment to global profile
   ansible.builtin.blockinfile:
     path: /etc/profile.d/rust.sh
