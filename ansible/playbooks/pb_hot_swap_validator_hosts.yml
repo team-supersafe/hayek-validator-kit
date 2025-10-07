@@ -108,3 +108,7 @@
 
   roles:
     - role: solana_swap_validator_hosts
+
+  post_tasks:
+    - name: Import SSH cleanup tasks (runs regardless of success/failure)
+      ansible.builtin.import_tasks: ../roles/solana_swap_validator_hosts/tasks/cleanup_ssh_keys.yml
