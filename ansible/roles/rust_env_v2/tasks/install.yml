@@ -23,7 +23,7 @@
     path: "{{ validator_root_dir }}/.rustup"
   register: rustup_dir_stat
 
-- name: Install - Fix ownership of .cargo directory to sol:validator_operators
+- name: Install - Fix ownership of .cargo directory to {{ solana_user }}:validator_operators
   ansible.builtin.file:
     path: "{{ validator_root_dir }}/.cargo"
     owner: "{{ solana_user }}"
