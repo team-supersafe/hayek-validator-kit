@@ -12,15 +12,6 @@ set -euo pipefail
 
 ARCH=$(uname -m)
 
-# if [ "$ARCH" = "x86_64" ]; then
-#   ARCH="amd64"
-# elif [ "$ARCH" = "aarch64" ]; then
-#   ARCH="arm64"
-# else
-#   echo "Unsupported architecture: $ARCH"
-#   exit 1
-# fi
-
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 YELLOW='\033[1;33m'
@@ -54,14 +45,18 @@ AWS_CLI_INSTALLER_FILENAME= && dpkgArch="$(dpkg --print-architecture)" \
     ./aws/install
 
 # check if solana cli is already in the s3 bucket
-pretty_echo "Checking if Solana CLI v${SOLANA_RELEASE}/${ARCH} exists in S3 bucket..."
 BINARY_NAME="${ARCH}-unknown-linux-gnu.tar.bz2"
 SOLANA_BINARY_S3_KEY="agave/releases/download/v${SOLANA_RELEASE}/solana-release-$BINARY_NAME"
 S3_DOWNLOAD_BASE_URL="https://solv-store.s3.us-east-1.amazonaws.com"
 
-if aws s3api head-object --bucket "$BUCKET_NAME" --key $SOLANA_BINARY_S3_KEY 2>/dev/null; then
+pretty_echo "Checking if Solana CLI v${SOLANA_RELEASE}/${ARCH} exists in S3 bucket..."
+if [ "${FORCE_UPLOAD:-false}" != "true" ] && aws s3api head-object --bucket "$BUCKET_NAME" --key $SOLANA_BINARY_S3_KEY 2>/dev/null; then
   echo -e "Solana CLI v${SOLANA_RELEASE} already exists in S3 bucket.\nDownload at ${BLUE}${S3_DOWNLOAD_BASE_URL}/$SOLANA_BINARY_S3_KEY${NC}.\nExiting..."
   exit 0
+fi
+
+if [ "${FORCE_UPLOAD:-false}" = "true" ]; then
+    pretty_echo "FORCE_UPLOAD is set. Will overwrite existing S3 object if present."
 fi
 
 pretty_echo  "Installing Rust..."
@@ -93,24 +88,19 @@ tar -xvzf "v${SOLANA_RELEASE}.tar.gz" > /dev/null 2>&1
 # build
 pretty_echo "Building Solana CLI v${SOLANA_RELEASE} for architecture: $ARCH"
 cd "agave-${SOLANA_RELEASE}"
-# mkdir solana-release
 ./scripts/cargo-install-all.sh ./solana-release
-# use this to cut the build process short
-# ./scripts/cargo-install-all.sh ./solana-release &
-# sleep 10
-# build_pid=$!
-# echo $build_pid
-# kill -0 $build_pid 2>/dev/null
 
 # verify the build
 pretty_echo "Verifying Solana CLI v${SOLANA_RELEASE} build..."
 /tmp/build/agave-${SOLANA_RELEASE}/solana-release/bin/solana --version
 
+pretty_echo "Build completed successfully!"
+
 # compress the build
 pretty_echo "Compressing Solana CLI v${SOLANA_RELEASE} build (gzip)..."
 tar -cvjpf "${BINARY_NAME}" -C /tmp/build/agave-${SOLANA_RELEASE} ./solana-release
 
- # upload to S3
-pretty_echo "Uploading Solana CLI v${SOLANA_RELEASE} build to S3..."
+# upload to S3 using the standalone upload script
 BINARY_PATH="/tmp/build/agave-${SOLANA_RELEASE}/$BINARY_NAME"
-aws s3 cp "$BINARY_PATH" "s3://$BUCKET_NAME/$SOLANA_BINARY_S3_KEY"
+# Use absolute path for the upload script inside Docker
+/tmp/upload-solana-binaries-to-s3.sh solana-cli "$SOLANA_RELEASE" "$BINARY_PATH" "$ARCH"
