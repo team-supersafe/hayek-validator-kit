@@ -32,7 +32,7 @@
   become: true
   when: cargo_dir_stat.stat.exists
 
-- name: Install - Fix ownership of .rustup directory to sol:validator_operators
+- name: Install - Fix ownership of .rustup directory to {{ solana_user }}:validator_operators
   ansible.builtin.file:
     path: "{{ validator_root_dir }}/.rustup"
     owner: "{{ solana_user }}"
