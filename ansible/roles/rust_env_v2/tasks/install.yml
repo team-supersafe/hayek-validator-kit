@@ -18,16 +18,21 @@
     path: "{{ item }}"
     owner: "{{ solana_user }}"
     group: "validator_operators"
-    recurse: yes
+    recurse: true
   become: true
   loop:
     - "{{ validator_root_dir }}/.cargo"
     - "{{ validator_root_dir }}/.rustup"
 
-- name: Install - Persist Rust environment setup in shell profile
-  ansible.builtin.lineinfile:
-    path: "{{ validator_root_dir }}/.bashrc"
-    line: '. "$HOME/.cargo/env"'
-    create: yes
-    state: present
+- name: Install - Add Rust environment to global profile
+  ansible.builtin.blockinfile:
+    path: /etc/profile.d/rust.sh
+    create: true
+    mode: '0644'
+    marker: "# {mark} ANSIBLE MANAGED RUST ENVIRONMENT"
+    block: |
+      export CARGO_HOME="{{ validator_root_dir }}/.cargo"
+      export RUSTUP_HOME="{{ validator_root_dir }}/.rustup"
+      export PATH="{{ validator_root_dir }}/.cargo/bin:$PATH"
+  become: true
   when: validator_root_dir is defined and validator_root_dir != ''

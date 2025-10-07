@@ -1,7 +1,7 @@
 ---
 - name: Verify rust installation - Refresh shell environment and verify PATH
   ansible.builtin.shell: |
-    . "{{ solana_user_dir }}/.cargo/env"
+    . "{{ validator_root_dir }}/.cargo/env"
     echo $PATH
   register: rust_shell_env_path
   changed_when: false
@@ -16,8 +16,8 @@
     rustc --version
   environment:
     PATH: "{{ rust_shell_env_path.stdout }}"
-    CARGO_HOME: "{{ solana_user_dir }}/.cargo"
-    RUSTUP_HOME: "{{ solana_user_dir }}/.rustup"
+    CARGO_HOME: "{{ validator_root_dir }}/.cargo"
+    RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
   register: rustc_version
   changed_when: false
   failed_when: rustc_version.rc != 0
@@ -31,8 +31,8 @@
     cargo --version
   environment:
     PATH: "{{ rust_shell_env_path.stdout }}"
-    CARGO_HOME: "{{ solana_user_dir }}/.cargo"
-    RUSTUP_HOME: "{{ solana_user_dir }}/.rustup"
+    CARGO_HOME: "{{ validator_root_dir }}/.cargo"
+    RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
   register: cargo_version
   changed_when: false
   failed_when: cargo_version.rc != 0
