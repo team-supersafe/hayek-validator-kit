@@ -54,9 +54,10 @@ directory_permissions:
   group: "{{ validator_group }}"
 
 # Validator directory configuration
+validator_directory_name: "validator"
 validator_directory:
-  name: "validator"
-  path: "/opt/{{ validator_directory.name }}"
+  name: "{{ validator_directory_name }}"
+  path: "/opt/{{ validator_directory_name }}"
   owner: "{{ sol_owner }}"
   group: "{{ validator_group }}"
   mode: '2775'
