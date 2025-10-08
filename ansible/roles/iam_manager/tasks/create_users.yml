@@ -29,7 +29,7 @@
       map('lower') |
       unique |
       list
-    }}"
+      }}"
   no_log: false
 
 # Debug unique groups
