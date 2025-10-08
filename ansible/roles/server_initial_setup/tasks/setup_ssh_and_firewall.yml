@@ -65,11 +65,22 @@
   notify: Restart ssh
 
 
+
 # Configure firewall
 - name: Ensure UFW is installed
   ansible.builtin.apt:
     name: ufw
     state: present
+
+# Remove all existing allow rules for SSH port before applying new ones
+- name: Remove all existing allow rules for SSH port {{ firewall.ssh_port }}
+  ansible.builtin.shell: |
+    ufw status numbered | awk '/ALLOW IN/ && /{{ firewall.ssh_port }}\/tcp/ {print $1}' | sort -rn | while read num; do ufw --force delete $num; done
+  args:
+    warn: false
+  changed_when: false
+  failed_when: false
+  become: true
 
 - name: "Allow authorized IPs from CSV on port {{ firewall.ssh_port }}"
   community.general.ufw:
