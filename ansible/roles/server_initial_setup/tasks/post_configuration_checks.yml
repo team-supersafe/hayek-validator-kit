@@ -105,7 +105,8 @@
 
     - name: Verify authorized IPs are in firewall rules
       ansible.builtin.shell: |
-        ufw status | grep "{{ item.value.ip }}" || echo "IP not found: {{ item.value.ip }}"
+        # Use word boundaries to ensure exact IP match, not substring
+        ufw status | grep -E "\b{{ item.value.ip }}\b" || echo "IP not found: {{ item.value.ip }}"
       register: ip_firewall_check
       changed_when: false
       loop: "{{ authorized_ips_csv.dict | dict2items }}"
