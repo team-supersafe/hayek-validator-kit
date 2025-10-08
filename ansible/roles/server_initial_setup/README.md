@@ -1,3 +1,4 @@
+# For testing, you can use the m4.metal.medium server on latitude.sh
 
 # Server Initial Setup Role
 
@@ -81,6 +82,13 @@ ssh validator@203.0.113.10 -p 2522
 
 Replace the example values with your actual user, server IP, and port as configured.
 
+Note: If your user belongs to the `validator_operators` or `sysadmin` group, you will be able to use the Password Self-Service by following the instructions on the welcome screen after logging in.
+
+To verify that the server has the optimal configuration for a Solana validator, you can use the health_check script:
+
+```sh
+   bash /opt/validator/scripts/health_check.sh 
+```
 ---
 
 For more details, see the role's tasks and variable files.
