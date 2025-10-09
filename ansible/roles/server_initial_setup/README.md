@@ -46,16 +46,16 @@ https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/
 
 ## Update Inventory
 
-> **Inventory Required:**
-> Before running the playbooks, edit your inventory file (`solana_new_metal_box.yml`) to set the correct IP and port for your target host:
->
-> ```yaml
-> all:
->   hosts:
->     new-metal-box:
->       ansible_host: 192.168.1.200  # Replace with your server's IP
->       ansible_port: 22
-> ```
+**Inventory Required:**
+ Before running the playbooks, edit your inventory file (`solana_new_metal_box.yml`) to set the correct IP and port for your target host:
+
+ ```yaml
+ all:
+   hosts:
+     new-metal-box:
+       ansible_host: 192.168.1.200  # Replace with your server's IP
+       ansible_port: 22
+ ```
 
 
 ## User and Role Setup
