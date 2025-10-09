@@ -37,6 +37,26 @@
   become: false
   run_once: true
 
+# Precheck: Fail if RAID devices are detected (md/raid type in lsblk)
+- name: Check for RAID devices (md/raid) in lsblk
+  ansible.builtin.shell: |
+    lsblk -o NAME,TYPE | grep -E '\s(md|raid)[0-9]*$' || true
+  register: raid_devices_check
+  changed_when: false
+  check_mode: false
+
+- name: Fail if RAID devices are present
+  ansible.builtin.fail:
+    msg: |
+      RAID configuration detected on this server. This setup is not supported for Solana validator nodes.
+      Please remove or reconfigure RAID devices before proceeding.
+      Detected RAID devices:
+      {{ raid_devices_check.stdout }}
+  when: raid_devices_check.stdout | length > 0
+  delegate_to: "{{ inventory_hostname }}"
+  become: true
+  run_once: false
+
 - name: Check CPU configuration for Solana servers
   block:
     # Check CPU governor setting
