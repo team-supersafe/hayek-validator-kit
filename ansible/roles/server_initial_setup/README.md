@@ -5,7 +5,7 @@ For testing, you will need two CSV files:
 - A CSV containing the users and their roles
 - A CSV containing the IPs authorized to connect to the server
 
-These CSVs should be placed in:
+These CSVs should be placed in your **local computer**:
 
    ~/new-metal-box/
 
