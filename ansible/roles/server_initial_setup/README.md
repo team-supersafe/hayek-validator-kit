@@ -12,7 +12,7 @@ These CSVs should be placed in your **local computer**:
 
 ### Example: Users and Roles CSV (`~/new-metal-box/iam_setup_dev.csv`)
 
-> **Testing Tip:** For test purposes only, you may use the same public key for all users in the CSV. This allows you to access the server as each user and verify their roles and permissions work as expected. Use a public key you have access to.
+> **Testing Tip:** For testing purposes only, it is recommended to use the same public key for all users in the CSV. This allows you to access the server as each user and verify their roles and permissions work as expected. Use a public key you have access to.
 
 ```
 user,key,group_a,group_b,group_c
