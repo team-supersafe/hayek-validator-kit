@@ -129,17 +129,17 @@ This step is a safety measure to ensure you are provisioning the correct server.
 ## Server Restart Prompt
 
 At the end of the playbook, you will be prompted with:
-
+```bash
    Do you want to restart the server now? (y/n)
 
    Skipping the restart means some optimizations (such as CPU isolation and kernel tuning) will not be active until the next reboot.
-
+```
 ## After Playbook Completion
 
 At the end of the playbook, the server will be rebooted automatically. You must reconnect using:
 
 ```sh
-ssh validator@203.0.113.10 -p 2522
+ssh alice@203.0.113.10 -p 2522
 ```
 
 Replace the example values with your actual user, server IP, and port as configured.
@@ -153,4 +153,3 @@ To verify that the server has the optimal configuration for a Solana validator, 
 ```
 ---
 
-For more details, see the role's tasks and variable files.
