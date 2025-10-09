@@ -44,7 +44,7 @@ Once you have selected the necessary server for your tests, you should run a qui
 https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/choosing-your-metal#post-provisioning-verifications
 
 
-## Server Initial Setup Role
+## Update Inventory
 
 > **Inventory Required:**
 > Before running the playbooks, edit your inventory file (`solana_new_metal_box.yml`) to set the correct IP and port for your target host:
@@ -83,46 +83,56 @@ This role automates the initial configuration and hardening of a Solana validato
 - Fail2ban setup
 - Pre- and post-configuration checks
 
-## Usage
+## Running the Playbook
 
-1. **Prepare your inventory and variables:**
-   - Define your target host in your inventory file.
-
-2. **Prepare the authorized IPs CSV:**
+1. **Prepare the authorized IPs CSV:**
    - Ensure you have the authorized IPs CSV as described in the [Requirements](#requirements-csv-files-for-usersroles-and-authorized-ips) section at the top of this documentation.
    - Do **not** use real IPs or sensitive names in your public documentation.
 
-3. **Run the playbook:**
+2. **Run the playbook:**
    
-    ```sh
-    ansible-playbook playbooks/pb_setup_metal_box.yml \
-       -i solana_new_metal_box.yml \
-       -e "target_host=new-metal-box" \
-       -e "ansible_user=alice" \
-       -e "csv_file=authorized_ips.csv" \
-       -K
-    ```
+ ```sh
+ansible-playbook playbooks/pb_setup_metal_box.yml \
+   -i solana_new_metal_box.yml \
+   -e "target_host=new-metal-box" \
+   -e "ansible_user=alice" \
+   -e "csv_file=authorized_ips.csv" \
+   -K
+```
 
-    > **Note:** Before running the playbook, users with the `sysadmin` role must have previously logged in and provisioned a password using the Password Self-Service system. This is required for privilege escalation (`-K` flag).
-
-
-   - The playbook will read the CSV and automatically create firewall rules to allow only the listed IPs to access the server's SSH port.
+> **Note:** Before running the playbook, users with the `sysadmin` role must have previously logged in and provisioned a password using the Password Self-Service system. This is required for privilege escalation (`-K` flag).
 
 
-## Notes
-- The CSV must have at least the columns: `ip` and `comment`.
-- Only IPs listed in the CSV will be allowed through the firewall for SSH access.
-
-## Accessing the Server
-
-After the playbook completes, you will need to access the server using the SSH port and user configured. Make sure to review the following variables:
-
-- `ansible_user`: The username to use for SSH access.
-- `firewall.ssh_port`: The SSH port (default: 2522, unless changed in your variables).
-- Any password or SSH key requirements as provisioned by the sysadmin via Password Self-Service.
 
 
-Refer to the role's `vars/main.yml` for all relevant configuration variables.
+Upon running the playbook, you will see a confirmation asking you to verify the IP of the host you are about to change:
+
+```
+TASK [Show server IP and location for confirmation] ******************************
+[Show server IP and location for confirmation]
+IMPORTANT: You are about to run this playbook on the server with IP: 192.168.1.100
+
+Location Information:
+- City: Unknown
+- Country: Unknown
+- Organization: Unknown
+
+To continue, please type exactly this IP: 192.168.1.100
+
+If you are not sure, press Ctrl+C to cancel.
+
+Type IP here
+```
+This step is a safety measure to ensure you are provisioning the correct server. Type the IP address shown to continue. If you are not sure, press Ctrl+C to cancel the process.
+
+
+## Server Restart Prompt
+
+At the end of the playbook, you will be prompted with:
+
+   Do you want to restart the server now? (y/n)
+
+   Skipping the restart means some optimizations (such as CPU isolation and kernel tuning) will not be active until the next reboot.
 
 ## After Playbook Completion
 
