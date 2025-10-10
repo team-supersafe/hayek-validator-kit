@@ -1,82 +1,126 @@
 ---
 # This role performs CPU configuration checks and stops the playbook if any check fails
 
-# - name: Check CPU configuration for Solana servers
-#   block:
-#     # Check CPU governor setting
-#     - name: Check if CPU governor is set to performance mode
-#       ansible.builtin.shell: |
-#         for gov_file in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-#           if [ -f "$gov_file" ]; then
-#             cat "$gov_file"
-#           fi
-#         done | sort | uniq
-#       register: cpu_governor_check
-#       changed_when: false
-#       check_mode: false
+# Precheck: Read and validate authorized IPs CSV file
+- name: Read authorized IPs from CSV
+  community.general.read_csv:
+    path: "{{ authorized_access_csv }}"
+    key: ip
+  register: authorized_ips_csv
+  delegate_to: localhost
+  become: false
+  run_once: true
 
-#     # Check CPU scaling driver
-#     - name: Check if p-state driver is active
-#       ansible.builtin.shell: |
-#         if [ -f "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver" ]; then
-#           cat "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver"
-#         else
-#           echo "scaling_driver file not found"
-#           exit 1
-#         fi
-#       register: pstate_check
-#       changed_when: false
-#       check_mode: false
+- name: Debug authorized IPs CSV content
+  ansible.builtin.debug:
+    var: authorized_ips_csv
+  delegate_to: localhost
+  become: false
+  no_log: true
+  run_once: true
 
-#     # Check AMD SMT/Hyperthreading status
-#     - name: Check if AMD SMT/Hyperthreading is enabled
-#       ansible.builtin.shell: |
-#         # Method 1: Check through SMT directory (modern kernels)
-#         if [ -d "/sys/devices/system/cpu/smt" ] && [ -f "/sys/devices/system/cpu/smt/control" ]; then
-#           cat "/sys/devices/system/cpu/smt/control"
-#           exit $?
-#         fi
+- name: Fail if authorized IPs CSV is missing or empty
+  ansible.builtin.fail:
+    msg: "Authorized IPs CSV file is missing or empty. Please provide a valid CSV with at least one IP."
+  when: >
+    not (authorized_ips_csv is defined and
+    authorized_ips_csv | length > 0)
+  delegate_to: localhost
+  become: false
+  run_once: true
 
-#         # Method 2: Check by counting siblings per core
-#         siblings_count=$(cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list | tr ',' ' ' | wc -w)
-#         if [ "$siblings_count" -gt 1 ]; then
-#           echo "on"
-#           exit 0
-#         else
-#           echo "off"
-#           exit 1
-#         fi
-#       register: smt_check
-#       changed_when: false
-#       check_mode: false
+- name: Fail if authorized IPs CSV missing required field 'ip'
+  ansible.builtin.fail:
+    msg: "Authorized IPs CSV missing required field: ip"
+  when: (authorized_ips_csv.dict.values() | selectattr('ip', 'defined') | list | length) == 0
+  delegate_to: localhost
+  become: false
+  run_once: true
 
-#     # Display verification results
-#     - name: Display CPU configuration status
-#       ansible.builtin.debug:
-#         msg: |
-#           CPU Configuration Status:
-#             - CPU Governor: {{ cpu_governor_check.stdout }}
-#             - CPU Scaling Driver: {{ pstate_check.stdout }}
-#             - AMD SMT/Hyperthreading: {{ smt_check.stdout }}
+# Precheck: Fail if RAID devices are detected (md/raid type in lsblk)
+- name: Check for RAID devices (md/raid) in lsblk
+  ansible.builtin.shell: |
+    lsblk -o NAME,TYPE | grep -E '\s(md|raid)[0-9]*$' || true
+  register: raid_devices_check
+  changed_when: false
+  check_mode: false
 
-#     # Assertions that will stop the playbook if they fail
-#     - name: Verify CPU governor is set to performance mode
-#       ansible.builtin.assert:
-#         that: cpu_governor_check.stdout == "performance"
-#         fail_msg: "ERROR! CPU governor is not set to performance mode. Current value: {{ cpu_governor_check.stdout }}"
-#         success_msg: "CPU governor correctly set to performance mode"
+- name: Fail if RAID devices are present
+  ansible.builtin.fail:
+    msg: |
+      RAID configuration detected on this server. This setup is not supported for Solana validator nodes.
+      Please remove or reconfigure RAID devices before proceeding.
+      Detected RAID devices:
+      {{ raid_devices_check.stdout }}
+  when: raid_devices_check.stdout | length > 0
+  delegate_to: "{{ inventory_hostname }}"
+  become: true
+  run_once: false
 
-#     - name: Verify CPU is using p-state driver
-#       ansible.builtin.assert:
-#         that: "'pstate' in pstate_check.stdout"
-#         fail_msg: "ERROR! CPU is not using p-state driver. Current driver: {{ pstate_check.stdout }}"
-#         success_msg: "CPU correctly using p-state driver: {{ pstate_check.stdout }}"
+- name: Check CPU configuration for Solana servers
+  block:
+    # Check CPU governor setting
+    - name: Check if CPU governor is set to performance mode
+      ansible.builtin.shell: |
+        for gov_file in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+          if [ -f "$gov_file" ]; then
+            cat "$gov_file"
+          fi
+        done | sort | uniq
+      register: cpu_governor_check
+      changed_when: false
+      check_mode: false
 
-#     - name: Verify AMD SMT/Hyperthreading is enabled
-#       ansible.builtin.assert:
-#         that: smt_check.stdout == "on"
-#         fail_msg: "ERROR! AMD SMT/Hyperthreading is not enabled. Current status: {{ smt_check.stdout }}"
-#         success_msg: "AMD SMT/Hyperthreading correctly enabled"
+    # Check CPU scaling driver
+    - name: Check if p-state driver is active
+      ansible.builtin.shell: |
+        if [ -f "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver" ]; then
+          cat "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver"
+        else
+          echo "scaling_driver file not found"
+          exit 1
+        fi
+      register: pstate_check
+      changed_when: false
+      check_mode: false
+
+    # Check AMD SMT/Hyperthreading status
+    - name: Check if AMD SMT/Hyperthreading is enabled
+      ansible.builtin.shell: |
+        # Method 1: Check through SMT directory (modern kernels)
+        if [ -d "/sys/devices/system/cpu/smt" ] && [ -f "/sys/devices/system/cpu/smt/control" ]; then
+          cat "/sys/devices/system/cpu/smt/control"
+          exit $?
+        fi
+
+        # Method 2: Check by counting siblings per core
+        siblings_count=$(cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list | tr ',' ' ' | wc -w)
+        if [ "$siblings_count" -gt 1 ]; then
+          echo "on"
+          exit 0
+        else
+          echo "off"
+          exit 1
+        fi
+      register: smt_check
+      changed_when: false
+      check_mode: false
+
+    # Display verification results
+    - name: Display CPU configuration status
+      ansible.builtin.debug:
+        msg: |
+          CPU Configuration Status:
+            - CPU Governor: {{ cpu_governor_check.stdout }}
+            - CPU Scaling Driver: {{ pstate_check.stdout }}
+            - AMD SMT/Hyperthreading: {{ smt_check.stdout }}
+
+            
+    - name: Verify AMD SMT/Hyperthreading is enabled
+      ansible.builtin.assert:
+        that: smt_check.stdout == "on"
+        fail_msg: "ERROR! AMD SMT/Hyperthreading is not enabled. Current status: {{ smt_check.stdout }}"
+        success_msg: "AMD SMT/Hyperthreading correctly enabled"
 
 - name: Check disk configuration for Solana servers
   block:
@@ -147,7 +191,7 @@
             - Accounts: {{ mount_points.accounts }} ({{ filesystem_formats.accounts }})
             - Snapshots: {{ mount_points.snapshots }} ({{ filesystem_formats.snapshots }})
 
-    # Assertions that will stop the playbook if they fail
+    
     - name: Verify minimum number of disks
       ansible.builtin.assert:
         that: available_disks_list | length >= min_required_disks

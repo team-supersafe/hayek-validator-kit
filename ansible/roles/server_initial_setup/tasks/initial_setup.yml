@@ -14,21 +14,15 @@
     autoremove: true
 
 # Disable unattended upgrades
-- name: Stop unattended-upgrades service
+- name: Disable automatic update services
   ansible.builtin.systemd:
-    name: unattended-upgrades
+    name: "{{ item }}"
     state: stopped
     enabled: false
-
-- name: Reconfigure unattended-upgrades to disable
-  ansible.builtin.expect:
-    command: dpkg-reconfigure unattended-upgrades
-    responses:
-      '^No automatic updates.$': '\n'
-    timeout: 30
-  register: dpkg_result
-  failed_when: "'rejected' in dpkg_result.stdout"
-  ignore_errors: true  # May not work in all environments
+  loop:
+    - unattended-upgrades
+    - apt-daily.timer
+    - apt-daily-upgrade.timer
 
 - name: Configure auto-upgrades
   ansible.builtin.copy:
