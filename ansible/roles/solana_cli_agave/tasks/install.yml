@@ -34,17 +34,14 @@
   name: Install - Installing from source
   ansible.builtin.include_tasks: install_from_source.yml
 
-# Ensure Solana CLI bin path is in the user's .bashrc and .zshrc for persistent CLI access
-- name: Install - Ensure Solana CLI bin path is in .bashrc
-  ansible.builtin.lineinfile:
-    path: "$HOME/.bashrc"
-    line: 'export PATH="{{ solana_install_dir }}:$PATH"'
+# Add Solana CLI bin path to global profile for all users (test)
+- name: Install - Add Solana CLI bin path to global profile
+  ansible.builtin.blockinfile:
+    path: /etc/profile.d/solana.sh
     create: true
-    state: present
-
-- name: Install - Ensure Solana CLI bin path is in .zshrc
-  ansible.builtin.lineinfile:
-    path: "$HOME/.zshrc"
-    line: 'export PATH="{{ solana_install_dir }}:$PATH"'
-    create: true
-    state: present
+    mode: '0644'
+    marker: "# {mark} ANSIBLE MANAGED SOLANA ENVIRONMENT"
+    block: |
+      export PATH="{{ validator_solana_install_dir }}:$PATH"
+  become: true
+  when: validator_solana_install_dir is defined and validator_solana_install_dir != ''
