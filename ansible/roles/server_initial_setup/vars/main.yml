@@ -1,8 +1,22 @@
+---
+# CSV file containing user information (username, groups, email, etc.)
+authorized_access_csv: "~/new-metal-box/{{ csv_file }}"
+
+# Fail2ban configuration
+fail2ban:
+  sshd:
+    maxretry: 3
+    findtime: 300
+    bantime: 3600
+    ignoreip: "127.0.0.1"
+
+
 # Timezone configuration for the server
 timezone: "America/New_York"
 
 # User configuration for Solana validator
 sol_owner: "sol"
+validator_group: "validator_operators"
 
 # CPU configuration
 cpu_config:
@@ -13,11 +27,11 @@ cpu_config:
 # SSH Configuration
 ssh_config:
   port: 2522
-  permit_root_login: no
-  pubkey_authentication: yes
-  password_authentication: no
-  kbd_interactive_authentication: no
-  challenge_response_authentication: no
+  permit_root_login: "no"
+  pubkey_authentication: "yes"
+  password_authentication: "no"
+  kbd_interactive_authentication: "no"
+  challenge_response_authentication: "no"
 
 # Firewall Configuration
 firewall:
@@ -26,18 +40,28 @@ firewall:
     - 1234
     - 9090
   tcp_ranges:
-    - 8000:8020
+    - 8000:8030
   udp_ranges:
-    - 8000:8020
+    - 8000:8030
   denied_ports:
     - 8899
     - 8900
 
 # Directory permissions
 directory_permissions:
-  mode: '0755'
+  mode: '0775'
   owner: "{{ sol_owner }}"
-  group: "{{ sol_owner }}"
+  group: "{{ validator_group }}"
+
+# Validator directory configuration
+validator_directory_name: "validator"
+validator_directory:
+  name: "{{ validator_directory_name }}"
+  path: "/opt/{{ validator_directory_name }}"
+  owner: "{{ sol_owner }}"
+  group: "{{ validator_group }}"
+  mode: '2775'
+  scripts_subdir: "scripts"
 
 # Mount directories list
 mount_directories:
@@ -65,7 +89,7 @@ filesystem_formats:
 # Script to monitor validator health
 health_check:
   script_name: "health_check.sh"
-  dest_path: "/home/{{ sol_owner }}/{{ health_check.script_name }}"
+  dest_path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
   owner: "{{ sol_owner }}"
-  group: "{{ sol_owner }}"
-  mode: "0750"
+  group: "{{ validator_group }}"
+  mode: "0775"

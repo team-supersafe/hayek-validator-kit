@@ -2,7 +2,10 @@
 # Ask if the server should be restarted
 - name: Ask if you want to restart the server
   ansible.builtin.pause:
-    prompt: "Do you want to restart the server now? (y/n)"
+    prompt: |
+      Do you want to restart the server now? (y/n)
+
+      Skipping the restart means some optimizations (such as CPU isolation and kernel tuning) will not be active until the next reboot.
   register: restart_response
   delegate_to: localhost
   run_once: true
@@ -15,7 +18,7 @@
       THE SERVER IS NOW RESTARTING
 
       To reconnect, please use:
-      ssh username@{{ ansible_default_ipv4.address }} -p 2522
+      ssh {{ ansible_user }}@{{ ansible_default_ipv4.address }} -p {{ firewall.ssh_port }}
 
       Please allow a few minutes for the server to complete the restart.
       -------------------------------------------------
