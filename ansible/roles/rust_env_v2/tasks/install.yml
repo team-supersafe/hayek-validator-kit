@@ -8,12 +8,41 @@
 - name: Install - Rust using rustup
   ansible.builtin.command: /tmp/rustup-init.sh -y
   args:
-    creates: "{{ solana_user_dir }}/.cargo/bin/rustc"
+    creates: "{{ validator_root_dir }}/.cargo/bin/rustc"
+  environment:
+    CARGO_HOME: "{{ validator_root_dir }}/.cargo"
+    RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
 
-- name: Install - Persist Rust environment setup in shell profile
-  ansible.builtin.lineinfile:
-    path: "{{ solana_user_dir }}/.bashrc"
-    line: '. "$HOME/.cargo/env"'
-    create: yes
-    state: present
-  when: solana_user_dir is defined and solana_user_dir != ''
+- name: Stat - Check if .cargo directory exists
+  ansible.builtin.stat:
+    path: "{{ validator_root_dir }}/.cargo"
+  register: cargo_dir_stat
+
+- name: Stat - Check if .rustup directory exists
+  ansible.builtin.stat:
+    path: "{{ validator_root_dir }}/.rustup"
+  register: rustup_dir_stat
+
+- name: Install - Fix ownership of Rust directories to {{ solana_user }}:validator_operators
+  ansible.builtin.file:
+    path: "{{ validator_root_dir }}/{{ item.dir }}"
+    owner: "{{ solana_user }}"
+    group: "validator_operators"
+    recurse: true
+  become: true
+  loop:
+    - { dir: '.cargo', stat_var: 'cargo_dir_stat' }
+    - { dir: '.rustup', stat_var: 'rustup_dir_stat' }
+  when: hostvars[inventory_hostname][item.stat_var].stat.exists
+- name: Install - Add Rust environment to global profile
+  ansible.builtin.blockinfile:
+    path: /etc/profile.d/rust.sh
+    create: true
+    mode: '0644'
+    marker: "# {mark} ANSIBLE MANAGED RUST ENVIRONMENT"
+    block: |
+      export CARGO_HOME="{{ validator_root_dir }}/.cargo"
+      export RUSTUP_HOME="{{ validator_root_dir }}/.rustup"
+      export PATH="{{ validator_root_dir }}/.cargo/bin:$PATH"
+  become: true
+  when: validator_root_dir is defined and validator_root_dir != ''

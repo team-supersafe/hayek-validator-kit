@@ -1,6 +1,0 @@
----
-- name: Config - Reload your PATH environment variable to include Cargo's bin directory
-  ansible.builtin.lineinfile:
-    path: "{{ solana_user_dir }}/.bashrc"
-    line: 'source $HOME/.cargo/env'
-    state: present
