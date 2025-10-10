@@ -1,12 +1,21 @@
 ---
-# Configure SSH.SOCKET port
+# Check if ssh.socket unit file exists
+- name: Check if ssh.socket unit file exists
+  ansible.builtin.stat:
+    path: /lib/systemd/system/ssh.socket
+  register: ssh_socket_unit
+
+# Check if ssh.socket is active (only if unit file exists)
 - name: Check if ssh.socket is active
   ansible.builtin.shell: systemctl is-active ssh.socket
   register: ssh_socket_active
   changed_when: false
-  # Some metal providers don't use ssh.socket, so we ignore errors if it's not active
+  failed_when: false
   ignore_errors: true
+  no_log: true
+  when: ssh_socket_unit.stat.exists
 
+# Find ssh.socket file location (only if unit file exists and socket is active)
 - name: Find ssh.socket file location
   ansible.builtin.find:
     paths:
@@ -14,13 +23,16 @@
       - /usr/lib/systemd/system
     patterns: "ssh.socket"
   register: ssh_socket_file
-  when: ssh_socket_active.stdout == "active"
+  when:
+    - ssh_socket_unit.stat.exists
+    - ssh_socket_active.stdout == "active"
 
 # Check and activate ssh.service if not active
 - name: Check if ssh.service is active
   ansible.builtin.shell: systemctl is-active ssh.service
   register: ssh_service_active
   changed_when: false
+  failed_when: false
 
 - name: Start and enable ssh.service if not active
   ansible.builtin.systemd:
@@ -29,12 +41,15 @@
     enabled: true
   when: ssh_service_active.stdout != "active"
 
+
+# Change ListenStream to {{ ssh_config.port }} in ssh.socket if active and unit file exists
 - name: Change ListenStream to {{ ssh_config.port }} in ssh.socket if active
   ansible.builtin.lineinfile:
     path: "{{ ssh_socket_file.files[0].path }}"
     regexp: '^\s*ListenStream='
     line: 'ListenStream={{ ssh_config.port }}'
   when:
+    - ssh_socket_unit.stat.exists
     - ssh_socket_active.stdout == "active"
     - ssh_socket_file.files | length > 0
   notify:
@@ -49,17 +64,36 @@
     line: 'Port {{ ssh_config.port }}'
   notify: Restart ssh
 
+
+
 # Configure firewall
-- name: Install UFW
+- name: Ensure UFW is installed
   ansible.builtin.apt:
     name: ufw
     state: present
 
-- name: Allow SSH on port {{ firewall.ssh_port }}
+# Remove all existing allow rules for SSH port before applying new ones
+- name: Remove all existing allow rules for SSH port {{ firewall.ssh_port }}
+  ansible.builtin.shell: |
+    ufw status numbered | awk '/ALLOW IN/ && /{{ firewall.ssh_port }}\/tcp/ {print $1}' | sort -rn | while read num; do ufw --force delete $num; done
+  args:
+    warn: false
+  changed_when: false
+  failed_when: false
+  become: true
+
+- name: "Allow authorized IPs from CSV on port {{ firewall.ssh_port }}"
   community.general.ufw:
     rule: allow
     port: '{{ firewall.ssh_port }}'
     proto: tcp
+    from_ip: "{{ item.value.ip }}"
+    comment: "{{ item.value.comment }}"
+  loop: "{{ authorized_ips_csv.dict | dict2items }}"
+  loop_control:
+    label: "{{ item.value.ip }} ({{ item.value.comment }})"
+  when: authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0
+
 
 - name: Allow TCP port ranges
   community.general.ufw:
@@ -125,40 +159,75 @@
     name: fail2ban
     state: present
 
+# Clean existing fail2ban config before setting up new one
+- name: Remove existing fail2ban defaults config
+  ansible.builtin.file:
+    path: /etc/fail2ban/jail.d/defaults-debian.conf
+    state: absent
+
+# Ensure fail2ban config for Debian defaults
+- name: Ensure fail2ban config for Debian defaults
+  become: true
+  ansible.builtin.blockinfile:
+    path: /etc/fail2ban/jail.d/defaults-debian.conf
+    block: |
+      [DEFAULT]
+      banaction = nftables
+      banaction_allports = nftables[type=allports]
+      backend = systemd
+
+      [sshd]
+      enabled = true
+      port = {{ firewall.ssh_port }}
+      maxretry = {{ fail2ban.sshd.maxretry }}
+      findtime = {{ fail2ban.sshd.findtime }}
+      bantime = {{ fail2ban.sshd.bantime }}
+      ignoreip = {{ fail2ban.sshd.ignoreip }}
+    create: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+  notify: Restart fail2ban
+
 # Configure specific SSH security settings only
-- name: Configure SSH security - PermitRootLogin
+- name: Remove all PermitRootLogin lines
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?PermitRootLogin'
-    line: 'PermitRootLogin {{ ssh_config.permit_root_login | string | lower }}'
+    state: absent
+  notify: Restart ssh
+
+- name: Add PermitRootLogin configuration
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    line: 'PermitRootLogin {{ ssh_config.permit_root_login }}'
+    insertafter: '^# Authentication:'
   notify: Restart ssh
 
 - name: Configure SSH security - PubkeyAuthentication
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?PubkeyAuthentication'
-    line: 'PubkeyAuthentication {{ ssh_config.pubkey_authentication | string | lower }}'
+    line: 'PubkeyAuthentication {{ ssh_config.pubkey_authentication }}'
   notify: Restart ssh
 
 - name: Configure SSH security - PasswordAuthentication
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?PasswordAuthentication'
-    line: 'PasswordAuthentication {{ ssh_config.password_authentication | string | lower }}'
+    line: 'PasswordAuthentication {{ ssh_config.password_authentication }}'
   notify: Restart ssh
 
 - name: Configure SSH security - KbdInteractiveAuthentication
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?KbdInteractiveAuthentication'
-    line: 'KbdInteractiveAuthentication {{ ssh_config.kbd_interactive_authentication | string | lower }}'
+    line: 'KbdInteractiveAuthentication {{ ssh_config.kbd_interactive_authentication }}'
   notify: Restart ssh
 
 - name: Configure SSH security - ChallengeResponseAuthentication
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?ChallengeResponseAuthentication'
-    line: 'ChallengeResponseAuthentication {{ ssh_config.challenge_response_authentication | string | lower }}'
+    line: 'ChallengeResponseAuthentication {{ ssh_config.challenge_response_authentication }}'
   notify: Restart ssh
 
 # Find and update all files in sshd_config.d directory
@@ -172,7 +241,7 @@
   ansible.builtin.lineinfile:
     path: "{{ item.path }}"
     regexp: '^PasswordAuthentication'
-    line: 'PasswordAuthentication {{ ssh_config.password_authentication | string | lower }}'
+    line: 'PasswordAuthentication {{ ssh_config.password_authentication }}'
   with_items: "{{ ssh_config_files.files }}"
   notify: Restart ssh
   when: ssh_config_files.files | length > 0

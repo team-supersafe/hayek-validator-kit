@@ -5,26 +5,43 @@
 # Validates system requirements and prerequisites
 - name: Include precheck tasks
   ansible.builtin.import_tasks: precheck.yml
+  tags: precheck
 
 # Sets up basic system configuration and timezone
 - name: Include initial setup tasks
   ansible.builtin.import_tasks: initial_setup.yml
+  tags: initial-setup
 
-# - name: Include system tuning tasks
-#   ansible.builtin.import_tasks: system_tuning.yml
+# Creates validator directory structure
+- name: Include validator directory setup tasks
+  ansible.builtin.import_tasks: setup_validator_directory.yml
+  tags: validator-dir
+
+- name: Include system tuning tasks
+  ansible.builtin.import_tasks: system_tuning.yml
+  tags: system-tuning
 
 # Configures storage devices and mount points for validator data
 - name: Include disk setup tasks
   ansible.builtin.import_tasks: disk_setup.yml
+  tags: disk-setup
 
 # Sets up CPU isolation for optimal validator performance
 - name: Include CPU isolation tasks
   ansible.builtin.import_tasks: set_cpu_isolation.yml
+  tags: cpu-isolation
 
 # Configures SSH, firewall and security settings
 - name: Include security tasks
   ansible.builtin.import_tasks: setup_ssh_and_firewall.yml
+  tags: security
+
+# Validates that all configurations were applied correctly before restart
+- name: Include post-configuration validation tasks
+  ansible.builtin.import_tasks: post_configuration_checks.yml
+  tags: post-check
 
 # Prompts for server restart and handles reconnection
 - name: Include restart server tasks
   ansible.builtin.import_tasks: restart_server.yml
+  tags: restart
