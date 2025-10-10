@@ -1,0 +1,40 @@
+---
+- name: Assert required validator variables are defined
+  ansible.builtin.assert:
+    that:
+      - solana_user is defined
+      - validator_operators_group is defined
+      - validator_root_dir is defined
+      - validator_scripts_dir is defined
+      - validator_logs_dir is defined
+      - validator_keys_dir is defined
+      - validator_build_dir is defined
+      - validator_solana_installed_releases_dir is defined
+      - validator_directory_mode is defined
+    fail_msg: "One or more required validator variables are not defined. Ensure target host has the correct group_vars/solana.yml applied."
+    success_msg: "All required validator variables are defined."
+  tags: always
+
+- name: Ensure validator directory exists
+  ansible.builtin.file:
+    path: "{{ validator_root_dir }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_directory_mode }}"
+    state: directory
+  become: true
+
+- name: Ensure validator subdirectories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_directory_mode }}"
+    state: directory
+  loop:
+    - "{{ validator_scripts_dir }}"
+    - "{{ validator_logs_dir }}"
+    - "{{ validator_keys_dir }}"
+    - "{{ validator_build_dir }}"
+    - "{{ validator_solana_installed_releases_dir }}"
+  become: true
