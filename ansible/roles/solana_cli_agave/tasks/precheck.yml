@@ -10,7 +10,7 @@
   when: not agave_version | regex_search('^[0-9]+\.[0-9]+\.[0-9]+$')
 
 - name: Precheck - Display version message
-  debug:
+  ansible.builtin.debug:
     msg: "Start Solana CLI setup for version {{ agave_version }}"
 
 - name: Add hosts to known_hosts to comply with ansible config host_key_checking
@@ -25,11 +25,11 @@
   block:
     - name: Check if Solana CLI binary exists
       ansible.builtin.stat:
-        path: "{{ solana_install_dir }}/solana"
+        path: "{{ validator_solana_install_dir }}/solana"
       register: solana_binary
 
     - name: Precheck - Get installed Solana CLI version
-      ansible.builtin.command: "{{ solana_install_dir }}/solana --version"
+      ansible.builtin.command: "{{ validator_solana_install_dir }}/solana --version"
       register: installed_version
       changed_when: false
       failed_when: false
@@ -67,7 +67,7 @@
     msg: |
       Solana CLI installation status:
       - Binary exists: {{ solana_binary.stat.exists }}
-      - Binary path: {{ solana_binary.stat.exists | ternary(solana_install_dir ~ '/solana', 'Not found') }}
+      - Binary path: {{ solana_binary.stat.exists | ternary(validator_solana_install_dir ~ '/solana', 'Not found') }}
       - Installed version: {{ installed_solana_version | default('not found') }}
       - Installed client: {{ installed_solana_client | default('not found') }}
       - Desired client: Solana
