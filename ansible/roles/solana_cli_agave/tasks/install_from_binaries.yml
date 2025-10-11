@@ -18,6 +18,7 @@
     mode: "{{ validator_directory_mode }}"
     owner: "{{ solana_user }}"
     group: "{{ validator_operators_group }}"
+  become: true
 
 - name: Unarchiving solana binaries into the releases directory
   ansible.builtin.debug:
