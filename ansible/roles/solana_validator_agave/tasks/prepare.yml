@@ -71,39 +71,20 @@
     #!/bin/bash
     set -e
 
-    echo "Cleaning logs directory..."
-    rm -rf "{{ logs_dir }}"/*
-
-    echo "Cleaning scripts directory..."
-    rm -rf "{{ scripts_dir }}"/*
-
-    echo "Cleaning keys directory..."
-    rm -rf "{{ keys_dir }}"/*
+    rm -rf "{{ validator_logs_dir }}"/*
+    rm -rf "{{ validator_scripts_dir }}"/*
+    rm -rf "{{ validator_key_store }}"/*
   delegate_to: "{{ target_host }}"
 
-- name: prepare - Ensure logs directory exists
+- name: Ensure validator subdirectories exist
   ansible.builtin.file:
-    path: "{{ logs_dir }}"
-    state: directory
-    mode: "0755"
+    path: "{{ item }}"
     owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-  become: true
-
-- name: prepare - Ensure keys directory exists
-  ansible.builtin.file:
-    path: "{{ keys_dir }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_directory_mode }}"
     state: directory
-    mode: "0755"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-  become: true
-
-- name: prepare - Ensure scripts directory exists
-  ansible.builtin.file:
-    path: "{{ scripts_dir }}"
-    state: directory
-    mode: "0755"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
+  loop:
+    - "{{ validator_logs_dir }}"
+    - "{{ validator_scripts_dir }}"
+    - "{{ validator_key_store }}"
   become: true
