@@ -7,7 +7,7 @@
       - validator_root_dir is defined
       - validator_scripts_dir is defined
       - validator_logs_dir is defined
-      - validator_keys_dir is defined
+      - validator_key_store is defined
       - validator_build_dir is defined
       - validator_solana_installed_releases_dir is defined
       - validator_directory_mode is defined
@@ -34,7 +34,37 @@
   loop:
     - "{{ validator_scripts_dir }}"
     - "{{ validator_logs_dir }}"
-    - "{{ validator_keys_dir }}"
+    - "{{ validator_key_store }}"
     - "{{ validator_build_dir }}"
     - "{{ validator_solana_installed_releases_dir }}"
   become: true
+
+- name: Ensure ledger directory exists
+  ansible.builtin.file:
+    path: "{{ ledger_path }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_directory_mode }}"
+    state: directory
+  become: true
+  delegate_to: "{{ target_host }}"
+
+- name: Ensure accounts directory exists
+  ansible.builtin.file:
+    path: "{{ accounts_path }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_directory_mode }}"
+    state: directory
+  become: true
+  delegate_to: "{{ target_host }}"
+
+- name: Ensure snapshots directory exists
+  ansible.builtin.file:
+    path: "{{ snapshots_path }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_directory_mode }}"
+    state: directory
+  become: true
+  delegate_to: "{{ target_host }}"

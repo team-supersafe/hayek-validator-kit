@@ -45,8 +45,8 @@ jito_forked_repo: https://github.com/team-supersafe/forked-jito-solana
 # New variables for V2 refactor (would replace some of the above shortly)
 validator_root_dir: "/opt/validator"
 validator_scripts_dir: "{{ validator_root_dir }}/scripts"
-validator_logs_dir: "/var/log/validator"
-validator_keys_dir: "{{ validator_root_dir }}/keys"
+validator_logs_dir: "{{ validator_root_dir }}/logs"
+validator_key_store: "{{ validator_root_dir }}/keys"
 validator_build_dir: "{{ validator_root_dir }}/build"
 validator_solana_install_dir: "{{ validator_root_dir }}/install/active_release/bin"
 validator_solana_installed_releases_dir: "{{ validator_root_dir }}/install/releases"
