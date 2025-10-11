@@ -1,0 +1,44 @@
+---
+# Solana CLI Setup
+# -------------------
+# Installs Solana CLI binaries.
+#
+# Usage:
+# ------
+# Run from /ansible directory:
+#
+# For syntax check add --syntax-check
+# For dry run add --diff --check
+#
+# ansible-playbook playbooks/pb_install_solana_cli_agave.yml \
+#   -i solana_localnet.yml \
+#   --limit host-charlie \
+#   -e "target_host=host-charlie" \
+#   -e "operator_user=bob" \
+#   -e "agave_version=2.3.11" \
+#   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
+#   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
+
+- name: Install Solana CLI
+  hosts: "{{ target_host }}"
+  user: "{{ operator_user | default(solana_user) }}"
+  become: false
+
+  pre_tasks:
+    - name: Assert required parameters are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - agave_version is defined
+          - operator_user is defined
+        fail_msg: >
+          Missing required variables.
+          Must provide:
+            - target_host
+            - agave_version
+            - operator_user
+
+  roles:
+    - role: solana_cli_agave
+      vars:
+        agave_version: "{{ agave_version }}"
