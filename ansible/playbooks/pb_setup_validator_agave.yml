@@ -11,9 +11,10 @@
 #   -i solana_localnet.yml \
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
+#   -e "operator_user=bob" \
 #   -e "validator_name=penny" \
 #   -e "validator_type=hot-spare" \
-#   -e "agave_version=2.3.6" \
+#   -e "agave_version=2.3.11" \
 #   -e "solana_cluster=localnet" \
 #   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
 #   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
@@ -21,7 +22,7 @@
 
 - name: Install Agave Validator
   hosts: "{{ target_host }}"
-  user: "{{ solana_user }}"
+  user: "{{ operator_user | default(solana_user) }}"
   become: false
 
   pre_tasks:
@@ -33,6 +34,7 @@
           - validator_type is defined
           - agave_version is defined
           - solana_cluster is defined
+          - operator_user is defined
         fail_msg: >
           Missing required variables.
           Must provide:
@@ -41,6 +43,7 @@
             - validator_type
             - agave_version
             - solana_cluster
+            - operator_user
           Optional:
             - build_from_source (set to true to build from source)
             - use_official_repo (set to true to use official repository)
