@@ -9,5 +9,5 @@
 
 - name: Cleanup the host from existing validator data
   import_tasks: host_cleanup.yml
-  when: force_host_cleanup | default(false)
+  when: (force_host_cleanup | default(false)) | bool
   tags: [solana_validator_agave, cleanup]
