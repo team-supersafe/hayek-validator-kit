@@ -225,13 +225,13 @@ services:
       - SSH_AUTH_SOCK=/ssh-agent
     network_mode: "container:gossip-entrypoint"
 
-  monitoring-server:
+  monitoring-host:
     build:
       context: ./
       target: naked-builder
     image: ${COMPOSE_PROJECT_NAME}-ubuntu-naked
-    container_name: "monitoring-server"
-    hostname: "monitoring-server"
+    container_name: "monitoring-host"
+    hostname: "monitoring-host"
     ports:
       - 9422:22
     networks:
