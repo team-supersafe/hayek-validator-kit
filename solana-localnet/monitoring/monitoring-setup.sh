@@ -1,18 +1,17 @@
 #!/bin/bash
-# monitoring-setup.sh - Install Solana CLI and Grafana for monitoring container
+# monitoring-setup.sh - Install Solana CLI, Grafana and InfluxDB for monitoring container
 
 echo "[monitoring-setup] Starting monitoring tools installation..."
 
 # Detect architecture and set download URL
 ARCH="$(uname -m)"
+DOWNLOAD_ROOT="https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download"
 case "$ARCH" in
   x86_64)
     ARCH="x86_64-unknown-linux-gnu"
-    DOWNLOAD_ROOT="https://github.com/anza-xyz/agave/releases/download"
     ;;
   aarch64)
     ARCH="aarch64-unknown-linux-gnu"
-    DOWNLOAD_ROOT="https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download"
     ;;
   *)
     echo "[monitoring-setup] ERROR: Unsupported architecture: $ARCH" >&2
@@ -22,7 +21,7 @@ esac
 
 # Install Solana CLI if not present
 if ! command -v solana &> /dev/null; then
-  SOLANA_RELEASE="${SOLANA_RELEASE:-2.2.20}"
+  SOLANA_RELEASE="2.2.20"
   INSTALL_DIR="/home/ubuntu/.local/share/solana/install"
   RELEASE_DIR="$INSTALL_DIR/releases/$SOLANA_RELEASE"
   ACTIVE_RELEASE="$INSTALL_DIR/active_release"
@@ -76,6 +75,33 @@ if ! command -v grafana-server &> /dev/null; then
   echo "[monitoring-setup] Grafana installed and started successfully"
 else
   echo "[monitoring-setup] Grafana already installed"
+fi
+
+# Install InfluxDB if not present
+if ! command -v influxd &> /dev/null; then
+  echo "[monitoring-setup] Installing InfluxDB..."
+
+  # Download and verify InfluxData repository key
+  wget -q https://repos.influxdata.com/influxdata-archive_compat.key
+  echo '393e8779c89ac8d958f81f942f9ad7fb82a25e133faddaf92e15b16e6ac9ce4c influxdata-archive_compat.key' | sha256sum -c && cat influxdata-archive_compat.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg > /dev/null
+
+  # Add InfluxData repository
+  echo 'deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/debian stable main' | sudo tee /etc/apt/sources.list.d/influxdata.list
+
+  # Update package lists and install InfluxDB
+  sudo apt-get update -qq
+  sudo apt-get install -y influxdb
+
+  # Enable and start InfluxDB service
+  sudo systemctl enable influxdb
+  sudo systemctl start influxdb
+
+  # Clean up downloaded key file
+  rm -f influxdata-archive_compat.key
+
+  echo "[monitoring-setup] InfluxDB installed and started successfully"
+else
+  echo "[monitoring-setup] InfluxDB already installed"
 fi
 
 echo "[monitoring-setup] Monitoring container ready."

@@ -235,6 +235,7 @@ services:
     ports:
       - 9422:22
       - 3000:3000 # Grafana
+      - 8086:8086 # InfluxDB
     networks:
       solana_network:
         ipv4_address: 172.25.0.100
