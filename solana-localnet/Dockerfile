@@ -260,6 +260,11 @@ RUN apt-get update && \
         apt-get install -y --no-install-recommends \
         bzip2
 
+# Copy the monitoring setup script into the image and make it executable
+COPY ./monitoring/monitoring-setup.sh /usr/local/bin/monitoring-setup.sh
+RUN chmod +x /usr/local/bin/monitoring-setup.sh
+RUN /usr/local/bin/monitoring-setup.sh
+
 SHELL [ "/bin/bash", "-c" ]
 ENV LANG=C.UTF-8
 
