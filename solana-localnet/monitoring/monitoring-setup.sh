@@ -1,7 +1,7 @@
 #!/bin/bash
-# monitoring-entrypoint.sh - Install Solana CLI for monitoring container
+# monitoring-setup.sh - Install Solana CLI and Grafana for monitoring container
 
-echo "[monitoring-setup] Starting Solana CLI installation..."
+echo "[monitoring-setup] Starting monitoring tools installation..."
 
 # Detect architecture and set download URL
 ARCH="$(uname -m)"
@@ -49,6 +49,33 @@ if ! command -v solana &> /dev/null; then
   echo "[monitoring-setup] Solana CLI installed successfully: $(solana --version)"
 else
   echo "[monitoring-setup] Solana CLI already installed: $(solana --version)"
+fi
+
+# Install Grafana if not present
+if ! command -v grafana-server &> /dev/null; then
+  echo "[monitoring-setup] Installing Grafana..."
+
+  # Install prerequisites
+  sudo apt-get install -y apt-transport-https software-properties-common wget gnupg
+
+  # Import GPG key
+  sudo mkdir -p /etc/apt/keyrings/
+  wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/grafana.gpg > /dev/null
+
+  # Add stable repository
+  echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
+
+  # Update package list and install Grafana OSS
+  sudo apt-get update -qq
+  sudo apt-get install -y grafana
+
+  # Enable and start Grafana service
+  sudo systemctl enable grafana-server
+  sudo systemctl start grafana-server
+
+  echo "[monitoring-setup] Grafana installed and started successfully"
+else
+  echo "[monitoring-setup] Grafana already installed"
 fi
 
 echo "[monitoring-setup] Monitoring container ready."
