@@ -1,7 +1,7 @@
 #!/bin/bash
 # monitoring-entrypoint.sh - Install Solana CLI for monitoring container
 
-echo "[monitoring-entrypoint] Starting Solana CLI installation..."
+echo "[monitoring-setup] Starting Solana CLI installation..."
 
 # Detect architecture and set download URL
 ARCH="$(uname -m)"
@@ -15,7 +15,7 @@ case "$ARCH" in
     DOWNLOAD_ROOT="https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download"
     ;;
   *)
-    echo "[monitoring-entrypoint] ERROR: Unsupported architecture: $ARCH" >&2
+    echo "[monitoring-setup] ERROR: Unsupported architecture: $ARCH" >&2
     exit 1
     ;;
 esac
@@ -28,17 +28,16 @@ if ! command -v solana &> /dev/null; then
   ACTIVE_RELEASE="$INSTALL_DIR/active_release"
   DOWNLOAD_URL="$DOWNLOAD_ROOT/v${SOLANA_RELEASE}/solana-release-${ARCH}.tar.bz2"
 
-  echo "[monitoring-entrypoint] Installing bzip2 and downloading Solana CLI..."
-  sudo apt-get update -qq && sudo apt-get install -y bzip2
+  echo "[monitoring-setup] Downloading Solana CLI..."
 
   mkdir -p "$RELEASE_DIR"
   curl -sSfL "$DOWNLOAD_URL" -o "/tmp/solana-${ARCH}.tar.bz2" || {
-    echo "[monitoring-entrypoint] ERROR: Download failed" >&2
+    echo "[monitoring-setup] ERROR: Download failed" >&2
     exit 1
   }
 
   tar -xjf "/tmp/solana-${ARCH}.tar.bz2" -C "$RELEASE_DIR" || {
-    echo "[monitoring-entrypoint] ERROR: Extraction failed" >&2
+    echo "[monitoring-setup] ERROR: Extraction failed" >&2
     exit 1
   }
 
@@ -47,9 +46,9 @@ if ! command -v solana &> /dev/null; then
   export PATH="$ACTIVE_RELEASE/bin:$PATH"
   echo "export PATH=$ACTIVE_RELEASE/bin:"'$PATH' >> /home/ubuntu/.profile
 
-  echo "[monitoring-entrypoint] Solana CLI installed successfully: $(solana --version)"
+  echo "[monitoring-setup] Solana CLI installed successfully: $(solana --version)"
 else
-  echo "[monitoring-entrypoint] Solana CLI already installed: $(solana --version)"
+  echo "[monitoring-setup] Solana CLI already installed: $(solana --version)"
 fi
 
-echo "[monitoring-entrypoint] Monitoring container ready."
+echo "[monitoring-setup] Monitoring container ready."

@@ -244,7 +244,7 @@ services:
         target: /ssh-agent
         read_only: true
       - "../ansible/iam/users:/tmp/team_ssh_public_keys:ro" # Mount the team public keys as read-only
-      - "./monitoring/monitoring-entrypoint.sh:/usr/local/bin/monitoring-entrypoint.sh:ro" # Mount the monitoring entrypoint script
+      - "./monitoring/monitoring-setup.sh:/usr/local/bin/monitoring-setup.sh:ro" # Mount the monitoring setup script
     environment:
       SSH_AUTH_SOCK: /ssh-agent
       DEFAULT_USERNAME: ubuntu # Set the username inside the container
@@ -271,8 +271,11 @@ services:
       chmod 600 /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
       chown -R $$DEFAULT_USERNAME:$$DEFAULT_USERNAME /home/$$DEFAULT_USERNAME/.ssh
 
-      # Run the monitoring entrypoint script
-      /usr/local/bin/monitoring-entrypoint.sh
+      # Install bzip2 for monitoring container
+      apt-get update -qq && apt-get install -y bzip2
+
+      # Run the monitoring setup script
+      /usr/local/bin/monitoring-setup.sh
 
       /lib/systemd/systemd
       "
