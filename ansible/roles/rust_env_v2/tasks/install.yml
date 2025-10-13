@@ -12,6 +12,7 @@
   environment:
     CARGO_HOME: "{{ validator_root_dir }}/.cargo"
     RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
+  become: true
 
 - name: Stat - Check if .cargo directory exists
   ansible.builtin.stat:
