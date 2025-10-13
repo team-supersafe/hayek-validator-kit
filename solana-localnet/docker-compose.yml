@@ -224,3 +224,52 @@ services:
       - RPC_URL=http://gossip-entrypoint:8899
       - SSH_AUTH_SOCK=/ssh-agent
     network_mode: "container:gossip-entrypoint"
+
+  monitoring-server:
+    build:
+      context: ./
+      target: naked-builder
+    image: ${COMPOSE_PROJECT_NAME}-ubuntu-naked
+    container_name: "monitoring-server"
+    hostname: "monitoring-server"
+    ports:
+      - 9422:22
+    networks:
+      solana_network:
+        ipv4_address: 172.25.0.100
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - type: bind
+        source: ${SSH_AUTH_SOCK:-/dev/null}
+        target: /ssh-agent
+        read_only: true
+      - "../ansible/iam/users:/tmp/team_ssh_public_keys:ro" # Mount the team public keys as read-only
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent
+      DEFAULT_USERNAME: ubuntu # Set the username inside the container
+    command: |
+      bash -c "
+      # set default user ssh authorized_keys
+      rm -rf /home/$$DEFAULT_USERNAME/.ssh
+      mkdir -p /home/$$DEFAULT_USERNAME/.ssh
+      chmod 700 /home/$$DEFAULT_USERNAME/.ssh
+
+      # Clear authorized_keys before appending to avoid duplicates
+      > /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+      for file in /tmp/team_ssh_public_keys/*; do
+          cat $$file >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+          # Adding an empty line after each key is not strictly necessary for authorized_keys parsing,
+          # but it improves readability and maintains consistency with other containers.
+          echo "" >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+      done
+      # Deduplicate authorized_keys entries
+      TEMP_AUTH_KEYS="/home/$$DEFAULT_USERNAME/.ssh/authorized_keys.tmp"
+      awk '!seen[$0]++' /home/$$DEFAULT_USERNAME/.ssh/authorized_keys > $$TEMP_AUTH_KEYS
+      mv $$TEMP_AUTH_KEYS /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+
+      chmod 600 /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+      chown -R $$DEFAULT_USERNAME:$$DEFAULT_USERNAME /home/$$DEFAULT_USERNAME/.ssh
+
+      /lib/systemd/systemd
+      "
+    <<: [ *settings-needed-for-systemd ]
