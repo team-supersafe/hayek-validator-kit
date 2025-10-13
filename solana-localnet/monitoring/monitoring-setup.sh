@@ -22,7 +22,7 @@ esac
 # Install Solana CLI if not present
 if ! command -v solana &> /dev/null; then
   SOLANA_RELEASE="2.2.20"
-  INSTALL_DIR="/home/ubuntu/.local/share/solana/install"
+  INSTALL_DIR="/opt/solana/install"
   RELEASE_DIR="$INSTALL_DIR/releases/$SOLANA_RELEASE"
   ACTIVE_RELEASE="$INSTALL_DIR/active_release"
   DOWNLOAD_URL="$DOWNLOAD_ROOT/v${SOLANA_RELEASE}/solana-release-${ARCH}.tar.bz2"
