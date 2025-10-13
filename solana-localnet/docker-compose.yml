@@ -210,6 +210,7 @@ services:
       - host-alpha
       - host-bravo
       - host-charlie
+      - monitoring-host
     container_name: ansible-control
     stdin_open: true
     tty: true
@@ -228,8 +229,8 @@ services:
   monitoring-host:
     build:
       context: ./
-      target: naked-builder
-    image: ${COMPOSE_PROJECT_NAME}-ubuntu-naked
+      target: monitor-builder
+    image: ${COMPOSE_PROJECT_NAME}-monitor-builder
     container_name: "monitoring-host"
     hostname: "monitoring-host"
     ports:
@@ -249,7 +250,7 @@ services:
       - "./monitoring/monitoring-setup.sh:/usr/local/bin/monitoring-setup.sh:ro" # Mount the monitoring setup script
     environment:
       SSH_AUTH_SOCK: /ssh-agent
-      DEFAULT_USERNAME: ubuntu # Set the username inside the container
+      DEFAULT_USERNAME: monitor # Set the username inside the container
     command: |
       bash -c "
       # set default user ssh authorized_keys
@@ -272,9 +273,6 @@ services:
 
       chmod 600 /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
       chown -R $$DEFAULT_USERNAME:$$DEFAULT_USERNAME /home/$$DEFAULT_USERNAME/.ssh
-
-      # Install bzip2 for monitoring container
-      apt-get update -qq && apt-get install -y bzip2
 
       # Run the monitoring setup script
       /usr/local/bin/monitoring-setup.sh
