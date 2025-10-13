@@ -47,7 +47,6 @@
     mode: "{{ validator_directory_mode }}"
     state: directory
   become: true
-  delegate_to: "{{ target_host }}"
 
 - name: Ensure accounts directory exists
   ansible.builtin.file:
@@ -57,7 +56,6 @@
     mode: "{{ validator_directory_mode }}"
     state: directory
   become: true
-  delegate_to: "{{ target_host }}"
 
 - name: Ensure snapshots directory exists
   ansible.builtin.file:
@@ -67,4 +65,3 @@
     mode: "{{ validator_directory_mode }}"
     state: directory
   become: true
-  delegate_to: "{{ target_host }}"
