@@ -26,19 +26,19 @@
   block:
     - name: Check if .cargo directory exists
       ansible.builtin.stat:
-        path: "{{ solana_user_dir }}/.cargo"
+        path: "{{ validator_root_dir }}/.cargo"
       register: cargo_dir_check
       tags: [precheck]
 
     - name: Check if .cargo/env file exists
       ansible.builtin.stat:
-        path: "{{ solana_user_dir }}/.cargo/env"
+        path: "{{ validator_root_dir }}/.cargo/env"
       register: cargo_env_check
       tags: [precheck]
 
     - name: Check if rustc is available and working
       ansible.builtin.shell: |
-        . "{{ solana_user_dir }}/.cargo/env"
+        . "{{ validator_root_dir }}/.cargo/env"
         rustc --version
       register: rustc_check
       changed_when: false
@@ -47,7 +47,7 @@
 
     - name: Check if cargo is available and working
       ansible.builtin.shell: |
-        . "{{ solana_user_dir }}/.cargo/env"
+        . "{{ validator_root_dir }}/.cargo/env"
         cargo --version
       register: cargo_check
       changed_when: false

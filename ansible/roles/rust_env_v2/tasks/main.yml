@@ -11,12 +11,7 @@
   import_tasks: install.yml
   when: not rust_already_installed | default(false)
   tags: [rust, install]
-
-- name: Configure the rust environment post installation
-  import_tasks: config.yml
-  when: not rust_already_installed | default(false)
-  tags: [rust, config]
-
+  
 - name: Verify rust installation is correct
   import_tasks: verify.yml
   when: >
