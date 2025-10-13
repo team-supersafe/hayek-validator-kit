@@ -41,3 +41,7 @@
     group: "{{ validator_operators_group }}"
     force: true
   become: true
+
+- name: Change symlink ownership to sol:validator_operators
+  ansible.builtin.command: chown -h sol:validator_operators {{ validator_root_dir }}/install/active_release
+  become: true
