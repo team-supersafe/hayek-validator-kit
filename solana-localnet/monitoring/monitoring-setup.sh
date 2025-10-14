@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+set -u
 # monitoring-setup.sh - Grafana and InfluxDB for monitoring container
 
 echo "[monitoring-setup] Starting monitoring tools installation..."
