@@ -11,7 +11,7 @@
 #   -i solana_localnet.yml \
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
-#   -e "operator_user=bob" \
+#   -e "ansible_user=bob" \
 #   -e "validator_name=penny" \
 #   -e "validator_type=hot-spare" \
 #   -e "agave_version=2.3.11" \
@@ -22,7 +22,7 @@
 
 - name: Install Agave Validator
   hosts: "{{ target_host }}"
-  user: "{{ operator_user | default(solana_user) }}"
+  user: "{{ ansible_user }}"
   become: false
 
   pre_tasks:
@@ -30,24 +30,9 @@
       ansible.builtin.assert:
         that:
           - target_host is defined
-          - validator_name is defined
-          - validator_type is defined
-          - agave_version is defined
-          - solana_cluster is defined
-          - operator_user is defined
+          - ansible_user is defined
         fail_msg: >
-          Missing required variables.
-          Must provide:
-            - target_host
-            - validator_name
-            - validator_type
-            - agave_version
-            - solana_cluster
-            - operator_user
-          Optional:
-            - build_from_source (set to true to build from source)
-            - use_official_repo (set to true to use official repository)
-            - force_host_cleanup (set to true to force stop existing validator service)
+          Missing required playbook variables: target_host, ansible_user
 
     - name: Debug ansible_limit and target_host
       ansible.builtin.debug:
@@ -65,24 +50,6 @@
         fail_msg: >
           This playbook must be run with --limit to target exactly one host.
           Make sure you run this playbook with: --limit {{ target_host }} -e "target_host={{ target_host }}"
-
-    - name: Validate validator_type value
-      ansible.builtin.assert:
-        that:
-          - validator_type in ['primary', 'hot-spare']
-        fail_msg: "Invalid validator_type '{{ validator_type }}'. Must be 'primary' or 'hot-spare'."
-
-    - name: Validate agave_version format
-      ansible.builtin.assert:
-        that:
-          - agave_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
-        fail_msg: "Invalid agave_version '{{ agave_version }}'. Must follow semantic versioning pattern (e.g. 1.2.3)."
-
-    - name: Validate solana_cluster value
-      ansible.builtin.assert:
-        that:
-          - solana_cluster in ['localnet', 'testnet', 'mainnet']
-        fail_msg: "Invalid solana_cluster '{{ solana_cluster }}'. Must be 'localnet', 'testnet', or 'mainnet'."
 
   roles:
     - role: solana_validator_agave
