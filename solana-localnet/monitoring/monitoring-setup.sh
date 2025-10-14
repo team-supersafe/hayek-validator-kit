@@ -23,9 +23,7 @@ if ! command -v grafana-server &> /dev/null; then
   sudo apt-get update -qq
   sudo apt-get install -y grafana
 
-  # Enable and start Grafana service
-  sudo systemctl enable grafana-server
-  sudo systemctl start grafana-server
+  # Enable and start Grafana service will be handled by docker-compose command
 
   echo "[monitoring-setup] Grafana installed and started successfully"
 else
@@ -68,14 +66,15 @@ if ! command -v influxd &> /dev/null; then
   sudo apt-get update -qq
   sudo apt-get install -y influxdb
 
-  # Enable and start InfluxDB service
+  # Follow official InfluxDB v1 documentation for systemd systems
+  # https://docs.influxdata.com/influxdb/v1/introduction/install/
+  sudo systemctl unmask influxdb.service
   sudo systemctl enable influxdb
-  sudo systemctl start influxdb
 
   # Clean up downloaded key file
   rm -f influxdata-archive_compat.key
 
-  echo "[monitoring-setup] InfluxDB installed and started successfully"
+  echo "[monitoring-setup] InfluxDB installed and configured successfully"
 else
   echo "[monitoring-setup] InfluxDB already installed"
 fi
