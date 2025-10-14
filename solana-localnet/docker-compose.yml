@@ -273,9 +273,6 @@ services:
       chmod 600 /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
       chown -R $$DEFAULT_USERNAME:$$DEFAULT_USERNAME /home/$$DEFAULT_USERNAME/.ssh
 
-      # Run the monitoring setup script
-      /usr/local/bin/monitoring-setup.sh
-
       /lib/systemd/systemd
       "
     <<: [ *settings-needed-for-systemd ]
