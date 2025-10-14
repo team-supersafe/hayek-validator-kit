@@ -1,0 +1,2 @@
+---
+jito_build_dir: "{{ solana_user_dir }}/build/jito-solana"
