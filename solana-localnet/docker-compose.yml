@@ -225,15 +225,15 @@ services:
       - SSH_AUTH_SOCK=/ssh-agent
     network_mode: "container:gossip-entrypoint"
 
-  monitoring-host:
+  host-monitoring:
     profiles:
       - monitor
     build:
       context: ./
       target: monitor-builder
     image: ${COMPOSE_PROJECT_NAME}-monitor-builder
-    container_name: "monitoring-host"
-    hostname: "monitoring-host"
+    container_name: "host-monitoring"
+    hostname: "host-monitoring"
     ports:
       - 9422:22
       - 3000:3000 # Grafana
