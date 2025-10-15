@@ -60,7 +60,7 @@ validator_directory:
   path: "/opt/{{ validator_directory_name }}"
   owner: "{{ sol_owner }}"
   group: "{{ validator_group }}"
-  mode: '2775'
+  mode: '2575'
   scripts_subdir: "scripts"
 
 # Mount directories list
@@ -78,6 +78,12 @@ mount_points:
   ledger: "/mnt/ledger"      # For ledger data (largest disk)
   accounts: "/mnt/accounts"  # For accounts data (second largest)
   snapshots: "/mnt/snapshots" # For snapshots (third largest)
+
+# Mount point permissions
+mount_point_permissions:
+  owner: "{{ sol_owner }}"
+  group: "{{ validator_group }}"
+  mode: '2775'
 
 # Filesystem formats for each component
 filesystem_formats:

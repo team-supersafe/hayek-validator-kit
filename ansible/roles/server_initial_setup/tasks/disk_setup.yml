@@ -136,8 +136,8 @@
 - name: Set ownership of mount points
   ansible.builtin.file:
     path: "{{ mount_points[item] }}"
-    owner: "{{ validator_directory.owner }}"
-    group: "{{ validator_directory.group }}"
-    mode: "{{ validator_directory.mode }}"
+    owner: "{{ mount_point_permissions.owner }}"
+    group: "{{ mount_point_permissions.group }}"
+    mode: "{{ mount_point_permissions.mode }}"
     recurse: true
   loop: "{{ mount_directories }}"
