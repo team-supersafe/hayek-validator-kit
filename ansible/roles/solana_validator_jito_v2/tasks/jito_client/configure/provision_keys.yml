@@ -1,0 +1,85 @@
+---
+- name: Configure validator keys
+  block:
+    - name: Ensure validator_keys_dir exists
+      ansible.builtin.file:
+        path: "{{ validator_keys_dir }}"
+        state: directory
+        mode: '0755'
+      tags: [jito_client, check.keys]
+
+    # Copy primary-target-identity.json keypair
+    - name: Check if primary-target-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/primary-target-identity.json"
+      register: primary_target_identity_file
+      delegate_to: localhost
+      run_once: true
+      tags: [jito_client, check.keys]
+
+    - name: Fail if primary-target-identity.json is missing
+      ansible.builtin.fail:
+        msg: "primary-target-identity.json not found in {{ ansible_keys_dir }}"
+      when: not primary_target_identity_file.stat.exists
+      tags: [jito_client, check.keys]
+
+    - name: Copy primary-target-identity.json to validator_keys_dir
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/primary-target-identity.json"
+        dest: "{{ validator_keys_dir }}/primary-target-identity.json"
+        mode: '0600'
+      tags: [jito_client, check.keys]
+
+    # Copy vote-account.json keypair
+    - name: Check if vote-account.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/vote-account.json"
+      register: vote_account_file
+      delegate_to: localhost
+      run_once: true
+      tags: [jito_client, check.keys]
+
+    - name: Fail if vote-account.json is missing
+      ansible.builtin.fail:
+        msg: "vote-account.json not found in {{ ansible_keys_dir }}"
+      when: not vote_account_file.stat.exists
+      tags: [jito_client, check.keys]
+
+    - name: Copy vote-account.json to validator_keys_dir
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/vote-account.json"
+        dest: "{{ validator_keys_dir }}/vote-account.json"
+        mode: '0600'
+      tags: [jito_client, check.keys]
+
+    # Generate hot-spare-identity.json keypair
+    - name: Generate hot-spare-identity.json keypair
+      ansible.builtin.shell: |
+        . "$HOME/.cargo/env"
+        . "$HOME/.bashrc"
+        {{ solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json -f
+      args:
+        chdir: "{{ validator_keys_dir }}"
+      register: keygen_result
+      tags: [jito_client, check.keys]
+
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to upload validator keys. Error: {{ keygen_result }}"
+      when: keygen_result.rc != 0
+      tags: [jito_client, check.keys]
+
+    # Create identity.json symlink based on validator_type
+    - name: Create identity.json symlink
+      ansible.builtin.file:
+        src: "{{ validator_keys_dir }}/{{ 'primary-target-identity.json' if validator_type == 'primary' else 'hot-spare-identity.json' }}"
+        dest: "{{ validator_keys_dir }}/identity.json"
+        state: link
+        force: true
+      tags: [jito_client, check.keys]
+
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to upload validator keys. Error: {{ ansible_failed_result }}"
+      tags: [jito_client, check.keys]
