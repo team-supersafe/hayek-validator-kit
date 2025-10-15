@@ -2,6 +2,7 @@
 - name: Assert required validator variables are defined
   ansible.builtin.assert:
     that:
+      - solana_user is defined
       - validator_operators_group is defined
       - validator_root_dir is defined
       - validator_scripts_dir is defined
