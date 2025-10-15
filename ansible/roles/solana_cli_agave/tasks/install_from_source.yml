@@ -7,7 +7,7 @@
     path: "{{ validator_solana_installed_releases_dir }}"
     owner: "{{ solana_user }}"
     group: "{{ validator_operators_group }}"
-    mode: "{{ validator_directory_mode }}"
+    mode: "{{ validator_data_mode_owner_readonly }}"
     state: directory
   become: true
 
@@ -23,7 +23,7 @@
   ansible.builtin.file:
     path: "{{ agave_build_dir }}"
     state: directory
-    mode: "{{ validator_directory_mode }}"
+    mode: "{{ validator_data_mode_owner_readonly }}"
     owner: "{{ solana_user }}"
     group: "{{ validator_operators_group }}"
   become: true
@@ -113,7 +113,7 @@
       ansible.builtin.file:
         path: "{{ solana_installed_release_dir }}"
         state: directory
-        mode: "{{ validator_directory_mode }}"
+        mode: "{{ validator_data_mode_owner_readonly }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
       register: release_dir_result

@@ -10,58 +10,37 @@
       - validator_key_store is defined
       - validator_build_dir is defined
       - validator_solana_installed_releases_dir is defined
-      - validator_directory_mode is defined
+      - validator_data_mode_owner_writable is defined
+      - validator_data_mode_owner_readonly is defined
     fail_msg: "One or more required validator variables are not defined. Ensure target host has the correct group_vars/solana.yml applied."
     success_msg: "All required validator variables are defined."
   tags: always
 
-- name: Ensure validator directory exists
-  ansible.builtin.file:
-    path: "{{ validator_root_dir }}"
-    owner: "{{ solana_user }}"
-    group: "{{ validator_operators_group }}"
-    mode: "{{ validator_directory_mode }}"
-    state: directory
-  become: true
-
-- name: Ensure validator subdirectories exist
+- name: Ensure validator directories exist
   ansible.builtin.file:
     path: "{{ item }}"
     owner: "{{ solana_user }}"
     group: "{{ validator_operators_group }}"
-    mode: "{{ validator_directory_mode }}"
+    mode: "{{ validator_data_mode_owner_readonly }}"
     state: directory
   loop:
+    - "{{ validator_root_dir }}"
     - "{{ validator_scripts_dir }}"
-    - "{{ validator_logs_dir }}"
     - "{{ validator_key_store }}"
     - "{{ validator_build_dir }}"
     - "{{ validator_solana_installed_releases_dir }}"
   become: true
 
-- name: Ensure ledger directory exists
+- name: Ensure {{ solana_user }} writable validator directories exist
   ansible.builtin.file:
-    path: "{{ ledger_path }}"
+    path: "{{ item }}"
     owner: "{{ solana_user }}"
     group: "{{ validator_operators_group }}"
-    mode: "{{ validator_directory_mode }}"
+    mode: "{{ validator_data_mode_owner_writable }}"
     state: directory
-  become: true
-
-- name: Ensure accounts directory exists
-  ansible.builtin.file:
-    path: "{{ accounts_path }}"
-    owner: "{{ solana_user }}"
-    group: "{{ validator_operators_group }}"
-    mode: "{{ validator_directory_mode }}"
-    state: directory
-  become: true
-
-- name: Ensure snapshots directory exists
-  ansible.builtin.file:
-    path: "{{ snapshots_path }}"
-    owner: "{{ solana_user }}"
-    group: "{{ validator_operators_group }}"
-    mode: "{{ validator_directory_mode }}"
-    state: directory
+  loop:
+    - "{{ validator_logs_dir }}"
+    - "{{ ledger_path }}"
+    - "{{ accounts_path }}"
+    - "{{ snapshots_path }}"
   become: true

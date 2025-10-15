@@ -24,11 +24,11 @@
     path: "{{ validator_root_dir }}/.rustup"
   register: rustup_dir_stat
 
-- name: Install - Fix ownership of Rust directories to {{ solana_user }}:validator_operators
+- name: Install - Fix ownership of Rust directories to {{ solana_user }}:{{ validator_operators_group }}
   ansible.builtin.file:
     path: "{{ validator_root_dir }}/{{ item.dir }}"
     owner: "{{ solana_user }}"
-    group: "validator_operators"
+    group: "{{ validator_operators_group }}"
     recurse: true
   become: true
   loop:

@@ -15,7 +15,7 @@
   ansible.builtin.file:
     path: "{{ solana_installed_release_dir }}"
     state: directory
-    mode: "{{ validator_directory_mode }}"
+    mode: "{{ validator_data_mode_owner_readonly }}"
     owner: "{{ solana_user }}"
     group: "{{ validator_operators_group }}"
   become: true

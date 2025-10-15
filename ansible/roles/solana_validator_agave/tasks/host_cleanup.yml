@@ -13,7 +13,7 @@
     path: "{{ ledger_path }}"
     owner: "{{ solana_user }}"
     group: "{{ validator_operators_group }}"
-    mode: "{{ validator_directory_mode }}"
+    mode: "{{ validator_data_mode_owner_writable }}"
     state: directory
   become: true
 
@@ -22,7 +22,7 @@
     path: "{{ accounts_path }}"
     owner: "{{ solana_user }}"
     group: "{{ validator_operators_group }}"
-    mode: "{{ validator_directory_mode }}"
+    mode: "{{ validator_data_mode_owner_writable }}"
     state: directory
   become: true
 
@@ -31,6 +31,6 @@
     path: "{{ snapshots_path }}"
     owner: "{{ solana_user }}"
     group: "{{ validator_operators_group }}"
-    mode: "{{ validator_directory_mode }}"
+    mode: "{{ validator_data_mode_owner_writable }}"
     state: directory
   become: true
