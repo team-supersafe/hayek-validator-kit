@@ -98,4 +98,4 @@ health_check:
   dest_path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
   owner: "{{ sol_owner }}"
   group: "{{ validator_group }}"
-  mode: "0775"
+  mode: "0575"
