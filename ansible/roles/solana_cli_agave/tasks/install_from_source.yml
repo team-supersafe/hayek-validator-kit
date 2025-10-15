@@ -56,9 +56,6 @@
         dest: "{{ agave_build_dir }}"
         remote_src: true
         creates: "{{ agave_build_dir }}/agave-{{ agave_version }}"
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
-      become: true
 
     - name: Parse forked repo name from agave_forked_repo URL
       ansible.builtin.set_fact:
@@ -87,43 +84,38 @@
       changed_when: false
       ignore_errors: "{{ ansible_check_mode }}"
 
-- name: Create release directory for Agave
-  ansible.builtin.file:
-    path: "{{ solana_installed_release_dir }}"
-    state: directory
-    mode: "{{ validator_directory_mode }}"
-    owner: "{{ solana_user }}"
-    group: "{{ validator_operators_group }}"
-  become: true
+- name: Prepare sources and build using cargo
+  block:
+    - name: Fix ownership of agave_build_dir
+      ansible.builtin.file:
+        path: "{{ agave_build_dir }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+        recurse: true
 
-- name: Run cargo-install-all.sh
-  ansible.builtin.shell: |
-    set -e
-    . "{{ validator_root_dir }}/.cargo/env"
-    ./scripts/cargo-install-all.sh . > {{ agave_build_dir }}/agave-build.log 2>&1
-  args:
-    chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
-  environment:
-    CARGO_HOME: "{{ validator_root_dir }}/.cargo"
-    RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
+    - name: Run cargo-install-all.sh
+      ansible.builtin.shell: |
+        set -e
+        . "{{ validator_root_dir }}/.cargo/env"
+        ./scripts/cargo-install-all.sh . > {{ agave_build_dir }}/agave-build.log 2>&1
+      args:
+        chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
+      environment:
+        CARGO_HOME: "{{ validator_root_dir }}/.cargo"
+        RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
+  become: true
 
 # The above will compile the source code and create the following:
 # A bin directory, .crates.toml and .crates2.json files.
 - name: Move built Agave assets into the releases directory (with failure handling)
   block:
-    - name: Remove existing release directory
-      ansible.builtin.file:
-        path: "{{ solana_installed_release_dir }}"
-        state: absent
-
-    - name: Recreate release directory with correct permissions
+    - name: Ensure release directory exists
       ansible.builtin.file:
         path: "{{ solana_installed_release_dir }}"
         state: directory
         mode: "{{ validator_directory_mode }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
-      become: true
       register: release_dir_result
 
     - name: Move agave we just built into the releases directory
@@ -132,7 +124,6 @@
         mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/.crates.toml" "{{ solana_installed_release_dir }}"
         mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/.crates2.json" "{{ solana_installed_release_dir }}"
         mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/bin" "{{ solana_installed_release_dir }}"
-      become: true
 
     - name: Fix ownership of release directory and contents
       ansible.builtin.file:
@@ -140,7 +131,7 @@
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
         recurse: true
-      become: true
+  become: true
   rescue:
     - name: Fail if moving built assets or creating release directory failed
       ansible.builtin.fail:
