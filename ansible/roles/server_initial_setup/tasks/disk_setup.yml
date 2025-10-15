@@ -69,9 +69,9 @@
   ansible.builtin.file:
     path: "{{ mount_points[item] }}"
     state: directory
-    mode: "{{ directory_permissions.mode }}"
-    owner: "{{ directory_permissions.owner }}"
-    group: "{{ directory_permissions.group }}"
+    mode: "{{ mount_point_permissions.mode }}"
+    owner: "{{ mount_point_permissions.owner }}"
+    group: "{{ mount_point_permissions.group }}"
   loop: "{{ mount_directories }}"
 
 # Get UUIDs for fstab configuration
@@ -131,13 +131,3 @@
 - name: Mount all filesystems
   ansible.builtin.command: mount -a
   changed_when: false
-
-# Set correct ownership and permissions
-- name: Set ownership of mount points
-  ansible.builtin.file:
-    path: "{{ mount_points[item] }}"
-    owner: "{{ mount_point_permissions.owner }}"
-    group: "{{ mount_point_permissions.group }}"
-    mode: "{{ mount_point_permissions.mode }}"
-    recurse: true
-  loop: "{{ mount_directories }}"

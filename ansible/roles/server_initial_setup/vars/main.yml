@@ -47,12 +47,6 @@ firewall:
     - 8899
     - 8900
 
-# Directory permissions
-directory_permissions:
-  mode: '0775'
-  owner: "{{ sol_owner }}"
-  group: "{{ validator_group }}"
-
 # Validator directory configuration
 validator_directory_name: "validator"
 validator_directory:
