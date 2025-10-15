@@ -1,0 +1,32 @@
+---
+- name: Configure validator systemd service
+  block:
+    - name: Create systemd service directory
+      ansible.builtin.file:
+        path: /etc/systemd/system
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Create validator systemd service
+      ansible.builtin.template:
+        src: validator.service.j2
+        dest: "/etc/systemd/system/{{ validator_service_name }}.service"
+        mode: "0644"
+      become: true
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+      become: true
+
+    - name: Enable validator service
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        enabled: true
+        state: started
+      become: true
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator systemd service. Error: {{ ansible_failed_result }}"
