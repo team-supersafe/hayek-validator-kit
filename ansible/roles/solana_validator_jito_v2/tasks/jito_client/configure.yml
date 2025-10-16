@@ -1,0 +1,31 @@
+---
+- name: Configure Jito-Solana validator
+  ansible.builtin.debug:
+    msg: "Starting Jito-Solana validator configuration"
+  tags: [jito_client, check.keys]
+
+- name: Set validator_keyset_name default if not defined
+  ansible.builtin.set_fact:
+    validator_keyset_name: "{{ validator_name }}"
+  when: validator_keyset_name is not defined
+
+- name: Install validator keyset using shared task
+  ansible.builtin.import_tasks: ../../../solana_validator_shared/tasks/install_validator_keyset.yml
+  tags: [jito_client, check.keys]
+
+- name: Prepare the startup scripts for the validator
+  ansible.builtin.import_tasks: configure/prep_startup.yml
+  tags: [jito_client, check.keys]
+
+- name: Import log rotation configuration
+  ansible.builtin.import_tasks: configure/config_logrotate.yml
+  tags: [jito_client, check.keys]
+
+- name: Setup the watchdog service to start and monitor the validator using the startup script
+  ansible.builtin.import_tasks: configure/config_watchdog.yml
+  tags: [jito_client, check.keys]
+
+- name: Configuration complete
+  ansible.builtin.debug:
+    msg: "Jito-Solana validator configuration completed successfully"
+  tags: [jito_client, check.keys]

@@ -1,0 +1,19 @@
+---
+- name: Check if validator service exists and is running
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+  register: service_status
+  changed_when: false
+  failed_when: false
+
+- name: Stop validator service if running
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+    state: stopped
+    enabled: false
+  register: stop_result
+  retries: 3
+  delay: 10
+  until: stop_result is success
+  when: service_status.status.ActiveState == "active"
+  become: true

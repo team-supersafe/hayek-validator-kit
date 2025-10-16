@@ -1,0 +1,85 @@
+---
+- name: Check if Jito-Solana binary exists
+  ansible.builtin.stat:
+    path: "{{ solana_install_dir }}"
+  register: solana_binary
+  tags: [jito_client.verify]
+
+- name: Fail if Jito-Solana binary is missing
+  ansible.builtin.fail:
+    msg: "Jito-Solana binary not found at {{ solana_install_dir }}!"
+  when: not solana_binary.stat.exists
+  tags: [jito_client.verify]
+
+- name: Check validator systemd service status
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+  register: validator_service
+  tags: [jito_client.verify]
+
+- name: Print validator service status
+  ansible.builtin.debug:
+    var: validator_service
+  tags: [jito_client.verify]
+
+- name: Get last 50 lines of validator logs
+  ansible.builtin.shell: journalctl -u {{ validator_service_name }} --no-pager | tail -n 50
+  register: validator_logs
+  changed_when: false
+  tags: [jito_client.verify]
+
+- name: Print last 50 lines of validator logs
+  ansible.builtin.debug:
+    var: validator_logs.stdout_lines
+  tags: [jito_client.verify]
+
+- name: Check validator process status
+  ansible.builtin.shell: ps aux | grep "validator" | grep -v grep
+  register: validator_process
+  changed_when: false
+  tags: [jito_client.verify]
+
+- name: Print validator process status
+  ansible.builtin.debug:
+    var: validator_process.stdout_lines
+  tags: [jito_client.verify]
+
+- name: Check validator service file
+  ansible.builtin.shell: cat /etc/systemd/system/{{ validator_service_name }}.service
+  register: validator_service_file
+  changed_when: false
+  tags: [jito_client.verify]
+
+- name: Print validator service file
+  ansible.builtin.debug:
+    var: validator_service_file.stdout_lines
+  tags: [jito_client.verify]
+
+- name: Check validator startup script
+  ansible.builtin.shell: cat {{ scripts_dir }}/run-{{ validator_name }}.sh
+  register: validator_startup_script
+  changed_when: false
+  tags: [jito_client.verify]
+
+- name: Print validator startup script
+  ansible.builtin.debug:
+    var: validator_startup_script.stdout_lines
+  tags: [jito_client.verify]
+
+- name: Summary - Jito-Solana validator verification complete
+  ansible.builtin.debug:
+    msg: |
+      Jito-Solana validator verification complete. Check service status and logs above for troubleshooting.
+      
+      Service Status Summary:
+      - Binary exists: {{ solana_binary.stat.exists }}
+      - Service active: {{ validator_service.status.ActiveState }}
+      - Service enabled: {{ validator_service.status.UnitFileState }}
+      - Process running: {{ validator_process.stdout_lines | length > 0 }}
+      
+      If the validator is not running properly, check:
+      1. Service status and logs above
+      2. Validator startup script for correct configuration
+      3. Systemd service file for proper setup
+      4. Port availability and firewall settings
+  tags: [jito_client.verify]
