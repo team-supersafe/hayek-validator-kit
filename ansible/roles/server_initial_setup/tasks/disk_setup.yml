@@ -131,3 +131,14 @@
 - name: Mount all filesystems
   ansible.builtin.command: mount -a
   changed_when: false
+
+# Ensure correct ownership and permissions on mount points after mounting
+- name: Set ownership and permissions on mount points after mounting
+  ansible.builtin.file:
+    path: "{{ mount_points[item] }}"
+    state: directory
+    mode: "{{ mount_point_permissions.mode }}"
+    owner: "{{ mount_point_permissions.owner }}"
+    group: "{{ mount_point_permissions.group }}"
+  loop: "{{ mount_directories }}"
+  become: true
