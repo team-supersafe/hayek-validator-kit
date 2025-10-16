@@ -1,0 +1,25 @@
+---
+argument_specs:
+  main:
+    short_description: "Setup server users from CSV file"
+    author: "Hayek Validator Team"
+    description:
+      - "Sets up users on the target host using a provided CSV file."
+      - "Requires specifying the target host, ansible user, and CSV filename."
+    options:
+      target_host:
+        type: str
+        required: true
+        description: "Target host to configure (inventory hostname)"
+      ansible_user:
+        type: str
+        required: true
+        description: "SSH user to connect as (e.g., ubuntu)"
+      csv_file:
+        type: str
+        required: true
+        description: "CSV filename containing user definitions (required)"
+      create_sol_user:
+        type: bool
+        required: true
+        description: "Whether to create the 'sol' user (true/false)"
