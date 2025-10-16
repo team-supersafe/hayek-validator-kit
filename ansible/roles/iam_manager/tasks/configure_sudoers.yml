@@ -38,6 +38,7 @@
     mode: '0440'
     validate: 'visudo -cf %s'
   no_log: true
+  when: enable_rbac | default(true) | bool
 
 # Configure sudo access for validator_viewers group
 - name: Configure sudo access for validator_viewers group
@@ -47,4 +48,5 @@
     mode: '0440'
     validate: 'visudo -cf %s'
   no_log: true
+  when: enable_rbac | default(true) | bool
   

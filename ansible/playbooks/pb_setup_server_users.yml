@@ -11,7 +11,8 @@
 #   -e "target_host=new-metal-box" \
 #   -e "ansible_user=ubuntu" \
 #   -e "create_sol_user=true" \ # If installing a validator, true, else false
-#   -e "csv_file=users2.csv"  # REQUIRED: specify the CSV filename
+#   -e "enable_rbac=true" \ # If creating RBAC groups, true, else false
+#   -e "csv_file=iam_setup.csv"  # REQUIRED: specify the CSV filename
 
 - name: Setup server users
   hosts: "{{ target_host }}"

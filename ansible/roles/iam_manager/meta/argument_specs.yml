@@ -23,3 +23,7 @@ argument_specs:
         type: bool
         required: true
         description: "Whether to create the 'sol' user (true/false)"
+      enable_rbac:
+        type: bool
+        required: true
+        description: "Whether to create RBAC groups (true/false)"
