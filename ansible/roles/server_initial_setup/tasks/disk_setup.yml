@@ -139,5 +139,5 @@
     mode: "{{ mount_point_permissions.mode }}"
     owner: "{{ mount_point_permissions.owner }}"
     group: "{{ mount_point_permissions.group }}"
+    recurse: true
   loop: "{{ mount_directories }}"
-  become: true
