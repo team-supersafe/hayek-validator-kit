@@ -103,7 +103,7 @@ export SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID="op://Solana Validator/Hayek Valid
 export SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY="op://Solana Validator/Hayek Validator Solana Local Cluster/SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY"
 
 # Run script with the 1Password CLI op run command
-op run -- ./run-build-in-container.sh 2.1.21
+op run -- ./run-build-in-container.sh agave 2.1.21
 ```
 
 ### Not Using 1Password
@@ -119,7 +119,7 @@ export SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID="<YOUR_AWS_ACCESS_KEY_ID_HERE>"
 export SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY="<YOUR_AWS_SECRET_ACCESS_KEY_HERE>"
 
 # Run script
-./run-build-in-container.sh 2.1.21
+./run-build-in-container.sh jito-solana 2.1.21
 ```
 
 ### Download URL
