@@ -1,13 +1,6 @@
 ---
 # Default variables for monitoring_hub role
 
-# Enable/disable components
-enable_grafana: true
-
-# Monitoring services to manage
-monitoring_services: 
-  - grafana-server
-
 # Network configuration
 monitoring_network:
   port: 9090
@@ -19,7 +12,3 @@ grafana_plugins:
   - grafana-clock-panel
   - grafana-simple-json-datasource
 grafana_custom_dashboards: []
-
-# Database configuration
-influxdb_database: "monitoring"
-enable_postgres_datasource: false

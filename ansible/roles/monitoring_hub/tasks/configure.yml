@@ -15,5 +15,3 @@
 - name: Include Grafana configuration tasks
   include_tasks: grafana/main.yml
   when: enable_grafana | default(true) | bool
-
-# Add more configuration tasks here

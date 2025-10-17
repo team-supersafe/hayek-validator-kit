@@ -15,7 +15,6 @@ grafana_config:
   dashboards_dir: "/var/lib/grafana/dashboards"
   provisioning_dir: "/etc/grafana/provisioning"
 
-
 # Variables override for monitoring_hub role
 solana_user: "{{ monitoring_user }}"
 validator_root_dir: "/mnt/solana"
@@ -23,7 +22,6 @@ validator_build_dir: "{{ validator_root_dir }}/build"
 validator_solana_install_dir: "{{ validator_build_dir }}/install/active_release/bin"
 validator_solana_installed_release_dir: "{{ validator_root_dir }}/install/releases"
 validator_operators_group: "{{ grafana_config.group }}"
-
 
 # SSL/TLS certificate paths and permissions
 ssl_config:
