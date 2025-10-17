@@ -47,12 +47,6 @@ firewall:
     - 8899
     - 8900
 
-# Directory permissions
-directory_permissions:
-  mode: '0775'
-  owner: "{{ sol_owner }}"
-  group: "{{ validator_group }}"
-
 # Validator directory configuration
 validator_directory_name: "validator"
 validator_directory:
@@ -60,7 +54,7 @@ validator_directory:
   path: "/opt/{{ validator_directory_name }}"
   owner: "{{ sol_owner }}"
   group: "{{ validator_group }}"
-  mode: '2775'
+  mode: '2575'
   scripts_subdir: "scripts"
 
 # Mount directories list
@@ -79,6 +73,12 @@ mount_points:
   accounts: "/mnt/accounts"  # For accounts data (second largest)
   snapshots: "/mnt/snapshots" # For snapshots (third largest)
 
+# Mount point permissions
+mount_point_permissions:
+  owner: "{{ sol_owner }}"
+  group: "{{ validator_group }}"
+  mode: '2775'
+
 # Filesystem formats for each component
 filesystem_formats:
   ledger: "xfs"    # High-performance filesystem for ledger
@@ -92,4 +92,4 @@ health_check:
   dest_path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
   owner: "{{ sol_owner }}"
   group: "{{ validator_group }}"
-  mode: "0775"
+  mode: "0575"
