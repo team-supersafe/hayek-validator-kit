@@ -1,14 +1,6 @@
 ---
 # Grafana configuration tasks
 
-- name: Create Grafana configuration directory
-  ansible.builtin.file:
-    path: "{{ grafana_config.config_dir }}"
-    state: directory
-    owner: "{{ grafana_config.user }}"
-    group: "{{ grafana_config.group }}"
-    mode: "{{ grafana_config.permissions.data_dirs.mode }}"
-
 - name: Configure Grafana main configuration
   ansible.builtin.template:
     src: grafana/grafana.ini.j2
@@ -19,7 +11,7 @@
     backup: yes
   notify: restart grafana
 
-- name: Create Grafana data directories
+- name: Create Grafana custom subdirectories (only what's needed)
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -27,10 +19,8 @@
     group: "{{ grafana_config.permissions.data_dirs.group }}"
     mode: "{{ grafana_config.permissions.data_dirs.mode }}"
   loop:
-    - "{{ grafana_config.data_dir }}"
-    - "{{ grafana_config.dashboards_dir }}"
-    - "{{ grafana_config.plugins_dir }}"
-    - "{{ grafana_config.log_dir }}"
+    - "{{ grafana_config.dashboards_dir }}/custom"  # Only custom subdirectory
+    - "{{ grafana_config.plugins_dir }}"            # May not exist initially
 
 - name: Create Grafana provisioning directories
   ansible.builtin.file:

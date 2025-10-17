@@ -5,12 +5,6 @@ monitoring_group: "monitor"
 
 # Grafana specific paths and permissions
 grafana_config:
-  user: "grafana"
-  group: "grafana"
-  home_dir: "/var/lib/grafana"
-  config_dir: "/etc/grafana"
-  log_dir: "/var/log/grafana"
-  data_dir: "/var/lib/grafana"
   plugins_dir: "/var/lib/grafana/plugins"
   dashboards_dir: "/var/lib/grafana/dashboards"
   provisioning_dir: "/etc/grafana/provisioning"
@@ -22,27 +16,6 @@ validator_build_dir: "{{ validator_root_dir }}/build"
 validator_solana_install_dir: "{{ validator_build_dir }}/install/active_release/bin"
 validator_solana_installed_release_dir: "{{ validator_root_dir }}/install/releases"
 validator_operators_group: "{{ grafana_config.group }}"
-
-# SSL/TLS certificate paths and permissions
-ssl_config:
-  cert_dir: "/etc/ssl/monitoring"
-  private_dir: "/etc/ssl/private/monitoring"
-  
-  permissions:
-    cert_files:
-      owner: root
-      group: "{{ monitoring_group }}"
-      mode: "0644"
-    
-    private_files:
-      owner: root
-      group: "{{ monitoring_group }}"
-      mode: "0640"
-    
-    directories:
-      owner: root
-      group: "{{ monitoring_group }}"
-      mode: "0755"
 
 # Monitoring services to manage
 monitoring_services:
