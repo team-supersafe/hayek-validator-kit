@@ -1,0 +1,16 @@
+---
+# Installation tasks for monitoring hub
+
+- name: Update package cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install monitoring dependencies
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - gnupg
+      - software-properties-common
+    state: present

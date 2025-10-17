@@ -1,0 +1,15 @@
+---
+# monitoring_hub role main tasks
+
+- name: Load sensitive variables
+  include_vars: secrets.yml
+  no_log: true
+
+- name: Include monitoring hub installation tasks
+  include_tasks: install.yml
+
+- name: Include monitoring hub configuration tasks
+  include_tasks: configure.yml
+
+- name: Include monitoring hub service management tasks
+  include_tasks: services.yml

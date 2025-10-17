@@ -1,0 +1,63 @@
+---
+# Grafana configuration tasks
+
+- name: Create Grafana configuration directory
+  ansible.builtin.file:
+    path: "{{ grafana_config.config_dir }}"
+    state: directory
+    owner: "{{ grafana_config.user }}"
+    group: "{{ grafana_config.group }}"
+    mode: "{{ grafana_config.permissions.data_dirs.mode }}"
+
+- name: Configure Grafana main configuration
+  ansible.builtin.template:
+    src: grafana/grafana.ini.j2
+    dest: "{{ grafana_config.config_dir }}/grafana.ini"
+    owner: "{{ grafana_config.permissions.config_files.owner }}"
+    group: "{{ grafana_config.permissions.config_files.group }}"
+    mode: "{{ grafana_config.permissions.config_files.mode }}"
+    backup: yes
+  notify: restart grafana
+
+- name: Create Grafana data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ grafana_config.permissions.data_dirs.owner }}"
+    group: "{{ grafana_config.permissions.data_dirs.group }}"
+    mode: "{{ grafana_config.permissions.data_dirs.mode }}"
+  loop:
+    - "{{ grafana_config.data_dir }}"
+    - "{{ grafana_config.dashboards_dir }}"
+    - "{{ grafana_config.plugins_dir }}"
+    - "{{ grafana_config.log_dir }}"
+
+- name: Create Grafana provisioning directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ grafana_config.permissions.data_dirs.owner }}"
+    group: "{{ grafana_config.permissions.data_dirs.group }}"
+    mode: "{{ grafana_config.permissions.data_dirs.mode }}"
+  loop:
+    - "{{ grafana_config.provisioning_dir }}"
+    - "{{ grafana_config.provisioning_dir }}/dashboards"
+    - "{{ grafana_config.provisioning_dir }}/datasources"
+
+- name: Configure Grafana dashboard provisioning
+  ansible.builtin.template:
+    src: grafana/dashboards.yml.j2
+    dest: "{{ grafana_config.provisioning_dir }}/dashboards/dashboards.yml"
+    owner: "{{ grafana_config.permissions.config_files.owner }}"
+    group: "{{ grafana_config.permissions.config_files.group }}"
+    mode: "{{ grafana_config.permissions.log_files.mode }}"
+  notify: restart grafana
+
+- name: Configure Grafana datasource provisioning
+  ansible.builtin.template:
+    src: grafana/datasources.yml.j2
+    dest: "{{ grafana_config.provisioning_dir }}/datasources/datasources.yml"
+    owner: "{{ grafana_config.permissions.config_files.owner }}"
+    group: "{{ grafana_config.permissions.config_files.group }}"
+    mode: "{{ grafana_config.permissions.log_files.mode }}"
+  notify: restart grafana

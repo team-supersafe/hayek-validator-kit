@@ -1,0 +1,19 @@
+---
+# Configuration tasks for monitoring hub
+
+- name: Create monitoring configuration directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/monitoring
+    - /var/log/monitoring
+
+- name: Include Grafana configuration tasks
+  include_tasks: grafana/main.yml
+  when: enable_grafana | default(true) | bool
+
+# Add more configuration tasks here
