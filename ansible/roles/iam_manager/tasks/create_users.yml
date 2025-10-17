@@ -16,6 +16,7 @@
     home: /home/{{ solana_user }}
     append: true
   no_log: true
+  when: create_sol_user | default(true) | bool
 
 # Get unique groups from CSV
 - name: Get unique groups
