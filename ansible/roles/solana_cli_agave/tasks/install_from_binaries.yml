@@ -37,11 +37,7 @@
     src: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}/solana-release"
     dest: "{{ validator_root_dir }}/install/active_release"
     state: link
-    owner: "{{ solana_user }}"
+    owner: "root"
     group: "{{ validator_operators_group }}"
     force: true
-  become: true
-
-- name: Change symlink ownership to sol:validator_operators
-  ansible.builtin.command: chown -h sol:validator_operators {{ validator_root_dir }}/install/active_release
   become: true
