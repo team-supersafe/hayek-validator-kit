@@ -7,27 +7,37 @@
   ansible.builtin.debug:
     msg: "Solana CLI will be downloaded from: {{ agave_download_url }}"
 
-- name: Create Solana CLI releases directory
+- name: Set local variable for solana_installed_release_dir
+  ansible.builtin.set_fact:
+    solana_installed_release_dir: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}"
+
+- name: Ensure Solana CLI releases directory exists
   ansible.builtin.file:
-    path: "{{ solana_installed_releases_dir }}/v{{ agave_version }}"
+    path: "{{ solana_installed_release_dir }}"
     state: directory
-    mode: '0755'
+    mode: "{{ validator_data_mode_owner_readonly }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+  become: true
 
 - name: Unarchiving solana binaries into the releases directory
   ansible.builtin.debug:
-    msg: "Unarchive release directory: {{ solana_installed_releases_dir }}/v{{ agave_version }}"
+    msg: "Unarchive release directory: {{ validator_solana_installed_releases_dir }}/v{{ agave_version }}"
 
 - name: Unarchive solana binaries
   ansible.builtin.unarchive:
     src: "{{ agave_download_url }}"
-    dest: "{{ solana_installed_releases_dir }}/v{{ agave_version }}"
+    dest: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}"
     remote_src: true
-    creates: "{{ solana_installed_releases_dir }}/v{{ agave_version }}/solana-release/bin/agave-validator"
+    creates: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}/solana-release/bin/agave-validator"
   ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode
 
 - name: Create symlink to new release
   ansible.builtin.file:
-    src: "{{ solana_installed_releases_dir }}/v{{ agave_version }}/solana-release"
-    dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
+    src: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}/solana-release"
+    dest: "{{ validator_root_dir }}/install/active_release"
     state: link
+    owner: "root"
+    group: "{{ validator_operators_group }}"
     force: true
+  become: true

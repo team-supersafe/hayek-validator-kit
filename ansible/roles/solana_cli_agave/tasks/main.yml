@@ -1,4 +1,8 @@
 ---
+- name: Setup validator directory structure
+  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/setup_validator_directory.yml
+  tags: [solana_cli_agave, setup_validator_directory]
+
 - name: Precheck environment
   import_tasks: precheck.yml
   tags: [solana_cli_agave, precheck]

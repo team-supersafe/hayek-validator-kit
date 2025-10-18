@@ -1,0 +1,36 @@
+---
+- name: host_cleanup - Clean validator data before start
+  ansible.builtin.shell: |
+    #!/bin/bash
+    set -e
+
+    rm -rf "{{ ledger_path }}"/*
+    rm -rf "{{ accounts_path }}"/*
+    rm -rf "{{ snapshots_path }}"/*
+
+- name: Ensure ledger directory exists
+  ansible.builtin.file:
+    path: "{{ ledger_path }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_data_mode_owner_writable }}"
+    state: directory
+  become: true
+
+- name: host_cleanup - Ensure accounts directory exists
+  ansible.builtin.file:
+    path: "{{ accounts_path }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_data_mode_owner_writable }}"
+    state: directory
+  become: true
+
+- name: host_cleanup - Ensure snapshots directory exists
+  ansible.builtin.file:
+    path: "{{ snapshots_path }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_data_mode_owner_writable }}"
+    state: directory
+  become: true
