@@ -15,7 +15,7 @@
     dest: "{{ grafana_config.dashboards_dir }}/custom/"
     owner: "{{ grafana_config.permissions.config_files.owner }}"
     group: "{{ grafana_config.permissions.config_files.group }}"
-    mode: "{{ grafana_config.permissions.log_files.mode }}"
+    mode: "{{ grafana_config.permissions.config_files.mode }}"
   loop: "{{ grafana_custom_dashboards }}"
   notify: restart grafana
   when: grafana_custom_dashboards is defined
@@ -26,7 +26,7 @@
   loop: "{{ grafana_plugins }}"
   notify: restart grafana
   when: grafana_plugins is defined
-  become_user: "{{ grafana_config.user }}"
+  become: yes
 
 - name: Set Grafana admin password (first time setup)
   ansible.builtin.uri:

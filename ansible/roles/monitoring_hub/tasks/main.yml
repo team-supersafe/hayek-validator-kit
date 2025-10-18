@@ -12,4 +12,4 @@
   include_tasks: configure.yml
 
 - name: Include monitoring hub service management tasks
-  include_tasks: services.yml
+  include_tasks: grafana/services.yml

@@ -5,17 +5,23 @@ monitoring_group: "monitor"
 
 # Grafana specific paths and permissions
 grafana_config:
-  plugins_dir: "/var/lib/grafana/plugins"
+  user: "grafana"
+  group: "grafana"
   dashboards_dir: "/var/lib/grafana/dashboards"
   provisioning_dir: "/etc/grafana/provisioning"
+  
+  permissions:
+    config_files:
+      owner: "root"
+      group: "grafana"
+      mode: "0640"
+    data_dirs:
+      owner: "root"
+      group: "grafana"
+      mode: "0755"
 
-# Variables override for monitoring_hub role
+# Variables override for monitoring_hub role (compatibility)
 solana_user: "{{ monitoring_user }}"
-validator_root_dir: "/mnt/solana"
-validator_build_dir: "{{ validator_root_dir }}/build"
-validator_solana_install_dir: "{{ validator_build_dir }}/install/active_release/bin"
-validator_solana_installed_release_dir: "{{ validator_root_dir }}/install/releases"
-validator_operators_group: "{{ grafana_config.group }}"
 
 # Monitoring services to manage
 monitoring_services:
