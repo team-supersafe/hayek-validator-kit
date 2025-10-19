@@ -10,8 +10,8 @@
 #   -i solana_localnet.yml \
 #   -e "target_host=host-monitoring" \
 #   -e "ansible_user=monitor" \
-#   -e "grafana_default_user=admin" \
-#   -e "grafana_default_password=admin" \
+#   -e "tmp_grafana_default_admin_user=admin" \
+#   -e "tmp_grafana_default_admin_password=admin" \
 #   -e "grafana_admin_password=NewPassword" \
 #   -K
 
