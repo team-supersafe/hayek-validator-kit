@@ -15,7 +15,7 @@
     status_code: 200
   register: grafana_health
   until: grafana_health.status == 200
-  retries: 30
+  retries: 10
   delay: 2
 
 - name: Check Grafana service status
