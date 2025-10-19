@@ -3,7 +3,7 @@
 
 - name: Start and enable Grafana service
   ansible.builtin.systemd:
-    name: grafana-server
+    name: "{{ monitoring_services[0] }}"
     state: started
     enabled: yes
     daemon_reload: yes
@@ -20,7 +20,7 @@
 
 - name: Check Grafana service status
   ansible.builtin.systemd:
-    name: grafana-server
+    name: "{{ monitoring_services[0] }}"
   register: grafana_service_status
 
 - name: Display Grafana service status
