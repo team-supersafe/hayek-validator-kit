@@ -240,7 +240,7 @@ services:
       - 8086:8086 # InfluxDB
     networks:
       solana_network:
-        ipv4_address: 172.25.0.100
+        ipv4_address: 172.25.0.14
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
       - type: bind

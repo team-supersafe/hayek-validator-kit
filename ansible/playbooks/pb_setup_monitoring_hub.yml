@@ -8,7 +8,7 @@
 #
 # ansible-playbook playbooks/pb_setup_monitoring_hub.yml \
 #   -i solana_localnet.yml \
-#   -e "target_host=host-charlie" \
+#   -e "target_host=host-monitoring" \
 #   -e "ansible_user=monitor" \
 #   -e "vault_grafana_default_user=admin" \
 #   -e "vault_grafana_default_password=admin" \
