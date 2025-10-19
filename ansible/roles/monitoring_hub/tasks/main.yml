@@ -1,6 +1,11 @@
 ---
 # monitoring_hub role main tasks
 
+# TODO: Add task to acquire SSL certificate for secure Grafana access
+#       - Implement Let's Encrypt or custom certificate management
+#       - Configure HTTPS for Grafana web interface
+#       - Update firewall rules for HTTPS (port 443)
+
 - name: Load sensitive variables
   include_vars: secrets.yml
   no_log: true
