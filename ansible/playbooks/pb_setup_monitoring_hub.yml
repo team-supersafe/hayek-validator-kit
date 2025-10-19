@@ -10,9 +10,9 @@
 #   -i solana_localnet.yml \
 #   -e "target_host=host-monitoring" \
 #   -e "ansible_user=monitor" \
-#   -e "vault_grafana_default_user=admin" \
-#   -e "vault_grafana_default_password=admin" \
-#   -e "vault_grafana_admin_password=NewPassword" \
+#   -e "grafana_default_user=admin" \
+#   -e "grafana_default_password=admin" \
+#   -e "grafana_admin_password=NewPassword" \
 #   -K
 
 - name: Setup server users
