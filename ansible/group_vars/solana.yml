@@ -55,6 +55,7 @@ validator_operators_group: "validator_operators"
 
 # directory modes
 validator_root_dir_mode: "2775"
+validator_solana_active_release_dir_mode: "0775"
 validator_solana_installed_releases_dir_mode: "2755"
 validator_data_mode_owner_writable: "2775"
 validator_data_mode_owner_readonly: "575"
