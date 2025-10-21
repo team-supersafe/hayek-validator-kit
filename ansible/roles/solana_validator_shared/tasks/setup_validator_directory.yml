@@ -81,7 +81,7 @@
         path: "{{ validator_build_dir }}"
         owner: "root"
         group: "{{ validator_operators_group }}"
-        mode: "{{ validator_data_mode_owner_readonly }}"
+        mode: "{{ validator_root_dir_mode }}"
         state: directory
   become: true
 
