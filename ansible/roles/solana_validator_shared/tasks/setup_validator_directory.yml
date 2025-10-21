@@ -48,7 +48,7 @@
         mode: "{{ validator_solana_installed_releases_dir_mode }}"
         state: directory
 
-    # /opt/validator/1ogs, sol:validator_operators, 2770
+    # /opt/validator/logs, sol:validator_operators, 2770
     - name: Ensure solana logs directory exists
       ansible.builtin.file:
         path: "{{ validator_logs_dir }}"
