@@ -21,7 +21,7 @@
 
 - name: Install Solana CLI
   hosts: "{{ target_host }}"
-  user: "{{ operator_user | default(solana_user) }}"
+  user: "{{ operator_user }}"
   become: false
 
   pre_tasks:
