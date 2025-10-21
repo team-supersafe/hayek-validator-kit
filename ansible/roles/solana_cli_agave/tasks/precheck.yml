@@ -54,7 +54,7 @@
           {{ solana_binary.stat.exists and
              installed_solana_version is defined and
              installed_solana_version == agave_version and
-             installed_solana_client == 'Solana' }}
+             installed_solana_client is defined and installed_solana_client == 'Solana' }}
 
 - name: Precheck - Find solana binary in PATH
   ansible.builtin.command: which solana
