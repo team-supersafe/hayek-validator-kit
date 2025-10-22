@@ -1,0 +1,82 @@
+---
+- name: prepare - Stop validator service
+  block:
+    - name: prepare - Check if validator service exists and is running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+      register: service_status
+      changed_when: false
+      failed_when: false
+
+    - name: prepare - Stop validator service if running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        state: stopped
+        enabled: false
+      register: stop_result
+      retries: 3
+      delay: 10
+      until: stop_result is success
+      when: service_status.status.ActiveState == "active"
+      become: true
+
+# Block 1: Remove parameterized logrotate config and systemd units
+- name: prepare - Remove parameterized validator logrotate config and systemd units
+  block:
+    - name: prepare - Remove parameterized validator logrotate config if it exists
+      ansible.builtin.file:
+        path: "/etc/logrotate.d/{{ validator_service_name }}"
+        state: absent
+
+    - name: prepare - Remove parameterized validator logrotate systemd service if it exists
+      ansible.builtin.file:
+        path: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.service"
+        state: absent
+
+    - name: prepare - Remove parameterized validator logrotate systemd timer if it exists
+      ansible.builtin.file:
+        path: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.timer"
+        state: absent
+  become: true
+
+# Block 2: Remove legacy logrotate config and systemd units (old convention)
+- name: prepare - Remove legacy validator logrotate config and systemd units (backward compatibility)
+  block:
+    - name: prepare - Remove legacy validator logrotate config if it exists
+      ansible.builtin.file:
+        path: /etc/logrotate.d/validator.logrotate
+        state: absent
+
+    - name: prepare - Remove legacy validator logrotate systemd service if it exists
+      ansible.builtin.file:
+        path: /etc/systemd/system/validator-logrotate.service
+        state: absent
+
+    - name: prepare - Remove legacy validator logrotate systemd timer if it exists
+      ansible.builtin.file:
+        path: /etc/systemd/system/validator-logrotate.timer
+        state: absent
+  become: true
+
+- name: prepare - Clear logs and key store
+  ansible.builtin.shell: |
+    #!/bin/bash
+    set -e
+
+    rm -rf "{{ validator_logs_dir }}"/*
+    rm -rf "{{ validator_scripts_dir }}"/*
+    rm -rf "{{ validator_key_store }}"/*
+  become: true
+
+# - name: prepare - Ensure validator subdirectories exist
+#   ansible.builtin.file:
+#     path: "{{ item }}"
+#     owner: "{{ solana_user }}"
+#     group: "{{ validator_operators_group }}"
+#     mode: "{{ validator_directory_mode }}"
+#     state: directory
+#   loop:
+#     - "{{ validator_logs_dir }}"
+#     - "{{ validator_scripts_dir }}"
+#     - "{{ validator_key_store }}"
+#   become: true
