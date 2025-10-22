@@ -8,9 +8,10 @@
   changed_when: false
   loop: "{{ users_csv.dict | dict2items }}"
   when: >
-    item.value.group_a is defined or
-    item.value.group_b is defined or
-    item.value.group_c is defined
+    (enable_validator_rbac | default(true) | bool or permited_groups[0] in [item.value.group_a, item.value.group_b, item.value.group_c]) and
+    (item.value.group_a is defined or
+     item.value.group_b is defined or
+     item.value.group_c is defined)
   no_log: true
 
 - name: Create user permission files with real permissions
@@ -23,9 +24,10 @@
     force: false
   loop: "{{ user_sudo_permissions.results }}"
   when: >
-    item.item.value.group_a is defined or
-    item.item.value.group_b is defined or
-    item.item.value.group_c is defined
+    (enable_validator_rbac | default(true) | bool or permited_groups[0] in [item.item.value.group_a, item.item.value.group_b, item.item.value.group_c]) and
+    (item.item.value.group_a is defined or
+     item.item.value.group_b is defined or
+     item.item.value.group_c is defined)
   no_log: true
 
 - name: Debug permission files created
@@ -33,7 +35,8 @@
     msg: "Created permission file for user {{ item.item.key }}: /home/{{ item.item.key }}/permissions.txt"
   loop: "{{ user_sudo_permissions.results }}"
   when: >
-    item.item.value.group_a is defined or
-    item.item.value.group_b is defined or
-    item.item.value.group_c is defined
+    (enable_validator_rbac | default(true) | bool or permited_groups[0] in [item.item.value.group_a, item.item.value.group_b, item.item.value.group_c]) and
+    (item.item.value.group_a is defined or
+     item.item.value.group_b is defined or
+     item.item.value.group_c is defined)
   no_log: true
