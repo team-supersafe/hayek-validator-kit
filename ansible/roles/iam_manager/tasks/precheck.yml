@@ -172,3 +172,30 @@
   delegate_to: localhost
   become: false
   run_once: true
+
+# Precheck 10: Validate groups against permitted list
+- name: Check all user groups are permitted
+  ansible.builtin.assert:
+    that:
+      - item.value.group_a | default('') == '' or item.value.group_a in permited_groups
+      - item.value.group_b | default('') == '' or item.value.group_b in permited_groups
+      - item.value.group_c | default('') == '' or item.value.group_c in permited_groups
+    fail_msg: "User {{ item.key }} has invalid groups. Permitted: {{ permited_groups | join(', ') }}"
+    success_msg: "User {{ item.key }} groups validated successfully"
+  loop: "{{ users_csv.dict | dict2items }}"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+# Precheck 11: Ensure at least one sysadmin user exists
+- name: Check that at least one sysadmin user exists
+  ansible.builtin.assert:
+    that:
+      - users_csv.dict.values() | selectattr('group_a', 'equalto', 'sysadmin') | list | length > 0 or
+        users_csv.dict.values() | selectattr('group_b', 'equalto', 'sysadmin') | list | length > 0 or
+        users_csv.dict.values() | selectattr('group_c', 'equalto', 'sysadmin') | list | length > 0
+    fail_msg: "Security requirement: At least one user with 'sysadmin' role must exist"
+    success_msg: "Security check passed: At least one sysadmin user found"
+  delegate_to: localhost
+  become: false
+  run_once: true
