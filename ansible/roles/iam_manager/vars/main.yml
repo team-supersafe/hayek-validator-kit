@@ -10,7 +10,7 @@ password_warn_days: 14
 # Password quality configuration
 password_min_length: 14
 
-permited_groups:
+permitted_groups:
   - sysadmin
   - validator_operators
   - validator_viewers
