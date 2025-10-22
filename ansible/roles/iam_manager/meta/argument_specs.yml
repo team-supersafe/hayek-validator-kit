@@ -19,11 +19,7 @@ argument_specs:
         type: str
         required: true
         description: "CSV filename containing user definitions (required)"
-      create_sol_user:
+      enable_validator_rbac:
         type: bool
         required: true
-        description: "Whether to create the 'sol' user (true/false)"
-      enable_rbac:
-        type: bool
-        required: true
-        description: "Whether to create RBAC groups (true/false)"
+        description: "Whether to enable Validator RBAC (true/false)"
