@@ -11,9 +11,10 @@
 #   -i solana_localnet.yml \
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
+#   -e "ansible_user=bob" \
 #   -e "validator_name=penny" \
 #   -e "validator_type=hot-spare" \
-#   -e "agave_version=2.3.6" \
+#   -e "agave_version=2.3.11" \
 #   -e "solana_cluster=localnet" \
 #   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
 #   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
@@ -21,10 +22,34 @@
 
 - name: Install Agave Validator
   hosts: "{{ target_host }}"
-  user: "{{ solana_user }}"
+  user: "{{ ansible_user }}"
   become: false
 
-  # TODO: Add pre_tasks
+  pre_tasks:
+    - name: Assert required parameters are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - ansible_user is defined
+        fail_msg: >
+          Missing required playbook variables: target_host, ansible_user
+
+    - name: Debug ansible_limit and target_host
+      ansible.builtin.debug:
+        msg:
+          - "ansible_limit: {{ ansible_limit | default('not defined') }}"
+          - "ansible_limit type: {{ ansible_limit | type_debug }}"
+          - "target_host: {{ target_host }}"
+          - "ansible_play_hosts: {{ ansible_play_hosts }}"
+
+    - name: Validate that target_host matches the limited host
+      ansible.builtin.assert:
+        that:
+          - ansible_limit is defined
+          - target_host == ansible_limit
+        fail_msg: >
+          This playbook must be run with --limit to target exactly one host.
+          Make sure you run this playbook with: --limit {{ target_host }} -e "target_host={{ target_host }}"
 
   roles:
     - role: solana_validator_agave

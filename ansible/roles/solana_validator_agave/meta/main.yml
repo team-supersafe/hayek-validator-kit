@@ -1,6 +1,5 @@
 ---
 dependencies:
-  - role: rust_env
   - role: solana_cli_agave
     vars:
       agave_version: "{{ agave_version }}"

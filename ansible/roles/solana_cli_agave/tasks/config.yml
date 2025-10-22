@@ -15,9 +15,11 @@
 
 - name: Config - Refresh shell environment
   ansible.builtin.shell: |
-    . "$HOME/.zshrc"
-    . "$HOME/.bashrc"
+    source /etc/profile.d/rust.sh
+    source /etc/profile.d/solana.sh
     echo $PATH
+  args:
+    executable: /bin/bash
   register: cli_shell_env_path
   changed_when: false
 

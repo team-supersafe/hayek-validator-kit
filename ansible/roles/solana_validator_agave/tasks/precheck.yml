@@ -1,9 +1,14 @@
 ---
+- name: Set value for validator_keys_dir
+  ansible.builtin.set_fact:
+    validator_keys_dir: "{{ validator_key_store + '/' + validator_name }}"
+  run_once: true
+
 - name: precheck - Ensure the validator_keys_dir is defined and valid
   ansible.builtin.assert:
     that:
       - validator_keys_dir is defined
-      - validator_keys_dir == keys_dir + "/" + validator_name
+      - validator_keys_dir == validator_key_store + "/" + validator_name
     fail_msg: >
       "Variable 'validator_keys_dir' must be defined."
     success_msg: "validator_keys_dir is set to {{ validator_keys_dir }}"

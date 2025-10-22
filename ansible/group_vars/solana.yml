@@ -45,10 +45,19 @@ jito_forked_repo: https://github.com/team-supersafe/forked-jito-solana
 # New variables for V2 refactor (would replace some of the above shortly)
 validator_root_dir: "/opt/validator"
 validator_scripts_dir: "{{ validator_root_dir }}/scripts"
-validator_logs_dir: "/var/log/validator"
-validator_keys_dir: "{{ validator_root_dir }}/keys"
+validator_logs_dir: "{{ validator_root_dir }}/logs"
+validator_key_store: "{{ validator_root_dir }}/keys"
 validator_build_dir: "{{ validator_root_dir }}/build"
-validator_solana_install_dir: "{{ validator_root_dir }}/install/active_release/bin"
-validator_solana_installed_releases_dir: "{{ validator_root_dir }}/install/releases"
-# TODO: Enable this variable when jito-solana role V2 gets refactored
-# validator_service_file: "/etc/systemd/system/{{ validator_service_name }}.service"
+validator_solana_install_root: "{{ validator_root_dir }}/install"
+validator_solana_install_dir: "{{ validator_solana_install_root }}/active_release/bin"
+validator_solana_installed_releases_dir: "{{ validator_solana_install_root }}/releases"
+validator_operators_group: "validator_operators"
+
+# directory modes
+validator_root_dir_mode: "2775"
+validator_solana_active_release_dir_mode: "0775"
+validator_solana_installed_releases_dir_mode: "2755"
+validator_data_mode_owner_writable: "2775"
+validator_data_mode_owner_readonly: "575"
+validator_logs_dir_mode: "2775"
+validator_scripts_dir_mode: "2755"

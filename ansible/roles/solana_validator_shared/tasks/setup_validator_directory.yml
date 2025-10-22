@@ -1,0 +1,99 @@
+---
+- name: Assert required validator variables are defined
+  ansible.builtin.assert:
+    that:
+      - solana_user is defined
+      - validator_operators_group is defined
+      - validator_root_dir is defined
+      - validator_scripts_dir is defined
+      - validator_logs_dir is defined
+      - validator_key_store is defined
+      - validator_build_dir is defined
+      - validator_solana_installed_releases_dir is defined
+      - validator_solana_install_root is defined
+      - validator_root_dir_mode is defined
+      - validator_scripts_dir_mode is defined
+      - validator_data_mode_owner_writable is defined
+      - validator_data_mode_owner_readonly is defined
+    fail_msg: "One or more required validator variables are not defined. Ensure target host has the correct group_vars/solana.yml applied."
+    success_msg: "All required validator variables are defined."
+  tags: always
+
+- name: Setup validator directories
+  block:
+    # /opt/validator, root:validator_operators, 2775
+    - name: Ensure validator directory exists
+      ansible.builtin.file:
+        path: "{{ validator_root_dir }}"
+        owner: "root"
+        group: "{{ validator_operators_group }}"
+        mode: "{{ validator_root_dir_mode }}"
+        state: directory
+
+    # /opt/validator/install, root:validator_operators, 2775
+    - name: Ensure solana install root directory exists
+      ansible.builtin.file:
+        path: "{{ validator_solana_install_root }}"
+        owner: "root"
+        group: "{{ validator_operators_group }}"
+        mode: "{{ validator_root_dir_mode }}"
+        state: directory
+
+    # /opt/validator/install/releases, root:validator_operators, 2755
+    - name: Ensure solana installed releases directory exists
+      ansible.builtin.file:
+        path: "{{ validator_solana_installed_releases_dir }}"
+        owner: "root"
+        group: "{{ validator_operators_group }}"
+        mode: "{{ validator_solana_installed_releases_dir_mode }}"
+        state: directory
+
+    # /opt/validator/logs, sol:validator_operators, 2770
+    - name: Ensure solana logs directory exists
+      ansible.builtin.file:
+        path: "{{ validator_logs_dir }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+        mode: "{{ validator_logs_dir_mode }}"
+        state: directory
+
+    # /opt/validator/keys, sol:validator_operators, 575
+    - name: Ensure solana keys directory exists
+      ansible.builtin.file:
+        path: "{{ validator_key_store }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+        mode: "{{ validator_data_mode_owner_readonly }}"
+        state: directory
+
+    # /opt/validator/scripts, root:validator_operators, 2755
+    - name: Ensure solana scripts directory exists
+      ansible.builtin.file:
+        path: "{{ validator_scripts_dir }}"
+        owner: "root"
+        group: "{{ validator_operators_group }}"
+        mode: "{{ validator_scripts_dir_mode }}"
+        state: directory
+
+    # /opt/validator/build, root:validator_operators, 575
+    - name: Ensure validator build directory exists
+      ansible.builtin.file:
+        path: "{{ validator_build_dir }}"
+        owner: "root"
+        group: "{{ validator_operators_group }}"
+        mode: "{{ validator_root_dir_mode }}"
+        state: directory
+  become: true
+
+- name: Ensure {{ solana_user }} writable validator directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_data_mode_owner_writable }}"
+    state: directory
+  loop:
+    - "{{ ledger_path }}"
+    - "{{ accounts_path }}"
+    - "{{ snapshots_path }}"
+  become: true

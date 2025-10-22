@@ -1,26 +1,32 @@
-- name: Start building Agave message
+- name: Start Building Agave
   ansible.builtin.debug:
     msg: "Building Agave version {{ agave_version }} from source"
 
-- name: Create solana cli releases directory
+- name: Ensure validator releases directory exists
   ansible.builtin.file:
-    path: "{{ solana_installed_releases_dir }}"
+    path: "{{ validator_solana_installed_releases_dir }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+    mode: "{{ validator_data_mode_owner_readonly }}"
     state: directory
-    mode: "0755"
+  become: true
 
 - name: Set local variable for agave_build_dir
   ansible.builtin.set_fact:
-    agave_build_dir: "{{ build_dir }}/agave"
+    agave_build_dir: "{{ validator_build_dir }}/agave"
 
 - name: Set local variable for solana_installed_release_dir
   ansible.builtin.set_fact:
-    solana_installed_release_dir: "{{ solana_installed_releases_dir }}/v{{ agave_version }}"
+    solana_installed_release_dir: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}"
 
 - name: Ensure agave_build_dir directory exists
   ansible.builtin.file:
     path: "{{ agave_build_dir }}"
     state: directory
-    mode: "0755"
+    mode: "{{ validator_data_mode_owner_readonly }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+  become: true
 
 - name: Debug print Agave build directory
   ansible.builtin.debug:
@@ -60,65 +66,57 @@
       ansible.builtin.set_fact:
         agave_extracted_dir_name: "{{ use_official_repo_bool | ternary('agave', agave_forked_repo_name) }}"
 
-    - name: Slurp Cargo.toml to extract version
-      ansible.builtin.slurp:
-        src: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/Cargo.toml"
-      register: cargo_toml_slurp
-
-    - name: Extract version from Cargo.toml content
-      ansible.builtin.set_fact:
-        cargo_toml_version: "{{ (cargo_toml_slurp.content | b64decode) | regex_search('^version\\s*=\\s*\"([^\"]+)\"', '\\1', multiline=True) }}"
+    - name: Read version from Cargo.toml to verify
+      ansible.builtin.shell: grep '^version =' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
+      args:
+        chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
+      register: cargo_toml_version
+      changed_when: false
 
     - name: Debug Cargo.toml version
       ansible.builtin.debug:
-        msg: "Cargo.toml version: {{ cargo_toml_version }} | Expected: {{ agave_version }}"
+        msg: "Cargo.toml version: {{ cargo_toml_version.stdout }} | Expected: {{ agave_version }}"
 
     - name: Fail if Cargo.toml version does not match agave_version
       ansible.builtin.fail:
-        msg: "Cargo.toml version ({{ cargo_toml_version }}) does not match expected agave_version ({{ agave_version }})!"
-      when: cargo_toml_version != agave_version
+        msg: "Cargo.toml version ({{ cargo_toml_version.stdout }}) does not match expected agave_version ({{ agave_version }})!"
+      when: cargo_toml_version.stdout != agave_version
       changed_when: false
       ignore_errors: "{{ ansible_check_mode }}"
 
-- name: Create release directory for Agave
-  ansible.builtin.file:
-    path: "{{ solana_installed_release_dir }}"
-    state: directory
-    mode: "0755"
+- name: Prepare sources and build using cargo
+  block:
+    - name: Fix ownership of agave_build_dir
+      ansible.builtin.file:
+        path: "{{ agave_build_dir }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+        recurse: true
 
-- name: Run cargo-install-all.sh
-  ansible.builtin.shell: |
-    set -e
-    . "{{ solana_user_dir }}/.cargo/env"
-    ./scripts/cargo-install-all.sh . > {{ agave_build_dir }}/agave-build.log 2>&1
-  args:
-    chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
+    - name: Run cargo-install-all.sh
+      ansible.builtin.shell: |
+        set -e
+        . "{{ validator_root_dir }}/.cargo/env"
+        ./scripts/cargo-install-all.sh . > {{ agave_build_dir }}/agave-build.log 2>&1
+      args:
+        chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
+      environment:
+        CARGO_HOME: "{{ validator_root_dir }}/.cargo"
+        RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
+  become: true
 
 # The above will compile the source code and create the following:
 # A bin directory, .crates.toml and .crates2.json files.
 - name: Move built Agave assets into the releases directory (with failure handling)
   block:
-    - name: Validate release directory path before cleanup
-      ansible.builtin.assert:
-        that:
-          - solana_installed_release_dir is defined
-          - solana_installed_release_dir != ""
-          - solana_installed_release_dir != "/"
-          - solana_installed_release_dir != "/home"
-          - solana_installed_release_dir != "/root"
-        fail_msg: "Invalid release directory path: {{ solana_installed_release_dir }}"
-
-    - name: Clean up existing release directory contents safely
-      ansible.builtin.file:
-        path: "{{ solana_installed_release_dir }}"
-        state: absent
-      register: cleanup_result
-
-    - name: Recreate release directory
+    - name: Ensure release directory exists
       ansible.builtin.file:
         path: "{{ solana_installed_release_dir }}"
         state: directory
-        mode: "0755"
+        mode: "{{ validator_data_mode_owner_readonly }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+      register: release_dir_result
 
     - name: Move agave we just built into the releases directory
       ansible.builtin.shell: |
@@ -126,17 +124,28 @@
         mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/.crates.toml" "{{ solana_installed_release_dir }}"
         mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/.crates2.json" "{{ solana_installed_release_dir }}"
         mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/bin" "{{ solana_installed_release_dir }}"
+
+    - name: Fix ownership of release directory and contents
+      ansible.builtin.file:
+        path: "{{ solana_installed_release_dir }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+        recurse: true
+  become: true
   rescue:
-    - name: Fail if moving built assets failed
+    - name: Fail if moving built assets or creating release directory failed
       ansible.builtin.fail:
         msg: |
-          Failed to move built Agave assets to the releases directory.
+          Failed to move built Agave assets or create the releases directory.
+          Directory creation failed: {{ release_dir_result.failed | default('unknown') }}
           Check if .crates.toml, .crates2.json, and bin exist in {{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}
 
-# Create symlink to new release
 - name: Create symlink to new release
   ansible.builtin.file:
     src: "{{ solana_installed_release_dir }}"
-    dest: "{{ solana_user_dir }}/.local/share/solana/install/active_release"
+    dest: "{{ validator_root_dir }}/install/active_release"
     state: link
+    owner: "root"
+    group: "{{ validator_operators_group }}"
     force: true
+  become: true
