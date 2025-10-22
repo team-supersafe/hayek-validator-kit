@@ -191,9 +191,9 @@
 - name: Check that at least one sysadmin user exists
   ansible.builtin.assert:
     that:
-      - users_csv.dict.values() | selectattr('group_a', 'equalto', 'sysadmin') | list | length > 0 or
-        users_csv.dict.values() | selectattr('group_b', 'equalto', 'sysadmin') | list | length > 0 or
-        users_csv.dict.values() | selectattr('group_c', 'equalto', 'sysadmin') | list | length > 0
+      - users_csv.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', 'sysadmin') | list | length > 0 or
+        users_csv.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', 'sysadmin') | list | length > 0 or
+        users_csv.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', 'sysadmin') | list | length > 0
     fail_msg: "Security requirement: At least one user with 'sysadmin' role must exist"
     success_msg: "Security check passed: At least one sysadmin user found"
   delegate_to: localhost
