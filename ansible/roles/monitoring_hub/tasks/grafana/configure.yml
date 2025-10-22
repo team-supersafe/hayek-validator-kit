@@ -1,0 +1,31 @@
+---
+# Grafana configuration tasks
+
+- name: Create Grafana provisioning directories (only what's needed)
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ grafana_config.permissions.config_files.owner }}"
+    group: "{{ grafana_config.permissions.config_files.group }}"
+    mode: "{{ grafana_config.permissions.data_dirs.mode }}"
+  loop:
+    - "{{ grafana_config.provisioning_dir }}/dashboards"
+    - "{{ grafana_config.provisioning_dir }}/datasources"
+
+- name: Configure Grafana dashboard provisioning
+  ansible.builtin.template:
+    src: grafana/dashboards.yml.j2
+    dest: "{{ grafana_config.provisioning_dir }}/dashboards/dashboards.yml"
+    owner: "{{ grafana_config.permissions.config_files.owner }}"
+    group: "{{ grafana_config.permissions.config_files.group }}"
+    mode: "{{ grafana_config.permissions.config_files.mode }}"
+  notify: restart grafana
+
+- name: Configure Grafana datasource provisioning
+  ansible.builtin.template:
+    src: grafana/datasources.yml.j2
+    dest: "{{ grafana_config.provisioning_dir }}/datasources/datasources.yml"
+    owner: "{{ grafana_config.permissions.config_files.owner }}"
+    group: "{{ grafana_config.permissions.config_files.group }}"
+    mode: "{{ grafana_config.permissions.config_files.mode }}"
+  notify: restart grafana

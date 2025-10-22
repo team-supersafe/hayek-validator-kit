@@ -230,7 +230,7 @@ services:
       - monitor
     build:
       context: ./
-      target: monitor-builder
+      target: naked-builder
     image: ${COMPOSE_PROJECT_NAME}-monitor-builder
     container_name: "host-monitoring"
     hostname: "host-monitoring"
@@ -240,7 +240,7 @@ services:
       - 8086:8086 # InfluxDB
     networks:
       solana_network:
-        ipv4_address: 172.25.0.100
+        ipv4_address: 172.25.0.14
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
       - type: bind
@@ -250,7 +250,7 @@ services:
       - "../ansible/iam/users:/tmp/team_ssh_public_keys:ro" # Mount the team public keys as read-only
     environment:
       SSH_AUTH_SOCK: /ssh-agent
-      DEFAULT_USERNAME: monitor # Set the username inside the container
+      DEFAULT_USERNAME: ubuntu # Set the username inside the container
     command: |
       bash -c "
       # set default user ssh authorized_keys
@@ -262,21 +262,17 @@ services:
       > /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
       for file in /tmp/team_ssh_public_keys/*; do
           cat $$file >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
+          # Adding an empty line after each key is not strictly necessary for authorized_keys parsing,
+          # but it improves readability and maintains consistency with other containers.
           echo "" >> /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
       done
+      # Deduplicate authorized_keys entries
       TEMP_AUTH_KEYS="/home/$$DEFAULT_USERNAME/.ssh/authorized_keys.tmp"
       awk '!seen[$0]++' /home/$$DEFAULT_USERNAME/.ssh/authorized_keys > $$TEMP_AUTH_KEYS
       mv $$TEMP_AUTH_KEYS /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
 
       chmod 600 /home/$$DEFAULT_USERNAME/.ssh/authorized_keys
       chown -R $$DEFAULT_USERNAME:$$DEFAULT_USERNAME /home/$$DEFAULT_USERNAME/.ssh
-
-      /usr/local/bin/monitoring-setup.sh
-      # Start systemd to manage services
-      sudo systemctl enable grafana-server
-      sudo systemctl enable influxdb
-      sudo systemctl start grafana-server
-      sudo systemctl start influxdb
 
       /lib/systemd/systemd
       "

@@ -1,0 +1,14 @@
+---
+# Main Grafana tasks orchestrator
+
+- name: Include Grafana installation tasks
+  include_tasks: grafana/install.yml
+
+- name: Include Grafana configuration tasks
+  include_tasks: grafana/configure.yml
+
+- name: Include Grafana service management tasks
+  include_tasks: grafana/services.yml
+
+- name: Include Grafana dashboard management tasks
+  include_tasks: grafana/dashboards.yml

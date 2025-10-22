@@ -246,61 +246,6 @@ USER root
 
 # End of validator-builder
 
-
-# Dockerfile
-FROM ubuntu-base AS monitor-builder
-ARG SOLANA_RELEASE
-
-# set workdir
-RUN mkdir -p /opt/code/tools
-WORKDIR /opt/code/tools
-
-# Install runtime OS package dependencies (monitor-builder)
-RUN apt-get update && \
-        apt-get install -y --no-install-recommends \
-        bzip2
-
-# Copy the monitoring setup script into the image and make it executable
-COPY ./monitoring/monitoring-setup.sh /usr/local/bin/monitoring-setup.sh
-RUN chmod +x /usr/local/bin/monitoring-setup.sh
-
-SHELL [ "/bin/bash", "-c" ]
-ENV LANG=C.UTF-8
-
-# Start ssh server
-RUN --mount=type=cache,target=/root/.cache \
-    sudo systemctl enable ssh
-
-ENV SOLANA_INSTALL_DIR=/home/monitor/.local/share/solana/install
-
-# Configure monitor user
-RUN --mount=type=cache,target=/root/.cache \
-    adduser --disabled-password --gecos "" monitor \
-    && echo "monitor:monitorpw" | chpasswd \
-    && usermod -aG sudo monitor \
-    && echo "monitor ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-
-USER monitor
-
-RUN --mount=type=cache,target=/root/.cache \
-    mkdir -p ~/.ssh \
-    && mkdir -p "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE"
-
-COPY --from=solana-binaries --chown=monitor:monitor "/solana-release" "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE/solana-release"
-
-RUN --mount=type=cache,target=/root/.cache \
-    ln -sf "$SOLANA_INSTALL_DIR/releases/$SOLANA_RELEASE/solana-release" "$SOLANA_INSTALL_DIR/active_release" \
-    && export PATH=$SOLANA_INSTALL_DIR/active_release/bin:$PATH \
-    && solana --version \
-    && echo "export PATH=$SOLANA_INSTALL_DIR/active_release/bin:"'$PATH' >> ~/.profile \
-    && echo 'source ~/.bashrc' >> ~/.profile
-
-# switch back to root user so the base container CMD ["/lib/systemd/systemd"] can run
-# otherwise the container will exit with unknown error 255
-USER root
-
-# End of monitor-builder
-
 # Dockerfile - This target is used to create a pristine image with basic tooling, users and ssh server
 # The purpose of this image is to test rust and solana cli install from scratch
 FROM ubuntu-base AS naked-builder

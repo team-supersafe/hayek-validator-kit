@@ -1,0 +1,43 @@
+---
+# Grafana dashboard management tasks
+
+- name: Create custom dashboards directory
+  ansible.builtin.file:
+    path: "{{ grafana_config.dashboards_dir }}/custom"
+    state: directory
+    owner: "{{ grafana_config.permissions.data_dirs.owner }}"
+    group: "{{ grafana_config.permissions.data_dirs.group }}"
+    mode: "{{ grafana_config.permissions.data_dirs.mode }}"
+
+- name: Copy Solana validator dashboards
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ grafana_config.dashboards_dir }}/custom/"
+    owner: "{{ grafana_config.permissions.config_files.owner }}"
+    group: "{{ grafana_config.permissions.config_files.group }}"
+    mode: "{{ grafana_config.permissions.config_files.mode }}"
+  loop: "{{ grafana_custom_dashboards }}"
+  notify: restart grafana
+  when: grafana_custom_dashboards is defined
+
+- name: Install Grafana plugins
+  ansible.builtin.command:
+    cmd: "grafana-cli plugins install {{ item }}"
+  loop: "{{ grafana_plugins }}"
+  notify: restart grafana
+  when: grafana_plugins is defined
+  become: yes
+
+- name: Set Grafana admin password (first time setup)
+  ansible.builtin.uri:
+    url: "http://{{ monitoring_network.bind_address | default('localhost') }}:{{ grafana_port | default(3000) }}/api/admin/users/1/password"
+    method: PUT
+    user: "{{ grafana_default_admin_user }}"
+    password: "{{ grafana_default_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      password: "{{ grafana_secrets.admin_password }}"
+    status_code: [200, 401]
+  when: grafana_secrets.admin_password is defined
+  no_log: true

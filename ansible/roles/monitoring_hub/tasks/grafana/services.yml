@@ -1,0 +1,28 @@
+---
+# Grafana service management tasks
+
+- name: Start and enable Grafana service
+  ansible.builtin.systemd:
+    name: "{{ monitoring_services[0] }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Wait for Grafana to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ grafana_port | default(3000) }}/api/health"
+    method: GET
+    status_code: 200
+  register: grafana_health
+  until: grafana_health.status == 200
+  retries: 10
+  delay: 2
+
+- name: Check Grafana service status
+  ansible.builtin.systemd:
+    name: "{{ monitoring_services[0] }}"
+  register: grafana_service_status
+
+- name: Display Grafana service status
+  ansible.builtin.debug:
+    msg: "Grafana service is {{ grafana_service_status.status.ActiveState }}"

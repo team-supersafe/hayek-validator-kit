@@ -1,0 +1,28 @@
+---
+# User and group configuration
+monitoring_user: "monitor"
+monitoring_group: "monitor"
+
+# Grafana specific paths and permissions
+grafana_config:
+  user: "grafana"
+  group: "grafana"
+  dashboards_dir: "/var/lib/grafana/dashboards"
+  provisioning_dir: "/etc/grafana/provisioning"
+  
+  permissions:
+    config_files:
+      owner: "root"
+      group: "grafana"
+      mode: "0640"
+    data_dirs:
+      owner: "root"
+      group: "grafana"
+      mode: "0755"
+
+# Variables override for monitoring_hub role (compatibility)
+solana_user: "{{ monitoring_user }}"
+
+# Monitoring services to manage
+monitoring_services:
+  - grafana-server
