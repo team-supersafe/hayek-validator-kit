@@ -213,7 +213,7 @@
       User {{ item.key }} groups: {{ item.value.group_a | default('') }}, {{ item.value.group_b | default('') }}, {{ item.value.group_c | default('') }}
     success_msg: "User {{ item.key }} groups validated for non-RBAC mode (sysadmin only)"
   loop: "{{ users_csv.dict | dict2items }}"
-  when: not (enable_validator_rbac | default(true) | bool)
+  when: not (enable_validator_rbac | bool)
   delegate_to: localhost
   become: false
   run_once: true

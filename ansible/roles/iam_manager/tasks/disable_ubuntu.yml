@@ -7,9 +7,7 @@
           If you executed this playbook using the 'ubuntu' user, you will no longer be able to start an SSH session as 'ubuntu', neither from outside nor inside the server.
           From now on, you will only be able to establish SSH sessions using the following users:
           {% for user_item in users_csv.dict | dict2items %}
-          {% if enable_validator_rbac | default(true) | bool or rbac_roles.sysadmin in [user_item.value.group_a, user_item.value.group_b, user_item.value.group_c] %}
           - {{ user_item.key }}
-          {% endif %}
           {% endfor %}
 
 
