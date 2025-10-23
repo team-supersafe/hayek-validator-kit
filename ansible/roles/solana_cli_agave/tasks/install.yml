@@ -34,14 +34,6 @@
   name: Install - Installing from source
   ansible.builtin.include_tasks: install_from_source.yml
 
-# Set proper permissions for active_release symlink
-- name: Install - Set permissions for active_release symlink
-  ansible.builtin.file:
-    path: "{{ validator_root_dir }}/install/active_release"
-    mode: "{{ validator_solana_active_release_dir_mode }}"
-    follow: false
-  become: true
-
 # Add Solana CLI bin path to global profile for all users (test)
 - name: Install - Add Solana CLI bin path to global profile
   ansible.builtin.blockinfile:

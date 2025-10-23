@@ -67,16 +67,3 @@
     rm -rf "{{ validator_scripts_dir }}"/*
     rm -rf "{{ validator_key_store }}"/*
   become: true
-
-# - name: prepare - Ensure validator subdirectories exist
-#   ansible.builtin.file:
-#     path: "{{ item }}"
-#     owner: "{{ solana_user }}"
-#     group: "{{ validator_operators_group }}"
-#     mode: "{{ validator_directory_mode }}"
-#     state: directory
-#   loop:
-#     - "{{ validator_logs_dir }}"
-#     - "{{ validator_scripts_dir }}"
-#     - "{{ validator_key_store }}"
-#   become: true
