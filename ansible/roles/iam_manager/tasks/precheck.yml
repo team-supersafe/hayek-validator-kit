@@ -200,20 +200,20 @@
   become: false
   run_once: true
 
-# Precheck 12: Validate that when RBAC is disabled, only sysadmin group is used
-- name: Check that when enable_validator_rbac=false, only sysadmin group is present in CSV
+# Precheck 12: Validate that when server_role=monitor, only sysadmin group is used
+- name: Check that when server_role=monitor, only sysadmin group is present in CSV
   ansible.builtin.assert:
     that:
       - item.value.group_a | default('') == '' or item.value.group_a == rbac_roles.sysadmin
       - item.value.group_b | default('') == '' or item.value.group_b == rbac_roles.sysadmin
       - item.value.group_c | default('') == '' or item.value.group_c == rbac_roles.sysadmin
     fail_msg: |
-      User {{ item.key }} has non-sysadmin groups when enable_validator_rbac=false.
-      When RBAC is disabled, only '{{ rbac_roles.sysadmin }}' group is permitted.
+      User {{ item.key }} has non-sysadmin groups when server_role={{ server_roles.monitor }}.
+      When server_role={{ server_roles.monitor }}, only '{{ rbac_roles.sysadmin }}' group is permitted.
       User {{ item.key }} groups: {{ item.value.group_a | default('') }}, {{ item.value.group_b | default('') }}, {{ item.value.group_c | default('') }}
-    success_msg: "User {{ item.key }} groups validated for non-RBAC mode (sysadmin only)"
+    success_msg: "User {{ item.key }} groups validated for {{ server_roles.monitor }} mode (sysadmin only)"
   loop: "{{ users_csv.dict | dict2items }}"
-  when: not (enable_validator_rbac | bool)
+  when: server_role == server_roles.monitor
   delegate_to: localhost
   become: false
   run_once: true

@@ -29,7 +29,7 @@
     owner: root
     group: root
   no_log: true
-  
+
 # Configure sudo access for validator_operators group
 - name: Configure sudo access for validator_operators group
   ansible.builtin.template:
@@ -38,7 +38,7 @@
     mode: '0440'
     validate: 'visudo -cf %s'
   no_log: true
-  when: enable_validator_rbac | default(true) | bool
+  when: server_role == server_roles.validator
 
 # Configure sudo access for validator_viewers group
 - name: Configure sudo access for validator_viewers group
@@ -48,5 +48,4 @@
     mode: '0440'
     validate: 'visudo -cf %s'
   no_log: true
-  when: enable_validator_rbac | default(true) | bool
-  
+  when: server_role == server_roles.validator

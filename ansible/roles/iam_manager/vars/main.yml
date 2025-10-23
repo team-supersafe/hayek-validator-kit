@@ -10,6 +10,11 @@ password_warn_days: 14
 # Password quality configuration
 password_min_length: 14
 
+# Server role configuration
+server_roles:
+  validator: validator
+  monitor: monitor
+
 # Group name definitions
 rbac_roles:
   sysadmin: sysadmin
@@ -18,3 +23,6 @@ rbac_roles:
 
 # Derived list
 permitted_groups: "{{ rbac_roles.values() | list }}"
+
+# Enable validator RBAC based on server role
+enable_validator_rbac: "{{ server_role == server_roles.validator }}"
