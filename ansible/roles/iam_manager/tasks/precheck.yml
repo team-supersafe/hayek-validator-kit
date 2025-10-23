@@ -199,3 +199,21 @@
   delegate_to: localhost
   become: false
   run_once: true
+
+# Precheck 12: Validate that when RBAC is disabled, only sysadmin group is used
+- name: Check that when enable_validator_rbac=false, only sysadmin group is present in CSV
+  ansible.builtin.assert:
+    that:
+      - item.value.group_a | default('') == '' or item.value.group_a == 'sysadmin'
+      - item.value.group_b | default('') == '' or item.value.group_b == 'sysadmin'
+      - item.value.group_c | default('') == '' or item.value.group_c == 'sysadmin'
+    fail_msg: |
+      User {{ item.key }} has non-sysadmin groups when enable_validator_rbac=false.
+      When RBAC is disabled, only 'sysadmin' group is permitted.
+      User {{ item.key }} groups: {{ item.value.group_a | default('') }}, {{ item.value.group_b | default('') }}, {{ item.value.group_c | default('') }}
+    success_msg: "User {{ item.key }} groups validated for non-RBAC mode (sysadmin only)"
+  loop: "{{ users_csv.dict | dict2items }}"
+  when: not (enable_validator_rbac | default(true) | bool)
+  delegate_to: localhost
+  become: false
+  run_once: true
