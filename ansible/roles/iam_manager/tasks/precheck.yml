@@ -217,3 +217,17 @@
   delegate_to: localhost
   become: false
   run_once: true
+
+# Precheck 13: Ensure at least one validator_operators user exists when server_role=validator
+- name: Check that at least one validator_operators user exists when server_role=validator
+  ansible.builtin.assert:
+    that:
+      - users_csv.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', rbac_roles.operators) | list | length > 0 or
+        users_csv.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', rbac_roles.operators) | list | length > 0 or
+        users_csv.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', rbac_roles.operators) | list | length > 0
+    fail_msg: "Security requirement: When server_role={{ server_roles.validator }}, at least one user with '{{ rbac_roles.operators }}' role must exist"
+    success_msg: "Security check passed: At least one validator_operators user found for {{ server_roles.validator }} role"
+  when: server_role == server_roles.validator
+  delegate_to: localhost
+  become: false
+  run_once: true
