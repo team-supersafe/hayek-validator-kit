@@ -62,7 +62,7 @@
 # Debug user group assignments
 - name: Debug user group assignments
   ansible.builtin.debug:
-    msg: "User {{ item.key }} assigned to groups: {{ rbac_roles.sysadmin if server_role == server_roles.monitor else ([item.value.group_a, item.value.group_b, item.value.group_c] | select('defined') | select('string') | reject('equalto', '') | reject('none') | map('lower') | list | join(',')) }}"
+    msg: "User {{ item.key }} assigned to groups: {{ [item.value.group_a, item.value.group_b, item.value.group_c] | select('defined') | select('string') | reject('equalto', '') | reject('none') | map('lower') | list | join(',') }}"
   loop: "{{ users_csv.dict | dict2items }}"
   no_log: true
 
