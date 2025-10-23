@@ -54,16 +54,16 @@
     name: "{{ item.key }}"
     shell: /bin/bash
     state: present
-    groups: "{{ permitted_groups[0] if not (enable_validator_rbac | default(true) | bool) else ([item.value.group_a, item.value.group_b, item.value.group_c] | select('defined') | select('string') | reject('equalto', '') | reject('none') | map('lower') | list | join(',')) }}"
+    groups: "{{ rbac_roles.sysadmin if not (enable_validator_rbac | default(true) | bool) else ([item.value.group_a, item.value.group_b, item.value.group_c] | select('defined') | select('string') | reject('equalto', '') | reject('none') | map('lower') | list | join(',')) }}"
     append: true
   loop: "{{ users_csv.dict | dict2items }}"
-  when: enable_validator_rbac | default(true) | bool or permitted_groups[0] in [item.value.group_a, item.value.group_b, item.value.group_c]
+  when: enable_validator_rbac | default(true) | bool or rbac_roles.sysadmin in [item.value.group_a, item.value.group_b, item.value.group_c]
   no_log: true
 
 # Debug user group assignments
 - name: Debug user group assignments
   ansible.builtin.debug:
-    msg: "User {{ item.key }} assigned to groups: {{ permitted_groups[0] if not (enable_validator_rbac | default(true) | bool) else ([item.value.group_a, item.value.group_b, item.value.group_c] | select('defined') | select('string') | reject('equalto', '') | reject('none') | map('lower') | list | join(',')) }}"
+    msg: "User {{ item.key }} assigned to groups: {{ rbac_roles.sysadmin if not (enable_validator_rbac | default(true) | bool) else ([item.value.group_a, item.value.group_b, item.value.group_c] | select('defined') | select('string') | reject('equalto', '') | reject('none') | map('lower') | list | join(',')) }}"
   loop: "{{ users_csv.dict | dict2items }}"
   no_log: true
 
@@ -76,7 +76,7 @@
     owner: "{{ item.key }}"
     group: "{{ item.key }}"
   loop: "{{ users_csv.dict | dict2items }}"
-  when: enable_validator_rbac | default(true) | bool or permitted_groups[0] in [item.value.group_a, item.value.group_b, item.value.group_c]
+  when: enable_validator_rbac | default(true) | bool or rbac_roles.sysadmin in [item.value.group_a, item.value.group_b, item.value.group_c]
   no_log: true
 
 # Add SSH authorized keys (extract key from format with email)
@@ -126,7 +126,7 @@
     state: present
   loop: "{{ users_csv.dict | dict2items }}"
   when: >
-    (enable_validator_rbac | default(true) | bool or permitted_groups[0] in [item.value.group_a, item.value.group_b, item.value.group_c]) and
+    (enable_validator_rbac | default(true) | bool or rbac_roles.sysadmin in [item.value.group_a, item.value.group_b, item.value.group_c]) and
     item.value.key is defined and
     item.value.key != "" and
     item.value.key is not none and
@@ -171,7 +171,7 @@
     group: "{{ item.key }}"
   loop: "{{ users_csv.dict | dict2items }}"
   when: >
-    (enable_validator_rbac | default(true) | bool or permitted_groups[0] in [item.value.group_a, item.value.group_b, item.value.group_c]) and
+    (enable_validator_rbac | default(true) | bool or rbac_roles.sysadmin in [item.value.group_a, item.value.group_b, item.value.group_c]) and
     item.value.key is defined and
     item.value.key != "" and
     item.value.key is not none and

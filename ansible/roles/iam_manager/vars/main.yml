@@ -10,7 +10,11 @@ password_warn_days: 14
 # Password quality configuration
 password_min_length: 14
 
-permitted_groups:
-  - sysadmin
-  - validator_operators
-  - validator_viewers
+# Group name definitions
+rbac_roles:
+  sysadmin: sysadmin
+  operators: validator_operators
+  viewers: validator_viewers
+
+# Derived list
+permitted_groups: "{{ rbac_roles.values() | list }}"
