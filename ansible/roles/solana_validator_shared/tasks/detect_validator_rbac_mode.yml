@@ -1,0 +1,32 @@
+---
+# Detect if the validator deployment is RBAC-enabled (new style) or legacy (old style)
+- name: Assert validator_root_dir is defined
+  ansible.builtin.assert:
+    that:
+      - validator_root_dir is defined
+      - validator_root_dir | length > 0
+    fail_msg: "validator_root_dir is not defined. Make sure the host is assigned to a group with the required group_vars (e.g., solana or solana_localnet)."
+
+- name: Detect if validator_root_dir exists
+  ansible.builtin.stat:
+    path: "{{ validator_root_dir }}"
+  register: validator_opt_dir
+
+- name: Detect if .cargo exists in validator_root_dir
+  ansible.builtin.stat:
+    path: "{{ validator_root_dir }}/.cargo"
+  register: validator_cargo_dir
+
+- name: Detect if .rustup exists in validator_root_dir
+  ansible.builtin.stat:
+    path: "{{ validator_root_dir }}/.rustup"
+  register: validator_rustup_dir
+
+- name: Set validator_rbac_enabled flag
+  ansible.builtin.set_fact:
+    validator_rbac_enabled: >-
+      {{
+        validator_opt_dir.stat.isdir is defined and validator_opt_dir.stat.isdir
+        and validator_cargo_dir.stat.isdir is defined and validator_cargo_dir.stat.isdir
+        and validator_rustup_dir.stat.isdir is defined and validator_rustup_dir.stat.isdir
+      }}
