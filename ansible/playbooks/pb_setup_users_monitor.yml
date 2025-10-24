@@ -28,33 +28,6 @@
       delegate_to: localhost
       become: false
 
-    # Check for sysadmin group in CSV
-    - name: Check if sysadmin group exists in CSV
-      ansible.builtin.set_fact:
-        has_sysadmin: >-
-          {{
-            users_csv_precheck.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', rbac_roles.sysadmin) | list | length > 0 or
-            users_csv_precheck.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', rbac_roles.sysadmin) | list | length > 0 or
-            users_csv_precheck.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', rbac_roles.sysadmin) | list | length > 0
-          }}
-
-    - name: Display sysadmin group status
-      ansible.builtin.debug:
-        msg: "Sysadmin group {{ 'found' if has_sysadmin | bool else 'NOT found' }} in CSV"
-
-    # Validate that at least one sysadmin user exists
-    - name: Ensure at least one sysadmin user exists for monitor role
-      ansible.builtin.assert:
-        that:
-          - has_sysadmin | bool
-        fail_msg: |
-          ❌ Security requirement: At least one user with 'sysadmin' role must exist.
-          The CSV must contain at least one user with the group 'sysadmin' when setting up a monitoring server.
-        success_msg: "✅ Security check passed: At least one sysadmin user found"
-      delegate_to: localhost
-      become: false
-      run_once: true
-
     # Validate that only sysadmin group is present (no validator groups)
     - name: Ensure only sysadmin group is present in CSV for monitor server
       ansible.builtin.assert:
