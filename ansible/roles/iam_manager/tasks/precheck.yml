@@ -199,35 +199,3 @@
   delegate_to: localhost
   become: false
   run_once: true
-
-# Precheck 12: Validate that when server_role=monitor, only sysadmin group is used
-- name: Check that when server_role=monitor, only sysadmin group is present in CSV
-  ansible.builtin.assert:
-    that:
-      - item.value.group_a | default('') == '' or item.value.group_a == rbac_roles.sysadmin
-      - item.value.group_b | default('') == '' or item.value.group_b == rbac_roles.sysadmin
-      - item.value.group_c | default('') == '' or item.value.group_c == rbac_roles.sysadmin
-    fail_msg: |
-      User {{ item.key }} has non-sysadmin groups when server_role={{ server_roles.monitor }}.
-      When server_role={{ server_roles.monitor }}, only '{{ rbac_roles.sysadmin }}' group is permitted.
-      User {{ item.key }} groups: {{ item.value.group_a | default('') }}, {{ item.value.group_b | default('') }}, {{ item.value.group_c | default('') }}
-    success_msg: "User {{ item.key }} groups validated for {{ server_roles.monitor }} mode (sysadmin only)"
-  loop: "{{ users_csv.dict | dict2items }}"
-  when: server_role == server_roles.monitor
-  delegate_to: localhost
-  become: false
-  run_once: true
-
-# Precheck 13: Ensure at least one validator_operators user exists when server_role=validator
-- name: Check that at least one validator_operators user exists when server_role=validator
-  ansible.builtin.assert:
-    that:
-      - users_csv.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', rbac_roles.operators) | list | length > 0 or
-        users_csv.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', rbac_roles.operators) | list | length > 0 or
-        users_csv.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', rbac_roles.operators) | list | length > 0
-    fail_msg: "Security requirement: When server_role={{ server_roles.validator }}, at least one user with '{{ rbac_roles.operators }}' role must exist"
-    success_msg: "Security check passed: At least one validator_operators user found for {{ server_roles.validator }} role"
-  when: server_role == server_roles.validator
-  delegate_to: localhost
-  become: false
-  run_once: true

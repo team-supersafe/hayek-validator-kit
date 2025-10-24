@@ -19,8 +19,3 @@ argument_specs:
         type: str
         required: true
         description: "CSV filename containing user definitions (required)"
-      server_role:
-        type: str
-        required: true
-        choices: ["validator", "monitor"]
-        description: "Server role - validator enables full RBAC, monitor uses sysadmin-only mode"

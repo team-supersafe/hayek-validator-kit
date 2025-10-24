@@ -11,12 +11,74 @@
 #   -e "target_host=new-metal-box" \
 #   -e "ansible_user=ubuntu" \
 #   -e "csv_file=iam_setup.csv"  # REQUIRED: specify the CSV filename
+# To do: Setup or validate a variables of users and groups specific to monitor role
+#        Call IAM Manager role with the validated inputs
 
 - name: Setup server users
   hosts: "{{ target_host }}"
   user: "{{ ansible_user }}"
   become: true
+  vars_files:
+    - ../roles/iam_manager/vars/main.yml
   pre_tasks:
+    # Check if 'sol' user exists in CSV
+    - name: Read CSV to check for sol user
+      community.general.read_csv:
+        path: "{{ users_file }}"
+        key: user
+      register: users_csv_precheck
+      delegate_to: localhost
+      become: false
+
+    - name: Check if sol user exists in CSV
+      ansible.builtin.set_fact:
+        sol_user_in_csv: "{{ 'sol' in users_csv_precheck.dict.keys() }}"
+
+    - name: Display sol user status
+      ansible.builtin.debug:
+        msg: "Sol user {{ 'found' if sol_user_in_csv | bool else 'NOT found' }} in CSV"
+
+    # Check for validator_operators group in CSV
+    - name: Check if validator_operators group exists in CSV
+      ansible.builtin.set_fact:
+        has_validator_operators: >-
+          {{
+            users_csv_precheck.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', rbac_roles.operators) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', rbac_roles.operators) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', rbac_roles.operators) | list | length > 0
+          }}
+
+    - name: Display validator_operators group status
+      ansible.builtin.debug:
+        msg: "Validator_operators group {{ 'found' if has_validator_operators | bool else 'NOT found' }} in CSV"
+
+    # Check for validator_viewers group in CSV
+    - name: Check if validator_viewers group exists in CSV
+      ansible.builtin.set_fact:
+        has_validator_viewers: >-
+          {{
+            users_csv_precheck.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', rbac_roles.viewers) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', rbac_roles.viewers) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', rbac_roles.viewers) | list | length > 0
+          }}
+
+    - name: Display validator_viewers group status
+      ansible.builtin.debug:
+        msg: "Validator_viewers group {{ 'found' if has_validator_viewers | bool else 'NOT found' }} in CSV"
+
+    # Validate that at least one validator_operators user exists
+    - name: Ensure at least one validator_operators user exists for validator role
+      ansible.builtin.assert:
+        that:
+          - has_validator_operators | bool
+        fail_msg: |
+          ❌ Security requirement: At least one user with 'validator_operators' role must exist.
+          The CSV must contain at least one user with the group 'validator_operators' when setting up a validator server.
+        success_msg: "✅ Security check passed: At least one validator_operators user found"
+      delegate_to: localhost
+      become: false
+      run_once: true
+
     # Gather system facts to get server information
     - name: Gather facts
       ansible.builtin.setup:

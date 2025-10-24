@@ -38,7 +38,7 @@
     mode: '0440'
     validate: 'visudo -cf %s'
   no_log: true
-  when: server_role == server_roles.validator
+  when: has_validator_operators | default(false) | bool
 
 # Configure sudo access for validator_viewers group
 - name: Configure sudo access for validator_viewers group
@@ -48,4 +48,5 @@
     mode: '0440'
     validate: 'visudo -cf %s'
   no_log: true
-  when: server_role == server_roles.validator
+  when: has_validator_viewers | default(false) | bool 
+
