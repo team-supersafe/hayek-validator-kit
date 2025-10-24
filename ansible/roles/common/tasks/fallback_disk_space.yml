@@ -1,0 +1,10 @@
+# Fallback: Get available disk space using shell command
+- name: Fallback to shell command
+  ansible.builtin.shell: |
+    df -k "{{ solana_user_dir }}" | tail -n1 | awk '{print $4}'
+  register: fallback_space
+  changed_when: false
+
+- name: Set fallback space
+  ansible.builtin.set_fact:
+    initial_space_bytes: "{{ fallback_space.stdout | int * 1024 }}"

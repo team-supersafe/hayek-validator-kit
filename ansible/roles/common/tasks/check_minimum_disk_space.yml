@@ -8,6 +8,14 @@
       - solana_user_dir is match('^/.*')
     fail_msg: "solana_user_dir must be defined and be an absolute path"
 
+# For solana_localnet hosts, always use fallback
+- name: Check disk space with fallback for localnet
+  block:
+    - name: Use fallback disk space tasks for localnet
+      ansible.builtin.include_tasks: fallback_disk_space.yml
+  when: '"solana_localnet" in group_names'
+
+# For all other hosts, use mount facts with rescue fallback
 - name: Check disk space with mount facts (primary method)
   block:
     - name: Gather mount facts
@@ -27,24 +35,10 @@
              )
           }}
       when: ansible_facts.mounts is defined and ansible_facts.mounts | length > 0
-
-    - name: Validate disk space was found using mount facts
-      ansible.builtin.assert:
-        that:
-          - initial_space_bytes is defined
-          - initial_space_bytes | int > 0
-        fail_msg: "Could not determine available disk space for {{ solana_user_dir }} using mount facts"
-
   rescue:
-    - name: Fallback to shell command
-      ansible.builtin.shell: |
-        df -k "{{ solana_user_dir }}" | tail -n1 | awk '{print $4}'
-      register: fallback_space
-      changed_when: false
-
-    - name: Set fallback space
-      ansible.builtin.set_fact:
-        initial_space_bytes: "{{ fallback_space.stdout | int * 1024 }}"
+    - name: Use fallback disk space tasks for non-localnet
+      ansible.builtin.include_tasks: fallback_disk_space.yml
+  when: '"solana_localnet" not in group_names'
 
 - name: Set minimum required space
   ansible.builtin.set_fact:

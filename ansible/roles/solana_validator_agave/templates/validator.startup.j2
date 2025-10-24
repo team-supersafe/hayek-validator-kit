@@ -1,0 +1,44 @@
+#!/bin/bash
+
+PATH="/bin:/usr/bin:{{ solana_install_dir }}"
+{% if solana_metrics_url is defined and solana_metrics_url %}
+export SOLANA_METRICS_CONFIG="host={{ solana_metrics_url }}"
+{% endif %}
+exec agave-validator \
+--identity "{{ validator_keys_dir }}/identity.json" \
+--vote-account {{ vote_account_pubkey }} \
+--authorized-voter {{ validator_keys_dir }}/primary-target-identity.json \
+{% for known_validator in known_validators %}
+--known-validator {{ known_validator }} \
+{% endfor %}
+{% if only_known_rpc is defined and only_known_rpc %}
+--only-known-rpc \
+{% endif %}
+--ledger {{ ledger_path }} \
+--accounts {{ accounts_path }} \
+--snapshots {{ snapshots_path }} \
+--minimal-snapshot-download-speed {{ minimal_snapshot_download_speed }} \
+--private-rpc \
+--rpc-port {{ solana_rpc_port }} \
+--dynamic-port-range {{ open_solana_ports_start }}-{{ open_solana_ports_end }} \
+--gossip-port {{ gossip_port }} \
+{% for entrypoint in solana_gossip_entrypoints %}
+--entrypoint {{ entrypoint }} \
+{% endfor %}
+--expected-genesis-hash {{ expected_genesis_hash }} \
+--wal-recovery-mode skip_any_corrupted_record \
+--limit-ledger-size {{ limit_ledger_size | default('') }} \
+--block-verification-method unified-scheduler \
+{% if solana_cluster != "localnet" and poh_pinned_cpu_core_enabled is defined and poh_pinned_cpu_core_enabled and poh_pinned_cpu_core is defined %}
+--experimental-poh-pinned-cpu-core {{ poh_pinned_cpu_core }} \
+{% endif %}
+{% if solana_cluster == "localnet" %}
+--no-os-network-limits-test \
+--allow-private-addr \
+{% endif %}
+{% if extra_params is defined %}
+{% for extra_var in extra_params %}
+{{ extra_var }} \
+{% endfor %}
+{% endif %}
+--log {{ logs_dir }}/agave-validator.log
