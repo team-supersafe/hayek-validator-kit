@@ -78,6 +78,74 @@
       ansible.builtin.fail:
         msg: "Failed to configure validator startup script. Error: {{ ansible_failed_result }}"
 
-# Upcoming steps:
-# - Configure validator log rotation
-# - Configure validator systemd service
+- name: configure - Configure validator log rotation
+  block:
+    - name: configure - Create logrotate configuration
+      ansible.builtin.template:
+        src: validator.logrotate.j2
+        dest: "/etc/logrotate.d/{{ validator_service_name }}"
+        mode: "0644"
+
+    - name: configure - Verify logrotate configuration
+      ansible.builtin.command: logrotate -d /etc/logrotate.d/{{ validator_service_name }}
+      register: logrotate_check
+      changed_when: false
+      failed_when: false
+  become: true
+  rescue:
+    - name: configure - Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator log rotation. Error: {{ ansible_failed_result }}"
+
+- name: configure - Set up validator logrotate systemd timer (localnet only)
+  block:
+    - name: configure - Deploy validator logrotate systemd service
+      ansible.builtin.template:
+        src: validator-logrotate.service.j2
+        dest: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.service"
+        mode: "0644"
+
+    - name: configure - Deploy validator logrotate systemd timer
+      ansible.builtin.template:
+        src: validator-logrotate.timer.j2
+        dest: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.timer"
+        mode: "0644"
+
+    - name: configure - Reload systemd to pick up new timer
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: configure - Enable and start validator logrotate timer
+      ansible.builtin.systemd:
+        name: "validator-logrotate-{{ validator_service_name }}.timer"
+        enabled: true
+        state: started
+  when: solana_cluster == 'localnet'
+  become: true
+
+- name: configure - Configure validator systemd service
+  block:
+    - name: configure - Create validator systemd service
+      ansible.builtin.template:
+        src: validator.service.j2
+        dest: "/etc/systemd/system/{{ validator_service_name }}.service"
+        mode: "0644"
+
+    - name: configure - Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: configure - Enable validator service
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        enabled: true
+        state: started
+  become: true
+  rescue:
+    - name: configure - Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator systemd service. Error: {{ ansible_failed_result }}"
+
+- name: configure - Configuration complete
+  ansible.builtin.debug:
+    msg: "Agave validator configuration completed successfully"
