@@ -1,5 +1,5 @@
 ---
-# Setup users for a new metal box
+# Setup users for a Solana validator server
 # --------------------
 # Usage:
 # ------
@@ -32,11 +32,11 @@
 
     - name: Check if sol user exists in CSV
       ansible.builtin.set_fact:
-        sol_user_in_csv: "{{ 'sol' in users_csv_precheck.dict.keys() }}"
+        sol_user_in_csv: "{{ solana_user in users_csv_precheck.dict.keys() }}"
 
     - name: Display sol user status
       ansible.builtin.debug:
-        msg: "Sol user {{ 'found' if sol_user_in_csv | bool else 'NOT found' }} in CSV"
+        msg: "{{ solana_user }} user {{ 'found' if sol_user_in_csv | bool else 'NOT found' }} in CSV"
 
     # Check for validator_operators group in CSV
     - name: Check if validator_operators group exists in CSV
@@ -65,6 +65,20 @@
     - name: Display validator_viewers group status
       ansible.builtin.debug:
         msg: "Validator_viewers group {{ 'found' if has_validator_viewers | bool else 'NOT found' }} in CSV"
+
+    # Validate that 'sol' user exists in CSV
+    - name: Ensure solana user exists in CSV for validator role
+      ansible.builtin.assert:
+        that:
+          - sol_user_in_csv | bool
+        fail_msg: |
+          ❌ Security requirement: The '{{ solana_user }}' user must exist in the CSV.
+          The CSV must contain a user named '{{ solana_user }}' when setting up a validator server.
+          This user is required to run the Solana validator service.
+        success_msg: "✅ Security check passed: '{{ solana_user }}' user found in CSV"
+      delegate_to: localhost
+      become: false
+      run_once: true
 
     # Validate that at least one validator_operators user exists
     - name: Ensure at least one validator_operators user exists for validator role
