@@ -1,0 +1,69 @@
+- name: verify - Check if Agave binary exists
+  ansible.builtin.stat:
+    path: "{{ solana_install_dir }}"
+  register: agave_binary
+
+- name: verify - Fail if Agave binary is missing
+  ansible.builtin.fail:
+    msg: "Agave binary not found at {{ solana_install_dir }}!"
+  when: not agave_binary.stat.exists
+
+- name: verify - Get validator systemd service status
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+  register: validator_service_status
+  changed_when: false
+
+- name: verify - Print validator service status
+  ansible.builtin.debug:
+    var: validator_service_status
+
+- name: verify - Get last 50 lines of validator logs
+  ansible.builtin.shell: journalctl -u {{ validator_service_name }} --no-pager --since "10 seconds ago" | tail -n 50
+  register: validator_logs
+  changed_when: false
+
+- name: verify - Print last 50 lines of validator logs
+  ansible.builtin.debug:
+    var: validator_logs.stdout_lines
+
+- name: verify - Check agave-validator process status
+  ansible.builtin.pids:
+    pattern: agave-validator
+  register: validator_process
+  changed_when: false
+  failed_when: validator_process.pids | length == 0
+
+- name: verify - Print agave-validator process PIDs
+  ansible.builtin.debug:
+    var: validator_process.pids
+
+- name: verify - Assert agave-validator process is running
+  ansible.builtin.assert:
+    that:
+      - validator_process.pids is defined
+      - validator_process.pids | length > 0
+    fail_msg: "agave-validator process is not running on host {{ inventory_hostname }}"
+
+- name: verify - Check validator service file
+  ansible.builtin.shell: cat /etc/systemd/system/{{ validator_service_name }}.service
+  register: validator_service_file
+  changed_when: false
+
+- name: verify - Print validator service file
+  ansible.builtin.debug:
+    var: validator_service_file.stdout_lines
+
+- name: verify - Check validator startup script
+  ansible.builtin.shell: cat {{ scripts_dir }}/run-{{ validator_name }}.sh
+  register: validator_startup_script
+  changed_when: false
+
+- name: verify - Print validator startup script
+  ansible.builtin.debug:
+    var: validator_startup_script.stdout_lines
+
+- name: verify - Summary - Agave validator verification complete
+  ansible.builtin.debug:
+    msg: |
+      Agave validator verification complete. Check service status and logs above for troubleshooting.
