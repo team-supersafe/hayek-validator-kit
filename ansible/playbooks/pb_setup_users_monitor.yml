@@ -6,13 +6,13 @@
 # Run from /ansible directory:
 #
 #
-# ansible-playbook playbooks/pb_setup_server_users.yml \
+# ansible-playbook playbooks/pb_setup_users_monitor.yml \
 #   -i solana_new_metal_box.yml \
 #   -e "target_host=new-metal-box" \
 #   -e "ansible_user=ubuntu" \
-#   -e "server_role=validator" \ # Options: validator, monitor
 #   -e "csv_file=iam_setup.csv"  # REQUIRED: specify the CSV filename
-
+# To do: Setup or validate a variables of users and groups specific to monitor role
+#        Call IAM Manager role with the validated inputs
 - name: Setup server users
   hosts: "{{ target_host }}"
   user: "{{ ansible_user }}"

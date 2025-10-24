@@ -16,7 +16,7 @@
     home: /home/{{ solana_user }}
     append: true
   no_log: true
-  when: server_role == server_roles.validator
+  when: solana_user not in users_csv.dict.keys()
 
 # Get unique groups from CSV
 - name: Get unique groups
