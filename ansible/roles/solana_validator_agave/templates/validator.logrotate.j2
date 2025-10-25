@@ -8,6 +8,6 @@
   compress
   missingok
   postrotate
-  systemctl kill -s USR1 {{ validator_service_name }}
+  systemctl kill -s USR1 {{ validator_service_name }}.service
   endscript
 }
