@@ -11,8 +11,6 @@
 #   -e "target_host=new-metal-box" \
 #   -e "ansible_user=ubuntu" \
 #   -e "csv_file=iam_setup.csv"  # REQUIRED: specify the CSV filename
-# To do: Setup or validate a variables of users and groups specific to monitor role
-#        Call IAM Manager role with the validated inputs
 
 - name: Setup server users
   hosts: "{{ target_host }}"
