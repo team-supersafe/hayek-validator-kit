@@ -8,12 +8,12 @@
 # Create the dedicated 'sol' user for validator service from CSV
 - name: Create sol user for validator service
   ansible.builtin.user:
-    name: "{{ users_csv.dict[solana_user].user }}"
+    name: "{{ solana_user }}"
     shell: /usr/sbin/nologin
     state: present
     system: true
     create_home: true
-    home: /home/{{ users_csv.dict[solana_user].user }}
+    home: /home/{{ solana_user }}
     append: true
   no_log: true
   when: 
