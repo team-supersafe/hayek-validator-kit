@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PATH="/bin:/usr/bin:{{ solana_install_dir }}"
+PATH="/bin:/usr/bin:{{ validator_solana_install_dir }}"
 {% if solana_metrics_url is defined and solana_metrics_url %}
 export SOLANA_METRICS_CONFIG="host={{ solana_metrics_url }}"
 {% endif %}
@@ -41,4 +41,4 @@ exec agave-validator \
 {{ extra_var }} \
 {% endfor %}
 {% endif %}
---log {{ logs_dir }}/agave-validator.log
+--log {{ validator_logs_dir }}/agave-validator.log
