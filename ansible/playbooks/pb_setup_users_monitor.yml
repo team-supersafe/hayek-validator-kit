@@ -1,24 +1,50 @@
 ---
-# Setup users for a new metal box
+# Setup users for a monitoring server
 # --------------------
 # Usage:
 # ------
 # Run from /ansible directory:
 #
 #
-# ansible-playbook playbooks/pb_setup_server_users.yml \
+# ansible-playbook playbooks/pb_setup_users_monitor.yml \
 #   -i solana_new_metal_box.yml \
 #   -e "target_host=new-metal-box" \
 #   -e "ansible_user=ubuntu" \
-#   -e "create_sol_user=true" \ # If installing a validator, true, else false
-#   -e "enable_rbac=true" \ # If creating RBAC groups, true, else false
-#   -e "csv_file=iam_setup.csv"  # REQUIRED: specify the CSV filename
+#   -e "csv_file=iam_setup_monitor.csv"  # REQUIRED: specify the CSV filename for monitor server
 
 - name: Setup server users
   hosts: "{{ target_host }}"
   user: "{{ ansible_user }}"
   become: true
+  vars_files:
+    - ../roles/iam_manager/vars/main.yml
   pre_tasks:
+    # Read CSV to validate groups
+    - name: Read CSV to validate monitor groups
+      community.general.read_csv:
+        path: "{{ users_file }}"
+        key: user
+      register: users_csv_precheck
+      delegate_to: localhost
+      become: false
+
+    # Validate that only sysadmin group is present (no validator groups)
+    - name: Ensure only sysadmin group is present in CSV for monitor server
+      ansible.builtin.assert:
+        that:
+          - item.value.group_a | default('') == '' or item.value.group_a == rbac_roles.sysadmin
+          - item.value.group_b | default('') == '' or item.value.group_b == rbac_roles.sysadmin
+          - item.value.group_c | default('') == '' or item.value.group_c == rbac_roles.sysadmin
+        fail_msg: |
+          ❌ User {{ item.key }} has non-sysadmin groups for monitor server.
+          When setting up a monitoring server, only 'sysadmin' group is permitted.
+          User {{ item.key }} groups: {{ item.value.group_a | default('') }}, {{ item.value.group_b | default('') }}, {{ item.value.group_c | default('') }}
+        success_msg: "✅ User {{ item.key }} groups validated for monitor mode (sysadmin only)"
+      loop: "{{ users_csv_precheck.dict | dict2items }}"
+      delegate_to: localhost
+      become: false
+      run_once: true
+
     # Gather system facts to get server information
     - name: Gather facts
       ansible.builtin.setup:
