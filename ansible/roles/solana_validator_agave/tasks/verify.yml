@@ -19,7 +19,7 @@
     var: validator_service_status
 
 - name: verify - Get last 50 lines of validator logs
-  ansible.builtin.shell: journalctl -u {{ validator_service_name }} --no-pager --since "10 seconds ago" | tail -n 50
+  ansible.builtin.command: journalctl -u {{ validator_service_name }} -n 50 --no-pager --since "10 seconds ago"
   register: validator_logs
   changed_when: false
 
