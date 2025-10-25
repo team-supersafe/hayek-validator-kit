@@ -18,6 +18,7 @@
       - libclang-dev
       - protobuf-compiler
       - bzip2
+      - python3-psutil
     update_cache: true
 
 # Set local boolean for build method
