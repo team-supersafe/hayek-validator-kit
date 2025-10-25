@@ -86,6 +86,8 @@
         dest: "/etc/logrotate.d/{{ validator_service_name }}"
         mode: "0644"
 
+    # Intentionally use logrotate -d (dry-run) to validate syntax only.
+    # This does not catch all potential runtime issues, but avoids side effects during configuration.
     - name: configure - Verify logrotate configuration
       ansible.builtin.command: logrotate -d /etc/logrotate.d/{{ validator_service_name }}
       register: logrotate_check
