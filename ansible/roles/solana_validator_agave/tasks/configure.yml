@@ -51,7 +51,7 @@
         dest: "{{ validator_script_path }}"
         owner: "root"
         group: "{{ validator_operators_group }}"
-        mode: "{{ validator_scripts_file_mode }}"
+        mode: "{{ validator_startup_script_mode }}"
       become: true
 
     - name: configure - Copy fix_core_affinity_bug_for_poh.sh script to remote
