@@ -32,18 +32,20 @@
     pattern: agave-validator
   register: validator_process
   changed_when: false
-  failed_when: validator_process.pids | length == 0
+  ignore_errors: true
+  failed_when: false
+
+- name: Fail if agave-validator is not running
+  ansible.builtin.fail:
+    msg: |
+      The agave-validator process is NOT running on {{ inventory_hostname }}.
+      The validator service failed to start, and no process was found.
+      Please check the validator logs and startup scripts for errors.
+  when: validator_process.pids | length == 0
 
 - name: verify - Print agave-validator process PIDs
   ansible.builtin.debug:
     var: validator_process.pids
-
-- name: verify - Assert agave-validator process is running
-  ansible.builtin.assert:
-    that:
-      - validator_process.pids is defined
-      - validator_process.pids | length > 0
-    fail_msg: "agave-validator process is not running on host {{ inventory_hostname }}"
 
 - name: verify - Check validator service file
   ansible.builtin.shell: cat /etc/systemd/system/{{ validator_service_name }}.service
@@ -55,7 +57,7 @@
     var: validator_service_file.stdout_lines
 
 - name: verify - Check validator startup script
-  ansible.builtin.shell: cat {{ scripts_dir }}/run-{{ validator_name }}.sh
+  ansible.builtin.shell: cat {{ validator_scripts_dir }}/run-{{ validator_name }}.sh
   register: validator_startup_script
   changed_when: false
 
