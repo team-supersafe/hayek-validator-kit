@@ -57,13 +57,13 @@
     msg: "{{ validator_service_file.content | b64decode }}"
 
 - name: verify - Check validator startup script
-  ansible.builtin.shell: cat {{ validator_scripts_dir }}/run-{{ validator_name }}.sh
+  ansible.builtin.slurp:
+    src: "{{ validator_scripts_dir }}/run-{{ validator_name }}.sh"
   register: validator_startup_script
-  changed_when: false
 
 - name: verify - Print validator startup script
   ansible.builtin.debug:
-    var: validator_startup_script.stdout_lines
+    msg: "{{ validator_startup_script.content | b64decode }}"
 
 - name: verify - Summary - Agave validator verification complete
   ansible.builtin.debug:
