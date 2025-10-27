@@ -1,19 +1,19 @@
 ---
 # Handlers for solana_validator_agave role
-- name: Systemd operations (reload/restart)
-  block:
-    - name: Reload systemd
-      ansible.builtin.systemd:
-        daemon_reload: true
-
-    - name: Restart validator service
-      ansible.builtin.systemd:
-        name: "{{ validator_service_name }}"
-        state: restarted
-
-    - name: Restart validator logrotate timer
-      ansible.builtin.systemd:
-        name: "validator-logrotate-{{ validator_service_name }}.timer"
-        state: restarted
-      when: solana_cluster == 'localnet'
+- name: handlers - Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
   become: true
+
+- name: handlers - Restart validator service
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+    state: restarted
+  become: true
+
+- name: handlers - Restart validator logrotate timer
+  ansible.builtin.systemd:
+    name: "validator-logrotate-{{ validator_service_name }}.timer"
+    state: restarted
+  become: true
+  when: solana_cluster == 'localnet'
