@@ -35,7 +35,7 @@
   ignore_errors: true
   failed_when: false
 
-- name: Fail if agave-validator is not running
+- name: verify - Fail if agave-validator is not running
   ansible.builtin.fail:
     msg: |
       The agave-validator process is NOT running on {{ inventory_hostname }}.

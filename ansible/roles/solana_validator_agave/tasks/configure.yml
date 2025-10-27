@@ -86,7 +86,7 @@
         dest: "/etc/logrotate.d/{{ validator_service_name }}"
         mode: "0644"
       notify:
-        - Restart validator logrotate timer
+        - handlers - Restart validator logrotate timer
 
     # Intentionally use logrotate -d (dry-run) to validate syntax only.
     # This does not catch all potential runtime issues, but avoids side effects during configuration.
@@ -109,8 +109,8 @@
         dest: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.service"
         mode: "0644"
       notify:
-        - Reload systemd
-        - Restart validator logrotate timer
+        - handlers - Reload systemd
+        - handlers - Restart validator logrotate timer
 
     - name: configure - Deploy validator logrotate systemd timer
       ansible.builtin.template:
@@ -118,8 +118,8 @@
         dest: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.timer"
         mode: "0644"
       notify:
-        - Reload systemd
-        - Restart validator logrotate timer
+        - handlers - Reload systemd
+        - handlers - Restart validator logrotate timer
 
     - name: configure - Enable and start validator logrotate timer
       ansible.builtin.systemd:
@@ -137,8 +137,8 @@
         dest: "/etc/systemd/system/{{ validator_service_name }}.service"
         mode: "0644"
       notify:
-        - Reload systemd
-        - Restart validator service
+        - handlers - Reload systemd
+        - handlers - Restart validator service
 
     - name: configure - Enable validator service
       ansible.builtin.systemd:
