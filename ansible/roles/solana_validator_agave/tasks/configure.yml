@@ -85,8 +85,6 @@
         src: validator.logrotate.j2
         dest: "/etc/logrotate.d/{{ validator_service_name }}"
         mode: "0644"
-      notify:
-        - handlers - Restart validator logrotate timer
 
     # Intentionally use logrotate -d (dry-run) to validate syntax only.
     # This does not catch all potential runtime issues, but avoids side effects during configuration.
