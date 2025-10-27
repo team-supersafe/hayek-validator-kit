@@ -92,7 +92,7 @@
       ansible.builtin.command: logrotate -d /etc/logrotate.d/{{ validator_service_name }}
       register: logrotate_check
       changed_when: false
-      failed_when: false
+      failed_when: logrotate_check.rc != 0 or ('error' in logrotate_check.stderr | lower)
   become: true
   rescue:
     - name: configure - Fail with error message
