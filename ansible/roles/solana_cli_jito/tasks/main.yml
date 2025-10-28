@@ -7,17 +7,17 @@
   import_tasks: precheck.yml
   tags: [solana_cli_jito, precheck]
 
-- name: Install Solana CLI
-  import_tasks: install.yml
-  when: not solana_cli_already_installed
-  tags: [solana_cli_jito, install]
+# - name: Install Solana CLI
+#   import_tasks: install.yml
+#   when: not solana_cli_already_installed
+#   tags: [solana_cli_jito, install]
 
-- name: Configure the Solana CLI post installation
-  import_tasks: config.yml
-  when: not solana_cli_already_installed
-  tags: [solana_cli_jito, config]
+# - name: Configure the Solana CLI post installation
+#   import_tasks: config.yml
+#   when: not solana_cli_already_installed
+#   tags: [solana_cli_jito, config]
 
-- name: Verify Solana CLI installation is correct
-  import_tasks: verify.yml
-  when: not solana_cli_already_installed
-  tags: [solana_cli_jito, verify]
+# - name: Verify Solana CLI installation is correct
+#   import_tasks: verify.yml
+#   when: not solana_cli_already_installed
+#   tags: [solana_cli_jito, verify]
