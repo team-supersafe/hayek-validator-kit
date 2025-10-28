@@ -15,3 +15,11 @@
 - name: Configure and start Agave validator
   import_tasks: configure.yml
   tags: [solana_validator_agave, configure]
+
+- name: handlers - Flush handlers before verification
+  meta: flush_handlers
+  tags: [solana_validator_agave, configure]
+
+- name: Verify Agave validator installation
+  import_tasks: verify.yml
+  tags: [solana_validator_agave, verify]
