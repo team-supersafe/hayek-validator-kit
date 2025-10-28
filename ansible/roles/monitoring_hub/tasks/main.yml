@@ -11,6 +11,9 @@
   include_vars: secrets.yml
   no_log: true
 
+- name: Configure Firewall rules
+  include_tasks: config_firewall.yml
+
 - name: Include monitoring hub installation tasks
   include_tasks: install.yml
 
@@ -19,6 +22,11 @@
 
 - name: Include Grafana tasks
   include_tasks: grafana/main.yml
+
+# TODO: Add task to acquire SSL certificate for secure InfluxDB access
+#       - Implement Let's Encrypt or custom certificate management
+#       - Configure HTTPS for InfluxDB web interface
+#       - Update firewall rules for HTTPS (port 443)
 
 - name: Include InfluxDB tasks
   include_tasks: influxdb/main.yml
