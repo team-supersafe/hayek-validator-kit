@@ -5,7 +5,7 @@
     name: validator_operators
     state: present
 
-# Create the dedicated 'sol' user for validator service
+# Create the dedicated 'sol' user for validator service from CSV
 - name: Create sol user for validator service
   ansible.builtin.user:
     name: "{{ solana_user }}"
@@ -16,7 +16,9 @@
     home: /home/{{ solana_user }}
     append: true
   no_log: true
-  when: create_sol_user | default(true) | bool
+  when: 
+    - solana_user in users_csv.dict.keys()
+    - sol_user_in_csv | default(false) | bool
 
 # Get unique groups from CSV
 - name: Get unique groups
@@ -57,6 +59,7 @@
     groups: "{{ [item.value.group_a, item.value.group_b, item.value.group_c] | select('defined') | select('string') | reject('equalto', '') | reject('none') | map('lower') | list | join(',') }}"
     append: true
   loop: "{{ users_csv.dict | dict2items }}"
+  when: item.key != solana_user 
   no_log: true
 
 # Debug user group assignments

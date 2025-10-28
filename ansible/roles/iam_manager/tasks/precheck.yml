@@ -98,21 +98,21 @@
 
       🔧 SYSADMIN USERS (Password + SSH Key + Sudo + Password Self-Service):
       {% for user, data in users_csv.dict.items() %}
-      {% if 'sysadmin' in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      {% if rbac_roles.sysadmin in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
       - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
       {% endif %}
       {% endfor %}
 
       🤖 VALIDATOR_OPERATORS USERS (Password + SSH Key + Sudo + Password Self-Service):
       {% for user, data in users_csv.dict.items() %}
-      {% if 'validator_operators' in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      {% if rbac_roles.operators in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
       - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
       {% endif %}
       {% endfor %}
 
       🔑 SSH KEY ONLY USERS (No Password, No Sudo):
       {% for user, data in users_csv.dict.items() %}
-      {% if 'sysadmin' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') and 'validator_operators' not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
+      {% if rbac_roles.sysadmin not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') and rbac_roles.operators not in (data.group_a | default('') + ',' + data.group_b | default('') + ',' + data.group_c | default('') + ',' + data.group_d | default('')).split(',') %}
       - {{ user }}: {{ data.group_a | default('') }}, {{ data.group_b | default('') }}, {{ data.group_c | default('') }}, {{ data.group_d | default('') }}
       {% endif %}
       {% endfor %}
@@ -169,6 +169,33 @@
     - item.value.key.startswith('ssh-rsa ')
     - (rsa_key_info.results[loop.index0].stdout.split(' ')[0] | int) < 2048
   loop: "{{ users_csv.dict | dict2items }}"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+# Precheck 10: Validate groups against permitted list
+- name: Check all user groups are permitted
+  ansible.builtin.assert:
+    that:
+      - item.value.group_a | default('') == '' or item.value.group_a in permitted_groups
+      - item.value.group_b | default('') == '' or item.value.group_b in permitted_groups
+      - item.value.group_c | default('') == '' or item.value.group_c in permitted_groups
+    fail_msg: "User {{ item.key }} has invalid groups. Permitted: {{ permitted_groups | join(', ') }}"
+    success_msg: "User {{ item.key }} groups validated successfully"
+  loop: "{{ users_csv.dict | dict2items }}"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+# Precheck 11: Ensure at least one sysadmin user exists
+- name: Check that at least one sysadmin user exists
+  ansible.builtin.assert:
+    that:
+      - users_csv.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', rbac_roles.sysadmin) | list | length > 0 or
+        users_csv.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', rbac_roles.sysadmin) | list | length > 0 or
+        users_csv.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', rbac_roles.sysadmin) | list | length > 0
+    fail_msg: "Security requirement: At least one user with '{{ rbac_roles.sysadmin }}' role must exist"
+    success_msg: "Security check passed: At least one sysadmin user found"
   delegate_to: localhost
   become: false
   run_once: true
