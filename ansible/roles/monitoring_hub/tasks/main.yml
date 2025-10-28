@@ -1,4 +1,5 @@
 ---
+
 # monitoring_hub role main tasks
 
 # TODO: Add task to acquire SSL certificate for secure Grafana access
@@ -16,5 +17,8 @@
 - name: Include monitoring hub configuration tasks
   include_tasks: configure.yml
 
-- name: Include monitoring hub service management tasks
+- name: Include Grafana service management tasks
   include_tasks: grafana/services.yml
+
+- name: Include InfluxDB tasks
+  include_tasks: influxdb/main.yml

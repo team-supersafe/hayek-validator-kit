@@ -1,0 +1,8 @@
+---
+# InfluxDB configuration tasks
+
+# InfluxDB v2 uses default configuration out of the box
+# No custom configuration needed for basic setup
+- name: InfluxDB configuration placeholder
+  ansible.builtin.debug:
+    msg: "InfluxDB will use default configuration"
