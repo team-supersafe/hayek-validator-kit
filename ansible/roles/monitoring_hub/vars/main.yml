@@ -9,7 +9,7 @@ grafana_config:
   group: "grafana"
   dashboards_dir: "/var/lib/grafana/dashboards"
   provisioning_dir: "/etc/grafana/provisioning"
-  
+
   permissions:
     config_files:
       owner: "root"
@@ -26,3 +26,4 @@ solana_user: "{{ monitoring_user }}"
 # Monitoring services to manage
 monitoring_services:
   - grafana-server
+  - influxdb

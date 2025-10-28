@@ -6,3 +6,6 @@
     name: "{{ monitoring_services[0] }}"
     state: restarted
     daemon_reload: yes
+  failed_when: false
+  async: 10
+  poll: 0
