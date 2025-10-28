@@ -1,4 +1,5 @@
 {{ validator_logs_dir }}/agave-validator.log {
+  su sol validator_operators
   rotate 1
   {% if solana_cluster == 'localnet' %}
   size 100M
