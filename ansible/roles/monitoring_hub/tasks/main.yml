@@ -11,6 +11,9 @@
   include_vars: secrets.yml
   no_log: true
 
+- name: Run precheck tasks
+  include_tasks: precheck.yml
+
 - name: Configure Firewall rules
   include_tasks: config_firewall.yml
 

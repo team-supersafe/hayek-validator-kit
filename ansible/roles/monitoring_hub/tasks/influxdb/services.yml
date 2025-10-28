@@ -10,7 +10,7 @@
   # InfluxDB may stay in 'activating' state in Docker due to systemd/container limitations
   # This doesn't affect functionality - we verify actual operation via health check below
   failed_when: false
-  async: 30
+  async: 5
   poll: 2
 
 - name: Wait for InfluxDB to be ready
@@ -27,7 +27,3 @@
   ansible.builtin.systemd:
     name: "{{ monitoring_services[1] }}"
   register: influxdb_service_status
-
-- name: Display InfluxDB service status
-  ansible.builtin.debug:
-    msg: "InfluxDB service is {{ influxdb_service_status.status.ActiveState }}"

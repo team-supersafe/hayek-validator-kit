@@ -1,0 +1,15 @@
+---
+# Precheck tasks for monitoring_hub role
+
+- name: Check if running in Docker container
+  ansible.builtin.stat:
+    path: /.dockerenv
+  register: docker_env_file
+
+- name: Set container detection fact
+  ansible.builtin.set_fact:
+    is_docker_container: "{{ docker_env_file.stat.exists }}"
+
+- name: Display environment type
+  ansible.builtin.debug:
+    msg: "Environment detected: {{ 'Docker Container' if is_docker_container else 'Host System' }}"
