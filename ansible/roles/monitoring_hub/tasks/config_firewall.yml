@@ -1,6 +1,11 @@
 ---
 # Firewall configuration tasks for monitoring hub
 
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
 - name: Install UFW firewall
   ansible.builtin.apt:
     name: ufw
@@ -26,7 +31,7 @@
     proto: tcp
     comment: "Grafana web interface"
 
-- name: Allow InfluxDB port through firewall  
+- name: Allow InfluxDB port through firewall
   community.general.ufw:
     rule: allow
     port: "{{ influxdb_port | default(8086) }}"
