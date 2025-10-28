@@ -1,0 +1,48 @@
+---
+# Solana CLI Installation Tasks
+# This file handles architecture detection and delegates to the appropriate install method.
+
+# Ensure the host architecture is set (required for conditional installation logic)
+- import_tasks: ../../common/tasks/set_host_architecture.yml
+
+- name: Install prerequisites
+  become: true
+  ansible.builtin.apt:
+    name:
+      - at
+      - build-essential
+      - pkg-config
+      - libssl-dev
+      - libudev-dev
+      - llvm
+      - libclang-dev
+      - protobuf-compiler
+      - bzip2
+      - python3-psutil
+    update_cache: true
+
+# Set local boolean for build method
+- name: Set local boolean for build method
+  ansible.builtin.set_fact:
+    build_from_source_bool: "{{ build_from_source | default(true) | bool }}"
+
+# Choose installation method based on user preference
+- when: not build_from_source_bool
+  name: Install - Installing from binaries
+  ansible.builtin.include_tasks: install_from_binaries.yml
+
+- when: build_from_source_bool
+  name: Install - Installing from source
+  ansible.builtin.include_tasks: install_from_source.yml
+
+# Add Solana CLI bin path to global profile for all users (test)
+- name: Install - Add Solana CLI bin path to global profile
+  ansible.builtin.blockinfile:
+    path: /etc/profile.d/solana.sh
+    create: true
+    mode: '0644'
+    marker: "# {mark} ANSIBLE MANAGED SOLANA ENVIRONMENT"
+    block: |
+      export PATH="{{ validator_solana_install_dir }}:$PATH"
+  become: true
+  when: validator_solana_install_dir is defined and validator_solana_install_dir != ''
