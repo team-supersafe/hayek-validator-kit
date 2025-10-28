@@ -51,7 +51,7 @@
         dest: "{{ validator_script_path }}"
         owner: "root"
         group: "{{ validator_operators_group }}"
-        mode: "{{ validator_scripts_file_mode }}"
+        mode: "{{ validator_startup_script_mode }}"
       become: true
 
     - name: configure - Copy fix_core_affinity_bug_for_poh.sh script to remote
@@ -78,6 +78,77 @@
       ansible.builtin.fail:
         msg: "Failed to configure validator startup script. Error: {{ ansible_failed_result }}"
 
-# Upcoming steps:
-# - Configure validator log rotation
-# - Configure validator systemd service
+- name: configure - Configure validator log rotation
+  block:
+    - name: configure - Create logrotate configuration
+      ansible.builtin.template:
+        src: validator.logrotate.j2
+        dest: "/etc/logrotate.d/{{ validator_service_name }}"
+        mode: "0644"
+
+    # Intentionally use logrotate -d (dry-run) to validate syntax only.
+    # This does not catch all potential runtime issues, but avoids side effects during configuration.
+    - name: configure - Verify logrotate configuration
+      ansible.builtin.command: logrotate -d /etc/logrotate.d/{{ validator_service_name }}
+      register: logrotate_check
+      changed_when: false
+      failed_when: logrotate_check.rc != 0 or ('error' in logrotate_check.stderr | lower)
+  become: true
+  rescue:
+    - name: configure - Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator log rotation. Error: {{ ansible_failed_result }}"
+
+- name: configure - Set up validator logrotate systemd timer (localnet only)
+  block:
+    - name: configure - Deploy validator logrotate systemd service
+      ansible.builtin.template:
+        src: validator-logrotate.service.j2
+        dest: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.service"
+        mode: "0644"
+      notify:
+        - handlers - Reload systemd
+        - handlers - Restart validator logrotate timer
+
+    - name: configure - Deploy validator logrotate systemd timer
+      ansible.builtin.template:
+        src: validator-logrotate.timer.j2
+        dest: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.timer"
+        mode: "0644"
+      notify:
+        - handlers - Reload systemd
+        - handlers - Restart validator logrotate timer
+
+    - name: configure - Enable and start validator logrotate timer
+      ansible.builtin.systemd:
+        name: "validator-logrotate-{{ validator_service_name }}.timer"
+        enabled: true
+        state: started
+  when: solana_cluster == 'localnet'
+  become: true
+
+- name: configure - Configure validator systemd service
+  block:
+    - name: configure - Create validator systemd service
+      ansible.builtin.template:
+        src: validator.service.j2
+        dest: "/etc/systemd/system/{{ validator_service_name }}.service"
+        mode: "0644"
+      notify:
+        - handlers - Reload systemd
+        - handlers - Restart validator service
+
+    - name: configure - Enable validator service
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        enabled: true
+        state: started
+  become: true
+  rescue:
+    - name: configure - Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure validator systemd service. Error: {{ ansible_failed_result }}"
+
+- name: configure - Configuration complete
+  ansible.builtin.debug:
+    msg: "Agave validator configuration completed successfully"
