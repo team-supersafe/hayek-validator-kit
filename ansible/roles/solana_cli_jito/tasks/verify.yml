@@ -1,0 +1,38 @@
+---
+- name: Verify Solana CLI - Refresh shell environment and verify PATH
+  ansible.builtin.shell: |
+    source /etc/profile.d/rust.sh
+    source /etc/profile.d/solana.sh
+    echo $PATH
+  args:
+    executable: /bin/bash
+  register: cli_shell_env_path
+  changed_when: false
+
+- name: Show current PATH
+  debug:
+    msg: "PATH after sourcing: {{ cli_shell_env_path.stdout }}"
+
+- name: Verify Solana CLI - Check if solana is available
+  ansible.builtin.shell: solana --version
+  environment:
+    PATH: "{{ cli_shell_env_path.stdout }}"
+  register: solana_version
+  changed_when: false
+  failed_when: solana_version.rc != 0
+
+- name: Verify Solana CLI - Print solana version
+  debug:
+    msg: "Solana version: {{ solana_version.stdout }}"
+
+- name: Verify Solana CLI - Run 'solana config get' to validate config access
+  ansible.builtin.command: solana config get
+  environment:
+    PATH: "{{ cli_shell_env_path.stdout }}"
+  register: solana_config_get
+  changed_when: false
+  failed_when: solana_config_get.rc != 0
+
+- name: Verify Solana CLI - Print solana config
+  debug:
+    msg: "Solana config: {{ solana_config_get.stdout }}"
