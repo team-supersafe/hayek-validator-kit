@@ -9,3 +9,6 @@
 
 - name: Include InfluxDB service management tasks
   include_tasks: influxdb/services.yml
+
+- name: Include InfluxDB onboarding tasks
+  include_tasks: influxdb/onboarding.yml

@@ -1,0 +1,24 @@
+---
+# InfluxDB onboarding (initial configuration if not already set up)
+- name: Check if InfluxDB is already initialized
+  ansible.builtin.uri:
+    url: "http://localhost:{{ influxdb_port | default(8086) }}/api/v2/setup"
+    method: GET
+    status_code: 200
+  register: influxdb_setup_status
+  failed_when: false
+
+- name: Set InfluxDB initial credentials (first time setup)
+  ansible.builtin.uri:
+    url: "http://localhost:{{ influxdb_port | default(8086) }}/api/v2/setup"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ influxdb_init_username }}"
+      password: "{{ influxdb_init_password }}"
+      org: "{{ influxdb_init_org }}"
+      bucket: "{{ influxdb_init_bucket }}"
+      retentionPeriodSeconds: 0
+    status_code: 201
+  when: influxdb_setup_status is defined and influxdb_setup_status.json.allowed | default(false)
+  no_log: true
