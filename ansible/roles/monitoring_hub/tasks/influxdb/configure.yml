@@ -6,3 +6,41 @@
 - name: InfluxDB configuration placeholder
   ansible.builtin.debug:
     msg: "InfluxDB will use default configuration"
+
+- name: Get InfluxDB organization ID
+  ansible.builtin.uri:
+    url: "http://localhost:{{ influxdb_port | default(8086) }}/api/v2/orgs?org={{ influxdb_init_org }}"
+    method: GET
+    headers:
+      Authorization: "Token {{ influxdb_onboarding_token }}"
+    status_code: 200
+  register: influxdb_org_result
+  when: influxdb_onboarding_token is defined
+
+- set_fact:
+    influxdb_org_id: "{{ influxdb_org_result.json.orgs[0].id }}"
+  when: influxdb_org_result is defined and influxdb_org_result.json.orgs[0].id is defined
+
+- name: Show InfluxDB onboarding token
+  ansible.builtin.debug:
+    msg: "InfluxDB onboarding token: {{ influxdb_onboarding_token }}"
+  when: influxdb_onboarding_token is defined
+
+- name: Create additional InfluxDB buckets
+  ansible.builtin.uri:
+    url: "http://localhost:{{ influxdb_port | default(8086) }}/api/v2/buckets"
+    method: POST
+    headers:
+      Authorization: "Token {{ influxdb_onboarding_token }}"
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      description: "{{ item.description }}"
+      orgID: "{{ influxdb_org_id }}"
+      retentionRules:
+        - type: expire
+          everySeconds: "{{ (item.retention | regex_replace('d', '') | int * 86400) if 'd' in item.retention else item.retention }}"
+    status_code: 201
+  loop: "{{ influxdb_additional_buckets }}"
+  when: influxdb_additional_buckets is defined and influxdb_onboarding_token is defined and influxdb_org_id is defined
+  no_log: true

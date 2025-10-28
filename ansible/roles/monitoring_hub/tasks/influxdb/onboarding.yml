@@ -20,5 +20,11 @@
       bucket: "{{ influxdb_init_bucket }}"
       retentionPeriodSeconds: 0
     status_code: 201
+  register: influxdb_onboarding_result
   when: influxdb_setup_status is defined and influxdb_setup_status.json.allowed | default(false)
   no_log: true
+
+- name: Set fact for onboarding token
+  set_fact:
+    influxdb_onboarding_token: "{{ influxdb_onboarding_result.json.auth.token }}"
+  when: influxdb_onboarding_result is defined and influxdb_onboarding_result.json.auth.token is defined
