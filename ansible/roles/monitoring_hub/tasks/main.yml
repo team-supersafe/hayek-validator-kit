@@ -17,8 +17,8 @@
 - name: Include monitoring hub configuration tasks
   include_tasks: configure.yml
 
-- name: Include Grafana service management tasks
-  include_tasks: grafana/services.yml
+- name: Include Grafana tasks
+  include_tasks: grafana/main.yml
 
 - name: Include InfluxDB tasks
   include_tasks: influxdb/main.yml
