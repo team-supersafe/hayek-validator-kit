@@ -4,14 +4,15 @@ argument_specs:
     short_description: "Install Solana CLI"
     author: "Hayek Validator Team"
     description:
-      - "Installs Solana CLI tools on the target host"
+      - "Installs Jito-Solana CLI tools on the target host"
+      - "Jito-Solana is a fork of Solana CLI with Jito Labs modifications for MEV operations"
       - "Supports installation from binaries or source"
       - "Configures environment variables and paths"
     options:
-      agave_version:
+      jito_version:
         type: str
         required: true
-        description: "Version of Agave/Solana CLI to install"
+        description: "Version of Jito-Solana CLI to install (e.g., '2.2.20')"
       build_from_source:
         type: bool
         required: false
