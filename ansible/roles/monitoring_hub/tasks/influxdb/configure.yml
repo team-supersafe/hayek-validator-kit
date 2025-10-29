@@ -39,7 +39,7 @@
       orgID: "{{ influxdb_org_id }}"
       retentionRules:
         - type: expire
-          everySeconds: "{{ (item.retention | regex_replace('d', '') | int * 86400) if 'd' in item.retention else item.retention }}"
+          everySeconds: "{{ 0 if item.expectations == false else item.retention | int * 86400 }}"
     status_code: 201
   loop: "{{ influxdb_additional_buckets }}"
   when: influxdb_additional_buckets is defined and influxdb_onboarding_token is defined and influxdb_org_id is defined
