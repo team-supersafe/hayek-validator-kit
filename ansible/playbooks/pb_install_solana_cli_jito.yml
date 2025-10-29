@@ -16,6 +16,7 @@
 #   -e "target_host=host-charlie" \
 #   -e "operator_user=bob" \
 #   -e "jito_version=2.3.11" \
+#   -e "jito_version_patch=1" \ # Optional: Patch version to append to jito tag (e.g. 2.2.15-jito.1)
 #   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
 #   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
 
@@ -37,6 +38,8 @@
             - target_host
             - jito_version
             - operator_user
+          Optional:
+            - jito_version_patch (set to append a patch version to jito tag, e.g. 1 for 2.2.15-jito.1)
 
   roles:
     - role: solana_cli_jito
