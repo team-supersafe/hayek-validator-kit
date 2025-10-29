@@ -27,10 +27,14 @@ influxdb_additional_buckets:
   - name: "hardware_metrics"
     description: "Hardware metrics (CPU, RAM, disk, network, etc.) for all servers."
     expectations: false
+    token_permissions_write: true
+    token_permissions_read: false
     retention: 30 # days
   - name: "solana_metrics"
     description: "Solana validator metrics (production, slots, balance, vote credits, etc.)"
     expectations: false
+    token_permissions_write: true
+    token_permissions_read: false
     retention: 90 # days
 
 # Variables override for monitoring_hub role (compatibility)

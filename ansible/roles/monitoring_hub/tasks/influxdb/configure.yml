@@ -68,7 +68,32 @@
     index: "{{ influxdb_additional_buckets.index(item) }}"
   when: influxdb_bucket_result.results[index].json.buckets | length > 0
 
-- name: Create write token for each bucket
+- name: Set permissions list for each bucket
+  set_fact:
+    bucket_token_permissions: >-
+      {{
+        ([{
+          'action': 'write',
+          'resource': {
+            'type': 'buckets',
+            'id': influxdb_bucket_ids[item.name]
+          }
+        }] if item.token_permissions_write else [])
+        +
+        ([{
+          'action': 'read',
+          'resource': {
+            'type': 'buckets',
+            'id': influxdb_bucket_ids[item.name]
+          }
+        }] if item.token_permissions_read else [])
+      }}
+  loop: "{{ influxdb_additional_buckets }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: influxdb_bucket_ids[item.name] is defined
+
+- name: Create token for each bucket with dynamic permissions
   ansible.builtin.uri:
     url: "http://localhost:{{ influxdb_port | default(8086) }}/api/v2/authorizations"
     method: POST
@@ -77,18 +102,14 @@
     body_format: json
     body:
       orgID: "{{ influxdb_org_id }}"
-      description: "Write token for {{ item.name }}"
-      permissions:
-        - action: write
-          resource:
-            type: buckets
-            id: "{{ influxdb_bucket_ids[item.name] }}"
+      description: "Token for {{ item.name }}"
+      permissions: "{{ bucket_token_permissions }}"
     status_code: 201
   register: influxdb_write_token_result
   loop: "{{ influxdb_additional_buckets }}"
   loop_control:
     label: "{{ item.name }}"
-  when: influxdb_bucket_ids[item.name] is defined
+  when: influxdb_bucket_ids[item.name] is defined and bucket_token_permissions is defined
 
 
 - name: Show write token for each bucket
