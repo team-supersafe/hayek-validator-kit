@@ -13,6 +13,11 @@ argument_specs:
         type: str
         required: true
         description: "Version of Jito-Solana CLI to install (e.g., '2.2.20')"
+      jito_version_patch:
+        type: str
+        required: false
+        default: ""
+        description: "Patch version to append to jito tag (e.g. 1 for 2.2.15-jito.1)"
       build_from_source:
         type: bool
         required: false
