@@ -1,17 +1,17 @@
 ---
-- name: Set Solana Agave download URL
+- name: Set Jito-Solana download URL
   ansible.builtin.set_fact:
-    agave_download_url: "https://solv-store.s3.us-east-1.amazonaws.com/agave/releases/download/v{{ agave_version }}/solana-release-{{ host_arch }}.tar.bz2"
+    jito_solana_download_url: "https://solv-store.s3.us-east-1.amazonaws.com/jito-solana/releases/download/{{ jito_tag }}/solana-release-{{ host_arch }}.tar.bz2"
 
-- name: Print the Agave download URL
+- name: Debug download URL
   ansible.builtin.debug:
-    msg: "Solana CLI will be downloaded from: {{ agave_download_url }}"
+    msg: "Download URL: {{ jito_solana_download_url }}"
 
 - name: Set local variable for solana_installed_release_dir
   ansible.builtin.set_fact:
-    solana_installed_release_dir: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}"
+    solana_installed_release_dir: "{{ validator_solana_installed_releases_dir }}/{{ jito_tag }}"
 
-- name: Ensure Solana CLI releases directory exists
+- name: Ensure Jito-Solana CLI releases directory exists
   ansible.builtin.file:
     path: "{{ solana_installed_release_dir }}"
     state: directory
@@ -20,21 +20,21 @@
     group: "{{ validator_operators_group }}"
   become: true
 
-- name: Unarchiving solana binaries into the releases directory
+- name: Unarchiving jito-solana binaries into the releases directory
   ansible.builtin.debug:
-    msg: "Unarchive release directory: {{ validator_solana_installed_releases_dir }}/v{{ agave_version }}"
+    msg: "Unarchive release directory: {{ solana_installed_release_dir }}"
 
-- name: Unarchive solana binaries
+- name: Unarchive jito-solana binaries
   ansible.builtin.unarchive:
-    src: "{{ agave_download_url }}"
-    dest: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}"
+    src: "{{ jito_solana_download_url }}"
+    dest: "{{ solana_installed_release_dir }}"
     remote_src: true
-    creates: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}/solana-release/bin/agave-validator"
-  ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode
+    creates: "{{ solana_installed_release_dir }}/solana-release/bin/solana"
+  ignore_errors: "{{ ansible_check_mode }}"
 
 - name: Create symlink to new release
   ansible.builtin.file:
-    src: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}/solana-release"
+    src: "{{ solana_installed_release_dir }}/solana-release"
     dest: "{{ validator_root_dir }}/install/active_release"
     state: link
     owner: "root"
