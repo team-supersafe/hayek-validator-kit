@@ -11,7 +11,7 @@
   register: influxdb_org_result
   when: influxdb_onboarding_token is defined
 
-- set_fact:
+- ansible.builtin.set_fact:
     influxdb_org_id: "{{ influxdb_org_result.json.orgs[0].id }}"
   when: influxdb_org_result is defined and influxdb_org_result.json.orgs[0].id is defined
 
@@ -53,7 +53,7 @@
   when: influxdb_onboarding_token is defined and influxdb_org_id is defined
 
 - name: Set fact for bucket IDs
-  set_fact:
+  ansible.builtin.set_fact:
     influxdb_bucket_ids: "{{ influxdb_bucket_ids | default({}) | combine({item.name: influxdb_bucket_result.results[index].json.buckets[0].id}) }}"
   loop: "{{ influxdb_additional_buckets }}"
   loop_control:
@@ -63,7 +63,7 @@
   when: influxdb_bucket_result.results[index].json.buckets | length > 0
 
 - name: Set permissions list for each bucket
-  set_fact:
+  ansible.builtin.set_fact:
     bucket_token_permissions: >-
       {{
         ([{

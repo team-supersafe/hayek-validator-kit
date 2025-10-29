@@ -25,6 +25,6 @@
   no_log: true
 
 - name: Set fact for onboarding token
-  set_fact:
+  ansible.builtin.set_fact:
     influxdb_onboarding_token: "{{ influxdb_onboarding_result.json.auth.token }}"
   when: influxdb_onboarding_result is defined and influxdb_onboarding_result.json.auth.token is defined
