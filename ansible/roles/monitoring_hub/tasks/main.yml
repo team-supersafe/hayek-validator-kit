@@ -33,3 +33,6 @@
 
 - name: Include InfluxDB tasks
   include_tasks: influxdb/main.yml
+
+- name: Sumary report of monitoring hub setup
+  include_tasks: summary.yml

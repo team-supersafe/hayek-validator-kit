@@ -1,0 +1,12 @@
+---
+# This file is intentionally left blank to allow for custom tasks to be written.
+
+- name: Show InfluxDB token summary
+  ansible.builtin.debug:
+    msg: |
+      InfluxDB onboarding token: {{ influxdb_onboarding_token }}
+      {% for bucket in influxdb_additional_buckets %}
+      Token for {{ bucket.name }}: {{ influxdb_write_token_result.results[loop.index0].json.token }}
+      {% endfor %}
+      NOTE: Store these tokens securely as they will not be shown again.
+  when: influxdb_onboarding_token is defined and influxdb_write_token_result is defined
