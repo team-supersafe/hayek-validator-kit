@@ -1,12 +1,6 @@
 ---
 # InfluxDB configuration tasks
 
-# InfluxDB v2 uses default configuration out of the box
-# No custom configuration needed for basic setup
-- name: InfluxDB configuration placeholder
-  ansible.builtin.debug:
-    msg: "InfluxDB will use default configuration"
-
 - name: Get InfluxDB organization ID
   ansible.builtin.uri:
     url: "http://localhost:{{ influxdb_port | default(8086) }}/api/v2/orgs?org={{ influxdb_init_org }}"
@@ -110,7 +104,6 @@
   loop_control:
     label: "{{ item.name }}"
   when: influxdb_bucket_ids[item.name] is defined and bucket_token_permissions is defined
-
 
 - name: Show write token for each bucket
   ansible.builtin.debug:
