@@ -12,13 +12,6 @@
     - "{{ grafana_config.provisioning_dir }}/dashboards"
     - "{{ grafana_config.provisioning_dir }}/datasources"
 
-- name: Fix Grafana service dependencies for Docker containers
-  ansible.builtin.replace:
-    path: /usr/lib/systemd/system/grafana-server.service
-    regexp: 'After=postgresql\.service mariadb\.service mysql\.service influxdb\.service'
-    replace: 'After=postgresql.service mariadb.service mysql.service'
-  when: is_docker_container
-
 - name: Configure Grafana dashboard provisioning
   ansible.builtin.template:
     src: grafana/dashboards.yml.j2

@@ -1,5 +1,12 @@
 ---
 # InfluxDB service management tasks
+- name: Overwrite existing influxdb systemd unit file
+  ansible.builtin.template:
+    src: templates/influxdb/influxdb.service.j2
+    dest: /usr/lib/systemd/system/influxdb.service
+    mode: preserve
+  notify: restart influxdb
+  when: is_docker_container
 
 - name: Start and enable InfluxDB service
   ansible.builtin.systemd:

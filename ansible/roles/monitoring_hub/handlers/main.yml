@@ -8,4 +8,13 @@
     daemon_reload: yes
   failed_when: false
   async: 10
-  poll: 0
+  poll: 2
+
+- name: restart influxdb
+  ansible.builtin.systemd:
+    name: "{{ monitoring_services[1] }}"
+    state: restarted
+    daemon_reload: yes
+  failed_when: false
+  async: 10
+  poll: 2
