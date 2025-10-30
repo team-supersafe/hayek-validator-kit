@@ -3,6 +3,11 @@
   ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/setup_validator_directory.yml
   tags: [solana_cli_jito, setup_validator_directory]
 
+- name: Set Jito tag
+  ansible.builtin.set_fact:
+    jito_tag: >-
+      v{{ jito_version }}-jito{{ ('.' ~ (jito_version_patch | default(''))) if (jito_version_patch | default('') | length > 0) else '' }}
+
 - name: Precheck environment
   import_tasks: precheck.yml
   tags: [solana_cli_jito, precheck]
@@ -12,12 +17,10 @@
   when: not jito_cli_already_installed
   tags: [solana_cli_jito, install]
 
-# - name: Configure the Solana CLI post installation
-#   import_tasks: config.yml
-#   when: not jito_cli_already_installed
-#   tags: [solana_cli_jito, config]
+- name: Configure the Solana CLI post installation
+  import_tasks: config.yml
+  tags: [solana_cli_jito, config]
 
-# - name: Verify Solana CLI installation is correct
-#   import_tasks: verify.yml
-#   when: not jito_cli_already_installed
-#   tags: [solana_cli_jito, verify]
+- name: Verify Solana CLI installation is correct
+  import_tasks: verify.yml
+  tags: [solana_cli_jito, verify]

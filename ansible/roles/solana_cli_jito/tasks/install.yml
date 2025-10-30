@@ -5,12 +5,6 @@
 # Ensure the host architecture is set (required for conditional installation logic)
 - import_tasks: ../../common/tasks/set_host_architecture.yml
 
-# Set Jito tag robustly: only append .{jito_version_patch} if non-empty
-- name: Set Jito tag
-  ansible.builtin.set_fact:
-    jito_tag: >-
-      v{{ jito_version }}-jito{{ ('.' ~ (jito_version_patch | default(''))) if (jito_version_patch | default('') | length > 0) else '' }}
-
 - name: Install prerequisites
   become: true
   ansible.builtin.apt:
