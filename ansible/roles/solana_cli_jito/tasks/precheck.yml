@@ -4,8 +4,9 @@
     that:
       - jito_version is defined
       - jito_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
-    fail_msg: >-
-      Required variable is missing or invalid:\n- jito_version must be defined and follow semantic versioning (e.g. 1.2.3)
+    fail_msg: |
+      Required variable is missing or invalid:
+      - jito_version must be defined and follow semantic versioning (e.g. 1.2.3)
 
 - name: Precheck - Display version message
   ansible.builtin.debug:
