@@ -19,7 +19,7 @@
 #   -e "tmp_influxdb_default_bucket=HayekBucket" \
 #   -K
 
-- name: Setup server users
+- name: Setup monitoring hub server
   hosts: "{{ target_host }}"
   user: "{{ ansible_user }}"
   become: true
