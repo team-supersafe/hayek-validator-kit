@@ -19,32 +19,6 @@
   ansible.builtin.set_fact:
     solana_installed_release_dir: "{{ validator_solana_installed_releases_dir }}/{{ jito_tag }}"
 
-# - name: Check if build directory exists and read current version
-#   block:
-#     - name: Check if build directory exists
-#       ansible.builtin.stat:
-#         path: "{{ jito_build_dir }}"
-#       register: build_dir_stat
-
-#     - name: Read current version from Cargo.toml if build directory exists
-#       ansible.builtin.shell: grep '^version' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
-#       args:
-#         chdir: "{{ jito_build_dir }}"
-#       register: current_cargo_version
-#       when: build_dir_stat.stat.exists
-#       ignore_errors: true
-#       changed_when: false
-
-#     - name: Set fact for version mismatch
-#       ansible.builtin.set_fact:
-#         version_mismatch: "{{ build_dir_stat.stat.exists and (current_cargo_version is failed or current_cargo_version.stdout != jito_version) }}"
-
-#     - name: Clean up build directory if version mismatch detected
-#       ansible.builtin.file:
-#         path: "{{ jito_build_dir }}"
-#         state: absent
-#       when: version_mismatch | default(false)
-
 - name: Prepare build environment
   block:
     - name: Ensure jito_build_dir directory exists
