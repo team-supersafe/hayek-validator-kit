@@ -23,10 +23,10 @@ interval = "30s"
 [[inputs.diskio]]
 [[inputs.ping]]
 	urls = ["api.mainnet-beta.solana.com"]
-[[inputs.exec]]
-	commands = ["bash /etc/telegraf/scripts/nvme_health.sh"]
-	timeout = "10s"
-	data_format = "influx"
+#[[inputs.exec]]
+#	commands = ["bash /etc/telegraf/scripts/nvme_health.sh"]
+#	timeout = "10s"
+#	data_format = "influx"
 [[inputs.exec]]
 	commands = ["hostname"]
 	name_override = "server_hostname"
