@@ -39,9 +39,10 @@ interval = "30s"
 	data_type = "string"
 
 # Output Plugin InfluxDB Remote
-[[outputs.influxdb]]
+[[outputs.influxdb_v2]]
   urls = [ "http://{{ monitoring_hub.host }}:{{ monitoring_hub.port }}" ]
-  database = "{{ monitoring_hub.hardware_bucket }}"
+  organization = "{{ monitoring_hub.org }}"
+  bucket = "{{ monitoring_hub.hardware_bucket }}"
   token = "{{ monitoring_hub.hardware_bucket_token }}"
 
 	# Security Updates Monitor

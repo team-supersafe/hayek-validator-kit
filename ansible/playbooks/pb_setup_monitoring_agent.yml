@@ -10,6 +10,10 @@
 #   -i solana_localnet.yml \
 #   -e "target_host=host-monitoring" \
 #   -e "ansible_user=monitor" \
+#   -e "monitoring_hub_host=monitoring.example.com" \
+#   -e "influxdb_hardware_bucket_token=your_token_here" \
+#   -e "influxdb_init_org=your_org" \
+#   -e "hardware_bucket_name=your_bucket" \
 #   -K
 
 - name: Setup monitoring agent at servers
