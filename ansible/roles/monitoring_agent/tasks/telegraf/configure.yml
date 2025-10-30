@@ -1,0 +1,7 @@
+# Telegraf configuration management tasks
+- name: Overwrite existing telegraf configuration file
+  ansible.builtin.template:
+    src: templates/telegraf.conf.j2
+    dest: /etc/telegraf/telegraf.conf
+    mode: preserve
+  notify: restart telegraf
