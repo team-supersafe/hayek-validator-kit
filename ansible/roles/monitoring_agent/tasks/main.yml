@@ -1,0 +1,8 @@
+---
+# Main Monitoring Agent tasks orchestrator
+
+- name: Include secrets variables
+  include_vars: vars/secrets.yml
+
+- name: Include Telegraf tasks
+  import_tasks: telegraf/main.yml
