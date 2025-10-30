@@ -61,32 +61,6 @@
   vars:
     index: "{{ influxdb_additional_buckets.index(item) }}"
   when: influxdb_bucket_result.results[index].json.buckets | length > 0
-
-- name: Set permissions list for each bucket
-  ansible.builtin.set_fact:
-    bucket_token_permissions: >-
-      {{
-        ([{
-          'action': 'write',
-          'resource': {
-            'type': 'buckets',
-            'id': influxdb_bucket_ids[item.name]
-          }
-        }] if item.token_permissions_write else [])
-        +
-        ([{
-          'action': 'read',
-          'resource': {
-            'type': 'buckets',
-            'id': influxdb_bucket_ids[item.name]
-          }
-        }] if item.token_permissions_read else [])
-      }}
-  loop: "{{ influxdb_additional_buckets }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: influxdb_bucket_ids[item.name] is defined
-
 - name: Create token for each bucket with dynamic permissions
   ansible.builtin.uri:
     url: "http://localhost:{{ influxdb_port | default(8086) }}/api/v2/authorizations"
@@ -97,13 +71,34 @@
     body:
       orgID: "{{ influxdb_org_id }}"
       description: "Token for {{ item.name }}"
-      permissions: "{{ bucket_token_permissions }}"
+      permissions: >-
+        {{
+          (
+            [{
+              'action': 'write',
+              'resource': {
+                'type': 'buckets',
+                'id': influxdb_bucket_ids[item.name]
+              }
+            }] if (item.token_permissions_write | default(false)) else []
+          )
+          +
+          (
+            [{
+              'action': 'read',
+              'resource': {
+                'type': 'buckets',
+                'id': influxdb_bucket_ids[item.name]
+              }
+            }] if (item.token_permissions_read | default(false)) else []
+          )
+        }}
     status_code: 201
   register: influxdb_write_token_result
   loop: "{{ influxdb_additional_buckets }}"
   loop_control:
     label: "{{ item.name }}"
-  when: influxdb_bucket_ids[item.name] is defined and bucket_token_permissions is defined
+  when: influxdb_bucket_ids[item.name] is defined
 
 - name: Show write token for each bucket
   ansible.builtin.debug:
