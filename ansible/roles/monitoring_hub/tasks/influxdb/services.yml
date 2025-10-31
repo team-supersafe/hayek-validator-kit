@@ -1,0 +1,36 @@
+---
+# InfluxDB service management tasks
+- name: Overwrite existing influxdb systemd unit file
+  ansible.builtin.template:
+    src: templates/influxdb/influxdb.service.j2
+    dest: /usr/lib/systemd/system/influxdb.service
+    mode: preserve
+  notify: restart influxdb
+  when: is_docker_container
+
+- name: Start and enable InfluxDB service
+  ansible.builtin.systemd:
+    name: "{{ monitoring_services[1] }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  # InfluxDB may stay in 'activating' state in Docker due to systemd/container limitations
+  # This doesn't affect functionality - we verify actual operation via health check below
+  failed_when: false
+  async: 5
+  poll: 2
+
+- name: Wait for InfluxDB to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ influxdb_port | default(8086) }}/health"
+    method: GET
+    status_code: 200
+  register: influxdb_health
+  until: influxdb_health.status == 200
+  retries: 10
+  delay: 2
+
+- name: Check InfluxDB service status
+  ansible.builtin.systemd:
+    name: "{{ monitoring_services[1] }}"
+  register: influxdb_service_status
