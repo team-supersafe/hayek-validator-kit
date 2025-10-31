@@ -2,7 +2,14 @@
 [agent]
 hostname = "{{ ansible_hostname }}"
 flush_interval = "60s"
-interval = "30s"
+interval = "{{ get_hardware_metrics_interval }}"
+
+# Output Plugin InfluxDB Remote
+[[outputs.influxdb_v2]]
+  urls = [ "http://{{ monitoring_hub.host }}:{{ monitoring_hub.port }}" ]
+  organization = "{{ monitoring_hub.org }}"
+  bucket = "{{ monitoring_hub.hardware_bucket }}"
+  token = "{{ monitoring_hub.hardware_bucket_token }}"
 
 # Input Plugins
 [[inputs.cpu]]
@@ -23,10 +30,10 @@ interval = "30s"
 [[inputs.diskio]]
 [[inputs.ping]]
 	urls = ["api.mainnet-beta.solana.com"]
-#[[inputs.exec]]
-#	commands = ["bash /etc/telegraf/scripts/nvme_health.sh"]
-#	timeout = "10s"
-#	data_format = "influx"
+[[inputs.exec]]
+	commands = ["bash /etc/telegraf/scripts/nvme_health.sh"]
+	timeout = "10s"
+	data_format = "influx"
 [[inputs.exec]]
 	commands = ["hostname"]
 	name_override = "server_hostname"
@@ -38,20 +45,13 @@ interval = "30s"
 	data_format = "value"
 	data_type = "string"
 
-# Output Plugin InfluxDB Remote
-[[outputs.influxdb_v2]]
-  urls = [ "http://{{ monitoring_hub.host }}:{{ monitoring_hub.port }}" ]
-  organization = "{{ monitoring_hub.org }}"
-  bucket = "{{ monitoring_hub.hardware_bucket }}"
-  token = "{{ monitoring_hub.hardware_bucket_token }}"
-
-	# Security Updates Monitor
+# Security Updates Monitor
 [[inputs.exec]]
 	commands = ["bash -c \"apt list --upgradable 2>/dev/null | grep security | wc -l\""]
 	name_override = "security_updates_pending"
 	data_format = "value"
 	data_type = "integer"
-	interval = "6h"
+	interval = "300s"
 	timeout = "70s"
 
 # General Updates Monitor
@@ -60,5 +60,5 @@ interval = "30s"
 	name_override = "general_updates_pending"
 	data_format = "value"
 	data_type = "integer"
-	interval = "10h"
+	interval = "300s"
 	timeout = "70s"
