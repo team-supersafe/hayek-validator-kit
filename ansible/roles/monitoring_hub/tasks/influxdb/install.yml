@@ -1,0 +1,32 @@
+---
+# InfluxDB installation tasks
+
+- name: Create GPG keyring directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download and add InfluxData GPG key
+  ansible.builtin.shell: |
+    curl -s https://repos.influxdata.com/influxdata-archive_compat.key | gpg --dearmor | tee /etc/apt/keyrings/influxdb.gpg > /dev/null
+  args:
+    creates: /etc/apt/keyrings/influxdb.gpg
+
+- name: Add InfluxDB repository with GPG key
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/influxdb.gpg] https://repos.influxdata.com/debian stable main"
+    state: present
+    filename: influxdb
+    update_cache: yes
+
+- name: Install InfluxDB
+  ansible.builtin.apt:
+    name: influxdb2
+    state: present
+
+- name: Ensure InfluxDB service is enabled
+  ansible.builtin.systemd:
+    name: "{{ monitoring_services[1] }}"
+    enabled: yes
+    daemon_reload: yes

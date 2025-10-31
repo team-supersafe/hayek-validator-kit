@@ -1,0 +1,49 @@
+---
+# Firewall configuration tasks for monitoring hub
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install UFW firewall
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Enable UFW firewall
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+- name: Allow SSH through firewall
+  community.general.ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+    comment: "SSH access"
+
+- name: Allow Grafana port through firewall
+  community.general.ufw:
+    rule: allow
+    port: "{{ grafana_port | default(3000) }}"
+    proto: tcp
+    comment: "Grafana web interface"
+
+- name: Allow InfluxDB port through firewall
+  community.general.ufw:
+    rule: allow
+    port: "{{ influxdb_port | default(8086) }}"
+    proto: tcp
+    comment: "InfluxDB HTTP API"
+
+- name: Display UFW status
+  ansible.builtin.shell:
+    cmd: ufw status numbered
+  register: ufw_status
+  changed_when: false
+
+- name: Show firewall rules
+  ansible.builtin.debug:
+    msg: "{{ ufw_status.stdout_lines }}"
