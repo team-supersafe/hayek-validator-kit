@@ -13,9 +13,13 @@
 #   -e "tmp_grafana_default_admin_user=admin" \
 #   -e "tmp_grafana_default_admin_password=admin" \
 #   -e "grafana_admin_password=NewPassword" \
+#   -e "tmp_influxdb_default_admin_user=admin" \
+#   -e "tmp_influxdb_default_admin_password=adminpass" \
+#   -e "tmp_influxdb_default_org=HayekOrg" \
+#   -e "tmp_influxdb_default_bucket=HayekBucket" \
 #   -K
 
-- name: Setup server users
+- name: Setup monitoring hub server
   hosts: "{{ target_host }}"
   user: "{{ ansible_user }}"
   become: true
