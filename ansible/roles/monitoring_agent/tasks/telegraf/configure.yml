@@ -5,3 +5,20 @@
     dest: /etc/telegraf/telegraf.conf
     mode: preserve
   notify: restart telegraf
+
+# Create necessary directories
+- name: Create scripts directory
+  file:
+    path: /etc/telegraf/scripts
+    state: directory
+    mode: '0755'
+    owner: telegraf
+    group: telegraf
+
+- name: Create NVMe health script
+  template:
+    src: templates/nvme_health.sh.j2
+    dest: /etc/telegraf/scripts/nvme_health.sh
+    mode: '0755'
+    owner: telegraf
+    group: telegraf
