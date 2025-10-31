@@ -202,13 +202,10 @@
 
 # Precheck 12: Ensure each user has at least one group (except solana_user)
 - name: Ensure each user has at least one group (except solana_user)
-  ansible.builtin.fail:
-    msg: "User {{ item.key }} must have at least one group assigned (group_a, group_b, or group_c)"
-  when:
-    - item.key != solana_user
-    - (item.value.group_a | default('')) == ''
-    - (item.value.group_b | default('')) == ''
-    - (item.value.group_c | default('')) == ''
+  ansible.builtin.assert:
+    that:
+      - item.key == solana_user or item.value.group_a | default('') != '' or item.value.group_b | default('') != '' or item.value.group_c | default('') != ''
+    fail_msg: "User {{ item.key }} must have at least one group assigned (group_a, group_b, or group_c)"
   loop: "{{ users_csv.dict | dict2items }}"
   delegate_to: localhost
   become: false
