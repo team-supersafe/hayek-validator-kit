@@ -13,18 +13,6 @@
   debug:
     msg: "PATH after sourcing: {{ cli_shell_env_path.stdout }}"
 
-- name: Verify Solana CLI - Check if solana is available
-  ansible.builtin.shell: solana --version
-  environment:
-    PATH: "{{ cli_shell_env_path.stdout }}"
-  register: solana_version
-  changed_when: false
-  failed_when: solana_version.rc != 0
-
-- name: Verify Solana CLI - Print solana version
-  debug:
-    msg: "Solana version: {{ solana_version.stdout }}"
-
 - name: Verify Solana CLI - Run 'solana config get' to validate config access
   ansible.builtin.command: solana config get
   environment:
@@ -36,3 +24,31 @@
 - name: Verify Solana CLI - Print solana config
   debug:
     msg: "Solana config: {{ solana_config_get.stdout }}"
+
+- name: Verify if the installed binary is the correct Jito-Solana CLI version
+  block:
+    - name: Verify Solana CLI - Check installed version and client
+      ansible.builtin.shell: solana --version
+      environment:
+        PATH: "{{ cli_shell_env_path.stdout }}"
+      register: installed_version
+      changed_when: false
+      failed_when: installed_version.rc != 0
+
+    - name: Verify Solana CLI - Extract installed version number
+      ansible.builtin.set_fact:
+        installed_jito_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
+      when: installed_version.stdout is defined
+
+    - name: Verify Solana CLI - Extract installed client identifier
+      ansible.builtin.set_fact:
+        installed_jito_client: "{{ installed_version.stdout | regex_search('client:([A-Za-z0-9]+)', '\\1') | first }}"
+      when: installed_version.stdout is defined
+
+    - name: Verify Solana CLI - Debug short summary
+      ansible.builtin.debug:
+        msg: |
+          Installed client: "{{ installed_jito_client | default('Not found') }}"
+          Installed Jito-Solana CLI version: "{{ installed_jito_version | default('Not found') }}"
+          Desired client and version: "JitoLabs {{ jito_version }}"
+          Installed tag: "{{ jito_tag | default('Not found') }}"
