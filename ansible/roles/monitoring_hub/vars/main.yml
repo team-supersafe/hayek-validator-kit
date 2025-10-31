@@ -9,7 +9,9 @@ grafana_config:
   group: "grafana"
   dashboards_dir: "/var/lib/grafana/dashboards"
   provisioning_dir: "/etc/grafana/provisioning"
-  
+
+
+
   permissions:
     config_files:
       owner: "root"
@@ -20,9 +22,25 @@ grafana_config:
       group: "grafana"
       mode: "0755"
 
+# Additional buckets for metrics
+influxdb_additional_buckets:
+  - name: "hardware_metrics"
+    description: "Hardware metrics (CPU, RAM, disk, network, etc.) for all servers."
+    expectations: false
+    token_permissions_write: true
+    token_permissions_read: true
+    retention: 30 # days
+  - name: "solana_metrics"
+    description: "Solana validator metrics (production, slots, balance, vote credits, etc.)"
+    expectations: false
+    token_permissions_write: true
+    token_permissions_read: true
+    retention: 90 # days
+
 # Variables override for monitoring_hub role (compatibility)
 solana_user: "{{ monitoring_user }}"
 
 # Monitoring services to manage
 monitoring_services:
   - grafana-server
+  - influxdb

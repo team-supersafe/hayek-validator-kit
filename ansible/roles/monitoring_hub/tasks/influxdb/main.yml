@@ -1,0 +1,14 @@
+---
+# Main InfluxDB tasks orchestrator
+
+- name: Include InfluxDB installation tasks
+  include_tasks: influxdb/install.yml
+
+- name: Include InfluxDB service management tasks
+  include_tasks: influxdb/services.yml
+
+- name: Include InfluxDB onboarding tasks
+  include_tasks: influxdb/onboarding.yml
+
+- name: Include InfluxDB configuration tasks
+  include_tasks: influxdb/configure.yml
