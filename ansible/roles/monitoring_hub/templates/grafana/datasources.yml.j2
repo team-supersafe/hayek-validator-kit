@@ -1,1 +1,34 @@
-# Grafana datasources configuration template
+apiVersion: 1
+
+datasources:
+  - name: "{{ grafana_config.hardware_metrics_source_name | default('Hardware Metrics') }}"
+    type: influxdb
+    uid: "{{ grafana_config.hardware_metrics_source_uid | default('hardware_metrics_uid') }}"
+    access: proxy
+    url: http://localhost:8086
+    database: "{{ influxdb_additional_buckets[0].name }}"
+    basicAuth: true
+    basicAuthUser: "token"
+    secureJsonData:
+      basicAuthPassword: "{{ hardware_metrics_token }}"
+    jsonData:
+      httpMode: POST
+    isDefault: true
+    editable: true
+    version: 1
+
+  - name: "Solana Metrics"
+    type: influxdb
+    uid: "solana_metrics_uid"
+    access: proxy
+    url: http://localhost:8086
+    database: "{{ influxdb_additional_buckets[1].name }}"
+    basicAuth: true
+    basicAuthUser: "token"
+    secureJsonData:
+      basicAuthPassword: "{{ solana_metrics_token }}"
+    jsonData:
+      httpMode: POST
+    isDefault: false
+    editable: true
+    version: 1
