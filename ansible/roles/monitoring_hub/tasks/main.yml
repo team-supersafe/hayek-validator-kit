@@ -23,9 +23,6 @@
 - name: Include monitoring hub configuration tasks
   include_tasks: configure.yml
 
-- name: Include Grafana tasks
-  include_tasks: grafana/main.yml
-
 # TODO: Add task to acquire SSL certificate for secure InfluxDB access
 #       - Implement Let's Encrypt or custom certificate management
 #       - Configure HTTPS for InfluxDB web interface
