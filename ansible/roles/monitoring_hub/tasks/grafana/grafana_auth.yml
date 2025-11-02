@@ -1,7 +1,11 @@
 ---
+# Grafana authentication and credentials tasks
+# - Ensures admin password is set (idempotent)
+# - Creates service account for automation (idempotent)
+
 - name: Ensure Grafana admin password is set
   ansible.builtin.uri:
-    url: "http://localhost:{{ grafana_port | default(3000) }}/api/admin/users/1/password"
+    url: "http://{{ monitoring_network.bind_address | default('localhost') }}:{{ grafana_port | default(3000) }}/api/admin/users/1/password"
     method: PUT
     user: "{{ grafana_default_admin_user }}"
     password: "{{ grafana_default_admin_password }}"
@@ -16,7 +20,7 @@
 
 - name: Create Grafana service account
   ansible.builtin.uri:
-    url: "http://localhost:{{ grafana_port | default(3000) }}/api/serviceaccounts"
+    url: "http://{{ monitoring_network.bind_address | default('localhost') }}:{{ grafana_port | default(3000) }}/api/serviceaccounts"
     method: POST
     user: "{{ grafana_default_admin_user }}"
     password: "{{ grafana_secrets.admin_password }}"
