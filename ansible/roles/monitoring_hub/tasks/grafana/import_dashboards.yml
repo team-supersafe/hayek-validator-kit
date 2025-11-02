@@ -1,0 +1,27 @@
+
+- name: Load Hardware Metrics dashboard JSON
+  ansible.builtin.set_fact:
+    hardware_dashboard_json: "{{ lookup('file', role_path + '/templates/grafana/hardware_metrics.json') | from_json }}"
+
+- name: Import Hardware Metrics dashboard into Grafana
+  ansible.builtin.uri:
+    url: "http://{{ monitoring_network.bind_address | default('localhost') }}:{{ grafana_port | default(3000) }}/api/dashboards/import"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ grafana_sa_token }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      dashboard: "{{ hardware_dashboard_json }}"
+      overwrite: true
+      folderId: 0
+      inputs:
+        - name: "DS_INFLUXDB-1"
+          type: "datasource"
+          pluginId: "influxdb"
+          value: "{{ grafana_config.hardware_metrics_source_uid | default('hardware_metrics_uid') }}"
+    status_code: 200
+    timeout: 20
+  when: grafana_sa_token is defined
+  no_log: true
+

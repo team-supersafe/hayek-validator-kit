@@ -15,3 +15,6 @@
 
 - name: Include Grafana dashboard management tasks
   include_tasks: grafana/dashboards.yml
+
+- name: Import Grafana dashboards
+  include_tasks: grafana/import_dashboards.yml

@@ -126,3 +126,9 @@
     grafana_sa_token: "{{ grafana_sa_token_create.json.key | default(grafana_sa_token_create.json.token) }}"
   when: not grafana_sa_token_exists and grafana_sa_token_create is defined
   no_log: true
+
+- name: Show created service account token for manual testing (temporary)
+  ansible.builtin.debug:
+    msg: "Grafana SA token (save it securely): {{ grafana_sa_token }}"
+  when: grafana_sa_token is defined
+  no_log: false
