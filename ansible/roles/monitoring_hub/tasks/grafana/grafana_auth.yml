@@ -111,7 +111,8 @@
     body: |
       {
         "name": "{{ grafana_sa_token_name | default('provisioning-token') }}",
-        "role": "Admin"
+        "role": "Admin",
+        "secondsToLive": {{ grafana_sa_token_ttl | default(30) }}
       }
     body_format: json
     status_code: [200, 201]
