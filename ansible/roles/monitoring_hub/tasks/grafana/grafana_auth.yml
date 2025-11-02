@@ -3,9 +3,13 @@
 # - Ensures admin password is set (idempotent)
 # - Creates service account for automation (idempotent)
 
+- name: Compute Grafana API base URL
+  ansible.builtin.set_fact:
+    grafana_api_base_url: "http://{{ monitoring_network.bind_address | default('localhost') }}:{{ grafana_port | default(3000) }}"
+
 - name: Ensure Grafana admin password is set
   ansible.builtin.uri:
-    url: "http://{{ monitoring_network.bind_address | default('localhost') }}:{{ grafana_port | default(3000) }}/api/admin/users/1/password"
+    url: "{{ grafana_api_base_url }}/api/admin/users/1/password"
     method: PUT
     user: "{{ grafana_default_admin_user }}"
     password: "{{ grafana_default_admin_password }}"
@@ -20,7 +24,7 @@
 
 - name: Create Grafana service account
   ansible.builtin.uri:
-    url: "http://{{ monitoring_network.bind_address | default('localhost') }}:{{ grafana_port | default(3000) }}/api/serviceaccounts"
+    url: "{{ grafana_api_base_url }}/api/serviceaccounts"
     method: POST
     user: "{{ grafana_default_admin_user }}"
     password: "{{ grafana_secrets.admin_password }}"
@@ -29,7 +33,7 @@
       Content-Type: "application/json"
     body: |
       {
-        "name": "ansible-provisioner",
+        "name": "{{ grafana_sa_name | default('ansible-provisioner') }}",
         "role": "Admin"
       }
     body_format: json
@@ -44,3 +48,81 @@
       or grafana_service_account_response.json.messageId != 'serviceaccounts.ErrAlreadyExists'
     ))
   changed_when: grafana_service_account_response.status in [200, 201]
+
+- name: Capture service account id from creation response when available
+  ansible.builtin.set_fact:
+    grafana_sa_id: "{{ grafana_service_account_response.json.id }}"
+  when:
+    - grafana_service_account_response is defined
+    - grafana_service_account_response.status in [200, 201]
+    - grafana_service_account_response.json is defined
+    - grafana_service_account_response.json.id is defined
+
+- name: Lookup Grafana service account by name when id is unknown
+  ansible.builtin.uri:
+    url: "{{ grafana_api_base_url }}/api/serviceaccounts?perpage=1000"
+    method: GET
+    user: "{{ grafana_default_admin_user }}"
+    password: "{{ grafana_secrets.admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+    timeout: 10
+    return_content: true
+  register: grafana_sa_list
+  when: grafana_sa_id is not defined
+
+- name: Extract service account id from list
+  ansible.builtin.set_fact:
+    grafana_sa_id: "{{ (grafana_sa_list.json | selectattr('name','equalto', (grafana_sa_name | default('ansible-provisioner'))) | map(attribute='id') | list | first) }}"
+  when:
+    - grafana_sa_id is not defined
+    - grafana_sa_list.json is defined
+
+- name: Fail if service account id could not be determined
+  ansible.builtin.fail:
+    msg: "Unable to resolve Grafana service account id for name '{{ grafana_sa_name | default('ansible-provisioner') }}'"
+  when: grafana_sa_id is not defined
+
+- name: Get existing tokens for the service account
+  ansible.builtin.uri:
+    url: "{{ grafana_api_base_url }}/api/serviceaccounts/{{ grafana_sa_id }}/tokens"
+    method: GET
+    user: "{{ grafana_default_admin_user }}"
+    password: "{{ grafana_secrets.admin_password }}"
+    force_basic_auth: yes
+    status_code: 200
+    timeout: 10
+    return_content: true
+  register: grafana_sa_tokens
+
+- name: Check if desired token already exists
+  ansible.builtin.set_fact:
+    grafana_sa_token_exists: "{{ (grafana_sa_tokens.json | selectattr('name','equalto', (grafana_sa_token_name | default('provisioning-token'))) | list | length) > 0 }}"
+
+- name: Create token for the service account (idempotent)
+  ansible.builtin.uri:
+    url: "{{ grafana_api_base_url }}/api/serviceaccounts/{{ grafana_sa_id }}/tokens"
+    method: POST
+    user: "{{ grafana_default_admin_user }}"
+    password: "{{ grafana_secrets.admin_password }}"
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+    body: |
+      {
+        "name": "{{ grafana_sa_token_name | default('provisioning-token') }}",
+        "role": "Admin"
+      }
+    body_format: json
+    status_code: [200, 201]
+    timeout: 15
+    return_content: true
+  register: grafana_sa_token_create
+  when: not grafana_sa_token_exists
+  no_log: true
+
+- name: Capture created token secret (one-time view)
+  ansible.builtin.set_fact:
+    grafana_sa_token: "{{ grafana_sa_token_create.json.key | default(grafana_sa_token_create.json.token) }}"
+  when: not grafana_sa_token_exists and grafana_sa_token_create is defined
+  no_log: true
