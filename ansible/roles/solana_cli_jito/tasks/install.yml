@@ -10,15 +10,20 @@
   ansible.builtin.apt:
     name:
       - at
+      - bzip2
       - build-essential
-      - pkg-config
+      - clang
+      - cmake
+      - libclang-dev
+      - libprotobuf-dev
       - libssl-dev
       - libudev-dev
       - llvm
-      - libclang-dev
+      - make
+      - pkg-config
       - protobuf-compiler
-      - bzip2
       - python3-psutil
+      - zlib1g-dev
     update_cache: true
 
 # Set local boolean for build method
@@ -35,8 +40,8 @@
   name: Install - Installing from source
   ansible.builtin.include_tasks: install_from_source.yml
 
-# Add Solana CLI bin path to global profile for all users (test)
-- name: Install - Add Solana CLI bin path to global profile
+# Add Jito-Solana CLI bin path to global profile for all users (test)
+- name: Install - Add Jito-Solana CLI bin path to global profile
   ansible.builtin.blockinfile:
     path: /etc/profile.d/solana.sh
     create: true
