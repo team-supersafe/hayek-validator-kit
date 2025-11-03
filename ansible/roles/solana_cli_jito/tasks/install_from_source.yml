@@ -1,6 +1,6 @@
-- name: Start Building Agave
+- name: Start Building Jito-Solana CLI
   ansible.builtin.debug:
-    msg: "Building Agave version {{ agave_version }} from source"
+    msg: "Building Jito-Solana CLI version {{ jito_tag }} from source"
 
 - name: Ensure validator releases directory exists
   ansible.builtin.file:
@@ -11,104 +11,24 @@
     state: directory
   become: true
 
-- name: Set local variable for agave_build_dir
+- name: Set local variable for jito_build_dir
   ansible.builtin.set_fact:
-    agave_build_dir: "{{ validator_build_dir }}/agave"
+    jito_build_dir: "{{ validator_build_dir }}/jito-solana/{{ jito_tag }}"
 
 - name: Set local variable for solana_installed_release_dir
   ansible.builtin.set_fact:
-    solana_installed_release_dir: "{{ validator_solana_installed_releases_dir }}/v{{ agave_version }}"
+    solana_installed_release_dir: "{{ validator_solana_installed_releases_dir }}/{{ jito_tag }}"
 
-- name: Ensure agave_build_dir directory exists
-  ansible.builtin.file:
-    path: "{{ agave_build_dir }}"
-    state: directory
-    mode: "{{ validator_data_mode_owner_readonly }}"
-    owner: "{{ solana_user }}"
-    group: "{{ validator_operators_group }}"
-  become: true
-
-- name: Debug print Agave build directory
-  ansible.builtin.debug:
-    msg: "Agave build directory: {{ agave_build_dir }}"
-
-- name: Prepare Agave source code (download and extract)
+- name: Prepare build environment
   block:
-    - name: Set local boolean for repository selection
-      ansible.builtin.set_fact:
-        use_official_repo_bool: "{{ use_official_repo | default(false) | bool }}"
-
-    - name: Debug repository selection for download
-      ansible.builtin.debug:
-        msg: "Using {{ use_official_repo_bool | ternary('official', 'forked') }} Agave repository for download: {{ use_official_repo_bool | ternary(agave_official_repo, agave_forked_repo) }}"
-
-    - name: Set download URL based on repository selection
-      ansible.builtin.set_fact:
-        agave_download_url: "{{ use_official_repo_bool | ternary(agave_official_repo, agave_forked_repo) }}/archive/refs/tags/v{{ agave_version }}.tar.gz"
-
-    - name: Debug download URL
-      ansible.builtin.debug:
-        msg: "Download URL: {{ agave_download_url }}"
-
-    - name: Unarchive Agave source code from tag
-      ansible.builtin.unarchive:
-        src: "{{ agave_download_url }}"
-        dest: "{{ agave_build_dir }}"
-        remote_src: true
-        creates: "{{ agave_build_dir }}/agave-{{ agave_version }}"
-
-    - name: Parse forked repo name from agave_forked_repo URL
-      ansible.builtin.set_fact:
-        agave_forked_repo_name: "{{ agave_forked_repo | regex_replace('.*/', '') }}"
-      when: not use_official_repo_bool
-
-    - name: Set extracted Agave directory name
-      ansible.builtin.set_fact:
-        agave_extracted_dir_name: "{{ use_official_repo_bool | ternary('agave', agave_forked_repo_name) }}"
-
-    - name: Read version from Cargo.toml to verify
-      ansible.builtin.shell: grep '^version =' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
-      args:
-        chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
-      register: cargo_toml_version
-      changed_when: false
-
-    - name: Debug Cargo.toml version
-      ansible.builtin.debug:
-        msg: "Cargo.toml version: {{ cargo_toml_version.stdout }} | Expected: {{ agave_version }}"
-
-    - name: Fail if Cargo.toml version does not match agave_version
-      ansible.builtin.fail:
-        msg: "Cargo.toml version ({{ cargo_toml_version.stdout }}) does not match expected agave_version ({{ agave_version }})!"
-      when: cargo_toml_version.stdout != agave_version
-      changed_when: false
-      ignore_errors: "{{ ansible_check_mode }}"
-
-- name: Prepare sources and build using cargo
-  block:
-    - name: Fix ownership of agave_build_dir
+    - name: Ensure jito_build_dir directory exists
       ansible.builtin.file:
-        path: "{{ agave_build_dir }}"
-        owner: "{{ solana_user }}"
+        path: "{{ jito_build_dir }}"
+        state: directory
+        mode: "{{ validator_data_mode_owner_readonly }}"
+        owner: "root"
         group: "{{ validator_operators_group }}"
-        recurse: true
 
-    - name: Run cargo-install-all.sh
-      ansible.builtin.shell: |
-        set -e
-        . "{{ validator_root_dir }}/.cargo/env"
-        ./scripts/cargo-install-all.sh . > {{ agave_build_dir }}/agave-build.log 2>&1
-      args:
-        chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
-      environment:
-        CARGO_HOME: "{{ validator_root_dir }}/.cargo"
-        RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
-  become: true
-
-# The above will compile the source code and create the following:
-# A bin directory, .crates.toml and .crates2.json files.
-- name: Move built Agave assets into the releases directory (with failure handling)
-  block:
     - name: Ensure release directory exists
       ansible.builtin.file:
         path: "{{ solana_installed_release_dir }}"
@@ -116,14 +36,103 @@
         mode: "{{ validator_data_mode_owner_readonly }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
-      register: release_dir_result
 
-    - name: Move agave we just built into the releases directory
+    - name: Ensure git is installed
+      become: true
+      ansible.builtin.package:
+        name: git
+        state: present
+  become: true
+  rescue:
+    - name: Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to prepare build environment. Error: {{ ansible_failed_result }}"
+
+- name: Debug print Jito-Solana CLI build directory
+  ansible.builtin.debug:
+    msg: "Jito-Solana CLI build directory: {{ jito_build_dir }}"
+
+- name: Clone and build Jito-Solana CLI from source
+  block:
+    - name: Set local boolean for repository selection
+      ansible.builtin.set_fact:
+        use_official_repo_bool: "{{ use_official_repo | default(false) | bool }}"
+
+    - name: Debug repository selection
+      ansible.builtin.debug:
+        msg: "Using {{ use_official_repo_bool | ternary('official', 'forked') }} Jito-Solana repository: {{ use_official_repo_bool | ternary(jito_official_repo, jito_forked_repo) }}"
+
+    - name: Clone/Pull Jito-Solana repository with submodules
+      ansible.builtin.git:
+        repo: "{{ use_official_repo_bool | ternary(jito_official_repo, jito_forked_repo) }}.git"
+        dest: "{{ jito_build_dir }}"
+        version: "{{ jito_tag }}"
+        recursive: true
+        force: true
+      become: true
+
+    - name: Consolidated git verification (tag, commit, version)
       ansible.builtin.shell: |
         set -e
-        mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/.crates.toml" "{{ solana_installed_release_dir }}"
-        mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/.crates2.json" "{{ solana_installed_release_dir }}"
-        mv "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/bin" "{{ solana_installed_release_dir }}"
+        current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "none")
+        current_commit=$(git rev-parse HEAD)
+        tag_commit=$(git rev-list -n 1 "{{ jito_tag }}" 2>/dev/null || echo "none")
+
+        if [ "$current_tag" != "{{ jito_tag }}" ]; then
+          echo "ERROR: Expected tag {{ jito_tag }}, but got $current_tag"
+          exit 1
+        fi
+
+        if [ "$current_commit" != "$tag_commit" ]; then
+          echo "ERROR: Tag {{ jito_tag }} does not point to current commit"
+          echo "Current commit: $current_commit"
+          echo "Tag commit: $tag_commit"
+          exit 1
+        fi
+
+        echo "Git verification passed: tag $current_tag, commit $current_commit"
+      args:
+        chdir: "{{ jito_build_dir }}"
+      register: git_verification
+      become: true
+      changed_when: false
+
+    - name: Get the latest commit hash
+      ansible.builtin.command: git rev-parse HEAD
+      args:
+        chdir: "{{ jito_build_dir }}"
+      register: ci_commit
+      become: true
+      ignore_errors: "{{ ansible_check_mode }}"
+
+    - name: Read version from Cargo.toml
+      ansible.builtin.shell: grep '^version' Cargo.toml | head -n1 | awk -F '"' '{print $2}'
+      args:
+        chdir: "{{ jito_build_dir }}"
+      register: cargo_toml_version
+      changed_when: false
+
+    - name: Fail if Cargo.toml version does not match jito_version
+      ansible.builtin.fail:
+        msg: "Cargo.toml version ({{ cargo_toml_version.stdout }}) does not match expected jito_version ({{ jito_version }})!"
+      when: cargo_toml_version.stdout != jito_version
+      changed_when: false
+      ignore_errors: "{{ ansible_check_mode }}"
+
+    - name: Build Jito-Solana CLI
+      ansible.builtin.shell: |
+        set -e
+        . "{{ validator_root_dir }}/.cargo/env"
+        ./scripts/cargo-install-all.sh --validator-only {{ solana_installed_release_dir }} > {{ jito_build_dir }}/jito-build.log 2>&1
+      environment:
+        CI_COMMIT: "{{ ci_commit.stdout }}"
+        CARGO_HOME: "{{ validator_root_dir }}/.cargo"
+        RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
+      args:
+        chdir: "{{ jito_build_dir }}"
+        creates: "{{ solana_installed_release_dir }}/bin/solana"
+      ignore_errors: "{{ ansible_check_mode }}"
+      become: true
 
     - name: Fix ownership of release directory and contents
       ansible.builtin.file:
@@ -131,14 +140,11 @@
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
         recurse: true
-  become: true
+      become: true
   rescue:
-    - name: Fail if moving built assets or creating release directory failed
+    - name: Fail with error message
       ansible.builtin.fail:
-        msg: |
-          Failed to move built Agave assets or create the releases directory.
-          Directory creation failed: {{ release_dir_result.failed | default('unknown') }}
-          Check if .crates.toml, .crates2.json, and bin exist in {{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}
+        msg: "Failed to build Jito-Solana from source. Error: {{ ansible_failed_result }}"
 
 - name: Create symlink to new release
   ansible.builtin.file:
