@@ -9,4 +9,4 @@
     group: "{{ grafana_config.permissions.config_files.group }}"
     mode: "{{ grafana_config.permissions.config_files.mode }}"
   notify: restart grafana
-  when: hardware_metrics_token is defined
+  when: hardware_metrics_token is defined and solana_metrics_token is defined
