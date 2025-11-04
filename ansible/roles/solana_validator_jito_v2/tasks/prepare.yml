@@ -1,98 +1,120 @@
-- name: Debug group names
-  debug:
-    msg: "Available groups: {{ group_names }}"
-
-- name: Build Jito block engine city key
+---
+- name: prepare - Build Jito block engine city key
   ansible.builtin.set_fact:
     jito_block_engine_city_key: "jito_{{ solana_cluster }}_block_engine_city"
 
-- name: Set Jito target city
+- name: prepare - Set Jito target city
   ansible.builtin.set_fact:
     jito_target_city: "{{ hostvars[inventory_hostname][jito_block_engine_city_key] }}"
 
-- name: Verify Jito target city is set
+- name: prepare - Verify Jito target city is set
   ansible.builtin.fail:
     msg: "Host {{ inventory_hostname }} must be assigned to a city group (city_dal, city_man, etc.) in the inventory"
   when: jito_target_city == ''
 
-- name: Set Jito URLs
+- name: prepare - Set Jito URLs
   ansible.builtin.set_fact:
     jito_relayer_url: "{{ 'http://127.0.0.1:11226' if jito_relayer_type == 'co-hosted' else jito_urls[jito_target_city].relayer }}"
     jito_block_engine_url: "{{ jito_urls[jito_target_city].block_engine }}"
     jito_shred_receiver_addr: "{{ jito_urls[jito_target_city].shred_receiver_addr }}"
 
-- name: Determine if we should cleanup the host from existing validator data
-  ansible.builtin.set_fact:
-    should_cleanup_host_data: "{{ force_host_cleanup | default(false) }}"
+- name: prepare - Stop validator service
+  block:
+    - name: prepare - Check if validator service exists and is running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+      register: service_status
+      changed_when: false
+      failed_when: false
 
-# Halt services before install and perform cleanup of keys, bin and logs directory
-- name: Stop validator service if exists
-  import_tasks: jito_client/stop_service.yml
+    - name: prepare - Stop validator service if running
+      ansible.builtin.systemd:
+        name: "{{ validator_service_name }}"
+        state: stopped
+        enabled: false
+      register: stop_result
+      retries: 3
+      delay: 10
+      until: stop_result is success
+      when: service_status.status.ActiveState == "active"
+      become: true
 
-- name: Stop and remove relayer service if exists
-  import_tasks: jito_relayer_cohosted/stop_service.yml
+- name: prepare - Stop and remove relayer service if exists
+  block:
+    - name: prepare - jito_relayer_cohosted - Check the jito-relayer service status
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+      register: relayer_service_status
+      changed_when: false
+      failed_when: false
 
-- name: Remove old validator logrotate config if it exists
-  ansible.builtin.file:
-    path: /etc/logrotate.d/validator.logrotate
-    state: absent
+    - name: prepare - jito_relayer_cohosted - Stop jito-relayer service if running
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+        state: stopped
+        enabled: false
+      register: relayer_stop_result
+      retries: 3
+      delay: 10
+      until: relayer_stop_result is success
+      when: relayer_service_status.status.ActiveState == "active"
+      become: true
+
+    - name: prepare - jito_relayer_cohosted - Remove jito-relayer service unit file
+      ansible.builtin.file:
+        path: "/etc/systemd/system/{{ jito_relayer_service_name }}.service"
+        state: absent
+      become: true
+
+    - name: prepare - jito_relayer_cohosted - Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+      become: true
+
+# Block 1: Remove parameterized logrotate config and systemd units
+- name: prepare - Remove parameterized validator logrotate config and systemd units
+  block:
+    - name: prepare - Remove parameterized validator logrotate config if it exists
+      ansible.builtin.file:
+        path: "/etc/logrotate.d/{{ validator_service_name }}"
+        state: absent
+
+    - name: prepare - Remove parameterized validator logrotate systemd service if it exists
+      ansible.builtin.file:
+        path: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.service"
+        state: absent
+
+    - name: prepare - Remove parameterized validator logrotate systemd timer if it exists
+      ansible.builtin.file:
+        path: "/etc/systemd/system/validator-logrotate-{{ validator_service_name }}.timer"
+        state: absent
   become: true
-  delegate_to: "{{ target_host }}"
 
-- name: Remove old validator logrotate systemd service if it exists (localnet only)
-  ansible.builtin.file:
-    path: /etc/systemd/system/validator-logrotate.service
-    state: absent
+# Block 2: Remove legacy logrotate config and systemd units (old convention)
+- name: prepare - Remove legacy validator logrotate config and systemd units (backward compatibility)
+  block:
+    - name: prepare - Remove legacy validator logrotate config if it exists
+      ansible.builtin.file:
+        path: /etc/logrotate.d/validator.logrotate
+        state: absent
+
+    - name: prepare - Remove legacy validator logrotate systemd service if it exists
+      ansible.builtin.file:
+        path: /etc/systemd/system/validator-logrotate.service
+        state: absent
+
+    - name: prepare - Remove legacy validator logrotate systemd timer if it exists
+      ansible.builtin.file:
+        path: /etc/systemd/system/validator-logrotate.timer
+        state: absent
   become: true
-  when: solana_cluster == 'localnet'
-  delegate_to: "{{ target_host }}"
 
-- name: Remove old validator logrotate systemd timer if it exists (localnet only)
-  ansible.builtin.file:
-    path: /etc/systemd/system/validator-logrotate.timer
-    state: absent
-  become: true
-  when: solana_cluster == 'localnet'
-  delegate_to: "{{ target_host }}"
-
-- name: Clear logs and key store
+- name: prepare - Clear logs and key store
   ansible.builtin.shell: |
     #!/bin/bash
     set -e
 
-    echo "Cleaning logs directory..."
-    rm -rf {{ logs_dir }}/*
-
-    echo "Cleaning scripts directory..."
-    rm -rf {{ scripts_dir }}/*
-
-    echo "Cleaning keys directory..."
-    rm -rf {{ keys_dir }}/*
-  delegate_to: "{{ target_host }}"
-
-- name: Ensure logs directory exists
-  ansible.builtin.file:
-    path: "{{ logs_dir }}"
-    state: directory
-    mode: "0755"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-  become: true
-
-- name: Ensure keys directory exists
-  ansible.builtin.file:
-    path: "{{ keys_dir }}"
-    state: directory
-    mode: "0755"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
-  become: true
-
-- name: Ensure scripts directory exists
-  ansible.builtin.file:
-    path: "{{ scripts_dir }}"
-    state: directory
-    mode: "0755"
-    owner: "{{ solana_user }}"
-    group: "{{ solana_user }}"
+    rm -rf "{{ validator_logs_dir }}"/*
+    rm -rf "{{ validator_scripts_dir }}"/*
+    rm -rf "{{ validator_key_store }}"/*
   become: true
