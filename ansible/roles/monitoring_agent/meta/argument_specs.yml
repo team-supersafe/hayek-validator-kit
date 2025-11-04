@@ -1,0 +1,33 @@
+---
+argument_specs:
+  main:
+    short_description: "Install and configure monitoring agent (Telegraf)"
+    description:
+      - "Installs Telegraf and configures it to send metrics to the monitoring hub (InfluxDB)."
+      - "Validates only monitoring hub connection details and the hardware metrics write token."
+    options:
+      target_host:
+        type: str
+        required: true
+        description: "Target host to configure (inventory hostname)"
+      ansible_user:
+        type: str
+        required: true
+        description: "SSH user to connect as (e.g., ubuntu)"
+      monitoring_hub_host:
+        type: str
+        required: true
+        description: "Hostname or IP of the monitoring hub (InfluxDB server)"
+      influxdb_init_org:
+        type: str
+        required: true
+        description: "InfluxDB organization name"
+      hardware_bucket_name:
+        type: str
+        required: true
+        description: "InfluxDB bucket name for hardware metrics"
+      influxdb_hardware_bucket_token:
+        type: str
+        required: true
+        description: "InfluxDB write token for the hardware metrics bucket"
+
