@@ -101,17 +101,34 @@
     label: "{{ item.name }}"
   when: influxdb_bucket_ids[item.name] is defined
 
+- name: Set fact for bucket tokens dictionary (keyed by bucket name)
+  ansible.builtin.set_fact:
+    influxdb_bucket_tokens: >-
+      {{
+        dict(
+          influxdb_write_token_result.results | map(attribute='item') | map(attribute='name') | list
+          | zip(
+            influxdb_write_token_result.results
+            | map(attribute='json')
+            | map(attribute='token')
+          )
+        )
+      }}
+  when: influxdb_write_token_result is defined
+
 - name: Set fact for hardware_metrics token
   ansible.builtin.set_fact:
-    hardware_metrics_token: "{{ influxdb_write_token_result.results[0].json.token }}"
+    hardware_metrics_token: "{{ influxdb_bucket_tokens[influxdb_additional_buckets[0].name] }}"
   when:
-    - influxdb_write_token_result.results[0].json.token is defined
+    - influxdb_bucket_tokens is defined
+    - influxdb_additional_buckets | length > 0
 
 - name: Set fact for solana_metrics token
   ansible.builtin.set_fact:
-    solana_metrics_token: "{{ influxdb_write_token_result.results[1].json.token }}"
+    solana_metrics_token: "{{ influxdb_bucket_tokens[influxdb_additional_buckets[1].name] }}"
   when:
-    - influxdb_write_token_result.results[1].json.token is defined
+    - influxdb_bucket_tokens is defined
+    - influxdb_additional_buckets | length > 1
 
 - name: Show write token for each bucket
   ansible.builtin.debug:
