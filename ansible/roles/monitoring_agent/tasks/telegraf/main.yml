@@ -6,7 +6,3 @@
 
 - name: Include Telegraf configuration tasks
   include_tasks: telegraf/configure.yml
-
-# Si tienes servicios separados, puedes incluirlos aquí
-# - name: Include Telegraf service management tasks
-#   include_tasks: telegraf/services.yml

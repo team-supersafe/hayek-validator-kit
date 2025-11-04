@@ -1,4 +1,11 @@
 ---
+# Install necessary dependencies
+- name: Ensure required packages are installed
+  ansible.builtin.apt:
+    name: 
+      - iputils-ping
+    state: present
+
 # Install Telegraf on Ubuntu
 - name: Download InfluxData GPG key
   ansible.builtin.get_url:
