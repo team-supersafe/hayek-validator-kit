@@ -1,7 +1,15 @@
 
-- name: Load Hardware Metrics dashboard JSON
-  ansible.builtin.set_fact:
-    hardware_dashboard_json: "{{ lookup('file', role_path + '/templates/grafana/hardware_metrics.json') | from_json }}"
+- block:
+    - name: Load Hardware Metrics dashboard JSON
+      ansible.builtin.set_fact:
+        hardware_dashboard_json: "{{ lookup('file', role_path + '/templates/grafana/hardware_metrics.json') | from_json }}"
+  rescue:
+    - name: Fail with helpful error if dashboard JSON is missing or invalid
+      ansible.builtin.fail:
+        msg: >-
+          Unable to load or parse the Hardware Metrics dashboard JSON file at
+          '{{ role_path }}/templates/grafana/hardware_metrics.json'.
+          Please check that the file exists and contains valid JSON.
 
 - name: Import Hardware Metrics dashboard into Grafana
   ansible.builtin.uri:
