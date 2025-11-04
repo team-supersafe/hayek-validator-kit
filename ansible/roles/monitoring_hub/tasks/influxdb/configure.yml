@@ -118,17 +118,17 @@
 
 - name: Set fact for hardware_metrics token
   ansible.builtin.set_fact:
-    hardware_metrics_token: "{{ influxdb_bucket_tokens[influxdb_additional_buckets[0].name] }}"
+    hardware_metrics_token: "{{ influxdb_bucket_tokens[hardware_metrics_bucket_name | default(influxdb_additional_buckets[0].name)] }}"
   when:
     - influxdb_bucket_tokens is defined
-    - influxdb_additional_buckets | length > 0
+    - (hardware_metrics_bucket_name is defined) or (influxdb_additional_buckets | length > 0)
 
 - name: Set fact for solana_metrics token
   ansible.builtin.set_fact:
-    solana_metrics_token: "{{ influxdb_bucket_tokens[influxdb_additional_buckets[1].name] }}"
+    solana_metrics_token: "{{ influxdb_bucket_tokens[solana_metrics_bucket_name | default(influxdb_additional_buckets[1].name)] }}"
   when:
     - influxdb_bucket_tokens is defined
-    - influxdb_additional_buckets | length > 1
+    - (solana_metrics_bucket_name is defined) or (influxdb_additional_buckets | length > 1)
 
 - name: Show write token for each bucket
   ansible.builtin.debug:

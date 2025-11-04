@@ -6,7 +6,7 @@ datasources:
     uid: "{{ grafana_config.hardware_metrics_source_uid | default('hardware_metrics_uid') }}"
     access: proxy
     url: http://localhost:8086
-    database: "{{ influxdb_additional_buckets[0].name }}"
+    database: "{{ hardware_metrics_bucket_name | default(influxdb_additional_buckets[0].name) }}"
     basicAuth: true
     basicAuthUser: "token"
     secureJsonData:
@@ -22,7 +22,7 @@ datasources:
     uid: "solana_metrics_uid"
     access: proxy
     url: http://localhost:8086
-    database: "{{ influxdb_additional_buckets[1].name }}"
+    database: "{{ solana_metrics_bucket_name | default(influxdb_additional_buckets[1].name) }}"
     basicAuth: true
     basicAuthUser: "token"
     secureJsonData:
