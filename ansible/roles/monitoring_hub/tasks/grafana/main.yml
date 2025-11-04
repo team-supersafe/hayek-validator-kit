@@ -10,5 +10,11 @@
 - name: Include Grafana service management tasks
   include_tasks: grafana/services.yml
 
+- name: Include Grafana auth/credentials tasks
+  include_tasks: grafana/grafana_auth.yml
+
 - name: Include Grafana dashboard management tasks
   include_tasks: grafana/dashboards.yml
+
+- name: Import Grafana dashboards
+  include_tasks: grafana/import_dashboards.yml

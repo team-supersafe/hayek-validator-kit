@@ -1,17 +1,16 @@
 ---
-- name: Precheck - Check if agave_version is defined
-  ansible.builtin.fail:
-    msg: "agave_version variable must be defined"
-  when: agave_version is not defined
-
-- name: Precheck - Validate agave_version format
-  ansible.builtin.fail:
-    msg: "agave_version must follow semantic versioning pattern (e.g. 1.2.3)"
-  when: not agave_version | regex_search('^[0-9]+\.[0-9]+\.[0-9]+$')
+- name: Precheck - Assert jito_version is defined and valid
+  ansible.builtin.assert:
+    that:
+      - jito_version is defined
+      - jito_version is regex('^[0-9]+\.[0-9]+\.[0-9]+$')
+    fail_msg: |
+      Required variable is missing or invalid:
+      - jito_version must be defined and follow semantic versioning (e.g. 1.2.3)
 
 - name: Precheck - Display version message
   ansible.builtin.debug:
-    msg: "Start Solana CLI setup for version {{ agave_version }}"
+    msg: "Start Jito-Solana CLI setup for version {{ jito_version }}"
 
 - name: Add hosts to known_hosts to comply with ansible config host_key_checking
   ansible.builtin.known_hosts:
@@ -21,14 +20,14 @@
   loop: "{{ ansible_play_hosts_all }}"
   when: hostvars[item].ansible_ssh_hostkey_rsa_public is defined
 
-- name: Check if the desired version of Solana CLI is already installed
+- name: Check if the desired version of Jito-Solana CLI is already installed
   block:
-    - name: Check if Solana CLI binary exists
+    - name: Check if Jito-Solana CLI binary exists
       ansible.builtin.stat:
         path: "{{ validator_solana_install_dir }}/solana"
       register: solana_binary
 
-    - name: Precheck - Get installed Solana CLI version
+    - name: Precheck - Get installed Jito-Solana CLI version
       ansible.builtin.command: "{{ validator_solana_install_dir }}/solana --version"
       register: installed_version
       changed_when: false
@@ -40,21 +39,21 @@
     # solana-cli 3.0.6 (src:90240211; feat:3073396398, client:JitoLabs)
     - name: Precheck - Extract installed version number
       ansible.builtin.set_fact:
-        installed_solana_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
+        installed_jito_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
       when: solana_binary.stat.exists and installed_version.stdout is defined
 
     - name: Precheck - Extract installed client identifier
       ansible.builtin.set_fact:
-        installed_solana_client: "{{ installed_version.stdout | regex_search('client:([A-Za-z0-9]+)', '\\1') | first }}"
+        installed_jito_client: "{{ installed_version.stdout | regex_search('client:([A-Za-z0-9]+)', '\\1') | first }}"
       when: solana_binary.stat.exists and installed_version.stdout is defined
 
-    - name: Precheck - Set fact for Solana CLI installation needed
+    - name: Precheck - Set fact for Jito-Solana CLI already installed
       ansible.builtin.set_fact:
-        solana_cli_already_installed: >-
+        jito_cli_already_installed: >-
           {{ solana_binary.stat.exists and
-             installed_solana_version is defined and
-             installed_solana_version == agave_version and
-             installed_solana_client is defined and installed_solana_client == 'Solana' }}
+             installed_jito_version is defined and
+             installed_jito_version == jito_version and
+             installed_jito_client is defined and installed_jito_client == 'JitoLabs' }}
 
 - name: Precheck - Find solana binary in PATH
   ansible.builtin.command: which solana
@@ -65,11 +64,12 @@
 - name: Debug installation status
   ansible.builtin.debug:
     msg: |
-      Solana CLI installation status:
+      Jito-Solana CLI installation status:
       - Binary exists: {{ solana_binary.stat.exists }}
-      - Binary path: {{ solana_binary.stat.exists | ternary(validator_solana_install_dir ~ '/solana', 'Not found') }}
-      - Installed version: {{ installed_solana_version | default('not found') }}
-      - Installed client: {{ installed_solana_client | default('not found') }}
-      - Desired client: Solana
-      - Desired version: {{ agave_version }}
-      - Already installed: {{ solana_cli_already_installed }}
+      - Binary path: "{{ solana_binary.stat.exists | ternary(validator_solana_install_dir ~ '/solana', 'Not found') }}"
+      - Binary in PATH: {{ (solana_which_result.stdout is defined and solana_which_result.stdout | length > 0) | ternary('True', 'False') }}
+      - Installed version: "{{ installed_jito_version | default('Not found') }}"
+      - Installed client: "{{ installed_jito_client | default('Not found') }}"
+      - Desired client: "JitoLabs"
+      - Desired version: "{{ jito_version }}"
+      - Already installed: {{ jito_cli_already_installed }}
