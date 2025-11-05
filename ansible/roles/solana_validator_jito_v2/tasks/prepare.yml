@@ -57,7 +57,7 @@
       retries: 3
       delay: 10
       until: relayer_stop_result is success
-      when: relayer_service_status.status.ActiveState == "active"
+      when: relayer_service_status.status is defined and relayer_service_status.status.ActiveState == "active"
       become: true
 
     - name: prepare - jito_relayer_cohosted - Remove jito-relayer service unit file
