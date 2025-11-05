@@ -36,7 +36,7 @@
       retries: 3
       delay: 10
       until: stop_result is success
-      when: service_status.status.ActiveState == "active"
+      when: service_status.status is defined and service_status.status.ActiveState == "active"
       become: true
 
 - name: prepare - Stop and remove relayer service if exists
