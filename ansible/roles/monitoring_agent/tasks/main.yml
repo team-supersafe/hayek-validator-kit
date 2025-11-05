@@ -2,7 +2,8 @@
 # Main Monitoring Agent tasks orchestrator
 
 - name: Include secrets variables
-  include_vars: vars/secrets.yml
+  ansible.builtin.include_vars: vars/secrets.yml
+  no_log: true
 
 - name: Include Telegraf tasks
   import_tasks: telegraf/main.yml
