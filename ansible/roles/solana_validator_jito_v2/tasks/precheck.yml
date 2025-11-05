@@ -2,7 +2,6 @@
 - name: Set value for validator_keys_dir
   ansible.builtin.set_fact:
     validator_keys_dir: "{{ validator_key_store + '/' + validator_name }}"
-  run_once: true
 
 - name: Gather facts for localhost
   ansible.builtin.setup:
