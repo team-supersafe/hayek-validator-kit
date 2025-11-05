@@ -1,5 +1,5 @@
 ---
-# remove when appropriate since the build is now managed by the solana_cli_jito role
+# Remove when appropriate since the build is now managed by the solana_cli_jito role
 jito_build_dir: "{{ validator_build_dir }}/jito-solana"
 # Override the default validator directories with V2 values
 keys_dir: "{{ validator_key_store }}"
