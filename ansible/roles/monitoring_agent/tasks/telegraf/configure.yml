@@ -8,7 +8,7 @@
 
 # Create necessary directories
 - name: Create scripts directory
-  file:
+  ansible.builtin.file:
     path: /etc/telegraf/scripts
     state: directory
     mode: '0755'
@@ -16,7 +16,7 @@
     group: telegraf
 
 - name: Create NVMe health script
-  template:
+  ansible.builtin.template:
     src: templates/nvme_health.sh.j2
     dest: /etc/telegraf/scripts/nvme_health.sh
     mode: '0755'
