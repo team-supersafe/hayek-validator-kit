@@ -20,7 +20,7 @@
     rm -rf "{{ ledger_path }}"/*
     rm -rf "{{ accounts_path }}"/*
     rm -rf "{{ snapshots_path }}"/*
-
+  become: true
 - name: Ensure ledger directory exists
   ansible.builtin.file:
     path: "{{ ledger_path }}"
