@@ -2,7 +2,7 @@
 # Main Telegraf tasks orchestrator
 
 - name: Include Telegraf installation tasks
-  include_tasks: telegraf/install.yml
+  ansible.builtin.include_tasks: telegraf/install.yml
 
 - name: Include Telegraf configuration tasks
-  include_tasks: telegraf/configure.yml
+  ansible.builtin.include_tasks: telegraf/configure.yml
