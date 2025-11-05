@@ -13,12 +13,12 @@ interval = "{{ get_hardware_metrics_interval }}"
 
 # Input Plugins
 [[inputs.cpu]]
-		percpu = true
-		totalcpu = true
-		collect_cpu_time = false
-		report_active = false
+	percpu = true
+	totalcpu = true
+	collect_cpu_time = false
+	report_active = false
 [[inputs.disk]]
-		ignore_fs = ["devtmpfs", "devfs"]
+	ignore_fs = ["devtmpfs", "devfs"]
 [[inputs.diskio]]
 [[inputs.mem]]
 [[inputs.net]]
