@@ -1,46 +1,7 @@
 ---
-- name: Ensure solana_cluster is defined and valid
-  ansible.builtin.assert:
-    that:
-      - solana_cluster is defined
-      - solana_cluster in ['localnet', 'testnet', 'mainnet']
-    fail_msg: >
-      "The playbook variable 'solana_cluster' must be defined and set to either 'localnet', 'testnet' or 'mainnet'."
-    success_msg: "solana_cluster is set to {{ solana_cluster }}"
-
-- name: Ensure jito_relayer_type variable is defined and valid
-  ansible.builtin.assert:
-    that:
-      - jito_relayer_type is defined
-      - jito_relayer_type in ['shared', 'co-hosted']
-    fail_msg: >
-      "The playbook variable 'jito_relayer_type' must be defined and set to either 'shared' or 'co-hosted'."
-    success_msg: "jito_relayer_type is set to {{ jito_relayer_type }}"
-
-- name: Ensure jito_version variable is defined
-  ansible.builtin.assert:
-    that:
-      - jito_version is defined
-    fail_msg: >
-      "The playbook variable 'jito_version' must be defined."
-    success_msg: "jito_version is set to {{ jito_version }}"
-
-- name: Ensure validator_name variable is defined
-  ansible.builtin.assert:
-    that:
-      - validator_name is defined
-    fail_msg: >
-      "The playbook variable 'validator_name' must be defined."
-    success_msg: "validator_name is set to {{ validator_name }}"
-
-- name: Ensure the validator_keys_dir is defined and valid
-  ansible.builtin.assert:
-    that:
-      - validator_keys_dir is defined
-      - validator_keys_dir == keys_dir + "/" + validator_name
-    fail_msg: >
-      "Variable 'validator_keys_dir' must be defined."
-    success_msg: "validator_keys_dir is set to {{ validator_keys_dir }}"
+- name: Set value for validator_keys_dir
+  ansible.builtin.set_fact:
+    validator_keys_dir: "{{ validator_key_store + '/' + validator_name }}"
 
 - name: Gather facts for localhost
   ansible.builtin.setup:
@@ -87,57 +48,16 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Warn if jito-relayer-block-eng.json is missing
-      ansible.builtin.debug:
-        msg: >
-          WARNING: jito-relayer-block-eng.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}.
-          The keypair will be generated later. When this happens, please be alert to copy
-          the public key from the console output as it needs to be registered with Jito
-          to whitelist our relayer.
-      when: not private_key_exists.stat.exists
+    - name: Fail if jito-relayer-block-eng.json is missing
+      ansible.builtin.assert:
+        that:
+          - private_key_exists.stat.exists
+        fail_msg: "jito-relayer-block-eng.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+        success_msg: "jito-relayer-block-eng.json found"
 
 - name: Get host architecture
   ansible.builtin.import_tasks: ../../common/tasks/set_host_architecture.yml
 
 # Disk space requirements (experimental)
-- name: Get initial disk space
-  ansible.builtin.shell: |
-    df -h "{{ solana_user_dir }}" | awk 'NR==2 {print $4}'
-  register: initial_space
-  changed_when: false
-
-- name: Print initial available space
-  ansible.builtin.debug:
-    msg: "Initial available space in /home/sol: {{ initial_space.stdout }}"
-
-- name: Set minimum required space (experimental)
-  ansible.builtin.set_fact:
-    min_required_space: "14G"  # This is an initial estimate, can be adjusted based on experience
-
-- name: Convert space to bytes for comparison
-  ansible.builtin.set_fact:
-    initial_space_bytes: >-
-      {% set size = initial_space.stdout | regex_replace('^([0-9.]+)\\s*([KMG])$', '\\1') | float %}
-      {% set unit = initial_space.stdout | regex_replace('^[0-9.]+\\s*([KMG])$', '\\1') %}
-      {% if unit == 'K' %}
-        {{ (size * 1024) | int }}
-      {% elif unit == 'M' %}
-        {{ (size * 1024 * 1024) | int }}
-      {% elif unit == 'G' %}
-        {{ (size * 1024 * 1024 * 1024) | int }}
-      {% endif %}
-    min_required_bytes: >-
-      {% set size = min_required_space | regex_replace('^([0-9.]+)\\s*([KMG])$', '\\1') | float %}
-      {% set unit = min_required_space | regex_replace('^[0-9.]+\\s*([KMG])$', '\\1') %}
-      {% if unit == 'K' %}
-        {{ (size * 1024) | int }}
-      {% elif unit == 'M' %}
-        {{ (size * 1024 * 1024) | int }}
-      {% elif unit == 'G' %}
-        {{ (size * 1024 * 1024 * 1024) | int }}
-      {% endif %}
-
-- name: Check if available space is sufficient
-  ansible.builtin.fail:
-    msg: "Insufficient disk space. Available: {{ initial_space.stdout }}, Minimum required: {{ min_required_space }}"
-  when: initial_space_bytes | int < min_required_bytes | int
+- name: precheck - Check minimum disk space
+  ansible.builtin.import_tasks: ../../common/tasks/check_minimum_disk_space.yml

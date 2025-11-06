@@ -8,9 +8,13 @@
   tags: [solana_validator_jito, prepare]
 
 - name: Cleanup the host from existing validator data
-  import_tasks: host_cleanup.yml
+  import_tasks: ../../solana_validator_shared/tasks/cleanup_validator_data.yml
   when: force_host_cleanup | default(false) | bool
   tags: [solana_validator_jito, cleanup]
+
+# NOTE: This PR will cover precheck, prepare, and cleanup tasks only. So let's end the play here.
+- name: stop playbook execution
+  ansible.builtin.meta: end_play
 
 # Jito relayer installation and configuration
 - name: Co-hosted Relayer installation

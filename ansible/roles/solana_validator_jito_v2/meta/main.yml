@@ -1,7 +1,7 @@
 ---
 dependencies:
-  - role: rust_env
-  - role: solana_cli
+  - role: rust_env_v2
+  - role: solana_cli_jito
     vars:
       agave_version: "{{ jito_version }}"
   - role: solana_validator_shared
