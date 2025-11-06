@@ -1,0 +1,4 @@
+---
+# Monitoring Agent Variables
+get_hardware_metrics_interval: 30s  # in seconds
+get_solana_metrics_interval: 30s   # in seconds
