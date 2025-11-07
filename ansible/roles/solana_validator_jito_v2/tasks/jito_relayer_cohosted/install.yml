@@ -71,12 +71,11 @@
     - name: Fix ownership and permissions of keys
       ansible.builtin.file:
         path: "{{ validator_keys_dir }}"
-        mode: "{{ validator_key_file_mode }}"
+        mode: "{{ validator_data_mode_owner_readonly }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
         recurse: true
   become: true
-  when: relayer_installation_needed | default(false)
 
 - name: jito_relayer_cohosted - install - Build Jito relayer from source
   import_tasks: build_from_source.yml

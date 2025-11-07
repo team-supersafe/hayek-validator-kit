@@ -11,5 +11,4 @@ jito_relayer_install_root: "{{ validator_root_dir }}/install/jito-relayer"
 jito_relayer_installed_releases_dir: "{{ jito_relayer_install_root }}/releases"
 jito_relayer_install_dir: "{{ jito_relayer_install_root }}/active_release"
 jito_relayer_user: "{{ solana_user | default('sol') }}"
-# TODO: This variable is defined but not used. the url is hardcoded in the relayer service template. fix!
-jito_relayer_metrics_config: host=http://metrics.jito.wtf:8086,db=relayer,u=relayer-operators,p=jito-relayer-write
+jito_relayer_metrics_config: "host=http://metrics.jito.wtf:8086,db=relayer,u=relayer-operators,p=jito-relayer-write"

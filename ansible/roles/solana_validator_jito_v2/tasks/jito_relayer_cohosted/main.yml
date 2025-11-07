@@ -7,9 +7,6 @@
   import_tasks: install.yml
   tags: [jito_relayer, install]
 
-- name: stop playbook execution
-  ansible.builtin.meta: end_play
-
 - name: Configure Jito relayer cohosted
   import_tasks: config.yml
   tags: [jito_relayer, config]
@@ -17,9 +14,3 @@
 - name: Verify Jito relayer cohosted setup
   import_tasks: verify.yml
   tags: [jito_relayer, verify]
-
-- name: Jito Relayer Co-hosted setup complete
-  debug:
-    msg: >-
-      Jito Relayer Co-hosted has been installed, configured and verified.
-  tags: [jito_relayer, done]

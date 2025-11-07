@@ -1,6 +1,11 @@
 ---
-- name: restart jito-relayer
-  become: true
+- name: handlers - Reload systemd
   ansible.builtin.systemd:
-    name: jito-relayer
-    state: restarted 
+    daemon_reload: true
+  become: true
+
+- name: handlers - Restart relayer service
+  ansible.builtin.systemd:
+    name: "{{ jito_relayer_service_name }}"
+    state: restarted
+  become: true
