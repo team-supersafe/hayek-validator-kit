@@ -7,6 +7,9 @@
   import_tasks: install.yml
   tags: [jito_relayer, install]
 
+- name: stop playbook execution
+  ansible.builtin.meta: end_play
+
 - name: Configure Jito relayer cohosted
   import_tasks: config.yml
   tags: [jito_relayer, config]
