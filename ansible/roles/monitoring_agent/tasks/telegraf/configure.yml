@@ -1,0 +1,24 @@
+# Telegraf configuration management tasks
+- name: Overwrite existing telegraf configuration file
+  ansible.builtin.template:
+    src: templates/telegraf.conf.j2
+    dest: /etc/telegraf/telegraf.conf
+    mode: preserve
+  notify: restart telegraf
+
+# Create necessary directories
+- name: Create scripts directory
+  ansible.builtin.file:
+    path: /etc/telegraf/scripts
+    state: directory
+    mode: '0755'
+    owner: telegraf
+    group: telegraf
+
+- name: Create NVMe health script
+  ansible.builtin.template:
+    src: templates/nvme_health.sh.j2
+    dest: /etc/telegraf/scripts/nvme_health.sh
+    mode: '0755'
+    owner: telegraf
+    group: telegraf

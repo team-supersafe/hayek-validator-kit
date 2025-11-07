@@ -1,0 +1,63 @@
+# Global Agent Configuration
+[agent]
+hostname = "{{ ansible_hostname }}"
+flush_interval = "60s"
+interval = "{{ get_hardware_metrics_interval }}"
+
+# Output Plugin InfluxDB Remote
+[[outputs.influxdb_v2]]
+  urls = [ "http://{{ monitoring_hub.host }}:{{ monitoring_hub.port }}" ]
+  organization = "{{ monitoring_hub.org }}"
+  bucket = "{{ monitoring_hub.hardware_bucket }}"
+  token = "{{ monitoring_hub.hardware_bucket_token }}"
+
+# Input Plugins
+[[inputs.cpu]]
+	percpu = true
+	totalcpu = true
+	collect_cpu_time = false
+	report_active = false
+[[inputs.disk]]
+	ignore_fs = ["devtmpfs", "devfs"]
+[[inputs.diskio]]
+[[inputs.mem]]
+[[inputs.net]]
+[[inputs.system]]
+[[inputs.swap]]
+[[inputs.netstat]]
+[[inputs.processes]]
+[[inputs.kernel]]
+[[inputs.ping]]
+	urls = ["api.mainnet-beta.solana.com"]
+[[inputs.exec]]
+	commands = ["bash /etc/telegraf/scripts/nvme_health.sh"]
+	timeout = "10s"
+	data_format = "influx"
+[[inputs.exec]]
+	commands = ["hostname"]
+	name_override = "server_hostname"
+	data_format = "value"
+	data_type = "string"
+[[inputs.exec]]
+	commands = ["bash -c 'for ip in $(hostname -I); do echo $ip | grep -qE \"^([0-9]{1,3}\\.){3}[0-9]{1,3}$\" && echo $ip && break; done'"]
+	name_override = "server_ip"
+	data_format = "value"
+	data_type = "string"
+
+# Security Updates Monitor
+[[inputs.exec]]
+	commands = ["bash -c \"apt list --upgradable 2>/dev/null | grep security | wc -l\""]
+	name_override = "security_updates_pending"
+	data_format = "value"
+	data_type = "integer"
+	interval = "300s"
+	timeout = "70s"
+
+# General Updates Monitor
+[[inputs.exec]]
+	commands = ["bash -c \"apt list --upgradable 2>/dev/null | grep upgradable | wc -l\""]
+	name_override = "general_updates_pending"
+	data_format = "value"
+	data_type = "integer"
+	interval = "300s"
+	timeout = "70s"

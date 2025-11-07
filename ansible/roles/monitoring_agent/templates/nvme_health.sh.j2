@@ -1,0 +1,21 @@
+#!/bin/bash
+# Script to monitor NVMe devices health status
+# Gets the percentage used value from all NVMe devices and outputs in InfluxDB format
+
+for i in {0..7}; do
+  if [ -e "/dev/nvme${i}n1" ]; then
+    output=$(smartctl -A /dev/nvme${i}n1 | grep 'Percentage Used')
+    
+    if [ -n "$output" ]; then
+      # Extract the Percentage Used value
+      usage=$(echo "$output" | awk '{print $3}' | tr -d '%')
+      if [[ -n "$usage" && "$usage" =~ ^[0-9]+$ ]]; then
+        echo "nvme_usage,device=nvme${i}n1 percentage_used=$usage"
+      else
+        echo "nvme_usage,device=nvme${i}n1 percentage_used=0"
+      fi
+    else
+      echo "nvme_usage,device=nvme${i}n1 percentage_used=0"
+    fi
+  fi
+done
