@@ -1,53 +1,60 @@
 ---
-- name: install_validator_keyset - Validate validator_name is defined
-  ansible.builtin.assert:
-    that:
-      - validator_name is defined
-    fail_msg: "validator_name must be defined"
+# Run tasks to detect validator rbac mode
+- name: Import solana_validator_rbac_mode tasks
+  ansible.builtin.import_tasks: detect_validator_rbac_mode.yml
 
-- name: install_validator_keyset - Validate validator_keyset_name is defined
-  ansible.builtin.assert:
-    that:
-      - validator_keyset_name is defined
-    fail_msg: "validator_keyset_name must be defined"
+- name: Perform validations for LEGACY validator deployments
+  block:
+    - name: install_validator_keyset - Validate validator_name is defined
+      ansible.builtin.assert:
+        that:
+          - validator_name is defined
+        fail_msg: "validator_name must be defined"
 
-- name: install_validator_keyset - Validate validator_type is defined
-  ansible.builtin.assert:
-    that:
-      - validator_type is defined
-    fail_msg: "validator_type must be defined"
+    - name: install_validator_keyset - Validate validator_keyset_name is defined
+      ansible.builtin.assert:
+        that:
+          - validator_keyset_name is defined
+        fail_msg: "validator_keyset_name must be defined"
 
-- name: install_validator_keyset - Validate validator_type value
-  ansible.builtin.assert:
-    that:
-      - validator_type in ['primary', 'hot-spare']
-    fail_msg: "validator_type must be set to 'primary' or 'hot-spare', got: {{ validator_type }}"
+    - name: install_validator_keyset - Validate validator_type is defined
+      ansible.builtin.assert:
+        that:
+          - validator_type is defined
+        fail_msg: "validator_type must be defined"
 
-- name: install_validator_keyset - Validate keys_dir is defined
-  ansible.builtin.assert:
-    that:
-      - keys_dir is defined
-    fail_msg: "keys_dir must be defined"
+    - name: install_validator_keyset - Validate validator_type value
+      ansible.builtin.assert:
+        that:
+          - validator_type in ['primary', 'hot-spare']
+        fail_msg: "validator_type must be set to 'primary' or 'hot-spare', got: {{ validator_type }}"
 
-- name: install_validator_keyset - Validate solana_user is defined
-  ansible.builtin.assert:
-    that:
-      - solana_user is defined
-    fail_msg: "solana_user must be defined"
+    - name: install_validator_keyset - Validate keys_dir is defined
+      ansible.builtin.assert:
+        that:
+          - keys_dir is defined
+        fail_msg: "keys_dir must be defined"
 
-- name: install_validator_keyset - Validate solana_install_dir is defined
-  ansible.builtin.assert:
-    that:
-      - solana_install_dir is defined
-    fail_msg: "solana_install_dir must be defined"
+    - name: install_validator_keyset - Validate solana_user is defined
+      ansible.builtin.assert:
+        that:
+          - solana_user is defined
+        fail_msg: "solana_user must be defined"
 
-- name: install_validator_keyset - Validate ansible_home_dir is defined
-  ansible.builtin.assert:
-    that:
-      - ansible_home_dir is defined
-    fail_msg: "ansible_home_dir must be defined"
+    - name: install_validator_keyset - Validate solana_install_dir is defined
+      ansible.builtin.assert:
+        that:
+          - solana_install_dir is defined
+        fail_msg: "solana_install_dir must be defined"
 
-- name: install_validator_keyset - Set required variables
+    - name: install_validator_keyset - Validate ansible_home_dir is defined
+      ansible.builtin.assert:
+        that:
+          - ansible_home_dir is defined
+        fail_msg: "ansible_home_dir must be defined"
+  when: not (validator_rbac_enabled | default(false))
+
+- name: Set needed variables for installing LEGACY validator keyset
   block:
     - name: install_validator_keyset - Set validator keys directory
       ansible.builtin.set_fact:
@@ -74,8 +81,9 @@
       register: local_comms_key_exists
       delegate_to: localhost
       run_once: true
+  when: not (validator_rbac_enabled | default(false))
 
-- name: install_validator_keyset - Reset validator keys directory
+- name: install_validator_keyset - Reset LEGACY validator keys directory
   block:
     - name: install_validator_keyset - Remove validator key store
       ansible.builtin.shell: |
@@ -91,28 +99,9 @@
         owner: "{{ solana_user }}"
         group: "{{ default_group }}"
   become: true
+  when: not (validator_rbac_enabled | default(false))
 
-# Run tasks to detect validator rbac mode to know where to pull the environment PATH from
-- name: Import solana_validator_rbac_mode tasks
-  ansible.builtin.import_tasks: detect_validator_rbac_mode.yml
-
-# Get shell environment PATH based on validator_rbac_enabled
-- name: install_validator_keyset - Get shell environment PATH (RBAC or legacy)
-  ansible.builtin.shell: |
-    {% if validator_rbac_enabled | default(false) %}
-    source /etc/profile.d/rust.sh
-    source /etc/profile.d/solana.sh
-    {% else %}
-    . "$HOME/.cargo/env"
-    . "$HOME/.bashrc"
-    {% endif %}
-    echo $PATH
-  args:
-    executable: /bin/bash
-  register: cli_shell_env_path
-  changed_when: false
-
-- name: install_validator_keyset - Install validator keys
+- name: install_validator_keyset - Install LEGACY validator keys
   block:
     - name: install_validator_keyset - Copy primary-target-identity.json to target host
       ansible.builtin.copy:
@@ -144,12 +133,9 @@
 
     - name: install_validator_keyset - Generate hot-spare-identity.json keypair
       ansible.builtin.shell: "{{ solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json -f"
-      environment:
-        PATH: "{{ cli_shell_env_path.stdout }}"
       args:
         chdir: "{{ validator_keys_dir }}"
       register: keygen_result
-      become: true
       when: not local_hot_spare_key_exists.stat.exists | default(false)
 
     - name: install_validator_keyset - Fail with error message (hot-spare-identity.json)
@@ -166,25 +152,9 @@
         dest: "{{ validator_keys_dir }}/identity.json"
         state: link
         force: true
-      become: true
+  when: not (validator_rbac_enabled | default(false))
 
-    - name: Fix ownership of identity.json symlink
-      ansible.builtin.file:
-        path: "{{ validator_keys_dir }}/identity.json"
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
-        follow: false
-      become: true
-
-    - name: Fix ownership of hot-spare-identity.json
-      ansible.builtin.file:
-        path: "{{ validator_keys_dir }}/hot-spare-identity.json"
-        mode: "{{ default_file_mode }}"
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
-      become: true
-
-- name: install_validator_keyset - Install jito relayer keys if applicable
+- name: install_validator_keyset - Install LEGACY validator jito relayer keys if applicable
   block:
     - name: install_validator_keyset - Copy jito-relayer-block-eng.json to target host if it exists on ansible_keys_dir
       ansible.builtin.copy:
@@ -198,26 +168,15 @@
 
     - name: install_validator_keyset - Generate jito-relayer-block-eng.json keypair
       ansible.builtin.shell: "{{ solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o jito-relayer-block-eng.json -f"
-      environment:
-        PATH: "{{ cli_shell_env_path.stdout }}"
       args:
         chdir: "{{ validator_keys_dir }}"
       register: jito_keygen_result
-      become: true
       when: not local_jito_key_exists.stat.exists | default(false)
 
     - name: install_validator_keyset - Fail with error message (jito-relayer-block-eng.json)
       ansible.builtin.fail:
         msg: "Could not generate jito-relayer-block-eng.json keypair. Error: {{ jito_keygen_result }}"
       when: jito_keygen_result is defined and jito_keygen_result.rc is defined and jito_keygen_result.rc != 0
-
-    - name: Fix ownership of jito-relayer-block-eng.json
-      ansible.builtin.file:
-        path: "{{ validator_keys_dir }}/jito-relayer-block-eng.json"
-        mode: "{{ default_file_mode }}"
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
-      become: true
 
     - name: install_validator_keyset - Copy Jito Relayer Comms private key to target host if it exists on ansible_keys_dir
       ansible.builtin.copy:
@@ -234,7 +193,6 @@
         openssl genrsa --out {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem 2048
       args:
         creates: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
-      become: true
       when: not local_comms_key_exists.stat.exists | default(false)
 
     - name: install_validator_keyset - Generate Jito Relayer Comms RSA public key on target host
@@ -242,6 +200,4 @@
         openssl rsa -in {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem -pubout -out {{ validator_keys_dir }}/jito-relayer-comms-pub.pem
       args:
         creates: "{{ validator_keys_dir }}/jito-relayer-comms-pub.pem"
-      become: true
-
-  when: (target_host_running_jito_relayer | default(false)) or ((jito_relayer_type is defined) and (jito_relayer_type == 'co-hosted'))
+  when: ((target_host_running_jito_relayer | default(false)) or ((jito_relayer_type is defined) and (jito_relayer_type == 'co-hosted'))) and (not (validator_rbac_enabled | default(false)))
