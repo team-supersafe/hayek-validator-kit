@@ -201,3 +201,8 @@
       args:
         creates: "{{ validator_keys_dir }}/jito-relayer-comms-pub.pem"
   when: ((target_host_running_jito_relayer | default(false)) or ((jito_relayer_type is defined) and (jito_relayer_type == 'co-hosted'))) and (not (validator_rbac_enabled | default(false)))
+
+# Include RBAC tasks if enabled
+- name: install_validator_keyset - Include install_validator_keyset_rbac tasks if RBAC is enabled
+  ansible.builtin.include_tasks: install_validator_keyset_rbac.yml
+  when: validator_rbac_enabled | default(false)
