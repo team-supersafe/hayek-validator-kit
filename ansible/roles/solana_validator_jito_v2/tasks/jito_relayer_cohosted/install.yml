@@ -40,12 +40,6 @@
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
 
-    - name: jito_relayer_cohosted - install - Fail with error message (jito-relayer-block-eng.json)
-      ansible.builtin.fail:
-        msg: "Could not generate jito-relayer-block-eng.json keypair. Error: {{ jito_keygen_result }}"
-      when: jito_keygen_result is defined and jito_keygen_result.rc is defined and jito_keygen_result.rc != 0
-      become: false
-
     - name: jito_relayer_cohosted - install - Copy Jito Relayer Comms private key to target host if it exists on ansible_keys_dir
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/jito-relayer-comms-pvt.pem"
