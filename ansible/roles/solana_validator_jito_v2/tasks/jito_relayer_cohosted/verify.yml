@@ -49,7 +49,7 @@
       The jito-transaction-relayer process is NOT running on {{ inventory_hostname }}.
       The relayer service failed to start, and no process was found.
       Please check the relayer logs and startup scripts for errors.
-  when: relayer_process.pids | length == 0
+  when: (relayer_process.pids | default([])) | length == 0
 
 - name: verify - Print jito-transaction-relayer process PIDs
   ansible.builtin.debug:
