@@ -1,0 +1,22 @@
+[Unit]
+Description=Telegraf Mainnet Debug
+Documentation=https://github.com/influxdata/telegraf
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+NotifyAccess=all
+EnvironmentFile=-/etc/default/telegraf
+User=telegraf
+ImportCredential=telegraf.*
+ExecStart=/usr/bin/telegraf -config /etc/telegraf/telegraf-debug.conf $TELEGRAF_OPTS
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartForceExitStatus=SIGPIPE
+KillMode=mixed
+LimitMEMLOCK=8M:8M
+PrivateMounts=true
+
+[Install]
+WantedBy=multi-user.target

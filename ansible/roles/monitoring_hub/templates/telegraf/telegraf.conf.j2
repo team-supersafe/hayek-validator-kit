@@ -1,0 +1,20 @@
+# Global Agent Configuration
+[agent]
+hostname = "{{ ansible_hostname }}"
+flush_interval = "60s"
+interval = "{{ get_hardware_metrics_interval }}"
+
+# Output Plugin InfluxDB Remote
+[[outputs.influxdb_v2]]
+  urls = [ "http://{{ monitoring_hub.host }}:{{ monitoring_hub.port }}" ]
+  organization = "{{ monitoring_hub.org }}"
+  bucket = "{{ monitoring_hub.hardware_bucket }}"
+  token = "{{ monitoring_hub.hardware_bucket_token }}"
+
+# Plugin to Run Monitoring Script
+[[inputs.exec]]
+  commands = ["sudo -u sol /home/sol/monitoring/monitor-mainnet.sh"]
+  interval = "1m"
+  timeout = "1m"
+  data_format = "influx"
+  data_type = "integer"
