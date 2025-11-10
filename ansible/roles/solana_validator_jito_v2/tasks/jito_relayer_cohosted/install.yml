@@ -80,3 +80,5 @@
 - name: jito_relayer_cohosted - install - Build Jito relayer from source
   import_tasks: build_from_source.yml
   when: relayer_installation_needed | default(false)
+  tags:
+    - jito_relayer.build
