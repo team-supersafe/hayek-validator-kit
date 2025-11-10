@@ -1,5 +1,5 @@
 ---
-- name: jito_relayer_cohosted - Precheck - Check that all jito relayer specifiv vars are defined
+- name: jito_relayer_cohosted - Precheck - Check that all jito relayer specific vars are defined
   ansible.builtin.assert:
     that:
       - jito_relayer_build_dir is defined
