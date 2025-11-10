@@ -23,6 +23,7 @@
         port: 11229
         proto: udp
   become: true
+  tags: [jito_relayer.config, jito_relayer.firewall]
   when: (jito_relayer_open_ports_needed | default(false)) and (solana_cluster != 'localnet')
 
 # Service
@@ -44,6 +45,7 @@
         state: started
       ignore_errors: yes
   become: true
+  tags: [jito_relayer.config, jito_relayer.systemd]
   rescue:
     - name: jito_relayer_cohosted - config - Fail with error message
       ansible.builtin.fail:
