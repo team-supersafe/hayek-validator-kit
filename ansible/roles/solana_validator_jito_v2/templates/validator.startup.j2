@@ -35,11 +35,8 @@ exec agave-validator \
 --wal-recovery-mode skip_any_corrupted_record \
 --limit-ledger-size {% if limit_ledger_size is defined %}{{ limit_ledger_size }}{% endif %} \
 --block-verification-method unified-scheduler \
-{% if solana_cluster != "localnet" %}
-{% if poh_pinned_cpu_core_enabled is defined and poh_pinned_cpu_core_enabled and poh_pinned_cpu_core is defined %}
+{% if solana_cluster != "localnet" and poh_pinned_cpu_core_enabled is defined and poh_pinned_cpu_core_enabled and poh_pinned_cpu_core is defined %}
 --experimental-poh-pinned-cpu-core {{ poh_pinned_cpu_core }} \
-{% endif %}
---disable-accounts-disk-index \
 {% endif %}
 --tip-payment-program-pubkey {{ jito_tip_payment_program_pubkey }} \
 --tip-distribution-program-pubkey {{ jito_tip_distribution_program_pubkey }} \
