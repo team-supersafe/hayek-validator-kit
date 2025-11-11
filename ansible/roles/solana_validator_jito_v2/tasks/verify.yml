@@ -1,0 +1,72 @@
+---
+- name: verify - Check if Jito-Solana binary exists
+  ansible.builtin.stat:
+    path: "{{ solana_install_dir }}"
+  register: solana_binary
+
+- name: verify - Fail if Jito-Solana binary is missing
+  ansible.builtin.fail:
+    msg: "Jito-Solana binary not found at {{ solana_install_dir }}!"
+  when: not solana_binary.stat.exists
+
+- name: verify - Get validator systemd service status
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+  register: validator_service_status
+  changed_when: false
+
+- name: verify - Print validator service status
+  ansible.builtin.debug:
+    var: validator_service_status
+
+- name: verify - Get last 50 lines of validator logs
+  ansible.builtin.command: journalctl -u {{ validator_service_name }} -n 50 --no-pager --since "10 seconds ago"
+  register: validator_logs
+  changed_when: false
+
+- name: verify - Print last 50 lines of validator logs
+  ansible.builtin.debug:
+    var: validator_logs.stdout_lines
+
+- name: verify - Check validator process status
+  ansible.builtin.pids:
+    pattern: agave-validator
+  register: validator_process
+  changed_when: false
+  ignore_errors: true
+  failed_when: false
+
+- name: verify - Fail if validator process is not running
+  ansible.builtin.fail:
+    msg: |
+      The validator process is NOT running on {{ inventory_hostname }}.
+      The validator service failed to start, and no process was found.
+      Please check the validator logs and startup scripts for errors.
+  when: validator_process.pids | length == 0
+
+- name: verify - Print validator process PIDs
+  ansible.builtin.debug:
+    var: validator_process.pids
+
+- name: verify - Check validator service file
+  ansible.builtin.slurp:
+    src: /etc/systemd/system/{{ validator_service_name }}.service
+  register: validator_service_file
+
+- name: verify - Print validator service file
+  ansible.builtin.debug:
+    msg: "{{ validator_service_file.content | b64decode }}"
+
+- name: verify - Check validator startup script
+  ansible.builtin.slurp:
+    src: "{{ validator_scripts_dir }}/run-{{ validator_name }}.sh"
+  register: validator_startup_script
+
+- name: verify - Print validator startup script
+  ansible.builtin.debug:
+    msg: "{{ validator_startup_script.content | b64decode }}"
+
+- name: verify - Summary - Jito-Solana validator verification complete
+  ansible.builtin.debug:
+    msg: |
+      Jito-Solana validator verification complete. Check service status and logs above for troubleshooting.

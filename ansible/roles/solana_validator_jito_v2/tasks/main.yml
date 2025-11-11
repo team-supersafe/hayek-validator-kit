@@ -16,14 +16,16 @@
 - name: Co-hosted Relayer installation
   import_tasks: jito_relayer_cohosted/main.yml
   when: jito_relayer_type == 'co-hosted'
+  tags: [solana_validator_jito, jito_relayer]
 
-# NOTE: End playbook execution here to monitor relayer installation. Validator config for next PR
-- name: stop playbook execution
-  ansible.builtin.meta: end_play
+- name: Jito-Solana client configuration
+  import_tasks: configure.yml
+  tags: [solana_validator_jito, configure]
 
-# Jito client installation and configuration
-- name: Setup Jito client
-  import_tasks: jito_client/main.yml
+- name: Jito-Solana client verification
+  import_tasks: verify.yml
+  tags: [solana_validator_jito, verify]
 
 - name: Print Summary
   import_tasks: summary.yml
+  tags: [solana_validator_jito, summary]
