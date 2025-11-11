@@ -1,13 +1,5 @@
-# Telegraf configuration management tasks
-- name: Overwrite existing telegraf configuration file
-  ansible.builtin.template:
-    src: templates/telegraf.conf.j2
-    dest: /etc/telegraf/telegraf.conf
-    mode: preserve
-  notify: restart telegraf
-
-# Create necessary directories
-- name: Create scripts directory
+# Telegraf per-network configuration management tasks
+- name: Ensure scripts directory exists
   ansible.builtin.file:
     path: /etc/telegraf/scripts
     state: directory
@@ -15,10 +7,48 @@
     owner: telegraf
     group: telegraf
 
-- name: Create NVMe health script
+- name: Render per-network Telegraf configs
   ansible.builtin.template:
-    src: templates/nvme_health.sh.j2
-    dest: /etc/telegraf/scripts/nvme_health.sh
-    mode: '0755'
+    src: telegraf/telegraf.conf.j2
+    dest: "/etc/telegraf/telegraf-{{ item.value.network_name }}.conf"
     owner: telegraf
     group: telegraf
+    mode: '0644'
+  loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
+  loop_control:
+    label: "telegraf-{{ item.value.network_name }}.conf"
+
+- name: Render per-network monitor scripts
+  ansible.builtin.template:
+    src: telegraf/monitor.sh.j2
+    dest: "/etc/telegraf/scripts/monitor-{{ item.value.network_name }}.sh"
+    owner: telegraf
+    group: telegraf
+    mode: '0755'
+  loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
+  loop_control:
+    label: "monitor-{{ item.value.network_name }}.sh"
+
+- name: Render per-network systemd units
+  ansible.builtin.template:
+    src: telegraf/telegraf.service.j2
+    dest: "/etc/systemd/system/telegraf-{{ item.value.network_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
+  loop_control:
+    label: "telegraf-{{ item.value.network_name }}.service"
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start per-network Telegraf services
+  ansible.builtin.systemd:
+    name: "telegraf-{{ item.value.network_name }}.service"
+    enabled: true
+    state: started
+  loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
+  loop_control:
+    label: "start telegraf-{{ item.value.network_name }}"

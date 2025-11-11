@@ -1,5 +1,5 @@
 [Unit]
-Description=Telegraf Mainnet Debug
+Description=Telegraf {{ item.value.network_name }} Metrics
 Documentation=https://github.com/influxdata/telegraf
 After=network-online.target
 Wants=network-online.target
@@ -9,8 +9,7 @@ Type=notify
 NotifyAccess=all
 EnvironmentFile=-/etc/default/telegraf
 User=telegraf
-ImportCredential=telegraf.*
-ExecStart=/usr/bin/telegraf -config /etc/telegraf/telegraf-debug.conf $TELEGRAF_OPTS
+ExecStart=/usr/bin/telegraf -config /etc/telegraf/telegraf-{{ item.value.network_name }}.conf $TELEGRAF_OPTS
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartForceExitStatus=SIGPIPE

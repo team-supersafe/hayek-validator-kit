@@ -30,4 +30,6 @@
   ansible.builtin.apt:
     name: 
       - iputils-ping
+      - jq
+      - bc
     state: present
