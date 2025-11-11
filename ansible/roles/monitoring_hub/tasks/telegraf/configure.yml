@@ -52,3 +52,8 @@
   loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
   loop_control:
     label: "start telegraf-{{ item.value.network_name }}"
+
+- name: Remove generic telegraf.conf if present
+  ansible.builtin.file:
+    path: /etc/telegraf/telegraf.conf
+    state: absent
