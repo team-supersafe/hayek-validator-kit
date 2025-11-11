@@ -1,0 +1,20 @@
+# Global Agent Configuration
+[agent]
+hostname = "{{ ansible_hostname }}"
+flush_interval = "60s"
+interval = "{{ item.value.metrics_interval | default('60s') }}"
+
+# Output Plugin InfluxDB Remote
+[[outputs.influxdb_v2]]
+  urls = [ "http://localhost:{{ influxdb_port | default(8086) }}" ]
+  organization = "{{ influxdb_init_org }}"
+  bucket = "{{ solana_metrics_bucket_name | default(influxdb_additional_buckets[1].name) }}"
+  token = "{{ solana_metrics_token }}"
+
+# Plugin to Run Monitoring Script
+[[inputs.exec]]
+  commands = ["/etc/telegraf/scripts/monitor-{{ item.value.network_name }}.sh"]
+  interval = "1m"
+  timeout = "1m"
+  data_format = "influx"
+  data_type = "integer"

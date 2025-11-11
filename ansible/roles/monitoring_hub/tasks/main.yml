@@ -34,5 +34,8 @@
 - name: Configure Grafana datasources (after InfluxDB tokens are ready)
   include_tasks: grafana/configure_datasources.yml
 
+- name: Configure Telegraf
+  include_tasks: telegraf/main.yml
+  
 - name: Summary report of monitoring hub setup
   include_tasks: summary.yml
