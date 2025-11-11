@@ -9,3 +9,16 @@
     name: "{{ jito_relayer_service_name }}"
     state: restarted
   become: true
+
+- name: handlers - Restart validator service
+  ansible.builtin.systemd:
+    name: "{{ validator_service_name }}"
+    state: restarted
+  become: true
+
+- name: handlers - Restart validator logrotate timer
+  ansible.builtin.systemd:
+    name: "validator-logrotate-{{ validator_service_name }}.timer"
+    state: restarted
+  become: true
+  when: solana_cluster == 'localnet'
