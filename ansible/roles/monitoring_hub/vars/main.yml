@@ -70,7 +70,7 @@ solana:
 monitoring_services:
   - grafana-server
   - influxdb
-  - telegraf-{{ network.mainnet.network_name }}
-  - telegraf-{{ network.testnet.network_name }}
-  - telegraf-{{ network.devnet.network_name }}
-  - telegraf-{{ network.localnet.network_name }}
+  - telegraf-{{ solana.network.mainnet.network_name }}
+  - telegraf-{{ solana.network.testnet.network_name }}
+  - telegraf-{{ solana.network.devnet.network_name }}
+  - telegraf-{{ solana.network.localnet.network_name }}
