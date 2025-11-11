@@ -28,8 +28,9 @@
 # Install necessary dependencies
 - name: Ensure required packages are installed
   ansible.builtin.apt:
-    name: 
+    name:
       - iputils-ping
       - jq
       - bc
+      - curl
     state: present

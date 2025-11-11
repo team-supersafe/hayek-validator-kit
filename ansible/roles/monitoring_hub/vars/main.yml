@@ -46,17 +46,17 @@ solana_cli_bin: "/home/{{ monitoring_user }}/.local/share/solana/install/active_
 solana:
   network:
     mainnet:
-      enabled: true
+      enabled: false
       network_name: "mainnet"
       metrics_interval: "30s"
       rpc_url: "https://api.mainnet-beta.solana.com/"
     testnet:
-      enabled: true
+      enabled: false
       network_name: "testnet"
       metrics_interval: "30s"
       rpc_url: "https://api.testnet.solana.com/"
     devnet:
-      enabled: true
+      enabled: false
       network_name: "devnet"
       metrics_interval: "30s"
       rpc_url: "https://api.devnet.solana.com/"
@@ -64,7 +64,7 @@ solana:
       enabled: true
       network_name: "localnet"
       metrics_interval: "30s"
-      rpc_url: "http://127.0.0.1:8899"
+      rpc_url: "http://172.25.0.10:8899"
 
 # Monitoring services to manage
 monitoring_services:
