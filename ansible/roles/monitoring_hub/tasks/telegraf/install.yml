@@ -1,0 +1,36 @@
+---
+# Install Telegraf on Ubuntu
+- name: Download InfluxData GPG key
+  ansible.builtin.get_url:
+    url: https://repos.influxdata.com/influxdata-archive_compat.key
+    dest: /tmp/influxdata-archive_compat.key
+    mode: '0644'
+
+- name: Import InfluxData GPG key to apt
+  ansible.builtin.shell: |
+    gpg --dearmor < /tmp/influxdata-archive_compat.key > /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg
+  args:
+    creates: /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg
+
+- name: Add InfluxData repository (jammy fallback)
+  ansible.builtin.shell: |
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/ubuntu jammy stable" > /etc/apt/sources.list.d/influxdb.list
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install telegraf
+  ansible.builtin.apt:
+    name: telegraf
+    state: present
+
+# Install necessary dependencies
+- name: Ensure required packages are installed
+  ansible.builtin.apt:
+    name:
+      - iputils-ping
+      - jq
+      - bc
+      - curl
+    state: present

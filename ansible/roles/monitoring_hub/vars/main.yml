@@ -40,7 +40,37 @@ influxdb_additional_buckets:
 # Variables override for monitoring_hub role (compatibility)
 solana_user: "{{ monitoring_user }}"
 
+# Solana specific variables
+solana_cli_bin: "/home/{{ monitoring_user }}/.local/share/solana/install/active_release/bin/solana"
+
+solana:
+  network:
+    mainnet:
+      enabled: false
+      network_name: "mainnet"
+      metrics_interval: "30s"
+      rpc_url: "https://api.mainnet-beta.solana.com/"
+    testnet:
+      enabled: false
+      network_name: "testnet"
+      metrics_interval: "30s"
+      rpc_url: "https://api.testnet.solana.com/"
+    devnet:
+      enabled: false
+      network_name: "devnet"
+      metrics_interval: "30s"
+      rpc_url: "https://api.devnet.solana.com/"
+    localnet:
+      enabled: true
+      network_name: "localnet"
+      metrics_interval: "30s"
+      rpc_url: "http://172.25.0.10:8899"
+
 # Monitoring services to manage
 monitoring_services:
   - grafana-server
   - influxdb
+  - telegraf-{{ solana.network.mainnet.network_name }}
+  - telegraf-{{ solana.network.testnet.network_name }}
+  - telegraf-{{ solana.network.devnet.network_name }}
+  - telegraf-{{ solana.network.localnet.network_name }}

@@ -28,6 +28,7 @@ all:
         host-alpha:
         host-bravo:
         host-charlie:
+        host-monitoring:
 
     # ───── Solana Cluster Grouping ─────
     solana_localnet:
@@ -35,3 +36,4 @@ all:
         host-alpha:
         host-bravo:
         host-charlie:
+        host-monitoring:
