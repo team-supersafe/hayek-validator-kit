@@ -1,9 +1,14 @@
 ---
-# Remove when appropriate since the build is now managed by the solana_cli_jito role
-jito_build_dir: "{{ validator_build_dir }}/jito-solana"
 # Override the default validator directories with V2 values
 keys_dir: "{{ validator_key_store }}"
 solana_install_dir: "{{ validator_solana_install_dir }}"
 default_group: "{{ validator_operators_group }}"
 default_file_mode: "{{ validator_key_file_mode }}"
 default_directory_mode: "{{ validator_data_mode_owner_readonly }}"
+# Jito relayer specific variables
+jito_relayer_build_dir: "{{ validator_build_dir }}/jito_relayer"
+jito_relayer_install_root: "{{ validator_root_dir }}/install/jito-relayer"
+jito_relayer_installed_releases_dir: "{{ jito_relayer_install_root }}/releases"
+jito_relayer_install_dir: "{{ jito_relayer_install_root }}/active_release"
+jito_relayer_user: "{{ solana_user | default('sol') }}"
+jito_relayer_metrics_config: "host=http://metrics.jito.wtf:8086,db=relayer,u=relayer-operators,p=jito-relayer-write"

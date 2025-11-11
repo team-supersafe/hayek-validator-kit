@@ -3,59 +3,54 @@
 - name: jito_relayer_cohosted - config - Ensure firewall ports are open
   block:
     - name: jito_relayer_cohosted - config - Ensure UFW is installed
-      become: true
       ansible.builtin.apt:
         name: ufw
         state: present
-      tags: [jito_relayer.config, jito_relayer.firewall]
 
     - name: jito_relayer_cohosted - config - Ensure UFW is enabled
-      become: true
       ansible.builtin.ufw:
         state: enabled
-      tags: [jito_relayer.config, jito_relayer.firewall]
 
     - name: jito_relayer_cohosted - config - Open UDP port 11228 for Jito relayer
-      become: true
       ansible.builtin.ufw:
         rule: allow
         port: 11228
         proto: udp
-      tags: [jito_relayer.config, jito_relayer.firewall]
 
     - name: jito_relayer_cohosted - config - Open UDP port 11229 for Jito relayer
-      become: true
       ansible.builtin.ufw:
         rule: allow
         port: 11229
         proto: udp
-      tags: [jito_relayer.config, jito_relayer.firewall]
+  become: true
+  tags: [jito_relayer.config, jito_relayer.firewall]
   when: (jito_relayer_open_ports_needed | default(false)) and (solana_cluster != 'localnet')
 
 # Service
-- name: jito_relayer_cohosted - config - Template Jito relayer systemd service file
-  become: true
-  ansible.builtin.template:
-    src: jito-relayer.service.j2
-    dest: "/etc/systemd/system/{{ jito_relayer_service_name }}.service"
-    mode: "0644"
-    owner: root
-    group: root
-  notify: "restart {{ jito_relayer_service_name }}"
-  tags: [jito_relayer.config, jito_relayer.systemd]
+- name: jito_relayer_cohosted - config - Configure Jito relayer systemd service
+  block:
+    - name: jito_relayer_cohosted - config - Template Jito relayer systemd service file
+      ansible.builtin.template:
+        src: jito-relayer.service.j2
+        dest: "/etc/systemd/system/{{ jito_relayer_service_name }}.service"
+        mode: "0644"
+      notify:
+        - handlers - Reload systemd
+        - handlers - Restart relayer service
 
-- name: jito_relayer_cohosted - config - Reload systemd to pick up new service
+    - name: jito_relayer_cohosted - config - Enable Jito relayer service
+      ansible.builtin.systemd:
+        name: "{{ jito_relayer_service_name }}"
+        enabled: yes
+        state: started
+      ignore_errors: yes
   become: true
-  ansible.builtin.systemd:
-    daemon_reload: yes
-  ignore_errors: yes
   tags: [jito_relayer.config, jito_relayer.systemd]
+  rescue:
+    - name: jito_relayer_cohosted - config - Fail with error message
+      ansible.builtin.fail:
+        msg: "Failed to configure Jito relayer systemd service. Error: {{ ansible_failed_result }}"
 
-- name: jito_relayer_cohosted - config - Enable Jito relayer service
-  become: true
-  ansible.builtin.systemd:
-    name: "{{ jito_relayer_service_name }}"
-    enabled: yes
-    state: started
-  ignore_errors: yes
-  tags: [jito_relayer.config, jito_relayer.systemd]
+- name: jito_relayer_cohosted - config - Configuration complete
+  ansible.builtin.debug:
+    msg: "Jito relayer cohosted configuration complete."

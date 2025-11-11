@@ -12,14 +12,14 @@
   when: force_host_cleanup | default(false) | bool
   tags: [solana_validator_jito, cleanup]
 
-# NOTE: This PR will cover precheck, prepare, and cleanup tasks only. So let's end the play here.
-- name: stop playbook execution
-  ansible.builtin.meta: end_play
-
 # Jito relayer installation and configuration
 - name: Co-hosted Relayer installation
   import_tasks: jito_relayer_cohosted/main.yml
   when: jito_relayer_type == 'co-hosted'
+
+# NOTE: End playbook execution here to monitor relayer installation. Validator config for next PR
+- name: stop playbook execution
+  ansible.builtin.meta: end_play
 
 # Jito client installation and configuration
 - name: Setup Jito client

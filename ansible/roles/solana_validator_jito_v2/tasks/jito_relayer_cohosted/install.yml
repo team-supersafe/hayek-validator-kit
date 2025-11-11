@@ -1,57 +1,78 @@
 ---
-- name: Installing Jito Relayer Co-Hosted
+- name: jito_relayer_cohosted - install - Installing Jito Relayer Co-Hosted
   ansible.builtin.debug:
     msg: "Setting up Co-Hosted Jito Relayer"
 
-- name: jito_relayer_cohosted - install - Gather package facts
-  ansible.builtin.package_facts:
-    manager: apt
-  when: relayer_installation_needed | default(false)
-
-- name: jito_relayer_cohosted - install - Set required packages
+- name: jito_relayer_cohosted - install - Set validator keys directory
   ansible.builtin.set_fact:
-    required_packages:
-      - jq
-      - git
-      - libssl-dev
-      - libudev-dev
-      - pkg-config
-      - zlib1g-dev
-      - llvm
-      - clang
-      - cmake
-      - make
-      - libprotobuf-dev
-      - protobuf-compiler
-  when: relayer_installation_needed | default(false)
-
-- name: jito_relayer_cohosted - install - Check which packages need to be installed
-  ansible.builtin.set_fact:
-    packages_to_install: "{{ required_packages | difference(ansible_facts.packages.keys() | list) }}"
-  when: relayer_installation_needed | default(false)
+    validator_keys_dir: "{{ keys_dir }}/{{ validator_name }}"
 
 - name: jito_relayer_cohosted - install - Install prerequisites
   become: true
-  block:
-    - name: jito_relayer_cohosted - install - Update package index
-      ansible.builtin.apt:
-        update_cache: yes
-      when: packages_to_install | length > 0
-
-    - name: jito_relayer_cohosted - install - Install missing packages
-      ansible.builtin.apt:
-        name: "{{ packages_to_install }}"
-        update_cache: true
-      when: packages_to_install | length > 0
+  ansible.builtin.apt:
+    name:
+      - git
+    update_cache: true
   when: relayer_installation_needed | default(false)
 
-- name: jito_relayer_cohosted - install - Generate Jito relayer Auth keys
-  import_tasks: gen_relayer_keys.yml
-  tags:
-    - jito_relayer.gen_setup_keys
+- name: jito_relayer_cohosted - install - Check if Jito Relayer Comms private key exists in ansible_keys_dir
+  ansible.builtin.stat:
+    path: "{{ ansible_keys_dir }}/jito-relayer-comms-pvt.pem"
+  register: local_comms_key_exists
+  delegate_to: localhost
+  run_once: true
+
+- name: jito_relayer_cohosted - install - Install jito relayer keys if applicable
+  block:
+    - name: jito_relayer_cohosted - install - Ensure keys directory exists
+      ansible.builtin.file:
+        path: "{{ validator_keys_dir }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+        mode: "{{ validator_data_mode_owner_readonly }}"
+        state: directory
+
+    - name: jito_relayer_cohosted - install - Copy jito-relayer-block-eng.json to target host if it exists on ansible_keys_dir
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
+        dest: "{{ validator_keys_dir }}/jito-relayer-block-eng.json"
+        mode: "{{ validator_key_file_mode }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+
+    - name: jito_relayer_cohosted - install - Copy Jito Relayer Comms private key to target host if it exists on ansible_keys_dir
+      ansible.builtin.copy:
+        src: "{{ ansible_keys_dir }}/jito-relayer-comms-pvt.pem"
+        dest: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
+        mode: "{{ validator_key_file_mode }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+      when: local_comms_key_exists.stat.exists | default(false)
+
+    - name: jito_relayer_cohosted - install - Generate Jito Relayer Comms RSA private key on target host if not found on ansible host
+      ansible.builtin.shell: |
+        openssl genrsa --out {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem 2048
+      args:
+        creates: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
+      when: not local_comms_key_exists.stat.exists | default(false)
+
+    - name: jito_relayer_cohosted - install - Generate Jito Relayer Comms RSA public key on target host
+      ansible.builtin.shell: |
+        openssl rsa -in {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem -pubout -out {{ validator_keys_dir }}/jito-relayer-comms-pub.pem
+      args:
+        creates: "{{ validator_keys_dir }}/jito-relayer-comms-pub.pem"
+
+    - name: Fix ownership and permissions of keys
+      ansible.builtin.file:
+        path: "{{ validator_keys_dir }}"
+        mode: "{{ validator_data_mode_owner_readonly }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+        recurse: true
+  become: true
 
 - name: jito_relayer_cohosted - install - Build Jito relayer from source
   import_tasks: build_from_source.yml
+  when: relayer_installation_needed | default(false)
   tags:
     - jito_relayer.build
-  when: relayer_installation_needed | default(false)
