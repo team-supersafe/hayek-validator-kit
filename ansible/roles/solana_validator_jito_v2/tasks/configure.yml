@@ -19,6 +19,7 @@
           ansible.builtin.command: solana-keygen pubkey {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/vote-account.json
           register: vote_account_cmd
           delegate_to: localhost
+          changed_when: false
 
         - name: configure - Set vote account public key
           ansible.builtin.set_fact:
