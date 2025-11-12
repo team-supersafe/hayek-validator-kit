@@ -50,6 +50,12 @@
     input_value: "{{ min_required_space }}"
     output_var: "min_required_bytes"
 
+- name: Set initial_space fact for summary
+  ansible.builtin.set_fact:
+    initial_space:
+      stdout: "{{ (initial_space_bytes | int / (1024**3)) | round(2) }}G"
+
+# Fail if not enough disk space
 - name: Check if available space is sufficient
   ansible.builtin.fail:
     msg: |
