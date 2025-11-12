@@ -37,5 +37,8 @@
 - name: Configure Telegraf
   include_tasks: telegraf/main.yml
   
+- name: Setup Solana validator metrics monitoring
+  include_tasks: setup_validator_metrics.yml
+  
 - name: Summary report of monitoring hub setup
   include_tasks: summary.yml
