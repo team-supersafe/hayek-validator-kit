@@ -41,6 +41,7 @@
           ansible.builtin.shell: solana -ul validators --keep-unstaked-delinquents --output json | jq -r ".validators | .[0].identityPubkey"
           register: entrypoint_identity_cmd
           delegate_to: localhost
+          changed_when: false
 
         - name: configure - Add entrypoint to known validators
           ansible.builtin.set_fact:
