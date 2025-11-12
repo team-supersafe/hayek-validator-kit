@@ -31,6 +31,7 @@
           ansible.builtin.command: solana -ul genesis-hash
           register: cluster_genesis_hash
           delegate_to: localhost
+          changed_when: false
 
         - name: configure - Set expected genesis hash
           ansible.builtin.set_fact:
