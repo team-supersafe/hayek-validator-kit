@@ -1,15 +1,16 @@
-# rust_env Ansible Role
 
-This role installs, configures, and verifies a Rust development environment on the target host.
+# rust_env_v2 Ansible Role
+
+This role installs, configures, and verifies a system-wide Rust development environment on the target host. It is not tied to any validator or Solana-specific directory structure and is suitable for any host that needs Rust/Cargo.
 
 ## Tasks
-- **Install Rust**: Installs the specified Rust toolchain version.
-- **Configure Environment**: Sets up environment variables and configuration for Rust.
+- **Install Rust**: Installs the specified Rust toolchain version using rustup.
+- **Configure Environment**: Sets up environment variables and configuration for Rust in a system-wide location.
 - **Verify Installation**: Checks that Rust is installed and configured correctly.
 
 ## Role Variables
-- `rust_version` (required): The version of Rust to install (e.g., `stable`, `nightly`, or a specific version).
-- `rust_verify` (optional, default: `true`): Whether to run verification steps after installation.
+- `cargo_home` (default: `/usr/local/cargo`): System-wide Cargo home directory. Should be set globally in `group_vars/all.yml`.
+- `rustup_home` (default: `/usr/local/rustup`): System-wide Rustup home directory. Should be set globally in `group_vars/all.yml`.
 
 ## Tags
 - `rust`: All tasks in this role
@@ -22,9 +23,15 @@ This role installs, configures, and verifies a Rust development environment on t
 ## Example Usage
 ```yaml
 - hosts: all
+  become: yes
   roles:
-    - role: rust_env
-      vars:
-        rust_version: stable
-        rust_verify: true
+    - role: rust_env_v2
+```
+
+## Global Variable Setup
+Add these to `ansible/group_vars/all.yml` for system-wide installation:
+
+```yaml
+cargo_home: "/usr/local/cargo"
+rustup_home: "/usr/local/rustup"
 ```
