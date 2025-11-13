@@ -1,7 +1,12 @@
+---
 # Global trivial stuff (non-secret) that apply to all hosts
 
-# Ansible home directory 
+# Ansible home directory
 ansible_home_dir: "{{ ansible_env.HOME }}"
 
 # Disk mount points configuration
 mount_base_path: '/mnt'
+
+# System-wide Rust/Cargo installation paths (for rust_env_v2 role)
+cargo_home: "/usr/local/cargo"
+rustup_home: "/usr/local/rustup"
