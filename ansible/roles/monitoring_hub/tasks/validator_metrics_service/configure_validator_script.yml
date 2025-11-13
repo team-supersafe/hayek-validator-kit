@@ -3,10 +3,8 @@
 - name: Render Validator Metrics Script
   ansible.builtin.template:
     src: validator_metrics_service/validator-metrics.sh.j2
-    dest: "/usr/local/bin/validator-metrics-{{ item.value.network_name }}.sh"
+    dest: "/usr/local/bin/validator-metrics.sh"
     owner: root
     group: root
     mode: '0755'
-  loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
-  loop_control:
-    label: "validator-metrics-{{ item.value.network_name }}.sh"
+    
