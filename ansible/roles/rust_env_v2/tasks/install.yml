@@ -1,51 +1,51 @@
 ---
-- name: Install - Rustup
+- name: Download rustup-init script
   ansible.builtin.get_url:
     url: https://sh.rustup.rs
     dest: /tmp/rustup-init.sh
     mode: "0755"
-
-- name: Install - Rust using rustup
-  ansible.builtin.command: /tmp/rustup-init.sh -y
-  args:
-    creates: "{{ validator_root_dir }}/.cargo/bin/rustc"
-  environment:
-    CARGO_HOME: "{{ validator_root_dir }}/.cargo"
-    RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
   become: true
 
-- name: Stat - Check if .cargo directory exists
+- name: Install Rust using rustup-init
+  ansible.builtin.command: /tmp/rustup-init.sh -y
+  args:
+    creates: "{{ cargo_home }}/bin/rustc"
+  environment:
+    CARGO_HOME: "{{ cargo_home }}"
+    RUSTUP_HOME: "{{ rustup_home }}"
+  become: true
+
+- name: Stat - Check if cargo_home directory exists
   ansible.builtin.stat:
-    path: "{{ validator_root_dir }}/.cargo"
+    path: "{{ cargo_home }}"
   register: cargo_dir_stat
 
-- name: Stat - Check if .rustup directory exists
+- name: Stat - Check if rustup_home directory exists
   ansible.builtin.stat:
-    path: "{{ validator_root_dir }}/.rustup"
+    path: "{{ rustup_home }}"
   register: rustup_dir_stat
 
-- name: Install - Fix ownership and permissions on Rust directories to root:{{ validator_operators_group }}
+- name: Fix ownership and permissions on Rust directories
   ansible.builtin.file:
-    path: "{{ validator_root_dir }}/{{ item.dir }}"
+    path: "{{ item.path }}"
     owner: "root"
-    group: "{{ validator_operators_group }}"
-    mode: "775"
+    group: "root"
+    mode: "755"
     recurse: true
   become: true
   loop:
-    - { dir: '.cargo', stat_var: 'cargo_dir_stat' }
-    - { dir: '.rustup', stat_var: 'rustup_dir_stat' }
-  when: hostvars[inventory_hostname][item.stat_var].stat.exists
+    - { path: "{{ cargo_home }}" }
+    - { path: "{{ rustup_home }}" }
+  when: hostvars[inventory_hostname][item.path | regex_replace('^.*\/(.*)$', '\\1') + '_dir_stat'].stat.exists
 
-- name: Install - Add Rust environment to global profile
+- name: Add Rust environment to global profile
   ansible.builtin.blockinfile:
     path: /etc/profile.d/rust.sh
     create: true
     mode: '0644'
     marker: "# {mark} ANSIBLE MANAGED RUST ENVIRONMENT"
     block: |
-      export CARGO_HOME="{{ validator_root_dir }}/.cargo"
-      export RUSTUP_HOME="{{ validator_root_dir }}/.rustup"
-      export PATH="{{ validator_root_dir }}/.cargo/bin:$PATH"
+      export CARGO_HOME="{{ cargo_home }}"
+      export RUSTUP_HOME="{{ rustup_home }}"
+      export PATH="{{ cargo_home }}/bin:$PATH"
   become: true
-  when: validator_root_dir is defined and validator_root_dir != ''
