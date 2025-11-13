@@ -59,7 +59,7 @@
 
     - name: configure - Copy fix_core_affinity_bug_for_poh.sh script to remote
       ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../scripts/fix_core_afinity_bug_for_poh.sh"
+        src: "{{ playbook_dir }}/../scripts/fix_core_affinity_bug_for_poh.sh"
         dest: "{{ validator_scripts_dir }}"
         mode: "{{ validator_scripts_file_mode }}"
         owner: "root"
