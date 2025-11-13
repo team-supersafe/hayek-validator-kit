@@ -16,6 +16,7 @@
 
 - name: Configure Firewall rules
   include_tasks: config_firewall.yml
+  tags: firewall
 
 - name: Include monitoring hub installation tasks
   include_tasks: install.yml
@@ -33,12 +34,15 @@
 
 - name: Configure Grafana datasources (after InfluxDB tokens are ready)
   include_tasks: grafana/configure_datasources.yml
+  tags: grafana
 
 - name: Configure Telegraf
   include_tasks: telegraf/main.yml
+  tags: telegraf
   
 - name: Setup Solana validator metrics monitoring
-  include_tasks: setup_validator_metrics.yml
+  include_tasks: validator_metrics_service/main.yml
+  tags: validator_metrics_service
   
 - name: Summary report of monitoring hub setup
   include_tasks: summary.yml

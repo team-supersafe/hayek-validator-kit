@@ -1,0 +1,12 @@
+---
+# Copy telegraf service configuration files
+- name: Render per-network Validator Metrics configs
+  ansible.builtin.template:
+    src: validator_metrics_service/validator-metrics.service.j2
+    dest: "/etc/systemd/system/validator-metrics-{{ item.value.network_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
+  loop_control:
+    label: "validator-metrics-{{ item.value.network_name }}.service"
