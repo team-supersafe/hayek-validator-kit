@@ -319,8 +319,10 @@ send_jito_mev_epochs_new_only() {
 
         local LINE="jito_mev_epochs,${TAGS} ${FIELDS} ${TIMESTAMP}"
 
-        # Send to InfluxDB
-        curl -s -XPOST "${INFLUX_URL}/write?db=${INFLUX_DB_VALIDATOR}" --user "${INFLUX_USER}:${INFLUX_PASS}" --data-binary "$LINE"
+        # Send to InfluxDB v2
+        curl -s -XPOST "${INFLUX_URL}/api/v2/write?org=${INFLUX_ORG}&bucket=${INFLUX_BUCKET}&precision=ns" \
+          -H "Authorization: Token ${INFLUX_TOKEN}" \
+          --data-raw "$LINE"
 
         echo "✅ New Epoch $EPOCH - MEV: ${MEV_REWARDS_SOL} SOL (${MEV_REWARDS_LAMPORTS} lamports), Operator: ${OPERATOR_REWARDS_SOL} SOL (${OPERATOR_REWARDS_LAMPORTS} lamports)"
       else
@@ -514,7 +516,9 @@ send_validator_metrics() {
     fi
 
     LINE="nodemonitor,${TAGS} ${FIELDS} ${TIMESTAMP}"
-    curl -s -XPOST "${INFLUX_URL}/write?db=${INFLUX_DB_VALIDATOR}" --user "${INFLUX_USER}:${INFLUX_PASS}" --data-binary "$LINE"
+    curl -s -XPOST "${INFLUX_URL}/api/v2/write?org=${INFLUX_ORG}&bucket=${INFLUX_BUCKET}&precision=ns" \
+      -H "Authorization: Token ${INFLUX_TOKEN}" \
+      --data-raw "$LINE"
     echo "✅ Validator metrics sent for $HOST"
   else
     echo "❌ Error: invalid validator metrics for $HOST (vote=$VOTE_ACCOUNT, id=$IDENTITY_KEY)"
@@ -596,9 +600,9 @@ check_produced_blocks () {
       local TIMESTAMP LINE
       TIMESTAMP=$(date +%s%N)
       LINE="blockmetrics,host=${HOST},epoch=${CURRENT_EPOCH},slot=${SLOT},pubkey=${IDENTITY_KEY} produced=${BLOCK_PRODUCED},reward=${REWARD} ${TIMESTAMP}"
-      curl -s -XPOST "$INFLUX_URL/write?db=$INFLUX_DB_BLOCKS" \
-           --user "$INFLUX_USER:$INFLUX_PASS" \
-           --data-binary "$LINE" >/dev/null
+      curl -s -XPOST "$INFLUX_URL/api/v2/write?org=$INFLUX_ORG&bucket=$INFLUX_BUCKET&precision=ns" \
+        -H "Authorization: Token $INFLUX_TOKEN" \
+        --data-raw "$LINE" >/dev/null
     fi
   done
 
@@ -606,9 +610,9 @@ check_produced_blocks () {
   if [[ $TOTAL_REWARD != 0 ]]; then
     local TS
     TS=$(date +%s%N)
-    curl -s -XPOST "$INFLUX_URL/write?db=$INFLUX_DB_BLOCKS" \
-      --user "$INFLUX_USER:$INFLUX_PASS" \
-      --data-binary "epoch_rewards,host=${HOST},epoch=${CURRENT_EPOCH} pubkey=\"${IDENTITY_KEY}\",total_reward_sol=${TOTAL_REWARD} ${TS}" >/dev/null
+    curl -s -XPOST "$INFLUX_URL/api/v2/write?org=$INFLUX_ORG&bucket=$INFLUX_BUCKET&precision=ns" \
+      -H "Authorization: Token $INFLUX_TOKEN" \
+      --data-raw "epoch_rewards,host=${HOST},epoch=${CURRENT_EPOCH} pubkey=\"${IDENTITY_KEY}\",total_reward_sol=${TOTAL_REWARD} ${TS}" >/dev/null
     echo "💰 Total reward for $HOST: $TOTAL_REWARD SOL"
   fi
 
