@@ -20,7 +20,7 @@ done
 
 # ===== LOAD ENVIRONMENT VARIABLES =====
 # Try to source environment file if it exists
-ENV_FILE="/usr/local/etc/hayek-monitor.env"
+ENV_FILE="/usr/local/etc/validator-metrics.env"
 if [[ -f "$ENV_FILE" ]]; then
   echo "🔧 Loading environment variables from $ENV_FILE"
   source "$ENV_FILE"
@@ -564,11 +564,10 @@ check_produced_blocks () {
 
   echo "ℹ️  Current epoch $CURRENT_EPOCH • current slot $CURRENT_SLOT"
 
-  # Obtain leader slots via JSON-RPC for accuracy
-  local LEADER_SLOTS_JSON SLOTS_ARRAY_LENGTH SLOTS_LIST
-  LEADER_SLOTS_JSON=$(curl -s --max-time 10 "$RPC_URL" -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"getLeaderSchedule","params":[null,{"identity":"'"$IDENTITY_KEY"'"}]}' || true)
-  SLOTS_LIST=$(echo "$LEADER_SLOTS_JSON" | jq -r '.result."'"$IDENTITY_KEY"'" | join(" ")' 2>/dev/null || echo "")
-  SLOTS_ARRAY_LENGTH=$(echo "$LEADER_SLOTS_JSON" | jq -r '.result."'"$IDENTITY_KEY"'" | length' 2>/dev/null || echo 0)
+  # Obtain leader slots via Solana CLI for reliability
+  local SLOTS_LIST SLOTS_ARRAY_LENGTH
+  SLOTS_LIST=$($CMD leader-schedule | grep "$IDENTITY_KEY" | awk '{print $1}' | tr '\n' ' ')
+  SLOTS_ARRAY_LENGTH=$(echo "$SLOTS_LIST" | wc -w)
   [ -n "$SLOTS_LIST" ] || { echo "ℹ️  No leader slots found"; return 0; }
 
   # Stats counters
