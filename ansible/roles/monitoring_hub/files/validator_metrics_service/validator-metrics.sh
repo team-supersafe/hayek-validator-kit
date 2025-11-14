@@ -74,18 +74,21 @@ LOCALNET_STAKEWIZ_ENABLED=false
 LOCALNET_GOSSIP_ENABLED=false
 LOCALNET_JITO_MEV_ENABLED=false
 
-# ===== INFLUXDB CONFIGURATION =====
+
+# ===== INFLUXDB V2 CONFIGURATION =====
 INFLUX_URL="${INFLUX_URL:-}"
-INFLUX_USER="${INFLUX_USER:-}"
-INFLUX_PASS="${INFLUX_PASS:-}"   # ⚠️ NO FALLBACK - Must be set in environment file
+INFLUX_ORG="${INFLUX_ORG:-}"
+INFLUX_BUCKET="${INFLUX_BUCKET:-}"
+INFLUX_TOKEN="${INFLUX_TOKEN:-}"
 
 # ===== VALIDATE CRITICAL ENVIRONMENT VARIABLES =====
 MISSING_VARS=()
 
-# Check InfluxDB credentials
+# Check InfluxDB v2 credentials
 [[ -z "$INFLUX_URL" ]] && MISSING_VARS+=("INFLUX_URL")
-[[ -z "$INFLUX_USER" ]] && MISSING_VARS+=("INFLUX_USER")
-[[ -z "$INFLUX_PASS" ]] && MISSING_VARS+=("INFLUX_PASS")
+[[ -z "$INFLUX_ORG" ]] && MISSING_VARS+=("INFLUX_ORG")
+[[ -z "$INFLUX_BUCKET" ]] && MISSING_VARS+=("INFLUX_BUCKET")
+[[ -z "$INFLUX_TOKEN" ]] && MISSING_VARS+=("INFLUX_TOKEN")
 
 # Check validator keys
 [[ -z "$HAYEK_MAINNET_VOTE_ACCOUNT" ]] && MISSING_VARS+=("HAYEK_MAINNET_VOTE_ACCOUNT")
@@ -100,10 +103,6 @@ MISSING_VARS=()
 # Check host names
 [[ -z "$MAINNET_NAME_SUFFIX" ]] && MISSING_VARS+=("MAINNET_NAME_SUFFIX")
 [[ -z "$TESTNET_NAME_SUFFIX" ]] && MISSING_VARS+=("TESTNET_NAME_SUFFIX")
-
-# Check database names
-[[ -z "$INFLUX_DB_BLOCKS" ]] && MISSING_VARS+=("INFLUX_DB_BLOCKS")
-[[ -z "$INFLUX_DB_VALIDATOR" ]] && MISSING_VARS+=("INFLUX_DB_VALIDATOR")
 
 # Check Solana binary path
 [[ -z "$SOLANA_BIN" ]] && MISSING_VARS+=("SOLANA_BIN")
@@ -121,10 +120,6 @@ if [[ ${#MISSING_VARS[@]} -gt 0 ]]; then
 fi
 
 echo "✅ All critical environment variables are set"
-
-# Database names for different metric types
-INFLUX_DB_VALIDATOR="${INFLUX_DB_VALIDATOR}"  # For validator metrics (from env file)
-INFLUX_DB_BLOCKS="${INFLUX_DB_BLOCKS}"        # For block metrics (from env file)
 
 # ===== PROCESSING TOGGLES =====
 PROCESS_MAINNET=true

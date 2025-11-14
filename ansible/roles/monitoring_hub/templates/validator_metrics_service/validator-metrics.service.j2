@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 # Load environment variables from centralized file
-EnvironmentFile=-/usr/local/etc/hayek-monitor.env
+EnvironmentFile=-/usr/local/etc/validator-metrics.env
 ExecStart=/bin/bash -c 'while true; do /usr/local/bin/validator-metrics.sh; sleep 120; done'
 Restart=always
 RestartSec=5

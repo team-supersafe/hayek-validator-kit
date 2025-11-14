@@ -8,5 +8,17 @@
     group: root
     mode: '0644'
   loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
+
   loop_control:
     label: "validator-metrics-{{ item.value.network_name }}.service"
+
+# Enable and start validator-metrics services
+- name: Enable validator-metrics service
+  ansible.builtin.systemd:
+    name: "validator-metrics-{{ item.value.network_name }}.service"
+    enabled: true
+    state: started
+  loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
+  loop_control:
+    label: "validator-metrics-{{ item.value.network_name }}.service"
+
