@@ -34,45 +34,45 @@ MAINNET_VOTE_ACCOUNT="${HAYEK_MAINNET_VOTE_ACCOUNT:-}"
 MAINNET_IDENTITY_KEY="${HAYEK_MAINNET_IDENTITY:-}"
 MAINNET_RPC_API="${SOLANA_MAINNET_RPC:-}"
 MAINNET_HOST="${MAINNET_NAME_SUFFIX:-}"
-MAINNET_STAKEWIZ_ENABLED={{ solana.network.mainnet.stakewiz }}
-MAINNET_GOSSIP_ENABLED={{ solana.network.mainnet.gossip }}
-MAINNET_JITO_MEV_ENABLED={{ solana.network.mainnet.jito_mev }}
+MAINNET_STAKEWIZ_ENABLED={{ solana.network.mainnet.stakewiz | lower }}
+MAINNET_GOSSIP_ENABLED={{ solana.network.mainnet.enabled | lower }}
+MAINNET_JITO_MEV_ENABLED={{ solana.network.mainnet.jito_mev | lower }}
 
 # TESTNET - Use environment variables (NO FALLBACKS)
 TESTNET_VOTE_ACCOUNT="${HAYEK_TESTNET_VOTE_ACCOUNT:-}"
 TESTNET_IDENTITY_KEY="${HAYEK_TESTNET_IDENTITY:-}"
 TESTNET_RPC_API="${SOLANA_TESTNET_RPC:-}"
 TESTNET_HOST="${TESTNET_NAME_SUFFIX:-}"
-TESTNET_STAKEWIZ_ENABLED={{ solana.network.testnet.stakewiz }}
-TESTNET_GOSSIP_ENABLED={{ solana.network.testnet.gossip }}
-TESTNET_JITO_MEV_ENABLED={{ solana.network.testnet.jito_mev }}
+TESTNET_STAKEWIZ_ENABLED={{ solana.network.testnet.stakewiz | lower }}
+TESTNET_GOSSIP_ENABLED={{ solana.network.testnet.enabled | lower }}
+TESTNET_JITO_MEV_ENABLED={{ solana.network.testnet.jito_mev | lower }}
 
 # DEBUG - Use environment variables (NO FALLBACKS)
 DEBUG_VOTE_ACCOUNT="${DEBUG_VOTE_ACCOUNT:-}"
 DEBUG_IDENTITY_KEY="${DEBUG_IDENTITY_KEY:-}"
 DEBUG_RPC_API="${SOLANA_MAINNET_RPC:-}"
 DEBUG_HOST="${DEBUG_HOST:-}"
-DEBUG_STAKEWIZ_ENABLED={{ solana.network.debug.stakewiz }}
-DEBUG_GOSSIP_ENABLED={{ solana.network.debug.gossip }}
-DEBUG_JITO_MEV_ENABLED={{ solana.network.debug.jito_mev }}
+DEBUG_STAKEWIZ_ENABLED={{ solana.network.debug.stakewiz | lower }}
+DEBUG_GOSSIP_ENABLED={{ solana.network.debug.enabled | lower }}
+DEBUG_JITO_MEV_ENABLED={{ solana.network.debug.jito_mev | lower }}
 
 # DEVNET - Use environment variables (NO FALLBACKS)
 DEVNET_VOTE_ACCOUNT="${DEVNET_VOTE_ACCOUNT:-}"
 DEVNET_IDENTITY_KEY="${DEVNET_IDENTITY_KEY:-}"
 DEVNET_RPC_API="${SOLANA_MAINNET_RPC:-}"
 DEVNET_HOST="${DEVNET_HOST:-}"
-DEVNET_STAKEWIZ_ENABLED={{ solana.network.devnet.stakewiz }}
-DEVNET_GOSSIP_ENABLED={{ solana.network.devnet.gossip }}
-DEVNET_JITO_MEV_ENABLED={{ solana.network.devnet.jito_mev }}
+DEVNET_STAKEWIZ_ENABLED={{ solana.network.devnet.stakewiz | lower }}
+DEVNET_GOSSIP_ENABLED={{ solana.network.devnet.enabled | lower }}
+DEVNET_JITO_MEV_ENABLED={{ solana.network.devnet.jito_mev | lower }}
 
 # LOCALNET - Use environment variables (NO FALLBACKS)
 LOCALNET_VOTE_ACCOUNT="${LOCALNET_VOTE_ACCOUNT:-}"
 LOCALNET_IDENTITY_KEY="${LOCALNET_IDENTITY_KEY:-}"
 LOCALNET_RPC_API="${SOLANA_MAINNET_RPC:-}"
 LOCALNET_HOST="${LOCALNET_HOST:-}"
-LOCALNET_STAKEWIZ_ENABLED={{ solana.network.localnet.stakewiz }}
-LOCALNET_GOSSIP_ENABLED={{ solana.network.localnet.gossip }}
-LOCALNET_JITO_MEV_ENABLED={{ solana.network.localnet.jito_mev }}
+LOCALNET_STAKEWIZ_ENABLED={{ solana.network.localnet.stakewiz | lower }}
+LOCALNET_GOSSIP_ENABLED={{ solana.network.localnet.enabled | lower }}
+LOCALNET_JITO_MEV_ENABLED={{ solana.network.localnet.jito_mev | lower }}
 
 
 # ===== INFLUXDB V2 CONFIGURATION =====
@@ -124,11 +124,11 @@ fi
 echo "✅ All critical environment variables are set"
 
 # ===== PROCESSING TOGGLES =====
-PROCESS_MAINNET=true
-PROCESS_TESTNET=true
-PROCESS_DEBUG=false
-PROCESS_DEVNET=false
-PROCESS_LOCALNET=false
+PROCESS_MAINNET={{ solana.network.mainnet.enabled | lower }}
+PROCESS_TESTNET={{ solana.network.testnet.enabled | lower }}
+PROCESS_DEBUG={{ solana.network.debug.enabled | lower }}
+PROCESS_DEVNET={{ solana.network.devnet.enabled | lower }}
+PROCESS_LOCALNET={{ solana.network.localnet.enabled | lower }}
 
 # ===== ABSOLUTE PATH TO SOLANA BIN =====
 SOLANA_BIN="${SOLANA_BIN:-}"

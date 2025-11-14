@@ -52,7 +52,6 @@ solana:
       watchtower_min_balance: 0.5
       rpc_url: "https://api.mainnet-beta.solana.com/"
       stakewiz: true # Get Stakewiz rankings
-      gossip: true
       jito_mev: true
     testnet:
       enabled: true
@@ -61,7 +60,6 @@ solana:
       watchtower_min_balance: 0.5
       rpc_url: "https://api.testnet.solana.com/"
       stakewiz: false # Get Stakewiz rankings
-      gossip: true
       jito_mev: false
     devnet:
       enabled: false
@@ -70,7 +68,6 @@ solana:
       watchtower_min_balance: 0.5
       rpc_url: "https://api.devnet.solana.com/"
       stakewiz: false # Get Stakewiz rankings
-      gossip: true
       jito_mev: false
     localnet:
       enabled: true
@@ -79,7 +76,6 @@ solana:
       watchtower_min_balance: 0.5
       rpc_url: "http://172.25.0.10:8899"
       stakewiz: false # Get Stakewiz rankings
-      gossip: true
       jito_mev: false
     debug:
       enabled: false
@@ -88,7 +84,6 @@ solana:
       watchtower_min_balance: 0.5
       rpc_url: "https://api.mainnet-beta.solana.com/"
       stakewiz: true # Get Stakewiz rankings
-      gossip: true
       jito_mev: false
 
 # Monitoring services to manage
