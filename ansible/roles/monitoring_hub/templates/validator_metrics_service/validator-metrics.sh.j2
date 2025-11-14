@@ -34,45 +34,45 @@ MAINNET_VOTE_ACCOUNT="${HAYEK_MAINNET_VOTE_ACCOUNT:-}"
 MAINNET_IDENTITY_KEY="${HAYEK_MAINNET_IDENTITY:-}"
 MAINNET_RPC_API="${SOLANA_MAINNET_RPC:-}"
 MAINNET_HOST="${MAINNET_NAME_SUFFIX:-}"
-MAINNET_STAKEWIZ_ENABLED=true
-MAINNET_GOSSIP_ENABLED=true
-MAINNET_JITO_MEV_ENABLED=true
+MAINNET_STAKEWIZ_ENABLED={{ solana.network.mainnet.stakewiz }}
+MAINNET_GOSSIP_ENABLED={{ solana.network.mainnet.gossip }}
+MAINNET_JITO_MEV_ENABLED={{ solana.network.mainnet.jito_mev }}
 
 # TESTNET - Use environment variables (NO FALLBACKS)
 TESTNET_VOTE_ACCOUNT="${HAYEK_TESTNET_VOTE_ACCOUNT:-}"
 TESTNET_IDENTITY_KEY="${HAYEK_TESTNET_IDENTITY:-}"
 TESTNET_RPC_API="${SOLANA_TESTNET_RPC:-}"
 TESTNET_HOST="${TESTNET_NAME_SUFFIX:-}"
-TESTNET_STAKEWIZ_ENABLED=false
-TESTNET_GOSSIP_ENABLED=true
-TESTNET_JITO_MEV_ENABLED=true
+TESTNET_STAKEWIZ_ENABLED={{ solana.network.testnet.stakewiz }}
+TESTNET_GOSSIP_ENABLED={{ solana.network.testnet.gossip }}
+TESTNET_JITO_MEV_ENABLED={{ solana.network.testnet.jito_mev }}
 
 # DEBUG - Use environment variables (NO FALLBACKS)
 DEBUG_VOTE_ACCOUNT="${DEBUG_VOTE_ACCOUNT:-}"
 DEBUG_IDENTITY_KEY="${DEBUG_IDENTITY_KEY:-}"
 DEBUG_RPC_API="${SOLANA_MAINNET_RPC:-}"
 DEBUG_HOST="${DEBUG_HOST:-}"
-DEBUG_STAKEWIZ_ENABLED=false
-DEBUG_GOSSIP_ENABLED=false
-DEBUG_JITO_MEV_ENABLED=false
+DEBUG_STAKEWIZ_ENABLED={{ solana.network.debug.stakewiz }}
+DEBUG_GOSSIP_ENABLED={{ solana.network.debug.gossip }}
+DEBUG_JITO_MEV_ENABLED={{ solana.network.debug.jito_mev }}
 
 # DEVNET - Use environment variables (NO FALLBACKS)
 DEVNET_VOTE_ACCOUNT="${DEVNET_VOTE_ACCOUNT:-}"
 DEVNET_IDENTITY_KEY="${DEVNET_IDENTITY_KEY:-}"
 DEVNET_RPC_API="${SOLANA_MAINNET_RPC:-}"
 DEVNET_HOST="${DEVNET_HOST:-}"
-DEVNET_STAKEWIZ_ENABLED=false
-DEVNET_GOSSIP_ENABLED=false
-DEVNET_JITO_MEV_ENABLED=false
+DEVNET_STAKEWIZ_ENABLED={{ solana.network.devnet.stakewiz }}
+DEVNET_GOSSIP_ENABLED={{ solana.network.devnet.gossip }}
+DEVNET_JITO_MEV_ENABLED={{ solana.network.devnet.jito_mev }}
 
 # LOCALNET - Use environment variables (NO FALLBACKS)
 LOCALNET_VOTE_ACCOUNT="${LOCALNET_VOTE_ACCOUNT:-}"
 LOCALNET_IDENTITY_KEY="${LOCALNET_IDENTITY_KEY:-}"
 LOCALNET_RPC_API="${SOLANA_MAINNET_RPC:-}"
 LOCALNET_HOST="${LOCALNET_HOST:-}"
-LOCALNET_STAKEWIZ_ENABLED=false
-LOCALNET_GOSSIP_ENABLED=false
-LOCALNET_JITO_MEV_ENABLED=false
+LOCALNET_STAKEWIZ_ENABLED={{ solana.network.localnet.stakewiz }}
+LOCALNET_GOSSIP_ENABLED={{ solana.network.localnet.gossip }}
+LOCALNET_JITO_MEV_ENABLED={{ solana.network.localnet.jito_mev }}
 
 
 # ===== INFLUXDB V2 CONFIGURATION =====
@@ -107,8 +107,10 @@ MISSING_VARS=()
 # Check Solana binary path
 [[ -z "$SOLANA_BIN" ]] && MISSING_VARS+=("SOLANA_BIN")
 
+{% raw %}
 # Exit if any critical variables are missing
 if [[ ${#MISSING_VARS[@]} -gt 0 ]]; then
+{% endraw %}
   echo "❌ ERROR: Missing required environment variables:"
   for var in "${MISSING_VARS[@]}"; do
     echo "  - $var"
@@ -189,6 +191,8 @@ get_slot_duration_ms() {
   case "$CLUSTER" in
     mainnet) CMD="$SOLANA_BIN -u m epoch-info" ;;
     testnet) CMD="$SOLANA_BIN -u t epoch-info" ;;
+    devnet) CMD="$SOLANA_BIN -u d epoch-info" ;;
+    localnet) CMD="$SOLANA_BIN -u l epoch-info" ;;
     debug) CMD="$SOLANA_BIN -u m epoch-info" ;;
     *) CMD="$SOLANA_BIN epoch-info" ;;
   esac
@@ -248,6 +252,8 @@ get_gossip_version() {
   case "$CLUSTER" in
     mainnet) CMD="$SOLANA_BIN -u m -v gossip" ;;
     testnet) CMD="timeout 15 $SOLANA_BIN -u t -v gossip" ;;
+    devnet) CMD="$SOLANA_BIN -u d -v gossip" ;;
+    localnet) CMD="$SOLANA_BIN -u l -v gossip" ;;
     debug) CMD="$SOLANA_BIN -u m -v gossip" ;;
     *) return ;;
   esac
@@ -305,12 +311,14 @@ send_jito_mev_epochs_new_only() {
         local MEV_REWARDS_LAMPORTS=$(echo "$EPOCH_DATA" | jq -r '.mev_rewards')
         local MEV_COMMISSION_BPS=$(echo "$EPOCH_DATA" | jq -r '.mev_commission_bps')
 
+        {% raw %}
         # Calculate operator rewards in lamports for this epoch
         local OPERATOR_REWARDS_LAMPORTS=$(awk -v rewards="$MEV_REWARDS_LAMPORTS" -v commission="$MEV_COMMISSION_BPS" 'BEGIN { printf "%.0f", (rewards * commission) / 10000 }')
 
         # Convert lamports to SOL (1 SOL = 1,000,000,000 lamports)
         local MEV_REWARDS_SOL=$(awk -v lamports="$MEV_REWARDS_LAMPORTS" 'BEGIN { printf "%.9f", lamports / 1000000000 }')
         local OPERATOR_REWARDS_SOL=$(awk -v lamports="$OPERATOR_REWARDS_LAMPORTS" 'BEGIN { printf "%.9f", lamports / 1000000000 }')
+        {% endraw %}
 
         # Create InfluxDB line protocol with both lamports and SOL
         local TIMESTAMP=$(date +%s%N)
@@ -347,6 +355,8 @@ get_next_epoch_leader_slot_count() {
   case "$CLUSTER" in
     mainnet) CMD="$SOLANA_BIN -u m" ;;
     testnet) CMD="$SOLANA_BIN -u t" ;;
+    devnet) CMD="$SOLANA_BIN -u d" ;;
+    localnet) CMD="$SOLANA_BIN -u l" ;;
     debug) CMD="$SOLANA_BIN -u m" ;;
     *) echo "0"; return ;;
   esac
@@ -537,9 +547,9 @@ check_produced_blocks () {
   case "$CLUSTER" in
     mainnet) CMD="$SOLANA_BIN -u m"; RPC_URL="$MAINNET_RPC_API" ;;
     testnet) CMD="$SOLANA_BIN -u t"; RPC_URL="$TESTNET_RPC_API" ;;
-    debug)   CMD="$SOLANA_BIN -u m"; RPC_URL="$DEBUG_RPC_API" ;;
     devnet)  CMD="$SOLANA_BIN -u d"; RPC_URL="$DEVNET_RPC_API" ;;
     localnet) CMD="$SOLANA_BIN -u l"; RPC_URL="$LOCALNET_RPC_API" ;;
+    debug)   CMD="$SOLANA_BIN -u m"; RPC_URL="$DEBUG_RPC_API" ;;
     *) echo "Unknown cluster $CLUSTER"; return 1 ;;
   esac
 
