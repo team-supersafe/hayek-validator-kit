@@ -122,12 +122,12 @@
     - name: Build Jito-Solana CLI
       ansible.builtin.shell: |
         set -e
-        . "{{ validator_root_dir }}/.cargo/env"
+        . "{{ cargo_home }}/env"
         ./scripts/cargo-install-all.sh --validator-only {{ solana_installed_release_dir }} > {{ jito_build_dir }}/jito-build.log 2>&1
       environment:
         CI_COMMIT: "{{ ci_commit.stdout }}"
-        CARGO_HOME: "{{ validator_root_dir }}/.cargo"
-        RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
+        CARGO_HOME: "{{ cargo_home }}"
+        RUSTUP_HOME: "{{ rustup_home }}"
       args:
         chdir: "{{ jito_build_dir }}"
         creates: "{{ solana_installed_release_dir }}/bin/solana"

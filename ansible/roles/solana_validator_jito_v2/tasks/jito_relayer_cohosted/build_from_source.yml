@@ -87,11 +87,11 @@
     - name: jito_relayer_cohosted - build_from_source - Build Jito Relayer
       ansible.builtin.shell: |
         set -e
-        . "{{ validator_root_dir }}/.cargo/env"
+        . "{{ cargo_home }}/env"
         cargo b --release > {{ jito_relayer_build_dir }}/build.log 2>&1
       environment:
-        CARGO_HOME: "{{ validator_root_dir }}/.cargo"
-        RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
+        CARGO_HOME: "{{ cargo_home }}"
+        RUSTUP_HOME: "{{ rustup_home }}"
       args:
         chdir: "{{ jito_relayer_build_dir }}"
       ignore_errors: "{{ ansible_check_mode }}"

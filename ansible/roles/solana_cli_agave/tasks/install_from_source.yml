@@ -96,13 +96,13 @@
     - name: Run cargo-install-all.sh
       ansible.builtin.shell: |
         set -e
-        . "{{ validator_root_dir }}/.cargo/env"
+        . "{{ cargo_home }}/env"
         ./scripts/cargo-install-all.sh . > {{ agave_build_dir }}/agave-build.log 2>&1
       args:
         chdir: "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}"
       environment:
-        CARGO_HOME: "{{ validator_root_dir }}/.cargo"
-        RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
+        CARGO_HOME: "{{ cargo_home }}"
+        RUSTUP_HOME: "{{ rustup_home }}"
   become: true
 
 # The above will compile the source code and create the following:
