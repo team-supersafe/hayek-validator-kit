@@ -1,8 +1,8 @@
 ---
 # Render Validator Metrics Script
 - name: Copy Validator Metrics Script
-  ansible.builtin.copy:
-    src: validator_metrics_service/validator-metrics.sh
+  ansible.builtin.template:
+    src: validator_metrics_service/validator-metrics.sh.j2
     dest: "/usr/local/bin/validator-metrics.sh"
     owner: root
     group: root
