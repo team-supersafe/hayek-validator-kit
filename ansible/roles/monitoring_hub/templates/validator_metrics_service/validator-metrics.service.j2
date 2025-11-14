@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 # Load environment variables from centralized file
 EnvironmentFile=-/usr/local/etc/hayek-monitor.env
-ExecStart=/bin/bash -c 'while true; do /usr/local/bin/validator_metrics-{{ item.value.network_name }}.sh; sleep 120; done'
+ExecStart=/bin/bash -c 'while true; do /usr/local/bin/validator-metrics.sh; sleep 120; done'
 Restart=always
 RestartSec=5
 TimeoutStopSec=10

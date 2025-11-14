@@ -10,6 +10,8 @@
 - name: Load sensitive variables
   include_vars: secrets.yml
   no_log: true
+  tags:
+    - validator_metrics_service
 
 - name: Run precheck tasks
   include_tasks: precheck.yml
@@ -41,7 +43,7 @@
   tags: telegraf
   
 - name: Setup Solana validator metrics monitoring
-  include_tasks: validator_metrics_service/main.yml
+  import_tasks: validator_metrics_service/main.yml
   tags: validator_metrics_service
   
 - name: Summary report of monitoring hub setup

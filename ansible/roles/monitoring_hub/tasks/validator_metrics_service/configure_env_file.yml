@@ -1,8 +1,16 @@
 ---
 # Render Validator Metrics Environment file
+- name: Create Validator Metrics Environment folder
+  ansible.builtin.file:
+    path: /etc/validator-metrics
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
 - name: Render Validator Metrics Environment file
   ansible.builtin.template:
-    src: validator_metrics_service/validator-metrics.env.j2
+    src: validator_metrics_service/monitor.env.j2
     dest: "/etc/validator-metrics/validator-metrics.env"
     owner: root
     group: root

@@ -69,6 +69,12 @@ solana:
       metrics_interval: "30s"
       watchtower_min_balance: 0.5
       rpc_url: "http://172.25.0.10:8899"
+    debug:
+      enabled: false
+      network_name: "debug"
+      metrics_interval: "30s"
+      watchtower_min_balance: 0.5
+      rpc_url: "https://api.mainnet-beta.solana.com/"
 
 # Monitoring services to manage
 monitoring_services:
