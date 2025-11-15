@@ -287,12 +287,11 @@ send_jito_mev_epochs_new_only() {
 
   # Get the latest epoch from InfluxDB
   # epoch will be stored as a numeric field to allow aggregation
-  local LATEST_EPOCH_QUERY="SELECT max(epoch) FROM jito_mev_epochs WHERE host='${HOST}' AND pubkey='${IDENTITY_KEY}'"
-  local LATEST_EPOCH_DATA=$(curl -s -G "${INFLUX_URL}/query" \
-    --user "${INFLUX_USER}:${INFLUX_PASS}" \
-    --data-urlencode "db=${INFLUX_DB_VALIDATOR}" \
-    --data-urlencode "q=${LATEST_EPOCH_QUERY}")
-
+  local LATEST_EPOCH_FLUX="from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -30d) |> filter(fn: (r) => r._measurement == \"jito_mev_epochs\" and r.host == \"${HOST}\" and r.pubkey == \"${IDENTITY_KEY}\") |> filter(fn: (r) => r._field == \"epoch\") |> max()"
+  local LATEST_EPOCH_DATA=$(curl -s -XPOST "${INFLUX_URL}/api/v2/query?org=${INFLUX_ORG}" \
+    -H "Authorization: Token ${INFLUX_TOKEN}" \
+    -H "Content-Type: application/vnd.flux" \
+    --data-raw "$LATEST_EPOCH_FLUX")
   local LATEST_EPOCH=$(echo "$LATEST_EPOCH_DATA" | jq -r '.results[0].series[0].values[0][1] // 0' 2>/dev/null || echo 0)
 
   # Get Jito MEV data with 10 second timeout
@@ -579,10 +578,11 @@ check_produced_blocks () {
     (( SLOT < SLOTS_24H_AGO )) && continue
     # Skip if data already exists and was produced
     local RESPONSE PRODUCED_IN_DB
-    RESPONSE=$(curl -sG "$INFLUX_URL/query" \
-                --user "$INFLUX_USER:$INFLUX_PASS" \
-                --data-urlencode "db=$INFLUX_DB_BLOCKS" \
-                --data-urlencode "q=SELECT produced FROM blockmetrics WHERE slot='$SLOT' AND host='$HOST' LIMIT 1")
+    local BLOCK_FLUX="from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -30d) |> filter(fn: (r) => r._measurement == \"blockmetrics\" and r.slot == \"$SLOT\" and r.host == \"$HOST\") |> filter(fn: (r) => r._field == \"produced\") |> limit(n:1)"
+    RESPONSE=$(curl -s -XPOST "$INFLUX_URL/api/v2/query?org=$INFLUX_ORG" \
+          -H "Authorization: Token $INFLUX_TOKEN" \
+          -H "Content-Type: application/vnd.flux" \
+          --data-raw "$BLOCK_FLUX")
     PRODUCED_IN_DB=$(echo "$RESPONSE" | jq -r '.results[0].series[0].values[0][1]' 2>/dev/null || echo "")
     [ "$PRODUCED_IN_DB" = "1" ] && { ((CACHED++)); continue; }
 
