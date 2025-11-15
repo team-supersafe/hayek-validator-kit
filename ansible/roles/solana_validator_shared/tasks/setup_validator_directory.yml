@@ -8,9 +8,6 @@
       - validator_scripts_dir is defined
       - validator_logs_dir is defined
       - validator_key_store is defined
-      - validator_build_dir is defined
-      - validator_solana_installed_releases_dir is defined
-      - validator_solana_install_root is defined
       - validator_root_dir_mode is defined
       - validator_scripts_dir_mode is defined
       - validator_data_mode_owner_writable is defined
@@ -28,24 +25,6 @@
         owner: "root"
         group: "{{ validator_operators_group }}"
         mode: "{{ validator_root_dir_mode }}"
-        state: directory
-
-    # /opt/validator/install, root:validator_operators, 2775
-    - name: Ensure solana install root directory exists
-      ansible.builtin.file:
-        path: "{{ validator_solana_install_root }}"
-        owner: "root"
-        group: "{{ validator_operators_group }}"
-        mode: "{{ validator_root_dir_mode }}"
-        state: directory
-
-    # /opt/validator/install/releases, root:validator_operators, 2755
-    - name: Ensure solana installed releases directory exists
-      ansible.builtin.file:
-        path: "{{ validator_solana_installed_releases_dir }}"
-        owner: "root"
-        group: "{{ validator_operators_group }}"
-        mode: "{{ validator_solana_installed_releases_dir_mode }}"
         state: directory
 
     # /opt/validator/logs, sol:validator_operators, 2770
@@ -73,15 +52,6 @@
         owner: "root"
         group: "{{ validator_operators_group }}"
         mode: "{{ validator_scripts_dir_mode }}"
-        state: directory
-
-    # /opt/validator/build, root:validator_operators, 575
-    - name: Ensure validator build directory exists
-      ansible.builtin.file:
-        path: "{{ validator_build_dir }}"
-        owner: "root"
-        group: "{{ validator_operators_group }}"
-        mode: "{{ validator_root_dir_mode }}"
         state: directory
   become: true
 

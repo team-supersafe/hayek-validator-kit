@@ -1,7 +1,7 @@
 ---
 # Override the default validator directories with V2 values
 keys_dir: "{{ validator_key_store }}"
-solana_install_dir: "{{ validator_solana_install_dir }}"
+solana_install_dir: "{{ system_solana_active_release_dir }}"
 default_group: "{{ validator_operators_group }}"
 default_file_mode: "{{ validator_key_file_mode }}"
 default_directory_mode: "{{ validator_data_mode_owner_readonly }}"

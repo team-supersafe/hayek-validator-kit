@@ -1,8 +1,4 @@
 ---
-- name: Setup validator directory structure
-  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/setup_validator_directory.yml
-  tags: [solana_cli_jito, setup_validator_directory]
-
 # Construct the Jito tag in the format 'v2.2.15-jito' or 'v2.2.15-jito.1'
 - name: Set Jito patch suffix
   ansible.builtin.set_fact:

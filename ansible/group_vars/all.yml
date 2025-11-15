@@ -10,3 +10,11 @@ mount_base_path: '/mnt'
 # System-wide Rust/Cargo installation paths (for rust_env_v2 role)
 cargo_home: "/usr/local/cargo"
 rustup_home: "/usr/local/rustup"
+
+# System wide installation path for solana binaries
+system_solana_install_dir: "/opt/solana"
+system_solana_active_release_dir: "{{ system_solana_install_dir }}/active_release/bin"
+system_solana_installed_releases_dir: "{{ system_solana_install_dir }}/releases"
+
+# System wide build directory
+system_shared_build_dir: "/opt/build"

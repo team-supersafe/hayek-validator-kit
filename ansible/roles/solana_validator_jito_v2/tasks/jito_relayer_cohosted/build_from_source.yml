@@ -14,7 +14,7 @@
 
 - name: jito_relayer_cohosted - build_from_source - Set local variable for jito_relayer_build_dir
   ansible.builtin.set_fact:
-    jito_relayer_build_dir: "{{ validator_build_dir }}/jito_relayer/{{ jito_relayer_version }}"
+    jito_relayer_build_dir: "{{ system_shared_build_dir }}/jito_relayer/{{ jito_relayer_version }}"
 
 - name: jito_relayer_cohosted - build_from_source - Set variable for jito_relayer_installed_release_dir
   ansible.builtin.set_fact:

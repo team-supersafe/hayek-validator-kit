@@ -48,6 +48,6 @@
     mode: '0644'
     marker: "# {mark} ANSIBLE MANAGED SOLANA ENVIRONMENT"
     block: |
-      export PATH="{{ validator_solana_install_dir }}:$PATH"
+      export PATH="{{ system_solana_active_release_dir }}:$PATH"
   become: true
-  when: validator_solana_install_dir is defined and validator_solana_install_dir != ''
+  when: system_solana_active_release_dir is defined and system_solana_active_release_dir != ''
