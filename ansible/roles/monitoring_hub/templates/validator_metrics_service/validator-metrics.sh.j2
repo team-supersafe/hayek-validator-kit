@@ -578,13 +578,18 @@ check_produced_blocks () {
     (( SLOT < SLOTS_24H_AGO )) && continue
     # Skip if data already exists and was produced
     local RESPONSE PRODUCED_IN_DB
-    local BLOCK_FLUX="from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -30d) |> filter(fn: (r) => r._measurement == \"blockmetrics\" and r.slot == \"$SLOT\" and r.host == \"$HOST\") |> filter(fn: (r) => r._field == \"produced\") |> limit(n:1)"
+    local BLOCK_FLUX="from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -30d) |> filter(fn: (r) => r._measurement == \"blockmetrics\" and r.slot == \"$SLOT\" and r.host == \"$HOST\") |> filter(fn: (r) => r._field == \"produced\") |> sort(columns: [\"_time\"], desc: true) |> limit(n:1)"
     RESPONSE=$(curl -s -XPOST "$INFLUX_URL/api/v2/query?org=$INFLUX_ORG" \
           -H "Authorization: Token $INFLUX_TOKEN" \
           -H "Content-Type: application/vnd.flux" \
           --data-raw "$BLOCK_FLUX")
-    PRODUCED_IN_DB=$(echo "$RESPONSE" | jq -r '.results[0].series[0].values[0][1]' 2>/dev/null || echo "")
-    [ "$PRODUCED_IN_DB" = "1" ] && { ((CACHED++)); continue; }
+    # Parse CSV: InfluxDB CSV format has _value in column 6 (index 7 in awk) and _field in column 7 (index 8)
+    # Format: ,result,table,_start,_stop,_time,_value,_field,_measurement,epoch,host,pubkey,slot
+    PRODUCED_IN_DB=$(echo "$RESPONSE" | grep -v '^#' | awk -F',' 'NR>1 && $8=="produced" {print $7; exit}' 2>/dev/null | tr -d '[:space:]')
+    if [ -n "$PRODUCED_IN_DB" ] && [ "$PRODUCED_IN_DB" = "1" ]; then
+      ((CACHED++))
+      continue
+    fi
 
     # Only evaluate past slots
     if (( SLOT <= CURRENT_SLOT )); then
