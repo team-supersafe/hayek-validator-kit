@@ -1,5 +1,5 @@
 ---
-# Copy telegraf service configuration files
+# Copy validator metrics service configuration files
 - name: Render per-network Validator Metrics configs
   ansible.builtin.template:
     src: validator_metrics_service/validator-metrics.service.j2
