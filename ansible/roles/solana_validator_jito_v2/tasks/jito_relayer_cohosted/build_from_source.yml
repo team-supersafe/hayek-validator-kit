@@ -80,7 +80,7 @@
         path: "{{ jito_relayer_build_dir }}"
         mode: "{{ validator_data_mode_owner_readonly }}"
         owner: "root"
-        group: "{{ validator_operators_group }}"
+        group: "root"
         recurse: true
       become: true
 
@@ -133,7 +133,7 @@
     dest: "{{ jito_relayer_install_dir }}"
     state: link
     owner: "root"
-    group: "{{ validator_operators_group }}"
+    group: "root"
     force: true
   become: true
 
