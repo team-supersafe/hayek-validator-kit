@@ -6,8 +6,8 @@
 - name: jito_relayer_cohosted - build_from_source - Ensure jito relayer releases directory exists
   ansible.builtin.file:
     path: "{{ jito_relayer_installed_releases_dir }}"
-    owner: "{{ solana_user }}"
-    group: "{{ validator_operators_group }}"
+    owner: "root"
+    group: "root"
     mode: "{{ validator_data_mode_owner_readonly }}"
     state: directory
   become: true
@@ -26,7 +26,7 @@
     state: directory
     mode: "{{ validator_data_mode_owner_readonly }}"
     owner: "root"
-    group: "{{ validator_operators_group }}"
+    group: "root"
   become: true
 
 - name: jito_relayer_cohosted - build_from_source - Clone and build Jito Relayer from source
@@ -113,8 +113,8 @@
     path: "{{ jito_relayer_installed_release_dir }}"
     state: directory
     mode: "{{ validator_data_mode_owner_readonly }}"
-    owner: "{{ solana_user }}"
-    group: "{{ validator_operators_group }}"
+    owner: "root"
+    group: "root"
   become: true
 
 - name: jito_relayer_cohosted - build_from_source - Copy built binaries to release directory
@@ -123,8 +123,8 @@
     dest: "{{ jito_relayer_installed_release_dir }}/"
     remote_src: yes
     mode: "{{ validator_data_mode_owner_readonly }}"
-    owner: "{{ solana_user }}"
-    group: "{{ validator_operators_group }}"
+    owner: "root"
+    group: "root"
   become: true
 
 - name: jito_relayer_cohosted - build_from_source - Update active release symlink
