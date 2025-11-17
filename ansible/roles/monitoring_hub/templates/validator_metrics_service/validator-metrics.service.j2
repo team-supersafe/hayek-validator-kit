@@ -1,0 +1,21 @@
+[Unit]
+Description=Solana Validator Metrics Collector
+After=network-online.target influxdb.service
+Requires=influxdb.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Load environment variables from centralized file
+EnvironmentFile=-/usr/local/etc/validator-metrics.env
+ExecStart=/bin/bash -c 'while true; do /usr/local/bin/validator-metrics.sh; sleep {{ solana_metrics_interval }}; done'
+Restart=always
+RestartSec=5
+TimeoutStopSec=10
+KillMode=mixed
+KillSignal=SIGTERM
+SendSIGKILL=yes
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -43,28 +43,51 @@ solana_user: "{{ monitoring_user }}"
 # Solana specific variables
 solana_cli_bin: "/home/{{ monitoring_user }}/.local/share/solana/install/active_release/bin/solana"
 
+# Metrics collection interval in seconds for custom script validator-metrics.sh
+solana_metrics_interval: "120" # seconds
+
 solana:
   network:
     mainnet:
-      enabled: false
+      enabled: true
       network_name: "mainnet"
       metrics_interval: "30s"
+      watchtower_min_balance: 0.5
       rpc_url: "https://api.mainnet-beta.solana.com/"
+      stakewiz: true # Get Stakewiz rankings
+      jito_mev: true
     testnet:
-      enabled: false
+      enabled: true
       network_name: "testnet"
       metrics_interval: "30s"
+      watchtower_min_balance: 0.5
       rpc_url: "https://api.testnet.solana.com/"
+      stakewiz: false # Get Stakewiz rankings
+      jito_mev: false
     devnet:
       enabled: false
       network_name: "devnet"
       metrics_interval: "30s"
+      watchtower_min_balance: 0.5
       rpc_url: "https://api.devnet.solana.com/"
+      stakewiz: false # Get Stakewiz rankings
+      jito_mev: false
     localnet:
       enabled: true
       network_name: "localnet"
       metrics_interval: "30s"
+      watchtower_min_balance: 0.5
       rpc_url: "http://172.25.0.10:8899"
+      stakewiz: false # Get Stakewiz rankings
+      jito_mev: false
+    debug:
+      enabled: false
+      network_name: "debug"
+      metrics_interval: "30s"
+      watchtower_min_balance: 0.5
+      rpc_url: "https://api.mainnet-beta.solana.com/"
+      stakewiz: true # Get Stakewiz rankings
+      jito_mev: false
 
 # Monitoring services to manage
 monitoring_services:
