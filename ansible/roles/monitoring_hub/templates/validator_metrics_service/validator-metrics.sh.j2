@@ -59,7 +59,7 @@ DEBUG_JITO_MEV_ENABLED={{ solana.network.debug.jito_mev | lower }}
 # DEVNET - Use environment variables (NO FALLBACKS)
 DEVNET_VOTE_ACCOUNT="${DEVNET_VOTE_ACCOUNT:-}"
 DEVNET_IDENTITY="${DEVNET_IDENTITY:-}"
-DEVNET_RPC_API="${SOLANA_MAINNET_RPC:-}"
+DEVNET_RPC_API="${SOLANA_DEVNET_RPC:-}"
 DEVNET_HOST="${DEVNET_HOST:-}"
 DEVNET_STAKEWIZ_ENABLED={{ solana.network.devnet.stakewiz | lower }}
 DEVNET_GOSSIP_ENABLED={{ solana.network.devnet.enabled | lower }}
@@ -68,7 +68,7 @@ DEVNET_JITO_MEV_ENABLED={{ solana.network.devnet.jito_mev | lower }}
 # LOCALNET - Use environment variables (NO FALLBACKS)
 LOCALNET_VOTE_ACCOUNT="${LOCALNET_VOTE_ACCOUNT:-}"
 LOCALNET_IDENTITY="${LOCALNET_IDENTITY:-}"
-LOCALNET_RPC_API="${SOLANA_MAINNET_RPC:-}"
+LOCALNET_RPC_API="${SOLANA_LOCALNET_RPC:-}"
 LOCALNET_HOST="${LOCALNET_HOST:-}"
 LOCALNET_STAKEWIZ_ENABLED={{ solana.network.localnet.stakewiz | lower }}
 LOCALNET_GOSSIP_ENABLED={{ solana.network.localnet.enabled | lower }}
