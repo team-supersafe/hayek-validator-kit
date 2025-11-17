@@ -1,6 +1,7 @@
 [Unit]
 Description=Solana Validator Metrics Collector
-After=network-online.target
+After=network-online.target influxdb.service
+Requires=influxdb.service
 Wants=network-online.target
 
 [Service]
