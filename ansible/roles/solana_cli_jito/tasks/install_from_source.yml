@@ -7,7 +7,7 @@
     path: "{{ system_solana_install_dir }}"
     owner: "root"
     group: "root"
-    mode: "2775"
+    mode: "2755"
     state: directory
   become: true
 
@@ -16,7 +16,7 @@
     path: "{{ system_solana_installed_releases_dir }}"
     owner: "root"
     group: "root"
-    mode: "2775"
+    mode: "2755"
     state: directory
   become: true
 
@@ -34,7 +34,7 @@
       ansible.builtin.file:
         path: "{{ jito_build_dir }}"
         state: directory
-        mode: "2775"
+        mode: "2755"
         owner: "root"
         group: "root"
 
@@ -42,7 +42,7 @@
       ansible.builtin.file:
         path: "{{ solana_installed_release_dir }}"
         state: directory
-        mode: "2775"
+        mode: "2755"
         owner: "root"
         group: "root"
 
