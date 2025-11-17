@@ -36,7 +36,7 @@
   loop:
     - { path: "{{ cargo_home }}" }
     - { path: "{{ rustup_home }}" }
-  when: hostvars[inventory_hostname][item.path | regex_replace('^.*\/(.*)$', '\\1') + '_dir_stat'].stat.exists
+  when: (item.path == cargo_home and cargo_dir_stat.stat.exists) or (item.path == rustup_home and rustup_dir_stat.stat.exists)
 
 - name: Add Rust environment to global profile
   ansible.builtin.blockinfile:
