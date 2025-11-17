@@ -65,6 +65,7 @@
         dest: "{{ agave_build_dir }}"
         remote_src: true
         creates: "{{ agave_build_dir }}/agave-{{ agave_version }}"
+      become: true
 
     - name: Parse forked repo name from agave_forked_repo URL
       ansible.builtin.set_fact:
