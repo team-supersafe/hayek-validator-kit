@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 # Load environment variables from centralized file
 EnvironmentFile=-/usr/local/etc/validator-metrics.env
-ExecStart=/bin/bash -c 'while true; do /usr/local/bin/validator-metrics.sh; sleep 120; done'
+ExecStart=/bin/bash -c 'while true; do /usr/local/bin/validator-metrics.sh; sleep {{ solana_metrics_interval }}; done'
 Restart=always
 RestartSec=5
 TimeoutStopSec=10

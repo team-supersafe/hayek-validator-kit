@@ -43,10 +43,13 @@ solana_user: "{{ monitoring_user }}"
 # Solana specific variables
 solana_cli_bin: "/home/{{ monitoring_user }}/.local/share/solana/install/active_release/bin/solana"
 
+# Metrics collection interval in seconds for custom script validator-metrics.sh
+solana_metrics_interval: "120" # seconds
+
 solana:
   network:
     mainnet:
-      enabled: false
+      enabled: true
       network_name: "mainnet"
       metrics_interval: "30s"
       watchtower_min_balance: 0.5
