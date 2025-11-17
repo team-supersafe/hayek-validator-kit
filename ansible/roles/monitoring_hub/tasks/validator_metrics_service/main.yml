@@ -1,0 +1,10 @@
+---
+# Validator Metrics Service Configuration
+- name: Configure Validator Metrics Environment
+  ansible.builtin.include_tasks: validator_metrics_service/configure_env_file.yml
+
+- name: Configure Validator Metrics Script
+  ansible.builtin.include_tasks: validator_metrics_service/configure_validator_script.yml
+
+- name: Configure Validator Metrics Service
+  ansible.builtin.include_tasks: validator_metrics_service/configure_service.yml

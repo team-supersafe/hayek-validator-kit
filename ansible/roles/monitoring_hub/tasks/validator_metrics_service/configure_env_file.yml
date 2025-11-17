@@ -1,0 +1,9 @@
+---
+# Render Validator Metrics Environment file
+- name: Render Validator Metrics Environment file
+  ansible.builtin.template:
+    src: validator_metrics_service/monitor.env.j2
+    dest: "/usr/local/etc/validator-metrics.env"
+    owner: root
+    group: root
+    mode: '0600'
