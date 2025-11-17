@@ -41,7 +41,6 @@
 - name: Configure Telegraf
   include_tasks: telegraf/main.yml
   tags: telegraf
-  
 - name: Setup Solana validator metrics monitoring
   import_tasks: validator_metrics_service/main.yml
   tags: validator_metrics_service
