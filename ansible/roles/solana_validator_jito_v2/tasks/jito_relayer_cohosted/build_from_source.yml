@@ -8,7 +8,7 @@
     path: "{{ jito_relayer_installed_releases_dir }}"
     owner: "root"
     group: "root"
-    mode: "{{ validator_data_mode_owner_readonly }}"
+    mode: "{{ system_dir_mode }}"
     state: directory
   become: true
 
@@ -24,7 +24,7 @@
   ansible.builtin.file:
     path: "{{ jito_relayer_build_dir }}"
     state: directory
-    mode: "{{ validator_data_mode_owner_readonly }}"
+    mode: "{{ system_dir_mode }}"
     owner: "root"
     group: "root"
   become: true
@@ -78,7 +78,7 @@
     - name: jito_relayer_cohosted - build_from_source - Fix ownership and permissions of keys
       ansible.builtin.file:
         path: "{{ jito_relayer_build_dir }}"
-        mode: "{{ validator_data_mode_owner_readonly }}"
+        mode: "{{ system_dir_mode }}"
         owner: "root"
         group: "root"
         recurse: true
@@ -112,7 +112,7 @@
   ansible.builtin.file:
     path: "{{ jito_relayer_installed_release_dir }}"
     state: directory
-    mode: "{{ validator_data_mode_owner_readonly }}"
+    mode: "{{ system_dir_mode }}"
     owner: "root"
     group: "root"
   become: true
@@ -122,7 +122,7 @@
     src: "{{ jito_relayer_build_dir }}/target/release/"
     dest: "{{ jito_relayer_installed_release_dir }}/"
     remote_src: yes
-    mode: "{{ validator_data_mode_owner_readonly }}"
+    mode: "{{ system_dir_mode }}"
     owner: "root"
     group: "root"
   become: true
