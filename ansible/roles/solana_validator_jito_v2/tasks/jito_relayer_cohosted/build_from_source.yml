@@ -12,6 +12,14 @@
     state: directory
   become: true
 
+- name: Ensure system shared build directory exists
+  ansible.builtin.file:
+    path: "{{ system_shared_build_dir }}"
+    owner: "root"
+    group: "root"
+    mode: "{{ system_dir_mode }}"
+    state: directory
+  become: true
 - name: jito_relayer_cohosted - build_from_source - Set local variable for jito_relayer_build_dir
   ansible.builtin.set_fact:
     jito_relayer_build_dir: "{{ system_shared_build_dir }}/jito_relayer/{{ jito_relayer_version }}"
