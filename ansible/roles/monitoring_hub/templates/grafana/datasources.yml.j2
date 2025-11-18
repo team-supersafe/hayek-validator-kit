@@ -33,14 +33,20 @@ datasources:
     editable: true
     version: 1
 
-  - name: "Stakewiz Validator JSON"
+{# Add a JSON datasource for each cluster with stakewiz enabled #}
+{% for cluster_name, cluster in solana.network.items() %}
+{% if cluster.enabled and cluster.stakewiz %}
+  - name: "{{ validator.network[cluster_name].validator_name }} Stakewiz JSON"
     type: marcusolsson-json-datasource
-    uid: "stakewiz_json_uid"
+    uid: "stakewiz_json_{{ cluster.network_name }}"
     access: proxy
-    url: "https://api.stakewiz.com/validator/HAYEKSWg2EY21k38St9X5yM7QMW6SunKDefs5SqYSFty"
+    url: "https://api.stakewiz.com/validator/{{ validator.network[cluster_name].vote_account }}"
     jsonData:
       httpHeaderName1: ""
       httpHeaderValue1: ""
     isDefault: false
     editable: true
     version: 1
+
+{% endif %}
+{% endfor %}
