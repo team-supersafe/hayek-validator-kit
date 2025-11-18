@@ -7,7 +7,7 @@
     path: "{{ system_solana_install_dir }}"
     owner: "root"
     group: "root"
-    mode: "2755"
+    mode: "{{ system_dir_mode }}"
     state: directory
   become: true
 
@@ -16,7 +16,16 @@
     path: "{{ system_solana_installed_releases_dir }}"
     owner: "root"
     group: "root"
-    mode: "2755"
+    mode: "{{ system_dir_mode }}"
+    state: directory
+  become: true
+
+- name: Ensure system shared build directory exists
+  ansible.builtin.file:
+    path: "{{ system_shared_build_dir }}"
+    owner: "root"
+    group: "root"
+    mode: "{{ system_dir_mode }}"
     state: directory
   become: true
 
@@ -34,7 +43,7 @@
       ansible.builtin.file:
         path: "{{ jito_build_dir }}"
         state: directory
-        mode: "2755"
+        mode: "{{ system_dir_mode }}"
         owner: "root"
         group: "root"
 
@@ -42,7 +51,7 @@
       ansible.builtin.file:
         path: "{{ solana_installed_release_dir }}"
         state: directory
-        mode: "2755"
+        mode: "{{ system_dir_mode }}"
         owner: "root"
         group: "root"
 
