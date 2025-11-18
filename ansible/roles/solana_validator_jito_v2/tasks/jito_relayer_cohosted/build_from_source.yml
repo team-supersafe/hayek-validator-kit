@@ -3,6 +3,15 @@
   ansible.builtin.debug:
     msg: "Creating Jito Relayer build"
 
+- name: Ensure jito relayer install root directory exists
+  ansible.builtin.file:
+    path: "{{ jito_relayer_install_root }}"
+    owner: "root"
+    group: "root"
+    mode: "{{ system_dir_mode }}"
+    state: directory
+  become: true
+
 - name: jito_relayer_cohosted - build_from_source - Ensure jito relayer releases directory exists
   ansible.builtin.file:
     path: "{{ jito_relayer_installed_releases_dir }}"
@@ -20,6 +29,7 @@
     mode: "{{ system_dir_mode }}"
     state: directory
   become: true
+
 - name: jito_relayer_cohosted - build_from_source - Set local variable for jito_relayer_build_dir
   ansible.builtin.set_fact:
     jito_relayer_build_dir: "{{ system_shared_build_dir }}/jito_relayer/{{ jito_relayer_version }}"
