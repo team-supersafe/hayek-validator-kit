@@ -28,6 +28,14 @@
   ansible.builtin.set_fact:
     solana_installed_release_dir: "{{ system_solana_installed_releases_dir }}/v{{ agave_version }}"
 
+- name: Ensure system_shared_build_dir parent directory exists
+  ansible.builtin.file:
+    path: "{{ system_shared_build_dir }}"
+    owner: "root"
+    group: "root"
+    mode: "2755"
+    state: directory
+  become: true
 - name: Ensure agave_build_dir directory exists
   ansible.builtin.file:
     path: "{{ agave_build_dir }}"
