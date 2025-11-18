@@ -1,7 +1,7 @@
 
 # rust_env_v2 Ansible Role
 
-This role installs, configures, and verifies a system-wide Rust development environment on the target host. It is not tied to any validator or Solana-specific directory structure and is suitable for any host that needs Rust/Cargo.
+This role installs, configures, and verifies a system-wide Rust development environment. It installs Rust globally under `/usr/local` and is suitable for any host that needs Rust/Cargo, independent of validator-specific configurations.
 
 ## Tasks
 - **Install Rust**: Installs the specified Rust toolchain version using rustup.
