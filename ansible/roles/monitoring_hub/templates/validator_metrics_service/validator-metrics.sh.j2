@@ -297,12 +297,13 @@ send_jito_mev_epochs_new_only() {
   local JITO_API_URL="https://kobe.mainnet.jito.network/api/v1/validators/${VOTE_ACCOUNT}"
 
   # Get the latest epoch from InfluxDB
-  # epoch will be stored as a numeric field to allow aggregation
-  local LATEST_EPOCH_FLUX="from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -30d) |> filter(fn: (r) => r._measurement == \"jito_mev_epochs\" and r.host == \"${HOST}\" and r.pubkey == \"${IDENTITY_KEY}\") |> filter(fn: (r) => r._field == \"epoch\") |> max()"
+  # epoch is stored as a tag to allow GROUP BY in InfluxQL queries
+  local LATEST_EPOCH_FLUX="from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -30d) |> filter(fn: (r) => r._measurement == \"jito_mev_epochs\" and r.host == \"${HOST}\" and r.pubkey == \"${IDENTITY_KEY}\") |> group(columns: [\"epoch\"]) |> distinct(column: \"epoch\") |> map(fn: (r) => ({epoch: int(v: r.epoch)})) |> max(column: \"epoch\")"
   local LATEST_EPOCH_DATA=$(curl -s -XPOST "${INFLUX_URL}/api/v2/query?org=${INFLUX_ORG}" \
     -H "Authorization: Token ${INFLUX_TOKEN}" \
     -H "Content-Type: application/vnd.flux" \
     --data-raw "$LATEST_EPOCH_FLUX")
+  # Parse epoch from Flux response (epoch is converted to int field in the map function)
   local LATEST_EPOCH=$(echo "$LATEST_EPOCH_DATA" | jq -r '.results[0].series[0].values[0][1] // 0' 2>/dev/null || echo 0)
 
   # Get Jito MEV data with 10 second timeout
@@ -331,9 +332,10 @@ send_jito_mev_epochs_new_only() {
         {% endraw %}
 
         # Create InfluxDB line protocol with both lamports and SOL
+        # epoch is stored as a tag to allow GROUP BY in InfluxQL queries
         local TIMESTAMP=$(date +%s%N)
-        local TAGS="host=${HOST},pubkey=${IDENTITY_KEY}"
-        local FIELDS="epoch=${EPOCH},jito_mev_rewards_lamports=${MEV_REWARDS_LAMPORTS},jito_mev_rewards_sol=${MEV_REWARDS_SOL},jito_mev_commission_bps=${MEV_COMMISSION_BPS},jito_operator_rewards_lamports=${OPERATOR_REWARDS_LAMPORTS},jito_operator_rewards_sol=${OPERATOR_REWARDS_SOL}"
+        local TAGS="host=${HOST},pubkey=${IDENTITY_KEY},epoch=${EPOCH}"
+        local FIELDS="jito_mev_rewards_lamports=${MEV_REWARDS_LAMPORTS},jito_mev_rewards_sol=${MEV_REWARDS_SOL},jito_mev_commission_bps=${MEV_COMMISSION_BPS},jito_operator_rewards_lamports=${OPERATOR_REWARDS_LAMPORTS},jito_operator_rewards_sol=${OPERATOR_REWARDS_SOL}"
 
         local LINE="jito_mev_epochs,${TAGS} ${FIELDS} ${TIMESTAMP}"
 
