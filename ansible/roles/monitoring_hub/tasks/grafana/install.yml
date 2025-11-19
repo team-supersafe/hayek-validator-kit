@@ -28,6 +28,8 @@
 - name: Install marcusolsson-json-datasource plugin
   ansible.builtin.shell: |
     grafana-cli plugins install marcusolsson-json-datasource
+  args:
+    creates: /var/lib/grafana/plugins/marcusolsson-json-datasource
 
 - name: Ensure Grafana service is enabled
   ansible.builtin.systemd:
