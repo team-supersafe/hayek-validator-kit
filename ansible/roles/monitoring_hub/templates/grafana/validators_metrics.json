@@ -3662,9 +3662,9 @@
           ],
           "tags": [
             {
-              "key": "host",
+              "key": "pubkey::tag",
               "operator": "=~",
-              "value": "/^$server$/"
+              "value": "/^$pubkey$/"
             }
           ]
         }
