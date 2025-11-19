@@ -77,8 +77,20 @@ ansible-playbook playbooks/pb_setup_server_users.yml \
   -i solana_new_metal_box.yml \
   -e "target_host=new-metal-box" \
   -e "ansible_user=ubuntu" \
+  -e "server_role=validator" \
   -e "csv_file=iam_setup.csv"
 ```
+
+Extended Variables Explanation
+
+* `-e "server_role=monitor"`: Prevents the creation of the sol service user, which is not needed on monitoring (or other role) servers and disables the creation of RBAC (Role-Based Access Control) templates for validator-operators and validator-viewers roles.
+
+When server\_role=validator is used, the playbook would:
+
+* Create the `sol` service user
+* Copy sudoers templates that configure permissions for:
+  * `validator-operators`
+  * `validator-viewers`
 
 {% hint style="danger" %}
 **Note:** The playbook is configured to run with the user `ubuntu` which is the only user in the newly provisioned server.
