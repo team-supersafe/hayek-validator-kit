@@ -1,4 +1,24 @@
 ---
+- name: prepare - Validate RPC_URL for localnet
+  ansible.builtin.fail:
+    msg: "RPC_URL environment variable is required for solana_localnet"
+  when:
+    - ('solana_localnet' in group_names or ('solana_mainnet' not in group_names and 'solana_testnet' not in group_names))
+    - solana_cluster_param | default('') | regex_search('--url $') | bool
+  run_once: true
+
+- name: prepare - Determine Solana cluster parameter
+  ansible.builtin.set_fact:
+    solana_cluster_param: >-
+      {%- if 'solana_mainnet' in group_names -%}
+      -um
+      {%- elif 'solana_testnet' in group_names -%}
+      -ut
+      {%- else -%}
+      --url {{ lookup('env', 'RPC_URL') | default('') }}
+      {%- endif -%}
+  run_once: true
+
 # Check final disk space usage
 - name: Check final disk space usage
   block:
@@ -30,8 +50,8 @@
       ===========================================================
 
       📈 Monitor cluster validators (including delinquent ones):
-      solana -ul validators --keep-unstaked-delinquents
-      solana gossip -ul
+      solana validators {{ solana_cluster_param }} --keep-unstaked-delinquents
+      solana gossip {{ solana_cluster_param }}
 
       📱 Log-in to {{ inventory_hostname }} via SSH:
       ssh -p {{ ansible_port }} {{ ansible_user }}@{{ inventory_hostname }}
@@ -46,13 +66,11 @@
       agave-validator -l /mnt/ledger/ monitor
 
       ⚡ View validator catchup status:
-      solana -ul catchup --our-localhost 8899 --url http://172.25.0.10:8899
+      solana catchup {{ solana_cluster_param }} --our-localhost 8899
 
       🔍 Inspect logs:
-      tail -f ~/logs/agave-validator.log
-      Exclude metrics bloating your debug process
-      tail -f ~/logs/agave-validator.log | grep -v 'solana_metrics::metrics'
+      tail -f {{ validator_logs_dir }}/agave-validator.log
       Inspect Jito Relayer logs
-      journalctl -u jito-relayer -f
+      journalctl -u {{ jito_relayer_service_name }} -f
 
       ====================================================
