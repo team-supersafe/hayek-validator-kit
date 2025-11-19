@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PATH="/bin:/usr/bin:{{ solana_install_dir }}"
+PATH="/bin:/usr/bin:{{ system_solana_active_release_dir }}"
 {% if solana_metrics_url is defined and solana_metrics_url != None and solana_metrics_url != '' %}
 export SOLANA_METRICS_CONFIG="host={{ solana_metrics_url }}"
 {% endif %}
@@ -33,7 +33,7 @@ exec agave-validator \
 {% endfor %}
 --expected-genesis-hash {{ expected_genesis_hash }} \
 --wal-recovery-mode skip_any_corrupted_record \
---limit-ledger-size {% if limit_ledger_size is defined %}{{ limit_ledger_size }}{% endif %} \
+--limit-ledger-size {{ limit_ledger_size | default('') }} \
 --block-verification-method unified-scheduler \
 {% if solana_cluster != "localnet" and poh_pinned_cpu_core_enabled is defined and poh_pinned_cpu_core_enabled and poh_pinned_cpu_core is defined %}
 --experimental-poh-pinned-cpu-core {{ poh_pinned_cpu_core }} \
@@ -59,4 +59,4 @@ exec agave-validator \
 {{ extra_var }} \
 {% endfor %}
 {% endif %}
---log {{ logs_dir }}/agave-validator.log
+--log {{ validator_logs_dir }}/agave-validator.log
