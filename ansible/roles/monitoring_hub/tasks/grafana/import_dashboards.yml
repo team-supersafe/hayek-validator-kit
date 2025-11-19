@@ -68,3 +68,7 @@
           type: "datasource"
           pluginId: "marcusolsson-json-datasource"
           value: "stakewiz_json_mainnet_activating"
+    status_code: 200
+    timeout: 20
+  when: grafana_sa_token is defined
+  no_log: true
