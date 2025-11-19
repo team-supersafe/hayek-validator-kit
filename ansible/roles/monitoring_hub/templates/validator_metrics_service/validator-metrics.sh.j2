@@ -302,9 +302,13 @@ send_jito_mev_epochs_new_only() {
   local LATEST_EPOCH_DATA=$(curl -s -XPOST "${INFLUX_URL}/api/v2/query?org=${INFLUX_ORG}" \
     -H "Authorization: Token ${INFLUX_TOKEN}" \
     -H "Content-Type: application/vnd.flux" \
+    -H "Accept: text/csv" \
     --data-raw "$LATEST_EPOCH_FLUX")
-  # Parse epoch from Flux response (epoch is converted to int field in the map function)
-  local LATEST_EPOCH=$(echo "$LATEST_EPOCH_DATA" | jq -r '.results[0].series[0].values[0][1] // 0' 2>/dev/null || echo 0)
+  # Parse epoch from Flux CSV response: The map() function creates a custom record with only the epoch field,
+  # and max() returns a single row. CSV format: ,result,table,epoch (column 4 = index $4)
+  local LATEST_EPOCH=$(echo "$LATEST_EPOCH_DATA" | grep -v '^#' | awk -F',' 'NR>1 {print $4; exit}' 2>/dev/null | tr -d '[:space:]')
+  # Default to 0 if parsing fails or returns empty
+  LATEST_EPOCH=${LATEST_EPOCH:-0}
 
   # Get Jito MEV data with 10 second timeout
   local JITO_MEV_DATA=$(curl -s --max-time 10 "$JITO_API_URL")
