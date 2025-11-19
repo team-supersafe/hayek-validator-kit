@@ -51,6 +51,6 @@
 
 ## SECURITY POLICIES
 
+* [Third-party Alert Systems](security-policies/third-party-alert-systems.md)
 * [Vulnerability Management](security-policies/vulnerability-management.md)
 * [Continuous Monitoring](security-policies/continuous-monitoring.md)
-* [Third-party Alert Systems](security-policies/third-party-alert-systems.md)
