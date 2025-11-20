@@ -9,7 +9,7 @@
 - name: Create sol user for validator service
   ansible.builtin.user:
     name: "{{ solana_user }}"
-    shell: /usr/sbin/nologin
+    shell: /usr/sbin/bash
     state: present
     system: true
     create_home: true
