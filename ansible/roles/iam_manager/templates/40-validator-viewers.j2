@@ -61,6 +61,3 @@
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/sort
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/uniq
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/wc -l
-
-# Allow monitoring the ledger as sol
-%validator_viewers ALL=(sol) NOPASSWD: /opt/solana/active_release/bin/agave-validator -l /mnt/ledger/ monitor
