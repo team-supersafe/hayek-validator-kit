@@ -63,7 +63,7 @@
       ps aux | grep jito-relayer
 
       📊 Monitor validator startup (as sol):
-      sudo -u sol {{ system_solana_active_release_dir }}/agave-validator -l /mnt/ledger/ monitor
+      sudo -u sol {{ system_solana_active_release_dir }}/agave-validator -l {{ ledger_path}} monitor
 
       ⚡ View validator catchup status:
       solana catchup {{ solana_cluster_param }} --our-localhost 8899
