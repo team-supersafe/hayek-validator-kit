@@ -49,12 +49,15 @@
       🚀 Validator Setup Complete! Here are some helpful commands:
       ===========================================================
 
+      📱 Log-in to {{ inventory_hostname }} via SSH:
+      ssh -p {{ ansible_port }} {{ ansible_user }}@{{ inventory_hostname }}
+
+      👤 Switch to sol user shell:
+      sudo -u sol -i
+
       📈 Monitor cluster validators (including delinquent ones):
       solana validators {{ solana_cluster_param }} --keep-unstaked-delinquents
       solana gossip {{ solana_cluster_param }}
-
-      📱 Log-in to {{ inventory_hostname }} via SSH:
-      ssh -p {{ ansible_port }} {{ ansible_user }}@{{ inventory_hostname }}
 
       🔍 Check for running validator process:
       ps aux | grep validator
@@ -62,8 +65,8 @@
       🔄 Check for running Jito Relayer process (if installed):
       ps aux | grep jito-relayer
 
-      📊 Monitor validator startup (as sol):
-      sudo -u sol {{ system_solana_active_release_dir }}/agave-validator -l {{ ledger_path}} monitor
+      📊 Monitor validator startup:
+      agave-validator -l {{ ledger_path }} monitor
 
       ⚡ View validator catchup status:
       solana catchup {{ solana_cluster_param }} --our-localhost 8899
