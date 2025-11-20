@@ -62,8 +62,8 @@
       🔄 Check for running Jito Relayer process (if installed):
       ps aux | grep jito-relayer
 
-      📊 Monitor validator startup state:
-      agave-validator -l /mnt/ledger/ monitor
+      📊 Monitor validator startup (as sol):
+      sudo -u sol /opt/solana/active_release/bin/agave-validator -l /mnt/ledger/ monitor
 
       ⚡ View validator catchup status:
       solana catchup {{ solana_cluster_param }} --our-localhost 8899
