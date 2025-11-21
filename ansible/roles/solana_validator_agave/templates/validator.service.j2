@@ -8,6 +8,8 @@ Type=simple
 Restart=always
 RestartSec=1
 User={{ solana_user }}
+Group={{ validator_operators_group }}
+UMask=0002
 Environment=RUST_LOG=info
 LimitNOFILE=1000000
 LimitMEMLOCK=2000000000

@@ -8,7 +8,7 @@
       - validator_type in ['primary', 'hot-spare']
       - validator_key_store is defined
       - solana_user is defined
-      - validator_solana_install_dir is defined
+      - system_solana_active_release_dir is defined
       - ansible_home_dir is defined
     fail_msg: "One or more required variables for validator keyset installation are missing or invalid."
 
@@ -88,7 +88,7 @@
       when: local_hot_spare_key_exists.stat.exists | default(false)
 
     - name: install_validator_keyset_rbac - Generate hot-spare-identity.json keypair
-      ansible.builtin.shell: "{{ validator_solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json -f"
+      ansible.builtin.shell: "{{ system_solana_active_release_dir }}/solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json -f"
       args:
         chdir: "{{ validator_keys_dir }}"
       register: keygen_result
@@ -140,7 +140,7 @@
       when: local_jito_key_exists.stat.exists | default(false)
 
     - name: install_validator_keyset_rbac - Generate jito-relayer-block-eng.json keypair
-      ansible.builtin.shell: "{{ validator_solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o jito-relayer-block-eng.json -f"
+      ansible.builtin.shell: "{{ system_solana_active_release_dir }}/solana-keygen new -s --no-bip39-passphrase -o jito-relayer-block-eng.json -f"
       args:
         chdir: "{{ validator_keys_dir }}"
       register: jito_keygen_result

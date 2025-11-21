@@ -1,4 +1,5 @@
-{{ logs_dir }}/agave-validator.log {
+{{ validator_logs_dir }}/agave-validator.log {
+  su sol validator_operators
   rotate 1
   {% if solana_cluster == 'localnet' %}
   size 100M
@@ -8,6 +9,6 @@
   compress
   missingok
   postrotate
-    systemctl kill -s USR1 sol.service
+  systemctl kill -s USR1 {{ validator_service_name }}.service
   endscript
 }

@@ -24,11 +24,11 @@
   block:
     - name: Check if Jito-Solana CLI binary exists
       ansible.builtin.stat:
-        path: "{{ validator_solana_install_dir }}/solana"
+        path: "{{ system_solana_active_release_dir }}/solana"
       register: solana_binary
 
     - name: Precheck - Get installed Jito-Solana CLI version
-      ansible.builtin.command: "{{ validator_solana_install_dir }}/solana --version"
+      ansible.builtin.command: "{{ system_solana_active_release_dir }}/solana --version"
       register: installed_version
       changed_when: false
       failed_when: false
@@ -66,7 +66,7 @@
     msg: |
       Jito-Solana CLI installation status:
       - Binary exists: {{ solana_binary.stat.exists }}
-      - Binary path: "{{ solana_binary.stat.exists | ternary(validator_solana_install_dir ~ '/solana', 'Not found') }}"
+      - Binary path: "{{ solana_binary.stat.exists | ternary(system_solana_active_release_dir ~ '/solana', 'Not found') }}"
       - Binary in PATH: {{ (solana_which_result.stdout is defined and solana_which_result.stdout | length > 0) | ternary('True', 'False') }}
       - Installed version: "{{ installed_jito_version | default('Not found') }}"
       - Installed client: "{{ installed_jito_client | default('Not found') }}"

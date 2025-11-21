@@ -1,7 +1,17 @@
+---
 # Global trivial stuff (non-secret) that apply to all hosts
 
-# Ansible home directory 
+# Ansible home directory
 ansible_home_dir: "{{ ansible_env.HOME }}"
 
 # Disk mount points configuration
 mount_base_path: '/mnt'
+
+# System wide installation path for solana binaries
+cargo_home: "/usr/local/cargo"
+rustup_home: "/usr/local/rustup"
+system_solana_install_dir: "/opt/solana"
+system_solana_active_release_dir: "{{ system_solana_install_dir }}/active_release/bin"
+system_solana_installed_releases_dir: "{{ system_solana_install_dir }}/releases"
+system_shared_build_dir: "/opt/build"
+system_dir_mode: "2755"

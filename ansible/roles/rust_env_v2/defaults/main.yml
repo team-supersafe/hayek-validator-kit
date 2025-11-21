@@ -1,3 +1,4 @@
-rust_version: stable
-rust_user: "{{ solana_user | default('sol') }}"
-rust_verify: true
+---
+# These should be set globally in group_vars/all.yml, but are here as fallback defaults
+cargo_home: "/usr/local/cargo"
+rustup_home: "/usr/local/rustup"
