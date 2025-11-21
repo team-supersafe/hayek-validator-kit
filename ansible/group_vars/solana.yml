@@ -47,13 +47,6 @@ validator_root_dir: "/opt/validator"
 validator_scripts_dir: "{{ validator_root_dir }}/scripts"
 validator_logs_dir: "{{ validator_root_dir }}/logs"
 validator_key_store: "{{ validator_root_dir }}/keys"
-validator_build_dir: "{{ validator_root_dir }}/build"
-# DEPRECATED: Use one common install root for all validator software. See TODO below.
-validator_solana_install_root: "{{ validator_root_dir }}/install"
-# TODO: In next PR, lets get all possible installations under install root
-# validator_solana_install_root: "{{ validator_root_dir }}/install/solana"
-validator_solana_install_dir: "{{ validator_solana_install_root }}/active_release/bin"
-validator_solana_installed_releases_dir: "{{ validator_solana_install_root }}/releases"
 validator_operators_group: "validator_operators"
 
 # directory modes

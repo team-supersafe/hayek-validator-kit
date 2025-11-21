@@ -4,6 +4,10 @@
 # Allow group members to become validator_operators without password
 # This is required for Ansible to use become_user: validator_operators
 
+# Allow validator_operators group to start a login shell as sol without password
+# For this sol user must be created with `shell: /usr/sbin/bash` instead of `shell: /usr/sbin/nologin`
+%validator_operators ALL=(sol) NOPASSWD: ALL
+
 # Service control commands
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl start {{ validator_service }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop {{ validator_service }}

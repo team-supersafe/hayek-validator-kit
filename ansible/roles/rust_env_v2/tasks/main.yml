@@ -1,8 +1,5 @@
-# Main task list for the rust_env role.
-# Tasks: precheck, install, configure, and verify Rust environment.
-# Use tags: rust, install, config, verify for selective execution.
-
 ---
+# Main task list for the rust_env role.
 - name: Precheck environment
   import_tasks: precheck.yml
   tags: [rust, precheck]
@@ -11,16 +8,14 @@
   import_tasks: install.yml
   when: not rust_already_installed | default(false)
   tags: [rust, install]
-  
+
 - name: Verify rust installation is correct
   import_tasks: verify.yml
-  when: >
-    rust_verify | default(true) and
-    not rust_already_installed | default(false)
+  when: not rust_already_installed | default(false)
   tags: [rust, verify]
 
 - name: Rust environment setup complete
   debug:
     msg: >-
-      Rust environment has been {{ 'already installed' if rust_already_installed | default(false) else 'installed, configured' + (' and verified' if rust_verify | default(true) else '') }}.
+      Rust environment has been {{ 'already installed' if rust_already_installed | default(false) else 'installed and configured' }}.
   tags: [rust, done]

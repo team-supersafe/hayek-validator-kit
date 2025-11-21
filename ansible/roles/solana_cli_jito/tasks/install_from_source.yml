@@ -2,22 +2,40 @@
   ansible.builtin.debug:
     msg: "Building Jito-Solana CLI version {{ jito_tag }} from source"
 
-- name: Ensure validator releases directory exists
+- name: Ensure solana install root directory exists
   ansible.builtin.file:
-    path: "{{ validator_solana_installed_releases_dir }}"
-    owner: "{{ solana_user }}"
-    group: "{{ validator_operators_group }}"
-    mode: "{{ validator_data_mode_owner_readonly }}"
+    path: "{{ system_solana_install_dir }}"
+    owner: "root"
+    group: "root"
+    mode: "{{ system_dir_mode }}"
+    state: directory
+  become: true
+
+- name: Ensure solana installed releases directory exists
+  ansible.builtin.file:
+    path: "{{ system_solana_installed_releases_dir }}"
+    owner: "root"
+    group: "root"
+    mode: "{{ system_dir_mode }}"
+    state: directory
+  become: true
+
+- name: Ensure system shared build directory exists
+  ansible.builtin.file:
+    path: "{{ system_shared_build_dir }}"
+    owner: "root"
+    group: "root"
+    mode: "{{ system_dir_mode }}"
     state: directory
   become: true
 
 - name: Set local variable for jito_build_dir
   ansible.builtin.set_fact:
-    jito_build_dir: "{{ validator_build_dir }}/jito-solana/{{ jito_tag }}"
+    jito_build_dir: "{{ system_shared_build_dir }}/jito-solana/{{ jito_tag }}"
 
 - name: Set local variable for solana_installed_release_dir
   ansible.builtin.set_fact:
-    solana_installed_release_dir: "{{ validator_solana_installed_releases_dir }}/{{ jito_tag }}"
+    solana_installed_release_dir: "{{ system_solana_installed_releases_dir }}/{{ jito_tag }}"
 
 - name: Prepare build environment
   block:
@@ -25,17 +43,17 @@
       ansible.builtin.file:
         path: "{{ jito_build_dir }}"
         state: directory
-        mode: "{{ validator_data_mode_owner_readonly }}"
+        mode: "{{ system_dir_mode }}"
         owner: "root"
-        group: "{{ validator_operators_group }}"
+        group: "root"
 
     - name: Ensure release directory exists
       ansible.builtin.file:
         path: "{{ solana_installed_release_dir }}"
         state: directory
-        mode: "{{ validator_data_mode_owner_readonly }}"
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
+        mode: "{{ system_dir_mode }}"
+        owner: "root"
+        group: "root"
 
     - name: Ensure git is installed
       become: true
@@ -122,12 +140,12 @@
     - name: Build Jito-Solana CLI
       ansible.builtin.shell: |
         set -e
-        . "{{ validator_root_dir }}/.cargo/env"
+        . "{{ cargo_home }}/env"
         ./scripts/cargo-install-all.sh --validator-only {{ solana_installed_release_dir }} > {{ jito_build_dir }}/jito-build.log 2>&1
       environment:
         CI_COMMIT: "{{ ci_commit.stdout }}"
-        CARGO_HOME: "{{ validator_root_dir }}/.cargo"
-        RUSTUP_HOME: "{{ validator_root_dir }}/.rustup"
+        CARGO_HOME: "{{ cargo_home }}"
+        RUSTUP_HOME: "{{ rustup_home }}"
       args:
         chdir: "{{ jito_build_dir }}"
         creates: "{{ solana_installed_release_dir }}/bin/solana"
@@ -137,8 +155,8 @@
     - name: Fix ownership of release directory and contents
       ansible.builtin.file:
         path: "{{ solana_installed_release_dir }}"
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
+        owner: "root"
+        group: "root"
         recurse: true
       become: true
   rescue:
@@ -149,9 +167,9 @@
 - name: Create symlink to new release
   ansible.builtin.file:
     src: "{{ solana_installed_release_dir }}"
-    dest: "{{ validator_root_dir }}/install/active_release"
+    dest: "{{ system_solana_install_dir }}/active_release"
     state: link
     owner: "root"
-    group: "{{ validator_operators_group }}"
+    group: "root"
     force: true
   become: true

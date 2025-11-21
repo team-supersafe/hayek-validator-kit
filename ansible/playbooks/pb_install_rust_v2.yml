@@ -1,10 +1,33 @@
 ---
-# Run from /ansible folder:
-# ansible-playbook -i solana_setup_host.yml playbooks/pb_install_rust.yml --diff --check
-# ansible-playbook -i solana_setup_host.yml playbooks/pb_install_rust.yml --diff
+# Usage:
+# ------
+# Run from /ansible directory:
+#
+# For syntax check add --syntax-check
+# For dry run add --diff --check
+#
+# ansible-playbook playbooks/pb_install_rust_v2.yml \
+#   -i solana_localnet.yml \
+#   --limit host-charlie \
+#   -e "target_host=host-charlie" \
+#   -e "operator_user=bob"
+
 - name: Runs install_rust task from rust_env role
-  hosts: host-charlie # host-alpha or host-bravo
-  user: "{{ ansible_user }}"
-  become: false
+  hosts: "{{ target_host }}"
+  user: "{{ operator_user }}"
+  become: true
+
+  pre_tasks:
+    - name: Assert required parameters are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - operator_user is defined
+        fail_msg: >
+          Missing required variables.
+          Must provide:
+            - target_host
+            - operator_user
+
   roles:
     - role: rust_env_v2

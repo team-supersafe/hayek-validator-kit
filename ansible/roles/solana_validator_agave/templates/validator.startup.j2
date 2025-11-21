@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PATH="/bin:/usr/bin:{{ validator_solana_install_dir }}"
+PATH="/bin:/usr/bin:{{ system_solana_active_release_dir }}"
 {% if solana_metrics_url is defined and solana_metrics_url %}
 export SOLANA_METRICS_CONFIG="host={{ solana_metrics_url }}"
 {% endif %}

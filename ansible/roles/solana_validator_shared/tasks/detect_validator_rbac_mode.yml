@@ -1,5 +1,7 @@
 ---
 # Detect if the validator deployment is RBAC-enabled (new style) or legacy (old style)
+# In a legacy deployment, the validator_root_dir does not exist and cargo_home/rustup_home are undefined or under validator-specific paths
+# In an RBAC-enabled deployment, validator_root_dir lives below /opt and cargo_home/rustup_home are system-wide under /usr/local
 - name: Assert validator_root_dir is defined
   ansible.builtin.assert:
     that:
@@ -12,14 +14,14 @@
     path: "{{ validator_root_dir }}"
   register: validator_opt_dir
 
-- name: Detect if .cargo exists in validator_root_dir
+- name: Detect if {{ cargo_home }} exists
   ansible.builtin.stat:
-    path: "{{ validator_root_dir }}/.cargo"
+    path: "{{ cargo_home }}"
   register: validator_cargo_dir
 
-- name: Detect if .rustup exists in validator_root_dir
+- name: Detect if {{ rustup_home }} exists
   ansible.builtin.stat:
-    path: "{{ validator_root_dir }}/.rustup"
+    path: "{{ rustup_home }}"
   register: validator_rustup_dir
 
 - name: Set validator_rbac_enabled flag
