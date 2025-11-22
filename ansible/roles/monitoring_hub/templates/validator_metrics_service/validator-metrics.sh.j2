@@ -37,6 +37,8 @@ MAINNET_HOST="${MAINNET_NAME_SUFFIX:-}"
 MAINNET_STAKEWIZ_ENABLED={{ solana.network.mainnet.stakewiz | lower }}
 MAINNET_GOSSIP_ENABLED={{ solana.network.mainnet.enabled | lower }}
 MAINNET_JITO_MEV_ENABLED={{ solana.network.mainnet.jito_mev | lower }}
+MAINNET_DOUBLEZERO_ENABLED={{ solana.network.mainnet.doublezero_enabled | lower }}
+MAINNET_DOUBLEZERO_IDENTITY="${MAINNET_DOUBLEZERO_IDENTITY:-}"
 
 # TESTNET - Use environment variables (NO FALLBACKS)
 TESTNET_VOTE_ACCOUNT="${TESTNET_VOTE_ACCOUNT:-}"
@@ -46,6 +48,8 @@ TESTNET_HOST="${TESTNET_NAME_SUFFIX:-}"
 TESTNET_STAKEWIZ_ENABLED={{ solana.network.testnet.stakewiz | lower }}
 TESTNET_GOSSIP_ENABLED={{ solana.network.testnet.enabled | lower }}
 TESTNET_JITO_MEV_ENABLED={{ solana.network.testnet.jito_mev | lower }}
+TESTNET_DOUBLEZERO_ENABLED={{ solana.network.testnet.doublezero_enabled | lower }}
+TESTNET_DOUBLEZERO_IDENTITY="${TESTNET_DOUBLEZERO_IDENTITY:-}"
 
 # DEBUG - Use environment variables (NO FALLBACKS)
 DEBUG_VOTE_ACCOUNT="${DEBUG_VOTE_ACCOUNT:-}"
@@ -55,6 +59,8 @@ DEBUG_HOST="${DEBUG_HOST:-}"
 DEBUG_STAKEWIZ_ENABLED={{ solana.network.debug.stakewiz | lower }}
 DEBUG_GOSSIP_ENABLED={{ solana.network.debug.enabled | lower }}
 DEBUG_JITO_MEV_ENABLED={{ solana.network.debug.jito_mev | lower }}
+DEBUG_DOUBLEZERO_ENABLED={{ solana.network.debug.doublezero_enabled | lower }}
+DEBUG_DOUBLEZERO_IDENTITY="${DEBUG_DOUBLEZERO_IDENTITY:-}"
 
 # DEVNET - Use environment variables (NO FALLBACKS)
 DEVNET_VOTE_ACCOUNT="${DEVNET_VOTE_ACCOUNT:-}"
@@ -64,6 +70,8 @@ DEVNET_HOST="${DEVNET_HOST:-}"
 DEVNET_STAKEWIZ_ENABLED={{ solana.network.devnet.stakewiz | lower }}
 DEVNET_GOSSIP_ENABLED={{ solana.network.devnet.enabled | lower }}
 DEVNET_JITO_MEV_ENABLED={{ solana.network.devnet.jito_mev | lower }}
+DEVNET_DOUBLEZERO_ENABLED={{ solana.network.devnet.doublezero_enabled | lower }}
+DEVNET_DOUBLEZERO_IDENTITY="${DEVNET_DOUBLEZERO_IDENTITY:-}"
 
 # LOCALNET - Use environment variables (NO FALLBACKS)
 LOCALNET_VOTE_ACCOUNT="${LOCALNET_VOTE_ACCOUNT:-}"
@@ -73,6 +81,8 @@ LOCALNET_HOST="${LOCALNET_HOST:-}"
 LOCALNET_STAKEWIZ_ENABLED={{ solana.network.localnet.stakewiz | lower }}
 LOCALNET_GOSSIP_ENABLED={{ solana.network.localnet.enabled | lower }}
 LOCALNET_JITO_MEV_ENABLED={{ solana.network.localnet.jito_mev | lower }}
+LOCALNET_DOUBLEZERO_ENABLED={{ solana.network.localnet.doublezero_enabled | lower }}
+LOCALNET_DOUBLEZERO_IDENTITY="${LOCALNET_DOUBLEZERO_IDENTITY:-}"
 
 
 # ===== INFLUXDB V2 CONFIGURATION =====

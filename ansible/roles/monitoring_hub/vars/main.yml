@@ -49,6 +49,7 @@ solana:
       rpc_url: "https://api.mainnet-beta.solana.com/"
       stakewiz: true # Get Stakewiz rankings
       jito_mev: true
+      doublezero_enabled: false
     testnet:
       enabled: true
       network_name: "testnet"
@@ -57,6 +58,7 @@ solana:
       rpc_url: "https://api.testnet.solana.com/"
       stakewiz: false # Get Stakewiz rankings
       jito_mev: false
+      doublezero_enabled: true
     devnet:
       enabled: false
       network_name: "devnet"
@@ -65,6 +67,7 @@ solana:
       rpc_url: "https://api.devnet.solana.com/"
       stakewiz: false # Get Stakewiz rankings
       jito_mev: false
+      doublezero_enabled: false
     localnet:
       enabled: true
       network_name: "localnet"
@@ -73,6 +76,7 @@ solana:
       rpc_url: "http://172.25.0.10:8899"
       stakewiz: false # Get Stakewiz rankings
       jito_mev: false
+      doublezero_enabled: false
     debug:
       enabled: false
       network_name: "debug"
@@ -81,6 +85,7 @@ solana:
       rpc_url: "https://api.mainnet-beta.solana.com/"
       stakewiz: true # Get Stakewiz rankings
       jito_mev: false
+      doublezero_enabled: false
 
 # Monitoring services to manage
 monitoring_services:
