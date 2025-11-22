@@ -119,7 +119,7 @@ molecule test -s rust_env_v2_tests -- -e csv_file=iam_setup.csv
 molecule converge -s rust_env_v2_tests -- -e csv_file=iam_setup.csv
 
 # Verify only
-molecule verify -s rust_env_v2_tests -- -e csv_file=iam_setup.csv
+molecule verify -s rust_env_v2_tests
 
 # Access container
 molecule login -s rust_env_v2_tests
