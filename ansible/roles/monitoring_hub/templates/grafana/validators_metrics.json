@@ -1522,6 +1522,7 @@
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 4,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -1531,7 +1532,8 @@
                 "value": 0
               }
             ]
-          }
+          },
+          "unit": "SOL"
         },
         "overrides": [
           {
@@ -4461,7 +4463,7 @@
   "timezone": "",
   "title": "Hayek Validators Metrics",
   "uid": "f2b2HcaGzHayek",
-  "version": 3,
+  "version": 5,
   "weekStart": "",
   "id": null
 }
