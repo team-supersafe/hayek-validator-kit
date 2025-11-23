@@ -35,7 +35,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "12.2.1"
+      "version": "12.3.0"
     },
     {
       "type": "datasource",
@@ -152,7 +152,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -249,7 +249,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -346,7 +346,7 @@
         "text": {},
         "valueMode": "color"
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -436,7 +436,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -541,7 +541,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -651,7 +651,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "cacheDurationSeconds": 300,
@@ -752,7 +752,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "cacheDurationSeconds": 0,
@@ -870,7 +870,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Stakewiz",
@@ -994,7 +994,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Stakewiz Rank",
@@ -1148,7 +1148,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Balance",
@@ -1269,7 +1269,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Stake",
@@ -1367,7 +1367,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -1475,7 +1475,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -1513,6 +1513,193 @@
     },
     {
       "datasource": {
+        "type": "datasource",
+        "uid": "-- Mixed --"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "A Total"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Total"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Produced Leraderr Slot_hide"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Produced"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Skipped Slot_hide"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Skipped"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 7,
+        "y": 21
+      },
+      "id": 162,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "alias": "Deposit PDA",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_SOLANA_METRICS}"
+          },
+          "groupBy": [],
+          "hide": false,
+          "measurement": "nodemonitor",
+          "orderByTime": "ASC",
+          "policy": "autogen",
+          "query": "SELECT last(\"doublezero_balance\") \nFROM \"autogen\".\"nodemonitor\" \nWHERE (\"pubkey\"::tag =~ /^$pubkey$/) AND $timeFilter \nGROUP BY time($__interval) fill(previous)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "leader_slot_count"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "pubkey::tag",
+              "operator": "=~",
+              "value": "/^$pubkey$/"
+            }
+          ]
+        },
+        {
+          "alias": "Produced ",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_SOLANA_METRICS}"
+          },
+          "groupBy": [],
+          "hide": true,
+          "measurement": "nodemonitor",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "B",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "leaderSlots"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "pubkey::tag",
+              "operator": "=~",
+              "value": "/^$pubkey$/"
+            }
+          ]
+        },
+        {
+          "alias": "Skipped",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_SOLANA_METRICS}"
+          },
+          "groupBy": [],
+          "hide": true,
+          "measurement": "nodemonitor",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "C",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "skippedSlots"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "pubkey::tag",
+              "operator": "=~",
+              "value": "/^$pubkey$/"
+            }
+          ]
+        }
+      ],
+      "title": "Double Zero",
+      "type": "stat"
+    },
+    {
+      "datasource": {
         "type": "influxdb",
         "uid": "${DS_SOLANA_METRICS}"
       },
@@ -1543,7 +1730,7 @@
       "gridPos": {
         "h": 3,
         "w": 3,
-        "x": 7,
+        "x": 11,
         "y": 21
       },
       "id": 44,
@@ -1565,7 +1752,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -1628,7 +1815,7 @@
       "gridPos": {
         "h": 3,
         "w": 3,
-        "x": 10,
+        "x": 14,
         "y": 21
       },
       "id": 134,
@@ -1651,7 +1838,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -1775,7 +1962,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Balance",
@@ -1906,7 +2093,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -2029,7 +2216,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -2152,7 +2339,7 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Total",
@@ -2314,7 +2501,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -2398,7 +2585,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -2521,7 +2708,7 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Total",
@@ -2687,7 +2874,7 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -2843,7 +3030,7 @@
           }
         ]
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -3009,7 +3196,7 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
@@ -3209,7 +3396,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "% Total Delinquent",
@@ -3331,7 +3518,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Credits",
@@ -3469,7 +3656,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Hayek Vote Performance at $tag_host",
@@ -3606,7 +3793,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Leaderslots",
@@ -3760,7 +3947,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "My Skiprate",
@@ -3917,7 +4104,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "Credits ",
@@ -4068,7 +4255,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.1",
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "alias": "$tag_host",
@@ -4115,6 +4302,7 @@
       "type": "timeseries"
     }
   ],
+  "preload": false,
   "refresh": "1m",
   "schemaVersion": 42,
   "tags": [],
@@ -4199,20 +4387,20 @@
       },
       {
         "current": {
-          "text": "hykfH9jUQqe2yqv3VqVAK5AmMYqrmMWmdwDcbfsm6My",
-          "value": "hykfH9jUQqe2yqv3VqVAK5AmMYqrmMWmdwDcbfsm6My"
+          "text": "hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ",
+          "value": "hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ"
         },
         "includeAll": false,
         "label": "pubkey",
         "name": "pubkey",
         "options": [
           {
-            "selected": false,
+            "selected": true,
             "text": "hayek-testnet (hyt8ZV...)",
             "value": "hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ"
           },
           {
-            "selected": true,
+            "selected": false,
             "text": "hayek-mainnet (hykfH9...)",
             "value": "hykfH9jUQqe2yqv3VqVAK5AmMYqrmMWmdwDcbfsm6My"
           }
@@ -4273,7 +4461,7 @@
   "timezone": "",
   "title": "Hayek Validators Metrics",
   "uid": "f2b2HcaGzHayek",
-  "version": 6,
+  "version": 3,
   "weekStart": "",
   "id": null
 }
