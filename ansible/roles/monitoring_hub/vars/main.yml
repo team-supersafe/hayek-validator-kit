@@ -1,8 +1,4 @@
 ---
-# User and group configuration
-monitoring_user: "monitor"
-monitoring_group: "monitor"
-
 # Grafana specific paths and permissions
 grafana_config:
   user: "grafana"
@@ -37,11 +33,8 @@ influxdb_additional_buckets:
     token_permissions_read: true
     retention: 90 # days
 
-# Variables override for monitoring_hub role (compatibility)
-solana_user: "{{ monitoring_user }}"
-
 # Solana specific variables
-solana_cli_bin: "/home/{{ monitoring_user }}/.local/share/solana/install/active_release/bin/solana"
+solana_cli_bin: "/opt/solana/active_release/bin/solana"
 
 # Metrics collection interval in seconds for custom script validator-metrics.sh
 solana_metrics_interval: "120" # seconds
@@ -56,6 +49,7 @@ solana:
       rpc_url: "https://api.mainnet-beta.solana.com/"
       stakewiz: true # Get Stakewiz rankings
       jito_mev: true
+      doublezero_enabled: false
     testnet:
       enabled: true
       network_name: "testnet"
@@ -64,6 +58,7 @@ solana:
       rpc_url: "https://api.testnet.solana.com/"
       stakewiz: false # Get Stakewiz rankings
       jito_mev: false
+      doublezero_enabled: true
     devnet:
       enabled: false
       network_name: "devnet"
@@ -72,6 +67,7 @@ solana:
       rpc_url: "https://api.devnet.solana.com/"
       stakewiz: false # Get Stakewiz rankings
       jito_mev: false
+      doublezero_enabled: false
     localnet:
       enabled: true
       network_name: "localnet"
@@ -80,6 +76,7 @@ solana:
       rpc_url: "http://172.25.0.10:8899"
       stakewiz: false # Get Stakewiz rankings
       jito_mev: false
+      doublezero_enabled: false
     debug:
       enabled: false
       network_name: "debug"
@@ -88,6 +85,7 @@ solana:
       rpc_url: "https://api.mainnet-beta.solana.com/"
       stakewiz: true # Get Stakewiz rankings
       jito_mev: false
+      doublezero_enabled: false
 
 # Monitoring services to manage
 monitoring_services:
