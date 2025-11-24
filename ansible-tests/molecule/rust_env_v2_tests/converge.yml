@@ -1,0 +1,65 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    # Use the same variable pattern as production: csv_file
+    # This should be passed as extra variable: -e "csv_file=iam_setup.csv"
+    molecule_csv_file: "{{ csv_file | default('molecule_test_users.csv') }}"
+    # Source CSV directory - check multiple locations
+    molecule_csv_source_dir: "{{ csv_source_dir | default('~/new-metal-box') }}"
+    # Create temporary directory for CSV file
+    molecule_csv_dir: "/tmp/molecule"
+  pre_tasks:
+    - name: Check if CSV file exists in source directory
+      become: false
+      delegate_to: localhost
+      ansible.builtin.stat:
+        path: "{{ molecule_csv_source_dir }}/{{ molecule_csv_file }}"
+      register: source_csv_stat
+
+    - name: Fail if CSV file not found
+      ansible.builtin.fail:
+        msg: "CSV file {{ molecule_csv_file }} not found in {{ molecule_csv_source_dir }}. Available files: {{ available_csv_files.stdout_lines | default(['none']) }}"
+      when: not source_csv_stat.stat.exists
+      vars:
+        available_csv_files: "{{ lookup('pipe', 'ls ' + molecule_csv_source_dir + '/*.csv 2>/dev/null || echo') }}"
+
+    - name: Create molecule CSV directory
+      become: false
+      delegate_to: localhost
+      ansible.builtin.file:
+        path: "{{ molecule_csv_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy real CSV file to molecule directory
+      become: false
+      delegate_to: localhost
+      ansible.builtin.copy:
+        src: "{{ molecule_csv_source_dir }}/{{ molecule_csv_file }}"
+        dest: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
+        mode: '0644'
+
+    - name: Display CSV content for verification
+      become: false
+      delegate_to: localhost
+      ansible.builtin.debug:
+        msg: "Using CSV file: {{ molecule_csv_file }} from {{ molecule_csv_source_dir }}"
+
+  roles:
+    # STEP 1: First, set up RBAC-enabled host by running iam_manager role
+    # This creates users, groups, and sudoers.d rules for least privilege
+    - role: "iam_manager"
+      vars:
+        # Override the users_file to point to our test CSV using same pattern as production
+        users_file: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
+        # Allow re-running tests without failing on existing users
+        molecule_testing: true
+
+    # STEP 2: Now that the host is RBAC-enabled, install Rust environment
+    # This role installs Rust system-wide under /usr/local/cargo and /usr/local/rustup
+    - role: "rust_env_v2"
+      vars:
+        molecule_testing: true
+

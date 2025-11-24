@@ -1,0 +1,16 @@
+---
+- name: Verify Rust Environment Installation
+  hosts: all
+  gather_facts: false
+  become: true
+  vars:
+    # Use the same variable pattern as converge.yml
+    molecule_csv_file: "{{ csv_file | default('molecule_test_users.csv') }}"
+    molecule_csv_dir: "/tmp/molecule"
+    molecule_csv_source_dir: "{{ csv_source_dir | default('~/new-metal-box') }}"
+  vars_files:
+    - "../../../ansible/roles/iam_manager/defaults/main.yml"
+  tasks:
+    - name: Execute Rust Environment Verification Tests
+      include_tasks: tasks/main.yml
+
