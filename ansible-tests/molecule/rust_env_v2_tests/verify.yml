@@ -10,6 +10,7 @@
     molecule_csv_source_dir: "{{ csv_source_dir | default('~/new-metal-box') }}"
   vars_files:
     - "../../../ansible/roles/iam_manager/defaults/main.yml"
+    - "../../../ansible/roles/rust_env_v2/defaults/main.yml"
   tasks:
     - name: Execute Rust Environment Verification Tests
       include_tasks: tasks/main.yml
