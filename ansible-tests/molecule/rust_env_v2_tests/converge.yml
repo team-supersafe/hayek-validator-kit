@@ -4,7 +4,7 @@
   become: true
   vars:
     # Use the same variable pattern as production: csv_file
-    # This should be passed as extra variable: -e "csv_file=iam_setup.csv"
+    # This should be passed as extra variable: -e "csv_file=molecule_test_users.csv"
     molecule_csv_file: "{{ csv_file | default('molecule_test_users.csv') }}"
     # Source CSV directory - check multiple locations
     molecule_csv_source_dir: "{{ csv_source_dir | default('~/new-metal-box') }}"
