@@ -53,17 +53,23 @@ SCENARIO_2_PARAMS=""
 SCENARIO_2_COMMANDS=""
 SCENARIO_2_DESCRIPTION="Host architecture compatibility testing"
 
-# Scenario 3: Performance Tests (example - add when needed)
-# SCENARIO_3_NAME="performance-tests"
-# SCENARIO_3_PARAMS="-- -e duration=300 -e load_users=100"
-# SCENARIO_3_COMMANDS="test,converge"
-# SCENARIO_3_DESCRIPTION="Performance and load testing suite"
+# Scenario 3: Rust Environment v2 Tests
+SCENARIO_3_NAME="rust_env_v2_tests"
+SCENARIO_3_PARAMS="-- -e csv_file=iam_setup.csv"
+SCENARIO_3_COMMANDS="test,converge,idempotence"
+SCENARIO_3_DESCRIPTION="Rust Environment v2 (RBAC-enabled) role testing"
 
-# Scenario 4: Security Tests (example - add when needed)
-# SCENARIO_4_NAME="security-tests"
-# SCENARIO_4_PARAMS="-- -e security_level=strict -e scan_depth=full"
-# SCENARIO_4_COMMANDS="test,converge,idempotence"
-# SCENARIO_4_DESCRIPTION="Security vulnerability scanning and testing"
+# Scenario 4: Performance Tests (example - add when needed)
+# SCENARIO_4_NAME="performance-tests"
+# SCENARIO_4_PARAMS="-- -e duration=300 -e load_users=100"
+# SCENARIO_4_COMMANDS="test,converge"
+# SCENARIO_4_DESCRIPTION="Performance and load testing suite"
+
+# Scenario 5: Security Tests (example - add when needed)
+# SCENARIO_5_NAME="security-tests"
+# SCENARIO_5_PARAMS="-- -e security_level=strict -e scan_depth=full"
+# SCENARIO_5_COMMANDS="test,converge,idempotence"
+# SCENARIO_5_DESCRIPTION="Security vulnerability scanning and testing"
 
 # ============================================================================
 

@@ -1,0 +1,7 @@
+---
+# This file will be expanded in PRs 2b and 2c
+# For now, this is a placeholder to establish the structure
+- name: Test structure placeholder
+  ansible.builtin.debug:
+    msg: "Test scenario structure is in place. Test tasks will be added in PRs 2b and 2c."
+
