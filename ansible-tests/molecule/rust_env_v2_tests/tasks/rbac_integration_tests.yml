@@ -1,0 +1,121 @@
+---
+- name: Build RBAC test matrix for Rust functionality
+  ansible.builtin.set_fact:
+    rbac_rust_test_matrix: |
+      {%- set tests = [] -%}
+      {%- if sysadmin_users | length > 0 -%}
+        {%- for user in sysadmin_users -%}
+          {%- set _ = tests.append({
+              'user': user,
+              'role': 'sysadmin',
+              'commands': [
+                {'cmd': 'rustc --version', 'expect': 'success'},
+                {'cmd': 'cargo --version', 'expect': 'success'},
+                {'cmd': 'rustup --version', 'expect': 'success'}
+              ]
+          }) -%}
+        {%- endfor -%}
+      {%- endif -%}
+      {%- if validator_operator_users | length > 0 -%}
+        {%- for user in validator_operator_users -%}
+          {%- set _ = tests.append({
+              'user': user,
+              'role': 'validator_operators',
+              'commands': [
+                {'cmd': 'rustc --version', 'expect': 'success'},
+                {'cmd': 'cargo --version', 'expect': 'success'},
+                {'cmd': 'rustup --version', 'expect': 'success'}
+              ]
+          }) -%}
+        {%- endfor -%}
+      {%- endif -%}
+      {%- if validator_viewer_users | length > 0 -%}
+        {%- for user in validator_viewer_users -%}
+          {%- set _ = tests.append({
+              'user': user,
+              'role': 'validator_viewers',
+              'commands': [
+                {'cmd': 'rustc --version', 'expect': 'success'},
+                {'cmd': 'cargo --version', 'expect': 'success'},
+                {'cmd': 'rustup --version', 'expect': 'success'}
+              ]
+          }) -%}
+        {%- endfor -%}
+      {%- endif -%}
+      {{ tests }}
+
+- name: Execute Rust commands as different users
+  ansible.builtin.shell: |
+    su - {{ item.user }} -c "
+    . {{ cargo_home }}/env
+    {{ item.command.cmd }}
+    "
+  environment:
+    CARGO_HOME: "{{ cargo_home }}"
+    RUSTUP_HOME: "{{ rustup_home }}"
+  register: rbac_rust_results
+  loop: "{{ rbac_rust_test_matrix | subelements('commands') }}"
+  loop_control:
+    label: "{{ item.0.user }} ({{ item.0.role }}): {{ item.1.cmd }}"
+  changed_when: false
+  failed_when: false
+
+- name: Analyze RBAC Rust test results
+  ansible.builtin.set_fact:
+    rbac_rust_test_summary: |
+      {%- set results = {'success': [], 'failures': []} -%}
+      {%- for i in range(rbac_rust_results.results | length) -%}
+        {%- set result = rbac_rust_results.results[i] -%}
+        {%- set test_info = rbac_rust_test_matrix[i // (rbac_rust_test_matrix[0].commands | length) if rbac_rust_test_matrix | length > 0 else 0] -%}
+        {%- set command_info = test_info.commands[i % (test_info.commands | length)] -%}
+        {%- if result.rc == 0 and command_info.expect == 'success' -%}
+          {%- set _ = results.success.append({
+              'user': test_info.user,
+              'role': test_info.role,
+              'command': command_info.cmd,
+              'output': result.stdout
+          }) -%}
+        {%- elif result.rc != 0 and command_info.expect == 'success' -%}
+          {%- set _ = results.failures.append({
+              'user': test_info.user,
+              'role': test_info.role,
+              'command': command_info.cmd,
+              'error': result.stderr | default(result.stdout),
+              'rc': result.rc
+          }) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ results }}
+
+- name: Display RBAC Rust test failures
+  ansible.builtin.debug:
+    msg: "❌ RBAC Rust Test Failure: User {{ item.user }} ({{ item.role }}) failed to execute '{{ item.command }}': {{ item.error }} (exit code: {{ item.rc }})"
+  loop: "{{ rbac_rust_test_summary.failures | default([]) }}"
+  when: rbac_rust_test_summary.failures | length > 0
+
+- name: Assert all RBAC Rust tests passed
+  ansible.builtin.assert:
+    that:
+      - rbac_rust_test_summary.failures | length == 0
+    fail_msg: |
+      RBAC Rust integration tests failed for {{ rbac_rust_test_summary.failures | length }} command(s).
+      Users should be able to use Rust tools (rustc, cargo, rustup) regardless of their RBAC role.
+      Failed tests:
+      {%- for failure in rbac_rust_test_summary.failures -%}
+      - User {{ failure.user }} ({{ failure.role }}): {{ failure.command }}
+      {%- endfor -%}
+    success_msg: "✅ All RBAC Rust integration tests passed. All users can use Rust tools correctly."
+
+- name: Display RBAC Rust test summary
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      RBAC Rust Integration Test Summary
+      ========================================
+      Total tests: {{ rbac_rust_results.results | length }}
+      Successful: {{ rbac_rust_test_summary.success | length }}
+      Failed: {{ rbac_rust_test_summary.failures | length }}
+      
+      ✅ All users (sysadmin, validator_operators, validator_viewers) can use Rust tools
+      ========================================
+

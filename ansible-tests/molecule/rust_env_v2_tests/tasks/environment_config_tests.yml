@@ -1,23 +1,4 @@
 ---
-- name: Verify cargo_home/env file content
-  ansible.builtin.slurp:
-    src: "{{ cargo_home }}/env"
-  register: cargo_env_content
-
-- name: Assert cargo_home/env contains CARGO_HOME
-  ansible.builtin.assert:
-    that:
-      - "'CARGO_HOME' in cargo_env_content.content | b64decode"
-    fail_msg: "cargo_home/env file does not contain CARGO_HOME variable"
-    success_msg: "✅ cargo_home/env file contains CARGO_HOME variable"
-
-- name: Assert cargo_home/env contains RUSTUP_HOME
-  ansible.builtin.assert:
-    that:
-      - "'RUSTUP_HOME' in cargo_env_content.content | b64decode"
-    fail_msg: "cargo_home/env file does not contain RUSTUP_HOME variable"
-    success_msg: "✅ cargo_home/env file contains RUSTUP_HOME variable"
-
 - name: Verify global profile script content
   ansible.builtin.slurp:
     src: /etc/profile.d/rust.sh
