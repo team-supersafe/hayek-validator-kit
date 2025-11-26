@@ -10,8 +10,6 @@
       - "'CARGO_HOME' in cargo_env_content.content | b64decode"
     fail_msg: "cargo_home/env file does not contain CARGO_HOME variable"
     success_msg: "✅ cargo_home/env file contains CARGO_HOME variable"
-  vars:
-    cargo_env_content: "{{ cargo_env_content.content | b64decode }}"
 
 - name: Assert cargo_home/env contains RUSTUP_HOME
   ansible.builtin.assert:
@@ -19,8 +17,6 @@
       - "'RUSTUP_HOME' in cargo_env_content.content | b64decode"
     fail_msg: "cargo_home/env file does not contain RUSTUP_HOME variable"
     success_msg: "✅ cargo_home/env file contains RUSTUP_HOME variable"
-  vars:
-    cargo_env_content: "{{ cargo_env_content.content | b64decode }}"
 
 - name: Verify global profile script content
   ansible.builtin.slurp:
@@ -34,8 +30,6 @@
       - "'{{ cargo_home }}' in rust_profile_content.content | b64decode"
     fail_msg: "Global profile script does not export CARGO_HOME correctly"
     success_msg: "✅ Global profile script exports CARGO_HOME correctly"
-  vars:
-    rust_profile_content: "{{ rust_profile_content.content | b64decode }}"
 
 - name: Assert global profile script contains RUSTUP_HOME export
   ansible.builtin.assert:
@@ -44,8 +38,6 @@
       - "'{{ rustup_home }}' in rust_profile_content.content | b64decode"
     fail_msg: "Global profile script does not export RUSTUP_HOME correctly"
     success_msg: "✅ Global profile script exports RUSTUP_HOME correctly"
-  vars:
-    rust_profile_content: "{{ rust_profile_content.content | b64decode }}"
 
 - name: Assert global profile script adds cargo bin to PATH
   ansible.builtin.assert:
@@ -54,6 +46,4 @@
       - "'{{ cargo_home }}/bin' in rust_profile_content.content | b64decode"
     fail_msg: "Global profile script does not add cargo bin to PATH"
     success_msg: "✅ Global profile script adds cargo bin to PATH"
-  vars:
-    rust_profile_content: "{{ rust_profile_content.content | b64decode }}"
 
