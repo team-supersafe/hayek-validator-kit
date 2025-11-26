@@ -9,15 +9,15 @@
 
 - name: Download and add InfluxData GPG key
   ansible.builtin.shell: |
-    curl -s https://repos.influxdata.com/influxdata-archive_compat.key | gpg --dearmor | tee /etc/apt/keyrings/influxdb.gpg > /dev/null
+    curl -s https://repos.influxdata.com/influxdata-archive_compat.key | gpg --dearmor | tee /etc/apt/keyrings/influxdata-archive.gpg > /dev/null
   args:
-    creates: /etc/apt/keyrings/influxdb.gpg
+    creates: /etc/apt/keyrings/influxdata-archive.gpg
 
 - name: Add InfluxDB repository with GPG key
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/etc/apt/keyrings/influxdb.gpg] https://repos.influxdata.com/debian stable main"
+    repo: "deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/debian stable main"
     state: present
-    filename: influxdb
+    filename: influxdata
     update_cache: yes
 
 - name: Install InfluxDB

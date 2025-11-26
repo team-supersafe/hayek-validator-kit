@@ -37,6 +37,8 @@ MAINNET_HOST="${MAINNET_NAME_SUFFIX:-}"
 MAINNET_STAKEWIZ_ENABLED={{ solana.network.mainnet.stakewiz | lower }}
 MAINNET_GOSSIP_ENABLED={{ solana.network.mainnet.enabled | lower }}
 MAINNET_JITO_MEV_ENABLED={{ solana.network.mainnet.jito_mev | lower }}
+MAINNET_DOUBLEZERO_ENABLED={{ solana.network.mainnet.doublezero_enabled | lower }}
+MAINNET_DOUBLEZERO_DEPOSIT_PDA="${MAINNET_DOUBLEZERO_DEPOSIT_PDA:-}"
 
 # TESTNET - Use environment variables (NO FALLBACKS)
 TESTNET_VOTE_ACCOUNT="${TESTNET_VOTE_ACCOUNT:-}"
@@ -46,6 +48,8 @@ TESTNET_HOST="${TESTNET_NAME_SUFFIX:-}"
 TESTNET_STAKEWIZ_ENABLED={{ solana.network.testnet.stakewiz | lower }}
 TESTNET_GOSSIP_ENABLED={{ solana.network.testnet.enabled | lower }}
 TESTNET_JITO_MEV_ENABLED={{ solana.network.testnet.jito_mev | lower }}
+TESTNET_DOUBLEZERO_ENABLED={{ solana.network.testnet.doublezero_enabled | lower }}
+TESTNET_DOUBLEZERO_DEPOSIT_PDA="${TESTNET_DOUBLEZERO_DEPOSIT_PDA:-}"
 
 # DEBUG - Use environment variables (NO FALLBACKS)
 DEBUG_VOTE_ACCOUNT="${DEBUG_VOTE_ACCOUNT:-}"
@@ -55,6 +59,8 @@ DEBUG_HOST="${DEBUG_HOST:-}"
 DEBUG_STAKEWIZ_ENABLED={{ solana.network.debug.stakewiz | lower }}
 DEBUG_GOSSIP_ENABLED={{ solana.network.debug.enabled | lower }}
 DEBUG_JITO_MEV_ENABLED={{ solana.network.debug.jito_mev | lower }}
+DEBUG_DOUBLEZERO_ENABLED={{ solana.network.debug.doublezero_enabled | lower }}
+DEBUG_DOUBLEZERO_DEPOSIT_PDA="${DEBUG_DOUBLEZERO_DEPOSIT_PDA:-}"
 
 # DEVNET - Use environment variables (NO FALLBACKS)
 DEVNET_VOTE_ACCOUNT="${DEVNET_VOTE_ACCOUNT:-}"
@@ -64,6 +70,8 @@ DEVNET_HOST="${DEVNET_HOST:-}"
 DEVNET_STAKEWIZ_ENABLED={{ solana.network.devnet.stakewiz | lower }}
 DEVNET_GOSSIP_ENABLED={{ solana.network.devnet.enabled | lower }}
 DEVNET_JITO_MEV_ENABLED={{ solana.network.devnet.jito_mev | lower }}
+DEVNET_DOUBLEZERO_ENABLED={{ solana.network.devnet.doublezero_enabled | lower }}
+DEVNET_DOUBLEZERO_DEPOSIT_PDA="${DEVNET_DOUBLEZERO_DEPOSIT_PDA:-}"
 
 # LOCALNET - Use environment variables (NO FALLBACKS)
 LOCALNET_VOTE_ACCOUNT="${LOCALNET_VOTE_ACCOUNT:-}"
@@ -73,6 +81,8 @@ LOCALNET_HOST="${LOCALNET_HOST:-}"
 LOCALNET_STAKEWIZ_ENABLED={{ solana.network.localnet.stakewiz | lower }}
 LOCALNET_GOSSIP_ENABLED={{ solana.network.localnet.enabled | lower }}
 LOCALNET_JITO_MEV_ENABLED={{ solana.network.localnet.jito_mev | lower }}
+LOCALNET_DOUBLEZERO_ENABLED={{ solana.network.localnet.doublezero_enabled | lower }}
+LOCALNET_DOUBLEZERO_DEPOSIT_PDA="${LOCALNET_DOUBLEZERO_DEPOSIT_PDA:-}"
 
 
 # ===== INFLUXDB V2 CONFIGURATION =====
@@ -289,6 +299,39 @@ get_tvc_rank() {
   fi
 }
 
+# ===== FUNCTION TO GET DOUBLEZERO BALANCE =====
+get_doublezero_balance() {
+  local DOUBLEZERO_DEPOSIT_PDA="$1"
+  local CLUSTER="$2"
+  local CMD=""
+  local BALANCE=""
+
+  # Return empty if no DoubleZero deposit PDA is configured
+  if [[ -z "$DOUBLEZERO_DEPOSIT_PDA" ]]; then
+    echo ""
+    return
+  fi
+
+  case "$CLUSTER" in
+    mainnet) CMD="$SOLANA_BIN -u m balance $DOUBLEZERO_DEPOSIT_PDA" ;;
+    testnet) CMD="$SOLANA_BIN -u t balance $DOUBLEZERO_DEPOSIT_PDA" ;;
+    devnet) CMD="$SOLANA_BIN -u d balance $DOUBLEZERO_DEPOSIT_PDA" ;;
+    localnet) CMD="$SOLANA_BIN -u l balance $DOUBLEZERO_DEPOSIT_PDA" ;;
+    debug) CMD="$SOLANA_BIN -u m balance $DOUBLEZERO_DEPOSIT_PDA" ;;
+    *) echo ""; return ;;
+  esac
+
+  # Execute command and extract balance (removes " SOL" suffix)
+  BALANCE=$($CMD 2>/dev/null | awk '{print $1}')
+  
+  # Validate balance is a number
+  if [[ "$BALANCE" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+    echo "$BALANCE"
+  else
+    echo ""
+  fi
+}
+
 # ===== FUNCTION TO GET AND SEND JITO MEV STATS PER EPOCH (NEW EPOCHS ONLY) =====
 send_jito_mev_epochs_new_only() {
   local VOTE_ACCOUNT="$1"
@@ -297,13 +340,18 @@ send_jito_mev_epochs_new_only() {
   local JITO_API_URL="https://kobe.mainnet.jito.network/api/v1/validators/${VOTE_ACCOUNT}"
 
   # Get the latest epoch from InfluxDB
-  # epoch will be stored as a numeric field to allow aggregation
-  local LATEST_EPOCH_FLUX="from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -30d) |> filter(fn: (r) => r._measurement == \"jito_mev_epochs\" and r.host == \"${HOST}\" and r.pubkey == \"${IDENTITY_KEY}\") |> filter(fn: (r) => r._field == \"epoch\") |> max()"
+  # epoch is stored as a tag to allow GROUP BY in InfluxQL queries
+  local LATEST_EPOCH_FLUX="from(bucket: \"${INFLUX_BUCKET}\") |> range(start: -30d) |> filter(fn: (r) => r._measurement == \"jito_mev_epochs\" and r.host == \"${HOST}\" and r.pubkey == \"${IDENTITY_KEY}\") |> group(columns: [\"epoch\"]) |> distinct(column: \"epoch\") |> map(fn: (r) => ({epoch: int(v: r.epoch)})) |> max(column: \"epoch\")"
   local LATEST_EPOCH_DATA=$(curl -s -XPOST "${INFLUX_URL}/api/v2/query?org=${INFLUX_ORG}" \
     -H "Authorization: Token ${INFLUX_TOKEN}" \
     -H "Content-Type: application/vnd.flux" \
+    -H "Accept: text/csv" \
     --data-raw "$LATEST_EPOCH_FLUX")
-  local LATEST_EPOCH=$(echo "$LATEST_EPOCH_DATA" | jq -r '.results[0].series[0].values[0][1] // 0' 2>/dev/null || echo 0)
+  # Parse epoch from Flux CSV response: The map() function creates a custom record with only the epoch field,
+  # and max() returns a single row. CSV format: ,result,table,epoch (column 4 = index $4)
+  local LATEST_EPOCH=$(echo "$LATEST_EPOCH_DATA" | grep -v '^#' | awk -F',' 'NR>1 {print $4; exit}' 2>/dev/null | tr -d '[:space:]')
+  # Default to 0 if parsing fails or returns empty
+  LATEST_EPOCH=${LATEST_EPOCH:-0}
 
   # Get Jito MEV data with 10 second timeout
   local JITO_MEV_DATA=$(curl -s --max-time 10 "$JITO_API_URL")
@@ -331,9 +379,10 @@ send_jito_mev_epochs_new_only() {
         {% endraw %}
 
         # Create InfluxDB line protocol with both lamports and SOL
+        # epoch is stored as a tag to allow GROUP BY in InfluxQL queries
         local TIMESTAMP=$(date +%s%N)
-        local TAGS="host=${HOST},pubkey=${IDENTITY_KEY}"
-        local FIELDS="epoch=${EPOCH},jito_mev_rewards_lamports=${MEV_REWARDS_LAMPORTS},jito_mev_rewards_sol=${MEV_REWARDS_SOL},jito_mev_commission_bps=${MEV_COMMISSION_BPS},jito_operator_rewards_lamports=${OPERATOR_REWARDS_LAMPORTS},jito_operator_rewards_sol=${OPERATOR_REWARDS_SOL}"
+        local TAGS="host=${HOST},pubkey=${IDENTITY_KEY},epoch=${EPOCH}"
+        local FIELDS="jito_mev_rewards_lamports=${MEV_REWARDS_LAMPORTS},jito_mev_rewards_sol=${MEV_REWARDS_SOL},jito_mev_commission_bps=${MEV_COMMISSION_BPS},jito_operator_rewards_lamports=${OPERATOR_REWARDS_LAMPORTS},jito_operator_rewards_sol=${OPERATOR_REWARDS_SOL}"
 
         local LINE="jito_mev_epochs,${TAGS} ${FIELDS} ${TIMESTAMP}"
 
@@ -396,6 +445,8 @@ send_validator_metrics() {
   local STAKEWIZ_ENABLED="$5"
   local GOSSIP_ENABLED="$6"
   local JITO_MEV_ENABLED="$7"
+  local DOUBLEZERO_ENABLED="$8"
+  local DOUBLEZERO_DEPOSIT_PDA="$9"
 
   echo "📊 Collecting validator metrics for $HOST..."
 
@@ -405,6 +456,7 @@ send_validator_metrics() {
   IS_JITO=""
   GOSSIP_VERSION=""
   TVC_RANK=""
+  DOUBLEZERO_BALANCE=""
 
   if [[ "$STAKEWIZ_ENABLED" == true ]]; then
     STAKEWIZ_EPOCH_DATA=$(curl -s --max-time 5 "https://api.stakewiz.com/validator_epoch_stakes/${VOTE_ACCOUNT}")
@@ -436,6 +488,11 @@ send_validator_metrics() {
   # Get and send Jito MEV metrics per epoch (mainnet only)
   if [[ "$JITO_MEV_ENABLED" == true && "$HOST" == "$MAINNET_HOST" ]]; then
     send_jito_mev_epochs_new_only "$VOTE_ACCOUNT" "$IDENTITY_KEY" "$HOST"
+  fi
+
+  # Get DoubleZero balance if enabled
+  if [[ "$DOUBLEZERO_ENABLED" == true ]]; then
+    DOUBLEZERO_BALANCE=$(get_doublezero_balance "$DOUBLEZERO_DEPOSIT_PDA" "$CLUSTER")
   fi
 
   RPC_VERSION=$(get_rpc_version "$IDENTITY_KEY" "$RPC_URL")
@@ -490,6 +547,7 @@ send_validator_metrics() {
     [[ "$IS_JITO" == "true" ]] && FIELDS+="${FIELDS:+,}is_jito=t"
     [[ "$IS_JITO" == "false" ]] && FIELDS+="${FIELDS:+,}is_jito=f"
     [[ -n "$TVC_RANK" ]] && FIELDS+="${FIELDS:+,}tvc_rank=${TVC_RANK}"
+    [[ -n "$DOUBLEZERO_BALANCE" ]] && FIELDS+="${FIELDS:+,}doublezero_balance=${DOUBLEZERO_BALANCE}"
 
     # Add the new slot duration and epoch end metrics
     FIELDS+="${FIELDS:+,}slot_duration_ms=${SLOT_DURATION_MS}"
@@ -656,11 +714,11 @@ collect_all_validator_metrics() {
   echo "    COLLECTING VALIDATOR METRICS"
   echo "=========================================="
 
-  $PROCESS_MAINNET  && send_validator_metrics "$MAINNET_VOTE_ACCOUNT"  "$MAINNET_IDENTITY"  "$MAINNET_RPC_API"  "$MAINNET_HOST"  "$MAINNET_STAKEWIZ_ENABLED" "$MAINNET_GOSSIP_ENABLED" "$MAINNET_JITO_MEV_ENABLED"
-  $PROCESS_TESTNET  && send_validator_metrics "$TESTNET_VOTE_ACCOUNT"  "$TESTNET_IDENTITY"  "$TESTNET_RPC_API"  "$TESTNET_HOST"  "$TESTNET_STAKEWIZ_ENABLED" "$TESTNET_GOSSIP_ENABLED" "$TESTNET_JITO_MEV_ENABLED"
-  $PROCESS_DEBUG    && send_validator_metrics "$DEBUG_VOTE_ACCOUNT"    "$DEBUG_IDENTITY"    "$DEBUG_RPC_API"    "$DEBUG_HOST"    "$DEBUG_STAKEWIZ_ENABLED" "$DEBUG_GOSSIP_ENABLED" "$DEBUG_JITO_MEV_ENABLED"
-  $PROCESS_DEVNET   && send_validator_metrics "$DEVNET_VOTE_ACCOUNT"   "$DEVNET_IDENTITY"   "$DEVNET_RPC_API"   "$DEVNET_HOST"   "$DEVNET_STAKEWIZ_ENABLED" "$DEVNET_GOSSIP_ENABLED" "$DEVNET_JITO_MEV_ENABLED"
-  $PROCESS_LOCALNET && send_validator_metrics "$LOCALNET_VOTE_ACCOUNT" "$LOCALNET_IDENTITY" "$LOCALNET_RPC_API" "$LOCALNET_HOST" "$LOCALNET_STAKEWIZ_ENABLED" "$LOCALNET_GOSSIP_ENABLED" "$LOCALNET_JITO_MEV_ENABLED"
+  $PROCESS_MAINNET  && send_validator_metrics "$MAINNET_VOTE_ACCOUNT"  "$MAINNET_IDENTITY"  "$MAINNET_RPC_API"  "$MAINNET_HOST"  "$MAINNET_STAKEWIZ_ENABLED" "$MAINNET_GOSSIP_ENABLED" "$MAINNET_JITO_MEV_ENABLED" "$MAINNET_DOUBLEZERO_ENABLED" "$MAINNET_DOUBLEZERO_DEPOSIT_PDA"
+  $PROCESS_TESTNET  && send_validator_metrics "$TESTNET_VOTE_ACCOUNT"  "$TESTNET_IDENTITY"  "$TESTNET_RPC_API"  "$TESTNET_HOST"  "$TESTNET_STAKEWIZ_ENABLED" "$TESTNET_GOSSIP_ENABLED" "$TESTNET_JITO_MEV_ENABLED" "$TESTNET_DOUBLEZERO_ENABLED" "$TESTNET_DOUBLEZERO_DEPOSIT_PDA"
+  $PROCESS_DEBUG    && send_validator_metrics "$DEBUG_VOTE_ACCOUNT"    "$DEBUG_IDENTITY"    "$DEBUG_RPC_API"    "$DEBUG_HOST"    "$DEBUG_STAKEWIZ_ENABLED" "$DEBUG_GOSSIP_ENABLED" "$DEBUG_JITO_MEV_ENABLED" "$DEBUG_DOUBLEZERO_ENABLED" "$DEBUG_DOUBLEZERO_DEPOSIT_PDA"
+  $PROCESS_DEVNET   && send_validator_metrics "$DEVNET_VOTE_ACCOUNT"   "$DEVNET_IDENTITY"   "$DEVNET_RPC_API"   "$DEVNET_HOST"   "$DEVNET_STAKEWIZ_ENABLED" "$DEVNET_GOSSIP_ENABLED" "$DEVNET_JITO_MEV_ENABLED" "$DEVNET_DOUBLEZERO_ENABLED" "$DEVNET_DOUBLEZERO_DEPOSIT_PDA"
+  $PROCESS_LOCALNET && send_validator_metrics "$LOCALNET_VOTE_ACCOUNT" "$LOCALNET_IDENTITY" "$LOCALNET_RPC_API" "$LOCALNET_HOST" "$LOCALNET_STAKEWIZ_ENABLED" "$LOCALNET_GOSSIP_ENABLED" "$LOCALNET_JITO_MEV_ENABLED" "$LOCALNET_DOUBLEZERO_ENABLED" "$LOCALNET_DOUBLEZERO_DEPOSIT_PDA"
 
   echo "✅ Validator metrics collection completed"
   echo

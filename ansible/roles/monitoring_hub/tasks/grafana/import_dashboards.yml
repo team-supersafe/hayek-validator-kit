@@ -1,4 +1,5 @@
-
+---
+# Import Hardware Metrics dashboard into Grafana
 - block:
     - name: Load Hardware Metrics dashboard JSON
       ansible.builtin.set_fact:
@@ -33,3 +34,41 @@
   when: grafana_sa_token is defined
   no_log: true
 
+# Import Validator Metrics dashboard into Grafana
+- block:
+    - name: Load Validator Metrics dashboard JSON
+      ansible.builtin.set_fact:
+        validator_dashboard_json: "{{ lookup('file', role_path + '/templates/grafana/validators_metrics.json') | from_json }}"
+  rescue:
+    - name: Fail with helpful error if dashboard JSON is missing or invalid
+      ansible.builtin.fail:
+        msg: >-
+          Unable to load or parse the Validator Metrics dashboard JSON file at
+          '{{ role_path }}/templates/grafana/validators_metrics.json'.
+          Please check that the file exists and contains valid JSON.
+
+- name: Import Validator Metrics dashboard into Grafana
+  ansible.builtin.uri:
+    url: "http://{{ monitoring_network.bind_address | default('localhost') }}:{{ grafana_port | default(3000) }}/api/dashboards/import"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ grafana_sa_token }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      dashboard: "{{ validator_dashboard_json }}"
+      overwrite: true
+      folderId: 0
+      inputs:
+        - name: "DS_SOLANA_METRICS"
+          type: "datasource"
+          pluginId: "influxdb"
+          value: "{{ grafana_config.solana_metrics_source_uid | default('solana_metrics_uid') }}"
+        - name: "DS_HAYEK_MAINNET STAKEWIZ ACTIVATING/DEACTIVATING STAKE JSON"
+          type: "datasource"
+          pluginId: "marcusolsson-json-datasource"
+          value: "stakewiz_json_mainnet_activating"
+    status_code: 200
+    timeout: 20
+  when: grafana_sa_token is defined
+  no_log: true

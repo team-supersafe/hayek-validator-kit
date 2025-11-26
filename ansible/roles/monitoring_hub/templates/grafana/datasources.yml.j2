@@ -32,3 +32,21 @@ datasources:
     isDefault: false
     editable: true
     version: 1
+
+{# Add a JSON datasource for activating/deactivating stake for each cluster with stakewiz enabled #}
+{% for cluster_name, cluster in solana.network.items() %}
+{% if cluster.enabled and cluster.stakewiz %}
+  - name: "{{ validator.network[cluster_name].validator_name }} Stakewiz Activating/Deactivating Stake JSON"
+    type: marcusolsson-json-datasource
+    uid: "stakewiz_json_{{ cluster.network_name }}_activating"
+    access: proxy
+    url: "https://api.stakewiz.com/validator_epoch_stakes/{{ validator.network[cluster_name].vote_account }}"
+    jsonData:
+      httpHeaderName1: ""
+      httpHeaderValue1: ""
+    isDefault: false
+    editable: true
+    version: 1
+
+{% endif %}
+{% endfor %}
