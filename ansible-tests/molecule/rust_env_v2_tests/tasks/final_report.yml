@@ -14,7 +14,7 @@
       Test Configuration:
       - cargo_home: {{ cargo_home }}
       - rustup_home: {{ rustup_home }}
-      - Test users from CSV: {{ test_users | dict2items | map(attribute='key') | list }}
+      - Test users from CSV: {{ (test_users | default({})) | dict2items | map(attribute='key') | list }}
 
       Basic tests completed successfully!
       Advanced tests will be added in PR 2c.
