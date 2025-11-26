@@ -41,13 +41,13 @@
 - name: Verify Rust binaries directory exists
   ansible.builtin.stat:
     path: "{{ cargo_home }}/bin"
-  register: cargo_bin_stat
+  register: cargo_bin_dir_stat
 
 - name: Assert Rust binaries directory exists
   ansible.builtin.assert:
     that:
-      - cargo_bin_stat.stat.exists
-      - cargo_bin_stat.stat.isdir
+      - cargo_bin_dir_stat.stat.exists
+      - cargo_bin_dir_stat.stat.isdir
     fail_msg: "Rust binaries directory {{ cargo_home }}/bin does not exist"
     success_msg: "✅ Rust binaries directory {{ cargo_home }}/bin exists"
 
