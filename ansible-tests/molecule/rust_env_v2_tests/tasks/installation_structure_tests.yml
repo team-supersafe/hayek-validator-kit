@@ -1,0 +1,110 @@
+---
+- name: Verify cargo_home directory exists
+  ansible.builtin.stat:
+    path: "{{ cargo_home }}"
+  register: cargo_home_stat
+
+- name: Assert cargo_home directory exists
+  ansible.builtin.assert:
+    that:
+      - cargo_home_stat.stat.exists
+      - cargo_home_stat.stat.isdir
+    fail_msg: "cargo_home directory {{ cargo_home }} does not exist or is not a directory"
+    success_msg: "✅ cargo_home directory {{ cargo_home }} exists"
+
+- name: Verify cargo_home/env file exists
+  ansible.builtin.stat:
+    path: "{{ cargo_home }}/env"
+  register: cargo_env_stat
+
+- name: Assert cargo_home/env file exists
+  ansible.builtin.assert:
+    that:
+      - cargo_env_stat.stat.exists
+      - cargo_env_stat.stat.isfile
+    fail_msg: "cargo_home/env file does not exist or is not a file"
+    success_msg: "✅ cargo_home/env file exists"
+
+- name: Verify rustup_home directory exists
+  ansible.builtin.stat:
+    path: "{{ rustup_home }}"
+  register: rustup_home_stat
+
+- name: Assert rustup_home directory exists
+  ansible.builtin.assert:
+    that:
+      - rustup_home_stat.stat.exists
+      - rustup_home_stat.stat.isdir
+    fail_msg: "rustup_home directory {{ rustup_home }} does not exist or is not a directory"
+    success_msg: "✅ rustup_home directory {{ rustup_home }} exists"
+
+- name: Verify Rust binaries directory exists
+  ansible.builtin.stat:
+    path: "{{ cargo_home }}/bin"
+  register: cargo_bin_dir_stat
+
+- name: Assert Rust binaries directory exists
+  ansible.builtin.assert:
+    that:
+      - cargo_bin_dir_stat.stat.exists
+      - cargo_bin_dir_stat.stat.isdir
+    fail_msg: "Rust binaries directory {{ cargo_home }}/bin does not exist"
+    success_msg: "✅ Rust binaries directory {{ cargo_home }}/bin exists"
+
+- name: Verify rustc binary exists
+  ansible.builtin.stat:
+    path: "{{ cargo_home }}/bin/rustc"
+  register: rustc_bin_stat
+
+- name: Assert rustc binary exists
+  ansible.builtin.assert:
+    that:
+      - rustc_bin_stat.stat.exists
+      - rustc_bin_stat.stat.isfile
+    fail_msg: "rustc binary does not exist at {{ cargo_home }}/bin/rustc"
+    success_msg: "✅ rustc binary exists"
+
+- name: Verify cargo binary exists
+  ansible.builtin.stat:
+    path: "{{ cargo_home }}/bin/cargo"
+  register: cargo_bin_stat
+
+- name: Assert cargo binary exists
+  ansible.builtin.assert:
+    that:
+      - cargo_bin_stat.stat.exists
+      - cargo_bin_stat.stat.isfile
+    fail_msg: "cargo binary does not exist at {{ cargo_home }}/bin/cargo"
+    success_msg: "✅ cargo binary exists"
+
+- name: Verify Rust directories ownership (should be root:root)
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: dir_ownership
+  loop:
+    - "{{ cargo_home }}"
+    - "{{ rustup_home }}"
+
+- name: Assert Rust directories are owned by root
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.pw_name == "root"
+      - item.stat.gr_name == "root"
+    fail_msg: "Directory {{ item.item }} is not owned by root:root (found {{ item.stat.pw_name }}:{{ item.stat.gr_name }})"
+    success_msg: "✅ Directory {{ item.item }} is owned by root:root"
+  loop: "{{ dir_ownership.results }}"
+
+- name: Verify global profile script exists
+  ansible.builtin.stat:
+    path: /etc/profile.d/rust.sh
+  register: rust_profile_stat
+
+- name: Assert global profile script exists
+  ansible.builtin.assert:
+    that:
+      - rust_profile_stat.stat.exists
+      - rust_profile_stat.stat.isfile
+    fail_msg: "Global profile script /etc/profile.d/rust.sh does not exist"
+    success_msg: "✅ Global profile script /etc/profile.d/rust.sh exists"
+

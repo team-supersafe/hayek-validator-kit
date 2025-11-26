@@ -1,0 +1,36 @@
+---
+- name: Set default CSV file variables
+  ansible.builtin.set_fact:
+    molecule_csv_file: "{{ csv_file | default('molecule_test_users.csv') }}"
+    molecule_csv_dir: "/tmp/molecule"
+    molecule_csv_source_dir: "{{ csv_source_dir | default('~/new-metal-box') }}"
+
+- name: Read CSV to get test users
+  community.general.read_csv:
+    path: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
+    key: user
+  register: users_csv
+  delegate_to: localhost
+  become: false
+  failed_when: false
+
+- name: Set fact for CSV users
+  ansible.builtin.set_fact:
+    test_users: "{{ users_csv.dict | default({}) }}"
+
+- name: Classify users by RBAC groups
+  ansible.builtin.set_fact:
+    sysadmin_users: "{{ test_users | dict2items | selectattr('value.group_a', 'equalto', 'sysadmin') | map(attribute='key') | list }}"
+    validator_operator_users: "{{ test_users | dict2items | selectattr('value.group_a', 'equalto', 'validator_operators') | map(attribute='key') | list }}"
+    validator_viewer_users: "{{ test_users | dict2items | selectattr('value.group_a', 'equalto', 'validator_viewers') | map(attribute='key') | list }}"
+
+- name: Display test configuration
+  ansible.builtin.debug:
+    msg: |
+      Test Configuration:
+      - cargo_home: {{ cargo_home }}
+      - rustup_home: {{ rustup_home }}
+      - sysadmin_users: {{ sysadmin_users }}
+      - validator_operator_users: {{ validator_operator_users }}
+      - validator_viewer_users: {{ validator_viewer_users }}
+

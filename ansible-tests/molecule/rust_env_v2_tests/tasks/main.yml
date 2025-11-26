@@ -1,7 +1,20 @@
 ---
-# This file will be expanded in PRs 2b and 2c
-# For now, this is a placeholder to establish the structure
-- name: Test structure placeholder
-  ansible.builtin.debug:
-    msg: "Test scenario structure is in place. Test tasks will be added in PRs 2b and 2c."
+- name: Initialize Test Configuration
+  include_tasks: setup_config.yml
+
+- name: Verify Rust Installation Structure
+  include_tasks: installation_structure_tests.yml
+
+- name: Verify Rust Environment Configuration
+  include_tasks: environment_config_tests.yml
+
+# Functionality and RBAC integration tests will be added in PR 2c
+# - name: Verify Rust Functionality
+#   include_tasks: functionality_tests.yml
+#
+# - name: Verify RBAC Integration
+#   include_tasks: rbac_integration_tests.yml
+
+- name: Generate Final Test Report
+  include_tasks: final_report.yml
 
