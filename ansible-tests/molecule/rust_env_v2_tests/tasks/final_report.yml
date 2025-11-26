@@ -1,0 +1,21 @@
+---
+- name: Generate final test report
+  ansible.builtin.debug:
+    msg: |
+      ========================================
+      Rust Environment v2 Role Test Summary
+      ========================================
+
+      ✅ Installation Structure: Verified
+      ✅ Environment Configuration: Verified
+      ⚠️  Functionality Tests: Pending (PR 2c)
+      ⚠️  RBAC Integration: Pending (PR 2c)
+
+      Test Configuration:
+      - cargo_home: {{ cargo_home }}
+      - rustup_home: {{ rustup_home }}
+      - Test users from CSV: {{ test_users | dict2items | map(attribute='key') | list }}
+
+      Basic tests completed successfully!
+      Advanced tests will be added in PR 2c.
+      ========================================
