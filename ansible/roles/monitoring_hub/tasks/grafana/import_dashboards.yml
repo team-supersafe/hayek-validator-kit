@@ -36,15 +36,15 @@
 
 # Import Validator Metrics dashboard into Grafana
 - block:
-    - name: Load Validator Metrics dashboard JSON
+    - name: Render and load Validator Metrics dashboard JSON
       ansible.builtin.set_fact:
-        validator_dashboard_json: "{{ lookup('file', role_path + '/templates/grafana/validators_metrics.json') | from_json }}"
+        validator_dashboard_json: "{{ lookup('template', role_path + '/templates/grafana/validators_metrics.json.j2') | from_json }}"
   rescue:
     - name: Fail with helpful error if dashboard JSON is missing or invalid
       ansible.builtin.fail:
         msg: >-
-          Unable to load or parse the Validator Metrics dashboard JSON file at
-          '{{ role_path }}/templates/grafana/validators_metrics.json'.
+          Unable to render or parse the Validator Metrics dashboard JSON using template lookup
+          at '{{ role_path }}/templates/grafana/validators_metrics.json.j2'.
           Please check that the file exists and contains valid JSON.
 
 - name: Import Validator Metrics dashboard into Grafana

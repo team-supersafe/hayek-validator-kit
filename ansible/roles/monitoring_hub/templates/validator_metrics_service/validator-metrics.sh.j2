@@ -332,6 +332,37 @@ get_doublezero_balance() {
   fi
 }
 
+# ===== FUNCTION TO GET STAKE FROM SOLANA CLI (GENERIC) =====
+get_stake_cli() {
+  local VOTE_ACCOUNT="$1"
+  local CLUSTER="$2"
+  local STAKE_TYPE="$3"  # "activatingStake" or "deactivatingStake"
+  local CMD=""
+  local STAKE_SOL=""
+
+  case "$CLUSTER" in
+    mainnet) CMD="$SOLANA_BIN -u m stakes $VOTE_ACCOUNT --output json" ;;
+    testnet) CMD="$SOLANA_BIN -u t stakes $VOTE_ACCOUNT --output json" ;;
+    devnet) CMD="$SOLANA_BIN -u d stakes $VOTE_ACCOUNT --output json" ;;
+    localnet) CMD="$SOLANA_BIN -u l stakes $VOTE_ACCOUNT --output json" ;;
+    debug) CMD="$SOLANA_BIN -u m stakes $VOTE_ACCOUNT --output json" ;;
+    *) echo "0"; return ;;
+  esac
+
+  # Execute command and calculate total stake in SOL
+  # Filter entries with specified stake type, sum them, and convert lamports to SOL
+  STAKE_SOL=$($CMD 2>/dev/null | jq --arg type "$STAKE_TYPE" '[.[] | select(.[$type] != null) | .[$type]] | add / 1000000000' 2>/dev/null)
+  
+  # Validate result is a number (jq returns "null" if no stakes found)
+  if [[ "$STAKE_SOL" == "null" || -z "$STAKE_SOL" ]]; then
+    echo "0"
+  elif [[ "$STAKE_SOL" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+    echo "$STAKE_SOL"
+  else
+    echo "0"
+  fi
+}
+
 # ===== FUNCTION TO GET AND SEND JITO MEV STATS PER EPOCH (NEW EPOCHS ONLY) =====
 send_jito_mev_epochs_new_only() {
   local VOTE_ACCOUNT="$1"
@@ -451,6 +482,8 @@ send_validator_metrics() {
   echo "📊 Collecting validator metrics for $HOST..."
 
   ACTIVATING_STAKE=""
+  ACTIVATING_STAKE_CLI=""
+  DEACTIVATING_STAKE_CLI=""
   RANK=""
   WIZ_SCORE=""
   IS_JITO=""
@@ -479,6 +512,12 @@ send_validator_metrics() {
   [[ "$HOST" == "$DEBUG_HOST" ]] && CLUSTER="debug"
   [[ "$HOST" == "$DEVNET_HOST" ]] && CLUSTER="devnet"
   [[ "$HOST" == "$LOCALNET_HOST" ]] && CLUSTER="localnet"
+
+  # Get activating stake from Solana CLI
+  ACTIVATING_STAKE_CLI=$(get_stake_cli "$VOTE_ACCOUNT" "$CLUSTER" "activatingStake")
+
+  # Get deactivating stake from Solana CLI
+  DEACTIVATING_STAKE_CLI=$(get_stake_cli "$VOTE_ACCOUNT" "$CLUSTER" "deactivatingStake")
 
   # Get TVC Rank for MAINNET only
   if [[ "$HOST" == "$MAINNET_HOST" ]]; then
@@ -534,12 +573,14 @@ send_validator_metrics() {
     TOTAL_LEADER_SLOTS=$(echo "$LEADER_SLOTS" | jq 'length' 2>/dev/null || echo 0)
   fi
 
-  if [[ -n "$ACTIVATING_STAKE" || -n "$RANK" || -n "$WIZ_SCORE" || -n "$RPC_VERSION" || -n "$GOSSIP_VERSION" || -n "$TVC_RANK" ]]; then
+  if [[ -n "$ACTIVATING_STAKE" || -n "$RANK" || -n "$WIZ_SCORE" || -n "$RPC_VERSION" || -n "$GOSSIP_VERSION" || -n "$TVC_RANK" || "$ACTIVATING_STAKE_CLI" != "0" || "$DEACTIVATING_STAKE_CLI" != "0" ]]; then
     TIMESTAMP=$(date +%s%N)
     TAGS="host=${HOST},pubkey=${IDENTITY_KEY}"
     FIELDS=""
 
     [[ -n "$ACTIVATING_STAKE" && "$ACTIVATING_STAKE" != "null" ]] && FIELDS+="activating_stake=${ACTIVATING_STAKE}"
+    [[ -n "$ACTIVATING_STAKE_CLI" && "$ACTIVATING_STAKE_CLI" != "0" ]] && FIELDS+="${FIELDS:+,}activating_stake_cli=${ACTIVATING_STAKE_CLI}"
+    [[ -n "$DEACTIVATING_STAKE_CLI" && "$DEACTIVATING_STAKE_CLI" != "0" ]] && FIELDS+="${FIELDS:+,}deactivating_stake_cli=${DEACTIVATING_STAKE_CLI}"
     [[ -n "$RANK" ]] && FIELDS+="${FIELDS:+,}rank=${RANK}"
     [[ -n "$WIZ_SCORE" ]] && FIELDS+="${FIELDS:+,}wiz_score=${WIZ_SCORE}"
     [[ -n "$RPC_VERSION" && "$RPC_VERSION" != "null" ]] && FIELDS+="${FIELDS:+,}rpc_version=\"${RPC_VERSION}\""
