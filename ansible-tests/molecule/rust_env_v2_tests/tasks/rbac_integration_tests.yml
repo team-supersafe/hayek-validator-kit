@@ -114,6 +114,7 @@
       Failed tests:
       {%- for failure in rbac_rust_test_summary.failures -%}
       - User {{ failure.user }} ({{ failure.role }}): {{ failure.command }}
+        Error: {{ failure.error }} (exit code: {{ failure.rc }})
       {%- endfor -%}
     success_msg: "✅ All RBAC Rust integration tests passed. All users can use Rust tools correctly."
 
