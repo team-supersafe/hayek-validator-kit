@@ -573,7 +573,7 @@ send_validator_metrics() {
     TOTAL_LEADER_SLOTS=$(echo "$LEADER_SLOTS" | jq 'length' 2>/dev/null || echo 0)
   fi
 
-  if [[ -n "$ACTIVATING_STAKE" || -n "$RANK" || -n "$WIZ_SCORE" || -n "$RPC_VERSION" || -n "$GOSSIP_VERSION" || -n "$TVC_RANK" || -n "$ACTIVATING_STAKE_CLI" || -n "$DEACTIVATING_STAKE_CLI" ]]; then
+  if [[ -n "$ACTIVATING_STAKE" || -n "$RANK" || -n "$WIZ_SCORE" || -n "$RPC_VERSION" || -n "$GOSSIP_VERSION" || -n "$TVC_RANK" || "$ACTIVATING_STAKE_CLI" != "0" || "$DEACTIVATING_STAKE_CLI" != "0" ]]; then
     TIMESTAMP=$(date +%s%N)
     TAGS="host=${HOST},pubkey=${IDENTITY_KEY}"
     FIELDS=""
