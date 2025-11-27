@@ -52,13 +52,14 @@
     PATH: "{{ rust_shell_env_path.stdout }}"
     CARGO_HOME: "{{ cargo_home }}"
     RUSTUP_HOME: "{{ rustup_home }}"
-  loop:
-    - { user: "alice", cmd: "rustc --version" }
-    - { user: "alice", cmd: "cargo --version" }
-    - { user: "alice", cmd: "rustup --version" }
-    - { user: "hugo", cmd: "rustc --version" }
-    - { user: "hugo", cmd: "cargo --version" }
-    - { user: "hugo", cmd: "rustup --version" }
+  loop: |
+    {%- set loop_items = [] -%}
+    {%- for test_user in rbac_rust_test_matrix -%}
+      {%- for command in test_user.commands -%}
+        {%- set _ = loop_items.append({'user': test_user.user, 'cmd': command.cmd}) -%}
+      {%- endfor -%}
+    {%- endfor -%}
+    {{ loop_items }}
   register: rbac_rust_results
   changed_when: false
 
