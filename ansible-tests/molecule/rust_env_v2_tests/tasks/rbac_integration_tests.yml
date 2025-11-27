@@ -66,10 +66,16 @@
 - name: Summarize RBAC Rust test results (compact)
   ansible.builtin.debug:
     msg: |
-      {%- for item in rbac_rust_results.results if item.rc == 0 -%}
+      {%- for item in rbac_rust_results.results -%}
       User: {{ item.item.user }}
       Command: {{ item.cmd }}
+      {%- if item.rc == 0 -%}
       Output: {{ item.stdout }}
+      Status: ✅ Success
+      {%- else -%}
+      Error: {{ item.stderr | default(item.stdout) }}
+      Status: ❌ Failure (exit code: {{ item.rc }})
+      {%- endif -%}
       {%- endfor -%}
 
 - name: Analyze RBAC Rust test results
