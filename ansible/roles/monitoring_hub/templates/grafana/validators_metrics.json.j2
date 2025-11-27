@@ -4387,27 +4387,87 @@
         "refresh": 2,
         "type": "interval"
       },
+{#- Compute default environment from enabled networks -#}
+{% set default_env = selected_network
+      if (selected_network is defined
+          and solana.network.get(selected_network)
+          and solana.network[selected_network].enabled)
+      else None
+%}
+{% if default_env is none %}
+  {% set enabled_envs =
+     solana.network
+     | dict2items
+     | selectattr('value.enabled')
+     | map(attribute='key')
+     | list
+  %}
+  {% if enabled_envs and enabled_envs | length > 0 %}
+    {% set default_env = enabled_envs[0] %}
+  {% endif %}
+{% endif %}
+{#- Get current identity for default environment -#}
+{% set _current_identity = validator.network.get(default_env)
+      if default_env else None
+%}
+{#- Build current value data -#}
+{% set current_data = {
+    'text':
+      (
+        _current_identity
+        and _current_identity.identity_pub_key
+        and _current_identity.identity_pub_key != 'identity_pub_key_here'
+      )
+      and (_current_identity.validator_name ~ ' (' ~
+           (_current_identity.identity_pub_key[:7]) ~ '...)')
+      or '',
+    'value':
+      (
+        _current_identity
+        and _current_identity.identity_pub_key
+        and _current_identity.identity_pub_key != 'identity_pub_key_here'
+      )
+      and _current_identity.identity_pub_key
+      or ''
+} %}
+{#- Build options array -#}
+{% set options_data = [] %}
+{% for _env, scfg in solana.network.items() %}
+  {% set vcfg = validator.network.get(_env) %}
+  {% if scfg.enabled
+        and vcfg
+        and vcfg.identity_pub_key
+        and vcfg.identity_pub_key != 'identity_pub_key_here'
+  %}
+    {% set _ = options_data.append({
+        'selected': (_env == default_env),
+        'text': vcfg.validator_name ~ ' (' ~ (vcfg.identity_pub_key[:7]) ~ '...)',
+        'value': vcfg.identity_pub_key
+    }) %}
+  {% endif %}
+{% endfor %}
+{#- Build query string entries -#}
+{% set query_entries = [] %}
+{% for _env, scfg in solana.network.items() %}
+  {% set vcfg = validator.network.get(_env) %}
+  {% if scfg.enabled
+        and vcfg
+        and vcfg.identity_pub_key
+        and vcfg.identity_pub_key != 'identity_pub_key_here'
+  %}
+    {% set _ = query_entries.append(
+       vcfg.validator_name ~ ' (' ~ (vcfg.identity_pub_key[:7]) ~ '...) : ' ~
+       vcfg.identity_pub_key
+    ) %}
+  {% endif %}
+{% endfor %}
       {
-        "current": {
-          "text": "hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ",
-          "value": "hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ"
-        },
+        "current": {{ current_data | to_json }},
         "includeAll": false,
         "label": "pubkey",
         "name": "pubkey",
-        "options": [
-          {
-            "selected": true,
-            "text": "hayek-testnet (hyt8ZV...)",
-            "value": "hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ"
-          },
-          {
-            "selected": false,
-            "text": "hayek-mainnet (hykfH9...)",
-            "value": "hykfH9jUQqe2yqv3VqVAK5AmMYqrmMWmdwDcbfsm6My"
-          }
-        ],
-        "query": "hayek-testnet (hyt8ZV...) : hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ , hayek-mainnet (hykfH9...) : hykfH9jUQqe2yqv3VqVAK5AmMYqrmMWmdwDcbfsm6My,",
+        "options": {{ options_data | to_json }},
+        "query": "{{ query_entries | join(' , ') }}",
         "type": "custom"
       },
       {
