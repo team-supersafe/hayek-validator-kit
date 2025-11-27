@@ -4,7 +4,7 @@ set -x # enabled for debugging; comment out to disable debug
 #####    CONFIG    ##################################################################################################
 configDir="$HOME/.config/solana" # the directory for the config files, eg.: /home/user/.config/solana
 ##### optional:        #
-identityPubkey="{{ validator.network[item.key].public_key | default('') }}"      # identity pubkey for the validator, insert if autodiscovery fails
+identityPubkey="{{ validator.network[item.key].identity_pub_key | default('') }}"      # identity pubkey for the validator, insert if autodiscovery fails
 voteAccount="{{ validator.network[item.key].vote_account | default('') }}"         # vote account address for the validator, specify if there are more than one or if autodiscovery fails
 additionalInfo="on"    # set to 'on' for additional general metrics like balance on your vote and identity accounts, number of validator nodes, epoch number and percentage epoch elapsed
 binDir="{{ solana_cli_bin | dirname }}"              # directory containing the solana binary; derived from explicit solana_cli_bin path
