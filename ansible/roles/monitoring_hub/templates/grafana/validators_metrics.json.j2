@@ -7,14 +7,6 @@
       "type": "datasource",
       "pluginId": "influxdb",
       "pluginName": "InfluxDB"
-    },
-    {
-      "name": "DS_HAYEK_MAINNET STAKEWIZ ACTIVATING/DEACTIVATING STAKE JSON",
-      "label": "Hayek Mainnet Stakewiz Activating/Deactivating Stake JSON",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "marcusolsson-json-datasource",
-      "pluginName": "JSON API"
     }
   ],
   "__elements": {},
@@ -42,12 +34,6 @@
       "id": "influxdb",
       "name": "InfluxDB",
       "version": "1.0.0"
-    },
-    {
-      "type": "datasource",
-      "id": "marcusolsson-json-datasource",
-      "name": "JSON API",
-      "version": "1.3.24"
     },
     {
       "type": "panel",
@@ -579,8 +565,8 @@
     },
     {
       "datasource": {
-        "type": "datasource",
-        "uid": "-- Mixed --"
+        "type": "influxdb",
+        "uid": "${DS_SOLANA_METRICS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -644,7 +630,7 @@
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "/^Activating stake$/",
+          "fields": "/^nodemonitor\\.activating_stake_cli$/",
           "values": false
         },
         "showPercentChange": false,
@@ -656,8 +642,8 @@
         {
           "cacheDurationSeconds": 300,
           "datasource": {
-            "type": "marcusolsson-json-datasource",
-            "uid": "${DS_HAYEK_MAINNET STAKEWIZ ACTIVATING/DEACTIVATING STAKE JSON}"
+            "type": "influxdb",
+            "uid": "${DS_SOLANA_METRICS}"
           },
           "fields": [
             {
@@ -667,10 +653,32 @@
               "type": "number"
             }
           ],
+          "groupBy": [],
           "hide": false,
+          "measurement": "nodemonitor",
           "method": "GET",
+          "orderByTime": "ASC",
+          "policy": "default",
           "queryParams": "",
-          "refId": "activating_stake",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "activating_stake_cli"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "pubkey::tag",
+              "operator": "=~",
+              "value": "/^$pubkey$/"
+            }
+          ],
           "urlPath": ""
         }
       ],
@@ -680,8 +688,8 @@
     },
     {
       "datasource": {
-        "type": "marcusolsson-json-datasource",
-        "uid": "${DS_HAYEK_MAINNET STAKEWIZ ACTIVATING/DEACTIVATING STAKE JSON}"
+        "type": "influxdb",
+        "uid": "${DS_SOLANA_METRICS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -745,7 +753,7 @@
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "/^Deactivating stake$/",
+          "fields": "/^nodemonitor\\.deactivating_stake_cli$/",
           "values": false
         },
         "showPercentChange": false,
@@ -755,24 +763,33 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "cacheDurationSeconds": 0,
           "datasource": {
-            "type": "marcusolsson-json-datasource",
-            "uid": "${DS_HAYEK_MAINNET STAKEWIZ ACTIVATING/DEACTIVATING STAKE JSON}"
+            "type": "influxdb",
+            "uid": "${DS_SOLANA_METRICS}"
           },
-          "fields": [
-            {
-              "jsonPath": "deactivating_stake",
-              "language": "jsonata",
-              "name": "Deactivating stake",
-              "type": "number"
-            }
-          ],
-          "hide": false,
-          "method": "GET",
-          "queryParams": "",
+          "groupBy": [],
+          "measurement": "nodemonitor",
+          "orderByTime": "ASC",
+          "policy": "default",
           "refId": "A",
-          "urlPath": ""
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "deactivating_stake_cli"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "pubkey::tag",
+              "operator": "=~",
+              "value": "/^$pubkey$/"
+            }
+          ]
         }
       ],
       "title": "Deactivating stake",
