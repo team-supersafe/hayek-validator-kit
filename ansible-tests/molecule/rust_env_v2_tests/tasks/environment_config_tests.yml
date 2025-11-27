@@ -8,7 +8,7 @@
   ansible.builtin.assert:
     that:
       - "'export CARGO_HOME' in (rust_profile_content.content | b64decode)"
-      - cargo_home in (rust_profile_content.content | b64decode)
+      - "cargo_home in (rust_profile_content.content | b64decode)"
     fail_msg: "Global profile script does not export CARGO_HOME correctly"
     success_msg: "✅ Global profile script exports CARGO_HOME correctly"
 
@@ -16,14 +16,14 @@
   ansible.builtin.assert:
     that:
       - "'export RUSTUP_HOME' in (rust_profile_content.content | b64decode)"
-      - rustup_home in (rust_profile_content.content | b64decode)
+      - "rustup_home in (rust_profile_content.content | b64decode)"
     fail_msg: "Global profile script does not export RUSTUP_HOME correctly"
     success_msg: "✅ Global profile script exports RUSTUP_HOME correctly"
 
 - name: Assert global profile script adds cargo bin to PATH
   ansible.builtin.assert:
     that:
-      - "'export PATH' in (rust_profile_content.content | b64decode)"
-      - (cargo_home ~ '/bin') in (rust_profile_content.content | b64decode)
+      - "'export PATH' in rust_profile_content.content | b64decode"
+      - (cargo_home ~ '/bin') in rust_profile_content.content | b64decode
     fail_msg: "Global profile script does not add cargo bin to PATH"
     success_msg: "✅ Global profile script adds cargo bin to PATH"
