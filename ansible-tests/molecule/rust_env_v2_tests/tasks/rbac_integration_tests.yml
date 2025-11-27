@@ -76,22 +76,21 @@
   ansible.builtin.set_fact:
     rbac_rust_test_summary: |
       {%- set results = {'success': [], 'failures': []} -%}
-      {%- for i in range(rbac_rust_results.results | length) -%}
-        {%- set result = rbac_rust_results.results[i] -%}
-        {%- set test_info = rbac_rust_test_matrix[i // (rbac_rust_test_matrix[0].commands | length) if rbac_rust_test_matrix | length > 0 else 0] -%}
-        {%- set command_info = test_info.commands[i % (test_info.commands | length)] -%}
-        {%- if result.rc == 0 and command_info.expect == 'success' -%}
+      {%- for result in rbac_rust_results.results -%}
+        {%- set matched_test = rbac_rust_test_matrix | selectattr('user', 'equalto', result.item.user) | first -%}
+        {%- set matched_command = matched_test.commands | selectattr('cmd', 'equalto', result.item.cmd) | first -%}
+        {%- if result.rc == 0 and matched_command.expect == 'success' -%}
           {%- set _ = results.success.append({
-              'user': test_info.user,
-              'role': test_info.role,
-              'command': command_info.cmd,
+              'user': matched_test.user,
+              'role': matched_test.role,
+              'command': matched_command.cmd,
               'output': result.stdout
           }) -%}
-        {%- elif result.rc != 0 and command_info.expect == 'success' -%}
+        {%- elif result.rc != 0 and matched_command.expect == 'success' -%}
           {%- set _ = results.failures.append({
-              'user': test_info.user,
-              'role': test_info.role,
-              'command': command_info.cmd,
+              'user': matched_test.user,
+              'role': matched_test.role,
+              'command': matched_command.cmd,
               'error': result.stderr | default(result.stdout),
               'rc': result.rc
           }) -%}
@@ -127,7 +126,7 @@
       Total tests: {{ rbac_rust_results.results | length }}
       Successful: {{ rbac_rust_test_summary.success | length }}
       Failed: {{ rbac_rust_test_summary.failures | length }}
-      
+
       ✅ All users (sysadmin, validator_operators, validator_viewers) can use Rust tools
       ========================================
 
