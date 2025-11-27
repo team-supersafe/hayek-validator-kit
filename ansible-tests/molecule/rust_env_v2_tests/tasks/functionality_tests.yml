@@ -75,11 +75,17 @@
       - libclang-dev
     update_cache: true
 
+- name: Create temporary directory for Rust compilation test
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: rust_test
+  register: rust_test_tempdir
+
 - name: Verify rustc can compile a simple program
   ansible.builtin.shell: |
-    echo 'fn main() { println!("Hello, world!"); }' > /tmp/test_rust.rs
-    rustc /tmp/test_rust.rs -o /tmp/test_rust
-    /tmp/test_rust
+    echo 'fn main() { println!("Hello, world!"); }' > {{ rust_test_tempdir.path }}/test_rust.rs
+    rustc {{ rust_test_tempdir.path }}/test_rust.rs -o {{ rust_test_tempdir.path }}/test_rust
+    {{ rust_test_tempdir.path }}/test_rust
   environment:
     PATH: "{{ rust_shell_env_path.stdout }}"
     CARGO_HOME: "{{ cargo_home }}"
@@ -95,11 +101,7 @@
     fail_msg: "rustc compilation test failed: {{ rustc_compile_test.stderr | default(rustc_compile_test.stdout) }}"
     success_msg: "✅ rustc compilation test passed"
 
-- name: Clean up test files
+- name: Clean up temporary test directory
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ rust_test_tempdir.path }}"
     state: absent
-  loop:
-    - /tmp/test_rust.rs
-    - /tmp/test_rust
-
