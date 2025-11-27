@@ -332,12 +332,13 @@ get_doublezero_balance() {
   fi
 }
 
-# ===== FUNCTION TO GET ACTIVATING STAKE FROM SOLANA CLI =====
-get_activating_stake_cli() {
+# ===== FUNCTION TO GET STAKE FROM SOLANA CLI (GENERIC) =====
+get_stake_cli() {
   local VOTE_ACCOUNT="$1"
   local CLUSTER="$2"
+  local STAKE_TYPE="$3"  # "activatingStake" or "deactivatingStake"
   local CMD=""
-  local ACTIVATING_STAKE_SOL=""
+  local STAKE_SOL=""
 
   case "$CLUSTER" in
     mainnet) CMD="$SOLANA_BIN -u m stakes $VOTE_ACCOUNT --output json" ;;
@@ -345,48 +346,18 @@ get_activating_stake_cli() {
     devnet) CMD="$SOLANA_BIN -u d stakes $VOTE_ACCOUNT --output json" ;;
     localnet) CMD="$SOLANA_BIN -u l stakes $VOTE_ACCOUNT --output json" ;;
     debug) CMD="$SOLANA_BIN -u m stakes $VOTE_ACCOUNT --output json" ;;
-    *) echo ""; return ;;
+    *) echo "0"; return ;;
   esac
 
-  # Execute command and calculate total activating stake in SOL
-  # Filter entries with activatingStake, sum them, and convert lamports to SOL
-  ACTIVATING_STAKE_SOL=$($CMD 2>/dev/null | jq '[.[] | select(.activatingStake != null) | .activatingStake] | add / 1000000000' 2>/dev/null)
+  # Execute command and calculate total stake in SOL
+  # Filter entries with specified stake type, sum them, and convert lamports to SOL
+  STAKE_SOL=$($CMD 2>/dev/null | jq --arg type "$STAKE_TYPE" '[.[] | select(.[$type] != null) | .[$type]] | add / 1000000000' 2>/dev/null)
   
-  # Validate result is a number (jq returns "null" if no activating stakes found)
-  if [[ "$ACTIVATING_STAKE_SOL" == "null" || -z "$ACTIVATING_STAKE_SOL" ]]; then
+  # Validate result is a number (jq returns "null" if no stakes found)
+  if [[ "$STAKE_SOL" == "null" || -z "$STAKE_SOL" ]]; then
     echo "0"
-  elif [[ "$ACTIVATING_STAKE_SOL" =~ ^[0-9]+\.?[0-9]*$ ]]; then
-    echo "$ACTIVATING_STAKE_SOL"
-  else
-    echo "0"
-  fi
-}
-
-# ===== FUNCTION TO GET DEACTIVATING STAKE FROM SOLANA CLI =====
-get_deactivating_stake_cli() {
-  local VOTE_ACCOUNT="$1"
-  local CLUSTER="$2"
-  local CMD=""
-  local DEACTIVATING_STAKE_SOL=""
-
-  case "$CLUSTER" in
-    mainnet) CMD="$SOLANA_BIN -u m stakes $VOTE_ACCOUNT --output json" ;;
-    testnet) CMD="$SOLANA_BIN -u t stakes $VOTE_ACCOUNT --output json" ;;
-    devnet) CMD="$SOLANA_BIN -u d stakes $VOTE_ACCOUNT --output json" ;;
-    localnet) CMD="$SOLANA_BIN -u l stakes $VOTE_ACCOUNT --output json" ;;
-    debug) CMD="$SOLANA_BIN -u m stakes $VOTE_ACCOUNT --output json" ;;
-    *) echo ""; return ;;
-  esac
-
-  # Execute command and calculate total deactivating stake in SOL
-  # Filter entries with deactivatingStake, sum them, and convert lamports to SOL
-  DEACTIVATING_STAKE_SOL=$($CMD 2>/dev/null | jq '[.[] | select(.deactivatingStake != null) | .deactivatingStake] | add / 1000000000' 2>/dev/null)
-  
-  # Validate result is a number (jq returns "null" if no deactivating stakes found)
-  if [[ "$DEACTIVATING_STAKE_SOL" == "null" || -z "$DEACTIVATING_STAKE_SOL" ]]; then
-    echo "0"
-  elif [[ "$DEACTIVATING_STAKE_SOL" =~ ^[0-9]+\.?[0-9]*$ ]]; then
-    echo "$DEACTIVATING_STAKE_SOL"
+  elif [[ "$STAKE_SOL" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+    echo "$STAKE_SOL"
   else
     echo "0"
   fi
@@ -543,10 +514,10 @@ send_validator_metrics() {
   [[ "$HOST" == "$LOCALNET_HOST" ]] && CLUSTER="localnet"
 
   # Get activating stake from Solana CLI
-  ACTIVATING_STAKE_CLI=$(get_activating_stake_cli "$VOTE_ACCOUNT" "$CLUSTER")
+  ACTIVATING_STAKE_CLI=$(get_stake_cli "$VOTE_ACCOUNT" "$CLUSTER" "activatingStake")
 
   # Get deactivating stake from Solana CLI
-  DEACTIVATING_STAKE_CLI=$(get_deactivating_stake_cli "$VOTE_ACCOUNT" "$CLUSTER")
+  DEACTIVATING_STAKE_CLI=$(get_stake_cli "$VOTE_ACCOUNT" "$CLUSTER" "deactivatingStake")
 
   # Get TVC Rank for MAINNET only
   if [[ "$HOST" == "$MAINNET_HOST" ]]; then
