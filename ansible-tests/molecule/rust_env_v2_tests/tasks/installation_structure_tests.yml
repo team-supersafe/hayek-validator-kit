@@ -101,5 +101,6 @@
   ansible.builtin.assert:
     that:
       - rust_profile_stat.stat.exists
-    fail_msg: "Global profile script /etc/profile.d/rust.sh does not exist"
-    success_msg: "✅ Global profile script /etc/profile.d/rust.sh exists"
+      - rust_profile_stat.stat.isfile
+    fail_msg: "Global profile script /etc/profile.d/rust.sh does not exist or is not a file"
+    success_msg: "✅ Global profile script /etc/profile.d/rust.sh exists and is a file"
