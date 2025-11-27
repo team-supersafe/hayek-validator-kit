@@ -45,20 +45,31 @@
       {{ tests }}
 
 - name: Execute Rust commands as different users
-  ansible.builtin.shell: |
-    su - {{ item.user }} -c "
-    . {{ cargo_home }}/env
-    {{ item.command.cmd }}
-    "
+  ansible.builtin.shell: "{{ item.cmd }}"
+  become: true
+  become_user: "{{ item.user }}"
   environment:
+    PATH: "{{ rust_shell_env_path.stdout }}"
     CARGO_HOME: "{{ cargo_home }}"
     RUSTUP_HOME: "{{ rustup_home }}"
+  loop:
+    - { user: "alice", cmd: "rustc --version" }
+    - { user: "alice", cmd: "cargo --version" }
+    - { user: "alice", cmd: "rustup --version" }
+    - { user: "hugo", cmd: "rustc --version" }
+    - { user: "hugo", cmd: "cargo --version" }
+    - { user: "hugo", cmd: "rustup --version" }
   register: rbac_rust_results
-  loop: "{{ rbac_rust_test_matrix | subelements('commands') }}"
-  loop_control:
-    label: "{{ item.0.user }} ({{ item.0.role }}): {{ item.1.cmd }}"
   changed_when: false
-  failed_when: false
+
+- name: Summarize RBAC Rust test results (compact)
+  ansible.builtin.debug:
+    msg: |
+      {%- for item in rbac_rust_results.results if item.rc == 0 -%}
+      User: {{ item.item.user }}
+      Command: {{ item.cmd }}
+      Output: {{ item.stdout }}
+      {%- endfor -%}
 
 - name: Analyze RBAC Rust test results
   ansible.builtin.set_fact:

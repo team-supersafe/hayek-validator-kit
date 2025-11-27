@@ -27,7 +27,7 @@
     that:
       - rustc_version.rc == 0
       - "'rustc' in rustc_version.stdout"
-      - "'version' in rustc_version.stdout | lower"
+      - rustc_version.stdout is regex('rustc \\d+\\.\\d+\\.\\d+')
     fail_msg: "rustc command failed or output is invalid: {{ rustc_version.stderr | default(rustc_version.stdout) }}"
     success_msg: "✅ rustc is functional: {{ rustc_version.stdout }}"
 
@@ -45,7 +45,7 @@
     that:
       - cargo_version.rc == 0
       - "'cargo' in cargo_version.stdout"
-      - "'version' in cargo_version.stdout | lower"
+      - cargo_version.stdout is regex('cargo \\d+\\.\\d+\\.\\d+')
     fail_msg: "cargo command failed or output is invalid: {{ cargo_version.stderr | default(cargo_version.stdout) }}"
     success_msg: "✅ cargo is functional: {{ cargo_version.stdout }}"
 
@@ -63,9 +63,17 @@
     that:
       - rustup_version.rc == 0
       - "'rustup' in rustup_version.stdout"
-      - "'version' in rustup_version.stdout | lower"
+      - rustup_version.stdout is regex('rustup \\d+\\.\\d+\\.\\d+')
     fail_msg: "rustup command failed or output is invalid: {{ rustup_version.stderr | default(rustup_version.stdout) }}"
     success_msg: "✅ rustup is functional: {{ rustup_version.stdout }}"
+
+- name: Install build prerequisites
+  become: true
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - libclang-dev
+    update_cache: true
 
 - name: Verify rustc can compile a simple program
   ansible.builtin.shell: |
