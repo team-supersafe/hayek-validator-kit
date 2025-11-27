@@ -8,12 +8,11 @@
 - name: Verify Rust Environment Configuration
   include_tasks: environment_config_tests.yml
 
-# Functionality and RBAC integration tests will be added in PR 2c
-# - name: Verify Rust Functionality
-#   include_tasks: functionality_tests.yml
-#
-# - name: Verify RBAC Integration
-#   include_tasks: rbac_integration_tests.yml
+- name: Verify Rust Functionality
+  include_tasks: functionality_tests.yml
+
+- name: Verify RBAC Integration
+  include_tasks: rbac_integration_tests.yml
 
 - name: Generate Final Test Report
   include_tasks: final_report.yml

@@ -1,0 +1,107 @@
+---
+- name: Source Rust environment and verify PATH
+  ansible.builtin.shell: |
+    . "{{ cargo_home }}/env"
+    echo $PATH
+  register: rust_shell_env_path
+  changed_when: false
+
+- name: Assert PATH contains cargo bin directory
+  ansible.builtin.assert:
+    that:
+      - (cargo_home ~ '/bin') in rust_shell_env_path.stdout
+    fail_msg: "PATH does not contain {{ cargo_home }}/bin after sourcing env file"
+    success_msg: "✅ PATH correctly includes {{ cargo_home }}/bin"
+
+- name: Verify rustc is available and functional
+  ansible.builtin.shell: rustc --version
+  environment:
+    PATH: "{{ rust_shell_env_path.stdout }}"
+    CARGO_HOME: "{{ cargo_home }}"
+    RUSTUP_HOME: "{{ rustup_home }}"
+  register: rustc_version
+  changed_when: false
+
+- name: Assert rustc command succeeds
+  ansible.builtin.assert:
+    that:
+      - rustc_version.rc == 0
+      - "'rustc' in rustc_version.stdout"
+      - rustc_version.stdout is regex('rustc \\d+\\.\\d+\\.\\d+')
+    fail_msg: "rustc command failed or output is invalid: {{ rustc_version.stderr | default(rustc_version.stdout) }}"
+    success_msg: "✅ rustc is functional: {{ rustc_version.stdout }}"
+
+- name: Verify cargo is available and functional
+  ansible.builtin.shell: cargo --version
+  environment:
+    PATH: "{{ rust_shell_env_path.stdout }}"
+    CARGO_HOME: "{{ cargo_home }}"
+    RUSTUP_HOME: "{{ rustup_home }}"
+  register: cargo_version
+  changed_when: false
+
+- name: Assert cargo command succeeds
+  ansible.builtin.assert:
+    that:
+      - cargo_version.rc == 0
+      - "'cargo' in cargo_version.stdout"
+      - cargo_version.stdout is regex('cargo \\d+\\.\\d+\\.\\d+')
+    fail_msg: "cargo command failed or output is invalid: {{ cargo_version.stderr | default(cargo_version.stdout) }}"
+    success_msg: "✅ cargo is functional: {{ cargo_version.stdout }}"
+
+- name: Verify rustup is available and functional
+  ansible.builtin.shell: rustup --version
+  environment:
+    PATH: "{{ rust_shell_env_path.stdout }}"
+    CARGO_HOME: "{{ cargo_home }}"
+    RUSTUP_HOME: "{{ rustup_home }}"
+  register: rustup_version
+  changed_when: false
+
+- name: Assert rustup command succeeds
+  ansible.builtin.assert:
+    that:
+      - rustup_version.rc == 0
+      - "'rustup' in rustup_version.stdout"
+      - rustup_version.stdout is regex('rustup \\d+\\.\\d+\\.\\d+')
+    fail_msg: "rustup command failed or output is invalid: {{ rustup_version.stderr | default(rustup_version.stdout) }}"
+    success_msg: "✅ rustup is functional: {{ rustup_version.stdout }}"
+
+- name: Install build prerequisites
+  become: true
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - libclang-dev
+    update_cache: true
+
+- name: Create temporary directory for Rust compilation test
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: rust_test
+  register: rust_test_tempdir
+
+- name: Verify rustc can compile a simple program
+  ansible.builtin.shell: |
+    echo 'fn main() { println!("Hello, world!"); }' > {{ rust_test_tempdir.path }}/test_rust.rs
+    rustc {{ rust_test_tempdir.path }}/test_rust.rs -o {{ rust_test_tempdir.path }}/test_rust
+    {{ rust_test_tempdir.path }}/test_rust
+  environment:
+    PATH: "{{ rust_shell_env_path.stdout }}"
+    CARGO_HOME: "{{ cargo_home }}"
+    RUSTUP_HOME: "{{ rustup_home }}"
+  register: rustc_compile_test
+  changed_when: false
+
+- name: Assert rustc compilation succeeds
+  ansible.builtin.assert:
+    that:
+      - rustc_compile_test.rc == 0
+      - "'Hello, world!' in rustc_compile_test.stdout"
+    fail_msg: "rustc compilation test failed: {{ rustc_compile_test.stderr | default(rustc_compile_test.stdout) }}"
+    success_msg: "✅ rustc compilation test passed"
+
+- name: Clean up temporary test directory
+  ansible.builtin.file:
+    path: "{{ rust_test_tempdir.path }}"
+    state: absent
