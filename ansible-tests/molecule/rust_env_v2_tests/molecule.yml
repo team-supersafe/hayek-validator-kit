@@ -1,6 +1,13 @@
 ---
 scenario:
   name: rust_env_v2_tests
+  test_sequence:
+    - dependency
+    - create
+    - prepare
+    - converge
+    - verify
+    - destroy
 
 dependency:
   name: shell
@@ -65,4 +72,3 @@ provisioner:
 
 verifier:
   name: ansible
-
