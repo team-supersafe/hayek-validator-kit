@@ -56,6 +56,7 @@
         users_file: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
         # Allow re-running tests without failing on existing users
         molecule_testing: true
+        target_host: rust-env-v2-tests
 
     # STEP 2: Now that the host is RBAC-enabled, install Rust environment
     # This role installs Rust system-wide under /usr/local/cargo and /usr/local/rustup
