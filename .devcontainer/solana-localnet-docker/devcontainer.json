@@ -1,0 +1,31 @@
+{
+	"name": "Localnet (docker)",
+	"dockerComposeFile": [
+		"../../solana-localnet/docker-compose.yml",
+		"../../solana-localnet/docker-compose.docker.yml"
+	],
+	"service": "ansible-control-localnet",
+	"runServices": [
+		"gossip-entrypoint",
+		"host-alpha",
+		"host-bravo",
+		"host-charlie",
+		"ansible-control-localnet"
+	],
+	// Force VS Code to use the in-container ssh-agent socket instead of forwarding the host agent.
+	"remoteEnv": {
+		"SSH_AUTH_SOCK": "/tmp/ssh-agent.sock"
+	},
+	"postStartCommand": "./solana-localnet/container-setup/scripts/initialize-localnet-and-demo-validators.sh",
+	"shutdownAction": "stopCompose",
+	// The /workspace is where the root project dir is mounted in the volumes section of
+	// devtools service in docker-compose.yml
+	"workspaceFolder": "/hayek-validator-kit",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	}
+}

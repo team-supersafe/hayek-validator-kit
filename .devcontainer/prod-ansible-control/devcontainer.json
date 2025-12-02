@@ -1,0 +1,20 @@
+{
+	"name": "Prod ansible-control (docker)",
+	"dockerComposeFile": [
+		"../../solana-localnet/docker-compose.yml",
+		"../../solana-localnet/docker-compose.docker.yml"
+	],
+	"service": "ansible-control-prod",
+	"runServices": [
+		"ansible-control-prod"
+	],
+	"shutdownAction": "stopCompose",
+	"workspaceFolder": "/hayek-validator-kit",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	}
+}
