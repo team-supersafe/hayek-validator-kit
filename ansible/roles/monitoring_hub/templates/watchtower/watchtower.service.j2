@@ -1,0 +1,22 @@
+[Unit]
+Description=Agave Watchtower Monitoring Service {{ item.value.network_name }}
+After=network.target
+
+[Service]
+# Load environment variables from centralized file
+EnvironmentFile=-/usr/local/etc/validator-metrics.env
+ExecStart=/opt/solana/active_release/bin/agave-watchtower \
+  --url ${SOLANA_TESTNET_RPC} \
+  --validator-identity ${HAYEK_TESTNET_IDENTITY} \
+  --interval 60 \
+  --monitor-active-stake \
+  --minimum-validator-identity-balance ${WATCHTOWER_MIN_BALANCE_TESTNET} \
+  --rpc-timeout 30 \
+  --name-suffix "Testnet" \
+  --unhealthy-threshold 1 \
+  --ignore-http-bad-gateway
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

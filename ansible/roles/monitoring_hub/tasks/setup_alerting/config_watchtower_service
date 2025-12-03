@@ -1,0 +1,24 @@
+---
+- name: Render per-network systemd units
+  ansible.builtin.template:
+    src: watchtower/watchtower.service.j2
+    dest: "/etc/systemd/system/agave-watchower-{{ item.value.network_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
+  loop_control:
+    label: "agave-watchower-{{ item.value.network_name }}.service"
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start per-network Agve Watchtower services
+  ansible.builtin.systemd:
+    name: "agave-watchower-{{ item.value.network_name }}.service"
+    enabled: true
+    state: started
+  loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
+  loop_control:
+    label: "start agave-watchower-{{ item.value.network_name }}"
