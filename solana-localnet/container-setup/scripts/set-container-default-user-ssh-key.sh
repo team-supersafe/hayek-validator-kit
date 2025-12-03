@@ -24,7 +24,7 @@ chown -R "$user":"$user" "$ssh_dir"
 if [[ -n "${RPC_URL:-}" ]]; then
   rpc_url="${RPC_URL}"
   # Basic validation: require http(s) URL, restrict to safe characters
-  if [[ "$rpc_url" =~ ^https?://[A-Za-z0-9._:/?&=%-]+$ ]]; then
+  if [[ "$rpc_url" =~ ^https?://[[:alnum:]._/:?=%-]+$ ]]; then
     printf 'RPC_URL=%s\n' "$rpc_url" >> /etc/environment
   else
     echo "Invalid RPC_URL: '$rpc_url'" >&2
