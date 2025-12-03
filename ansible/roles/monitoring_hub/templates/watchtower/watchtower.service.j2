@@ -6,13 +6,13 @@ After=network.target
 # Load environment variables from centralized file
 EnvironmentFile=-/usr/local/etc/validator-metrics.env
 ExecStart=/opt/solana/active_release/bin/agave-watchtower \
-  --url ${SOLANA_TESTNET_RPC} \
-  --validator-identity ${HAYEK_TESTNET_IDENTITY} \
+  --url ${SOLANA_{{ item.value.network_name | upper }}_RPC} \
+  --validator-identity ${{{ item.value.network_name | upper }}_IDENTITY} \
   --interval 60 \
   --monitor-active-stake \
-  --minimum-validator-identity-balance ${WATCHTOWER_MIN_BALANCE_TESTNET} \
+  --minimum-validator-identity-balance ${WATCHTOWER_MIN_BALANCE_{{ item.value.network_name | upper }}} \
   --rpc-timeout 30 \
-  --name-suffix "Testnet" \
+  --name-suffix "{{ item.value.network_name | capitalize }}" \
   --unhealthy-threshold 1 \
   --ignore-http-bad-gateway
 Restart=on-failure
