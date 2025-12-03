@@ -1,5 +1,5 @@
 [Unit]
-Description=Validator initialization
+Description=Configure validator service user SSH key
 After=local-fs.target
 Before=multi-user.target
 
