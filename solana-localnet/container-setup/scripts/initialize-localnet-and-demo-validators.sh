@@ -181,7 +181,7 @@ cleanup-host() {
   HOST=$1
 
   # cleanup existing sol service
-  ssh -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p "$SSH_PORT" "
+  ssh -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" "$USER@$HOST" -p "$SSH_PORT" "
     set -e
 
     sudo systemctl stop sol 2> /dev/null || true
@@ -204,7 +204,7 @@ configure-demo-in-host() {
   HOST_SOLANA_BIN="~/.local/share/solana/install/active_release/bin"
 
   # Copy the primary-target-identity.json from the Ansible Control to the host
-  scp -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P "$SSH_PORT" "$ANSIBLE_DEMO_KEYS_DIR/primary-target-identity.json" "$USER@$HOST:~/primary-target-identity.json"
+  scp -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -P "$SSH_PORT" "$ANSIBLE_DEMO_KEYS_DIR/primary-target-identity.json" "$USER@$HOST:~/primary-target-identity.json"
 
   # Generate the validator startup script
   ANSIBLE_DEMO_STARTUP_SCRIPT=$CURRENT_SCRIPT_RUNTIME_DIR/agave-validator-localnet.sh
@@ -221,12 +221,12 @@ configure-demo-in-host() {
   echo
 
   # Transfer the validator startup script from Ansible to the Host's sol user's bin directory
-  ssh -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p "$SSH_PORT" "mkdir -p ~/bin && chmod 754 ~/bin"
-  scp -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P "$SSH_PORT" "$ANSIBLE_DEMO_STARTUP_SCRIPT" "$USER@$HOST:~/bin/run-validator-demo.sh"
+  ssh -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" "$USER@$HOST" -p "$SSH_PORT" "mkdir -p ~/bin && chmod 754 ~/bin"
+  scp -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -P "$SSH_PORT" "$ANSIBLE_DEMO_STARTUP_SCRIPT" "$USER@$HOST:~/bin/run-validator-demo.sh"
   rm -rf $ANSIBLE_DEMO_STARTUP_SCRIPT
 
   # Transfer the validator keys from Ansible to the Host's sol user's keys directory and create symlinks for identity.json
-  ssh -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p "$SSH_PORT" "
+  ssh -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" "$USER@$HOST" -p "$SSH_PORT" "
     set -e
     # source ~/.profile
     PATH=$HOST_SOLANA_BIN:$PATH
