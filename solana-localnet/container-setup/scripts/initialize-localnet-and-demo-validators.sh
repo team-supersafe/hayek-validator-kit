@@ -142,12 +142,6 @@ log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# Function to handle errors
-handle_error() {
-    log "ERROR: $1"
-    rm -rf "$TMP_DIR"
-    exit 1
-}
 
 # Function to generate validator config
 generate_tmp_validator_startup_script() {
@@ -174,10 +168,6 @@ agave-validator \\
 EOF
 }
 
-cleanup-tmp-dir() {
-  trap 'rm -rf "$TMP_DIR"' EXIT
-}
-
 
 VALIDATOR_SERVICE_USER_SSH_KEY_PATH=/localnet-ssh-keys/sol_ed25519
 
@@ -191,13 +181,12 @@ cleanup-host() {
   HOST=$1
 
   # cleanup existing sol service
-  ssh -i $VALIDATOR_SERVICE_USER_SSH_KEY_PATH -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT "
+  ssh -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p "$SSH_PORT" "
     set -e
 
     sudo systemctl stop sol 2> /dev/null || true
     sudo systemctl disable sol 2> /dev/null || true
-    sudo rm /etc/systemd/system/sol.service 2> /dev/null || true
-    sudo rm /etc/systemd/system/sol.service 2> /dev/null || true # and symlinks that might be related
+    sudo rm /etc/systemd/system/sol.service /etc/systemd/system/*/sol.service 2> /dev/null || true # remove main file and any symlinks that might be related  
     sudo systemctl daemon-reload
     sudo systemctl reset-failed
   "
@@ -215,7 +204,7 @@ configure-demo-in-host() {
   HOST_SOLANA_BIN="~/.local/share/solana/install/active_release/bin"
 
   # Copy the primary-target-identity.json from the Ansible Control to the host
-  scp -i $VALIDATOR_SERVICE_USER_SSH_KEY_PATH -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $ANSIBLE_DEMO_KEYS_DIR/primary-target-identity.json "$USER@$HOST:~/primary-target-identity.json"
+  scp -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P "$SSH_PORT" "$ANSIBLE_DEMO_KEYS_DIR/primary-target-identity.json" "$USER@$HOST:~/primary-target-identity.json"
 
   # Generate the validator startup script
   ANSIBLE_DEMO_STARTUP_SCRIPT=$CURRENT_SCRIPT_RUNTIME_DIR/agave-validator-localnet.sh
@@ -232,12 +221,12 @@ configure-demo-in-host() {
   echo
 
   # Transfer the validator startup script from Ansible to the Host's sol user's bin directory
-  ssh -i $VALIDATOR_SERVICE_USER_SSH_KEY_PATH -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT "mkdir -p ~/bin && chmod 754 ~/bin"
-  scp -i $VALIDATOR_SERVICE_USER_SSH_KEY_PATH -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P $SSH_PORT $ANSIBLE_DEMO_STARTUP_SCRIPT "$USER@$HOST:~/bin/run-validator-demo.sh"
+  ssh -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p "$SSH_PORT" "mkdir -p ~/bin && chmod 754 ~/bin"
+  scp -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -P "$SSH_PORT" "$ANSIBLE_DEMO_STARTUP_SCRIPT" "$USER@$HOST:~/bin/run-validator-demo.sh"
   rm -rf $ANSIBLE_DEMO_STARTUP_SCRIPT
 
   # Transfer the validator keys from Ansible to the Host's sol user's keys directory and create symlinks for identity.json
-  ssh -i $VALIDATOR_SERVICE_USER_SSH_KEY_PATH -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p $SSH_PORT "
+  ssh -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "$USER@$HOST" -p "$SSH_PORT" "
     set -e
     # source ~/.profile
     PATH=$HOST_SOLANA_BIN:$PATH

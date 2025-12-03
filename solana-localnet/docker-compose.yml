@@ -8,13 +8,11 @@ x-validator-variables: &validator-variables
     - /mnt/ledger
     - /mnt/accounts
     - /mnt/snapshots
-    # - "${HOME}/.ssh/id_ed25519.pub:/tmp/id_ed25519.pub:ro" # Mount the host's public key as read-only # deleteme
-    # - "../ansible/iam/users:/tmp/team_ssh_public_keys:ro" # Mount the team public keys as read-only # deleteme
     - ./container-setup/scripts/set-container-default-user-ssh-key.sh:/container-setup/scripts/set-container-default-user-ssh-key.sh
     - ./container-setup/scripts/set-validator-service-user-ssh-key.sh:/container-setup/scripts/set-validator-service-user-ssh-key.sh
     - ./localnet-ssh-keys:/localnet-ssh-keys
   environment:
-    HOST_DEFAULT_USER: ubuntu # the unsername of the default user in the container OS, e.g., 'ubuntu' for Ubuntu images
+    HOST_DEFAULT_USER: ubuntu # the username of the default user in the container OS, e.g., 'ubuntu' for Ubuntu images
     VALIDATOR_SERVICE_USER: sol # Set the username inside the container
     RPC_URL: http://gossip-entrypoint:8899
   tmpfs:
@@ -123,7 +121,7 @@ services:
         ipv4_address: 172.25.0.11
     <<: [ *validator-variables ]
 
-    # host-bravo is a validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.
+  # host-bravo is a validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.
   host-bravo:
     profiles: ["localnet"]
     depends_on:
@@ -144,7 +142,7 @@ services:
         ipv4_address: 172.25.0.12
     <<: [ *validator-variables ]
 
-# host-charlie is a naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.
+  # host-charlie is a naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.
   host-charlie:
     profiles: ["localnet"]
     depends_on:
@@ -165,7 +163,7 @@ services:
       - ./container-setup/scripts/set-container-default-user-ssh-key.sh:/container-setup/scripts/set-container-default-user-ssh-key.sh
       - ./localnet-ssh-keys:/localnet-ssh-keys
     environment:
-      HOST_DEFAULT_USER: ubuntu # the unsername of the default user in the container OS, e.g., 'ubuntu' for Ubuntu images
+      HOST_DEFAULT_USER: ubuntu # the username of the default user in the container OS, e.g., 'ubuntu' for Ubuntu images
       RPC_URL: http://gossip-entrypoint:8899
     tmpfs:
       - /run
@@ -195,7 +193,7 @@ services:
       - ./container-setup/scripts/set-container-default-user-ssh-key.sh:/container-setup/scripts/set-container-default-user-ssh-key.sh
       - ./localnet-ssh-keys:/localnet-ssh-keys
     environment:
-      HOST_DEFAULT_USER: ubuntu # the unsername of the default user in the container OS, e.g., 'ubuntu' for Ubuntu images
+      HOST_DEFAULT_USER: ubuntu # the username of the default user in the container OS, e.g., 'ubuntu' for Ubuntu images
     tmpfs:
       - /run
       - /run/lock
