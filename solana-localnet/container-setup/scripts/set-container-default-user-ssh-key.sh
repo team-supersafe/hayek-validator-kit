@@ -22,5 +22,12 @@ chown -R "$user":"$user" "$ssh_dir"
 
 # set RPC_URL globally for all users
 if [[ -n "${RPC_URL:-}" ]]; then
-  echo "export RPC_URL=$RPC_URL" >> /etc/environment
+  rpc_url="${RPC_URL}"
+  # Basic validation: require http(s) URL, restrict to safe characters
+  if [[ "$rpc_url" =~ ^https?://[A-Za-z0-9._:/?&=%-]+$ ]]; then
+    printf 'RPC_URL=%s\n' "$rpc_url" >> /etc/environment
+  else
+    echo "Invalid RPC_URL: '$rpc_url'" >&2
+    exit 1
+  fi
 fi
