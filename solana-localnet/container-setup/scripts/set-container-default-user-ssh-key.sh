@@ -66,4 +66,6 @@ chown -R ${HOST_DEFAULT_USER}:${HOST_DEFAULT_USER} /home/${HOST_DEFAULT_USER}/.s
 # chown -R $VALIDATOR_OPERATOR_USER:$VALIDATOR_OPERATOR_USER /home/$VALIDATOR_OPERATOR_USER/.ssh
 
 # set RPC_URL globally for all users
-echo \"export RPC_URL=$RPC_URL\" >> /etc/environment
+if [[ -n "${RPC_URL:-}" ]]; then
+  echo "export RPC_URL=$RPC_URL" >> /etc/environment
+fi
