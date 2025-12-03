@@ -22,7 +22,6 @@ chmod 700 /home/$HOST_DEFAULT_USER/.ssh
 # awk '!seen[$0]++' /home/$$HOST_DEFAULT_USER/.ssh/authorized_keys > $$TEMP_AUTH_KEYS
 # mv $$TEMP_AUTH_KEYS /home/$$HOST_DEFAULT_USER/.ssh/authorized_keys
 
-> /home/${HOST_DEFAULT_USER}/.ssh/authorized_keys
 cat /localnet-ssh-keys/${HOST_DEFAULT_USER}_ed25519.pub > /home/${HOST_DEFAULT_USER}/.ssh/authorized_keys
 
 chmod 600 /home/${HOST_DEFAULT_USER}/.ssh/authorized_keys
