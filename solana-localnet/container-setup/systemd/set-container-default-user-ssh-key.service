@@ -1,5 +1,5 @@
 [Unit]
-Description=Validator initialization
+Description=Configure container default user SSH key
 After=local-fs.target
 Before=multi-user.target
 
