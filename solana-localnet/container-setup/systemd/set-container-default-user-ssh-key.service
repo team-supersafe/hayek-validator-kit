@@ -1,0 +1,13 @@
+[Unit]
+Description=Configure container default user SSH key
+After=local-fs.target
+Before=multi-user.target
+
+[Service]
+Type=oneshot
+PassEnvironment=HOST_DEFAULT_USER RPC_URL
+ExecStart=/container-setup/scripts/set-container-default-user-ssh-key.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

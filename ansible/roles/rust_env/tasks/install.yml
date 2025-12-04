@@ -6,9 +6,11 @@
     mode: "0755"
 
 - name: Install - Rust using rustup
-  ansible.builtin.command: /tmp/rustup-init.sh -y
+  ansible.builtin.shell: /bin/sh /tmp/rustup-init.sh -y
   args:
     creates: "{{ solana_user_dir }}/.cargo/bin/rustc"
+  environment:
+    TMPDIR: "/var/tmp"
 
 - name: Install - Persist Rust environment setup in shell profile
   ansible.builtin.lineinfile:
