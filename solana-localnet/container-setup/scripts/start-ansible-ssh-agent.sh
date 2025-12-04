@@ -4,7 +4,37 @@ set -euo pipefail
 # Start an ssh-agent inside ansible-control-localnet and load the dev keys.
 SOCK="/tmp/ssh-agent.sock"
 KNOWN_HOSTS="${HOME}/.ssh/known_hosts"
-HOSTS_TO_PIN=(gossip-entrypoint host-alpha host-bravo host-charlie)
+HOSTS_TO_PIN_NAMES=(gossip-entrypoint host-alpha host-bravo host-charlie host-monitoring)
+# Ansible connects via IPs (see solana-localnet inventory), so pin both hostnames and addresses.
+HOSTS_TO_PIN=("${HOSTS_TO_PIN_NAMES[@]}")
+
+# Resolve the current IP for each host so we don't rely on hardcoded addresses.
+if command -v getent >/dev/null 2>&1; then
+  for host in "${HOSTS_TO_PIN_NAMES[@]}"; do
+    if ip=$(getent ahostsv4 "$host" | awk 'NR==1{print $1}'); then
+      if [ -n "$ip" ]; then
+        HOSTS_TO_PIN+=("$ip")
+      else
+        echo "WARNING: No IP found for $host; pinning hostname only."
+      fi
+    else
+      echo "WARNING: Failed to resolve $host; pinning hostname only."
+    fi
+  done
+else
+  echo "WARNING: getent not available; skipping IP pinning for hosts."
+fi
+
+# Remove duplicates in case hostnames resolve to the same IP.
+declare -A SEEN_HOSTS=()
+DEDUPED_HOSTS=()
+for host in "${HOSTS_TO_PIN[@]}"; do
+  if [ -z "${SEEN_HOSTS[$host]+x}" ]; then
+    SEEN_HOSTS["$host"]=1
+    DEDUPED_HOSTS+=("$host")
+  fi
+done
+HOSTS_TO_PIN=("${DEDUPED_HOSTS[@]}")
 
 # Clean up any stale socket so ssh-agent can start cleanly.
 if [ -S "$SOCK" ]; then
