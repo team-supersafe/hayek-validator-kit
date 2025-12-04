@@ -7,12 +7,13 @@
   become: true
 
 - name: Install Rust using rustup-init
-  ansible.builtin.command: /tmp/rustup-init.sh -y
+  ansible.builtin.shell: /bin/sh /tmp/rustup-init.sh -y
   args:
     creates: "{{ cargo_home }}/bin/rustc"
   environment:
     CARGO_HOME: "{{ cargo_home }}"
     RUSTUP_HOME: "{{ rustup_home }}"
+    TMPDIR: "/var/tmp"
   become: true
 
 - name: Stat - Check if cargo_home directory exists
