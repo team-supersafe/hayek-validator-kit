@@ -1,3 +1,6 @@
 ---
 - name: Configure Watchtower Service
   include_tasks: config_watchtower_service.yml
+
+- name: Configure Alert Formatter Service
+  include_tasks: config_alert_formatter.yml

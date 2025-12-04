@@ -18,3 +18,12 @@
   failed_when: false
   async: 10
   poll: 2
+
+- name: Restart Alert Formatter
+  ansible.builtin.systemd:
+    name: alert-formatter.service
+    state: restarted
+    daemon_reload: yes
+  failed_when: false
+  async: 10
+  poll: 2

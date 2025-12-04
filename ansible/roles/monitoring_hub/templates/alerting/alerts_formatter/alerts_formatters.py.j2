@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 # Load environment variables from centralized file
 def load_environment():
     """Load environment variables from hayek-monitor.env if available"""
-    env_file = "/usr/local/etc/hayek-monitor.env"
+    env_file = "/usr/local/etc/validator-metrics.env"
     if os.path.exists(env_file):
         print(f"🔧 Loading environment variables from {env_file}")
         # Source the environment file by reading and setting variables
@@ -89,7 +89,7 @@ VALIDATOR_CONFIGS = {
             "delinquent": 180,
             "balance": 300
         },
-        "enabled": False,
+        "enabled": True,
         # Individual alert type controls for this validator
         "alerts": {
             "delinquent": True,      # Enable/disable delinquent alerts
@@ -156,7 +156,7 @@ VALIDATOR_CONFIGS = {
             "delinquent": 60,
             "balance": 60
         },
-        "enabled": False,
+        "enabled": True,
         # Individual alert type controls for this validator
         "alerts": {
             "delinquent": True,      # Enable/disable delinquent alerts
