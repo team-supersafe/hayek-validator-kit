@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-COMPOSE_FILE="./docker-compose.yml"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 PROFILE="prod"
 SERVICE="ansible-control-prod"
 
@@ -13,8 +14,6 @@ until docker compose -f "$COMPOSE_FILE" --profile "$PROFILE" exec -T "$SERVICE" 
   sleep 2
 done
 
-echo "Docker Compose version:"
-docker compose --version
-
+echo ""
 echo "Prod profile started. Attach to the container with:"
 echo "docker compose -f $COMPOSE_FILE --profile $PROFILE exec -w /hayek-validator-kit $SERVICE bash -l"

@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Usage: ./start-localnet.sh [podman|docker]
 ENGINE="${1:-podman}"
 PROFILE="localnet"
-COMPOSE_BASE="./docker-compose.yml"
+COMPOSE_BASE="$SCRIPT_DIR/docker-compose.yml"
 
 case "$ENGINE" in
   podman)
-    OVERRIDE="./docker-compose.podman.yml"
+    OVERRIDE="$SCRIPT_DIR/docker-compose.podman.yml"
     COMPOSE_BIN="podman compose"
     export BUILDAH_FORMAT=${BUILDAH_FORMAT:-docker}
     ;;
   docker)
-    OVERRIDE="./docker-compose.docker.yml"
+    OVERRIDE="$SCRIPT_DIR/docker-compose.docker.yml"
     COMPOSE_BIN="docker compose"
     ;;
   *)
