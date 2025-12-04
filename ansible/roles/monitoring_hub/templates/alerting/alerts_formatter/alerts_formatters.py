@@ -41,8 +41,8 @@ def validate_environment():
 
     # Check critical variables
     critical_vars = [
-        "HAYEK_MAINNET_IDENTITY",
-        "HAYEK_TESTNET_IDENTITY",
+        "MAINNET_IDENTITY",
+        "TESTNET_IDENTITY",
         "SOLANA_MAINNET_RPC",
         "SOLANA_TESTNET_RPC",
         "TELEGRAM_BOT_TOKEN",
@@ -78,7 +78,7 @@ validate_environment()
 VALIDATOR_CONFIGS = {
     "mainnet": {
         "name": "MAINNET",
-        "validator_identity": os.environ.get("HAYEK_MAINNET_IDENTITY"),
+        "validator_identity": os.environ.get("MAINNET_IDENTITY"),
         "rpc_url": os.environ.get("SOLANA_MAINNET_RPC"),
         "service_name": "agave-watchtower-mainnet.service",
         "suggested_balance": float(os.environ.get("WATCHTOWER_MIN_BALANCE_MAINNET", "0.5")),
@@ -100,7 +100,7 @@ VALIDATOR_CONFIGS = {
     },
     "mainnet-debug": {
         "name": "MAINNET-DEBUG",
-        "validator_identity": os.environ.get("HAYEK_DEBUG_IDENTITY"),  # Debug validator (specific identity)
+        "validator_identity": os.environ.get("DEBUG_IDENTITY"),  # Debug validator (specific identity)
         "rpc_url": os.environ.get("SOLANA_MAINNET_RPC"),
         "service_name": "agave-watchtower-debug.service",
         "suggested_balance": float(os.environ.get("WATCHTOWER_MIN_BALANCE_MAINNET", "0.1")),
@@ -122,7 +122,7 @@ VALIDATOR_CONFIGS = {
     },
     "testnet": {
         "name": "TESTNET",
-        "validator_identity": os.environ.get("HAYEK_TESTNET_IDENTITY"),
+        "validator_identity": os.environ.get("TESTNET_IDENTITY"),
         "rpc_url": os.environ.get("SOLANA_TESTNET_RPC"),
         "service_name": "agave-watchtower-testnet.service",
         "suggested_balance": float(os.environ.get("WATCHTOWER_MIN_BALANCE_TESTNET", "1.0")),
@@ -145,7 +145,7 @@ VALIDATOR_CONFIGS = {
 
     "localnet": {
         "name": "LOCALNET",
-        "validator_identity": os.environ.get("HAYEK_LOCALNET_IDENTITY"),
+        "validator_identity": os.environ.get("LOCALNET_IDENTITY"),
         "rpc_url": os.environ.get("SOLANA_LOCALNET_RPC", "http://127.0.0.1:8899"),
         "service_name": "agave-watchtower-localnet.service",
         "suggested_balance": float(os.environ.get("WATCHTOWER_MIN_BALANCE_LOCALNET", "50.0")),
