@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 # Load environment variables from centralized file
 def load_environment():
-    """Load environment variables from hayek-monitor.env if available"""
+    """Load environment variables from validator-metrics.env if available"""
     env_file = "/usr/local/etc/validator-metrics.env"
     if os.path.exists(env_file):
         print(f"🔧 Loading environment variables from {env_file}")
@@ -20,14 +20,24 @@ def load_environment():
         with open(env_file, 'r') as f:
             for line in f:
                 line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+
+                # Handle 'export KEY=VALUE' or 'KEY=VALUE'
                 if line.startswith('export ') and '=' in line:
-                    # Remove 'export ' and split on first '='
                     var_assignment = line[7:]  # Remove 'export '
-                    if '=' in var_assignment:
-                        key, value = var_assignment.split('=', 1)
-                        # Remove quotes if present
-                        value = value.strip('"\'')
-                        os.environ[key] = value
+                elif '=' in line:
+                    var_assignment = line
+                else:
+                    continue
+
+                if '=' in var_assignment:
+                    key, value = var_assignment.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    # Remove quotes if present
+                    value = value.strip('"\'')
+                    os.environ[key] = value
     else:
         print(f"⚠️ Environment file not found at {env_file}")
 
@@ -43,15 +53,20 @@ def validate_environment():
     critical_vars = [
         "MAINNET_IDENTITY",
         "TESTNET_IDENTITY",
+        "LOCALNET_IDENTITY",
         "SOLANA_MAINNET_RPC",
         "SOLANA_TESTNET_RPC",
+        "SOLANA_LOCALNET_RPC",
         "TELEGRAM_BOT_TOKEN",
         "DISCORD_WEBHOOK_MAINNET",
         "DISCORD_WEBHOOK_TESTNET",
+        "DISCORD_WEBHOOK_LOCALNET",
         "TELEGRAM_CHAT_ID_MAINNET",
         "TELEGRAM_CHAT_ID_TESTNET",
+        "TELEGRAM_CHAT_ID_LOCALNET",
         "WATCHTOWER_MIN_BALANCE_MAINNET",
-        "WATCHTOWER_MIN_BALANCE_TESTNET"
+        "WATCHTOWER_MIN_BALANCE_TESTNET",
+        "WATCHTOWER_MIN_BALANCE_LOCALNET"
     ]
 
     for var in critical_vars:
@@ -63,7 +78,7 @@ def validate_environment():
         for var in missing_vars:
             print(f"  - {var}")
         print("")
-        print("Please ensure these variables are defined in /usr/local/etc/hayek-monitor.env")
+        print("Please ensure these variables are defined in /usr/local/etc/validator-metrics.env")
         print("The script cannot run safely without these credentials.")
         exit(1)
 
