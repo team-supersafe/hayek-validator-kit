@@ -7,17 +7,18 @@ PROFILE="localnet"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(realpath "$SCRIPT_DIR/../..")"
 COMPOSE_BASE="$REPO_ROOT/solana-localnet/docker-compose.yml"
+PROJECT_NAME="${COMPOSE_PROJECT_NAME:-$(basename "$(dirname "$COMPOSE_BASE")")}"
 
 case "$ENGINE" in
   podman)
     OVERRIDE="$REPO_ROOT/solana-localnet/docker-compose.podman.yml"
     COMPOSE_BIN="podman compose"
-    CLEAN_ENV='export BUILDAH_FORMAT=${BUILDAH_FORMAT:-docker}'
+    export BUILDAH_FORMAT=${BUILDAH_FORMAT:-docker}
     ;;
   docker)
     OVERRIDE="$REPO_ROOT/solana-localnet/docker-compose.docker.yml"
     COMPOSE_BIN="docker compose"
-    CLEAN_ENV=""
+    :
     ;;
   *)
     echo "Unknown engine '$ENGINE' (use podman or docker)" >&2
@@ -29,9 +30,43 @@ SERVICE_CTRL="ansible-control-localnet"
 SERVICES=("gossip-entrypoint" "host-alpha" "host-bravo" "host-charlie" "$SERVICE_CTRL")
 
 log() { printf '\n[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
-compose() { (cd "$REPO_ROOT/solana-localnet" && $COMPOSE_BIN -f "$COMPOSE_BASE" -f "$OVERRIDE" --profile "$PROFILE" "$@"); }
+compose() { $COMPOSE_BIN -f "$COMPOSE_BASE" -f "$OVERRIDE" --profile "$PROFILE" "$@"; }
 
-[ -n "$CLEAN_ENV" ] && eval "$CLEAN_ENV"
+cleanup_docker() {
+  if command -v docker >/dev/null 2>&1; then
+    log "Pre-clean docker stack to free ports..."
+    local dc=(docker compose -f "$COMPOSE_BASE" -f "$REPO_ROOT/solana-localnet/docker-compose.docker.yml" --profile "$PROFILE")
+    "${dc[@]}" down --remove-orphans --volumes || true
+    local containers
+    containers=$(docker ps -aq --filter "label=com.docker.compose.project=${PROJECT_NAME}")
+    if [ -n "$containers" ]; then
+      docker rm -f $containers || true
+    fi
+    local volumes
+    volumes=$(docker volume ls -q --filter "label=com.docker.compose.project=${PROJECT_NAME}")
+    if [ -n "$volumes" ]; then
+      docker volume rm $volumes || true
+    fi
+  fi
+}
+
+cleanup_podman() {
+  if command -v podman >/dev/null 2>&1; then
+    log "Pre-clean podman stack to free ports..."
+    local pcmd=(podman compose -f "$COMPOSE_BASE" -f "$REPO_ROOT/solana-localnet/docker-compose.podman.yml" --profile "$PROFILE")
+    "${pcmd[@]}" down --remove-orphans --volumes || true
+    local containers
+    containers=$(podman ps -aq --filter "label=io.podman.compose.project=${PROJECT_NAME}")
+    if [ -n "$containers" ]; then
+      podman rm -f $containers || true
+    fi
+    local volumes
+    volumes=$(podman volume ls -q --filter "label=io.podman.compose.project=${PROJECT_NAME}")
+    if [ -n "$volumes" ]; then
+      podman volume rm $volumes || true
+    fi
+  fi
+}
 
 if [ "$ENGINE" = "podman" ]; then
   log "Validating podman machine sysctl/limits for agave validator..."
@@ -59,9 +94,12 @@ if [ "$ENGINE" = "podman" ]; then
 fi
 
 log "Stopping and removing existing stack (ignore errors)..."
+cleanup_docker
+cleanup_podman
 compose down --remove-orphans --volumes || true
 
 log "Removing generated key and IAM files..."
+# These directories are created by initialize-localnet-and-demo-validators.sh and must be regenerated for each test run.
 rm -rf "$REPO_ROOT/solana-localnet/localnet-ssh-keys" "$REPO_ROOT/solana-localnet/localnet-new-metal-box"
 
 log "Starting stack with $ENGINE..."
@@ -81,11 +119,13 @@ log "Running initializer inside control node..."
 compose exec "$SERVICE_CTRL" bash -lc "cd /hayek-validator-kit && ./solana-localnet/container-setup/scripts/initialize-localnet-and-demo-validators.sh"
 
 log "Port checks on gossip-entrypoint (8899 TCP, 8001 UDP)..."
-compose exec gossip-entrypoint ss -tulpn | grep 8899 || (echo "Missing 8899 listener" && exit 1)
-compose exec gossip-entrypoint ss -uap | grep 8001 || (echo "Missing 8001 listener" && exit 1)
+compose exec gossip-entrypoint ss -tulpn | grep 8899 || { echo "Missing 8899 listener" >&2; exit 1; }
+compose exec gossip-entrypoint ss -uap | grep 8001 || { echo "Missing 8001 listener" >&2; exit 1; }
 
 log "Systemd service symlinks on host-alpha..."
+echo "  Checking /etc/systemd/system..."
 compose exec host-alpha bash -lc "ls -l /etc/systemd/system | grep -E 'ssh-key|sol'"
+echo "  Checking multi-user.target.wants..."
 compose exec host-alpha bash -lc "ls -l /etc/systemd/system/multi-user.target.wants | grep -E 'ssh-key|sol'"
 
 log "Service status for key setup units on host-alpha..."
