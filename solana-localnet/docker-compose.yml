@@ -47,7 +47,7 @@ services:
 
   keygen-init:
     image: debian:stable-slim
-    profiles: ["localnet"]
+    profiles: ["localnet", "monitor"]
     container_name: "keygen-init"
     volumes:
       - ./container-setup/scripts/generate-localnet-ssh-keys.sh:/generate-localnet-ssh-keys.sh

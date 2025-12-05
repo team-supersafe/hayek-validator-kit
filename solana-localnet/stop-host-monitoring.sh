@@ -22,7 +22,7 @@ case "$ENGINE" in
 esac
 
 SERVICE="host-monitoring"
-compose() { $COMPOSE_BIN -f "$COMPOSE_BASE" -f "$OVERRIDE" --profile localnet --profile "$PROFILE" "$@"; }
+compose() { $COMPOSE_BIN -f "$COMPOSE_BASE" -f "$OVERRIDE" --profile "$PROFILE" "$@"; }
 
 echo "Stopping $SERVICE with $ENGINE..."
 compose stop "$SERVICE" || true
