@@ -35,4 +35,4 @@ until compose exec -T "$SERVICE" true >/dev/null 2>&1; do
 done
 
 echo "$SERVICE started. Attach with:"
-echo "$COMPOSE_BIN -f $COMPOSE_BASE -f $OVERRIDE --profile $PROFILE exec -w /hayek-validator-kit $SERVICE bash -l"
+echo "$COMPOSE_BIN -f $COMPOSE_BASE -f $OVERRIDE --profile $PROFILE exec $SERVICE bash -l"
