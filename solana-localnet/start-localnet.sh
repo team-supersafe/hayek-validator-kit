@@ -35,9 +35,6 @@ until compose exec -T "$SERVICE" true >/dev/null 2>&1; do
   sleep 2
 done
 
-echo "$ENGINE compose version:"
-$COMPOSE_BIN --version
-
 compose exec "$SERVICE" bash -l -c "cd /hayek-validator-kit && ./solana-localnet/container-setup/scripts/initialize-localnet-and-demo-validators.sh"
 
 echo "Localnet started. Attach with:"
