@@ -28,6 +28,8 @@ SERVICE="ansible-control-localnet"
 compose() { $COMPOSE_BIN -f "$COMPOSE_BASE" -f "$OVERRIDE" --profile "$PROFILE" "$@"; }
 
 echo "Starting localnet with $ENGINE..."
+# Build first so services that only reference the shared images don't try to pull from a registry on first run.
+compose build
 compose up -d
 
 echo "Waiting for $SERVICE container to be ready..."
