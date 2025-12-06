@@ -66,7 +66,8 @@ def validate_environment():
         "TELEGRAM_CHAT_ID_LOCALNET",
         "WATCHTOWER_MIN_BALANCE_MAINNET",
         "WATCHTOWER_MIN_BALANCE_TESTNET",
-        "WATCHTOWER_MIN_BALANCE_LOCALNET"
+        "WATCHTOWER_MIN_BALANCE_LOCALNET",
+        "WATCHTOWER_MIN_BALANCE_DEBUG"
     ]
 
     for var in critical_vars:
@@ -104,7 +105,7 @@ VALIDATOR_CONFIGS = {
             "delinquent": 180,
             "balance": 300
         },
-        "enabled": True,
+        "enabled": {{ solana.network.mainnet.enabled }},
         # Individual alert type controls for this validator
         "alerts": {
             "delinquent": True,      # Enable/disable delinquent alerts
@@ -126,7 +127,7 @@ VALIDATOR_CONFIGS = {
             "delinquent": 180,
             "balance": 300
         },
-        "enabled": False,
+        "enabled": {{ solana.network.debug.enabled }},
         # Individual alert type controls for this validator
         "alerts": {
             "delinquent": True,      # Enable/disable delinquent alerts
@@ -148,7 +149,7 @@ VALIDATOR_CONFIGS = {
             "delinquent": 180,
             "balance": 300
         },
-        "enabled": True,
+        "enabled": {{ solana.network.testnet.enabled }},
         # Individual alert type controls for this validator
         "alerts": {
             "delinquent": True,     # Disable delinquent alerts for testnet
@@ -169,9 +170,9 @@ VALIDATOR_CONFIGS = {
         "telegram_chat_id": os.environ.get("TELEGRAM_CHAT_ID_LOCALNET"),
         "alert_intervals": {
             "delinquent": 60,
-            "balance": 60
+            "balance":  60
         },
-        "enabled": True,
+        "enabled": {{ solana.network.localnet.enabled }},
         # Individual alert type controls for this validator
         "alerts": {
             "delinquent": True,      # Enable/disable delinquent alerts
