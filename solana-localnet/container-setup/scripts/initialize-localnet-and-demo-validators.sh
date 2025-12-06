@@ -1,5 +1,5 @@
 #!/bin/bash
-# Not to be called directly, but called by devcontainer or start-localnet-from-outside-ide.sh to configure the localnet
+# Not to be called directly, but called by devcontainer or start-localnet.sh to configure the localnet cluster and demo validators
 
 set -e
 

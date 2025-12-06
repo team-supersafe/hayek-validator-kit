@@ -2,9 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# Usage: ./start-localnet.sh [podman|docker]
-ENGINE="${1:-podman}"
-PROFILE="localnet"
+# Usage: ./start-host-monitoring.sh [podman|docker]
+ENGINE="${1:-docker}"
+PROFILE="monitor"
 COMPOSE_BASE="$SCRIPT_DIR/docker-compose.yml"
 
 case "$ENGINE" in
@@ -23,21 +23,16 @@ case "$ENGINE" in
     ;;
 esac
 
-SERVICE="ansible-control-localnet"
-
+SERVICE="host-monitoring"
 compose() { $COMPOSE_BIN -f "$COMPOSE_BASE" -f "$OVERRIDE" --profile "$PROFILE" "$@"; }
 
-echo "Starting localnet with $ENGINE..."
-# Build first so services that only reference the shared images don't try to pull from a registry on first run.
-compose build
-compose up -d
+echo "Starting $SERVICE with $ENGINE..."
+compose up -d "$SERVICE"
 
 echo "Waiting for $SERVICE container to be ready..."
 until compose exec -T "$SERVICE" true >/dev/null 2>&1; do
   sleep 2
 done
 
-compose exec "$SERVICE" bash -l -c "cd /hayek-validator-kit && ./solana-localnet/container-setup/scripts/initialize-localnet-and-demo-validators.sh"
-
-echo "Localnet started. Attach with:"
-echo "$COMPOSE_BIN -f $COMPOSE_BASE -f $OVERRIDE --profile $PROFILE exec -w /hayek-validator-kit $SERVICE bash -l"
+echo "$SERVICE started. Attach with:"
+echo "$COMPOSE_BIN -f $COMPOSE_BASE -f $OVERRIDE --profile $PROFILE exec $SERVICE bash -l"
