@@ -4,6 +4,8 @@ After=network.target
 
 [Service]
 # Load environment variables from centralized file
+# NOTE: /usr/local/etc/validator-metrics.env must exist and be properly configured before this service starts.
+#       Ensure this file is created by a prerequisite Ansible task or manual step.
 EnvironmentFile=-/usr/local/etc/validator-metrics.env
 ExecStart=/opt/solana/active_release/bin/agave-watchtower \
   --url {{ '${SOLANA_' ~ item.value.network_name | upper ~ '_RPC}' }} \
