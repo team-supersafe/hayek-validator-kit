@@ -119,7 +119,7 @@ VALIDATOR_CONFIGS = {
         "validator_identity": os.environ.get("DEBUG_IDENTITY"),  # Debug validator (specific identity)
         "rpc_url": os.environ.get("SOLANA_MAINNET_RPC"),
         "service_name": "agave-watchtower-debug.service",
-        "suggested_balance": float(os.environ.get("WATCHTOWER_MIN_BALANCE_MAINNET", "0.1")),
+        "suggested_balance": float(os.environ.get("WATCHTOWER_MIN_BALANCE_DEBUG", "0.1")),
         "solana_cli_args": ["-u", "mainnet-beta"],
         "discord_webhook": os.environ.get("DISCORD_WEBHOOK_MAINNET"),
         "telegram_chat_id": os.environ.get("TELEGRAM_CHAT_ID_MAINNET"),
