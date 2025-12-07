@@ -365,7 +365,7 @@ def format_balance_recovery_message(validator_name, config, account_id=None, bal
 
     if platform == "discord":
         formatted_message = (
-            f"**✅ BALANCE RECOVERED: {NETWORK_NAME} IDENTITY BALANCE NORMAL ✅**\n"
+            f"**✅ BALANCE RECOVERED: {NETWORK_NAME} IDENTITY BALANCE NORMAL**\n"
             f"**Account:** {formatted_account}\n"
             f"**Current Balance:** ◎{formatted_balance} SOL\n"
             f"**Suggested:** ◎{SUGGESTED_BALANCE} SOL\n"
@@ -373,7 +373,7 @@ def format_balance_recovery_message(validator_name, config, account_id=None, bal
         )
     elif platform == "telegram":
         formatted_message = (
-            f"*✅ BALANCE RECOVERED: {NETWORK_NAME} IDENTITY BALANCE NORMAL ✅*\n"
+            f"*✅ BALANCE RECOVERED: {NETWORK_NAME} IDENTITY BALANCE NORMAL**\n"
             f"*Account*: `{formatted_account}`\n"
             f"*Current Balance:* ◎{formatted_balance} SOL\n"
             f"*Suggested:* ◎{SUGGESTED_BALANCE} SOL\n"
