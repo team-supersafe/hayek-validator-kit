@@ -711,7 +711,7 @@ def process_log_line_for_validator(line, validator_name, config, validator_state
                 logger.info(f"Updated balance for {account_id}: {balance}")
 
                 # Check for balance recovery
-                if (ENABLE_BALANCE_RECOVERY_ALERTS and was_below_threshold and
+                if (config["alerts"]["balance_recovery"] and was_below_threshold and
                     is_above_threshold and account_state[account_id].get("first_alert_time") is not None):
                     logger.info(f"Balance recovery detected for {account_id}: {balance} >= {SUGGESTED_BALANCE}")
                     send_alert_for_validator(
