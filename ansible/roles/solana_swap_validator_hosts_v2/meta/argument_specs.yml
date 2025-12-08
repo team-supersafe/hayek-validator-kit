@@ -1,0 +1,25 @@
+---
+argument_specs:
+  main:
+    short_description: "Hot swap validator hosts"
+    author: "Hayek Validator Team"
+    description:
+      - "Performs a validator hot swap operation between two hosts holding the same key set"
+      - "Destination host will acquire the primary target identity"
+      - "Source host will acquire a hot-spare identity"
+      - "Includes validation to ensure both hosts have proper validator installations"
+      - "Optionally deprovisions the source host after successful swap"
+    options:
+      source_host:
+        type: str
+        required: true
+        description: "Name of the source host (current primary validator)"
+      destination_host:
+        type: str
+        required: true
+        description: "Name of the destination host (will become new primary validator)"
+      deprovision_source_host:
+        type: bool
+        required: false
+        default: false
+        description: "Whether to deprovision all validator-related files, folders, services, and keys from the source host after swap"
