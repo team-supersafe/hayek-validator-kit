@@ -1,0 +1,6 @@
+---
+source_host_keys_dir: "{{ keys_dir }}/{{ source_validator_name }}"
+source_host_identity_link_path: "{{ source_host_keys_dir }}/identity.json"
+source_vote_account_path: "{{ source_host_keys_dir }}/vote-account.json"
+destination_host_keys_dir: "{{ keys_dir }}/{{ destination_validator_name }}"
+destination_host_identity_link_path: "{{ destination_host_keys_dir }}/identity.json"
