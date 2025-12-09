@@ -5,7 +5,7 @@
   ansible.builtin.systemd:
     name: "{{ monitoring_services[0] }}"
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true
   failed_when: false
   async: 10
   poll: 2
@@ -14,7 +14,16 @@
   ansible.builtin.systemd:
     name: "{{ monitoring_services[1] }}"
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true
+  failed_when: false
+  async: 10
+  poll: 2
+
+- name: Restart Alert Formatter
+  ansible.builtin.systemd:
+    name: alert-formatter.service
+    state: restarted
+    daemon_reload: true
   failed_when: false
   async: 10
   poll: 2

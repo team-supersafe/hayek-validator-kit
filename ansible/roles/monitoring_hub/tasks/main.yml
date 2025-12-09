@@ -46,5 +46,9 @@
   import_tasks: validator_metrics_service/main.yml
   tags: validator_metrics_service
 
+- name: Setup Alerting (Watchtower)
+  include_tasks: setup_alerting/main.yml
+  tags: setup_alerting
+
 - name: Summary report of monitoring hub setup
   include_tasks: summary.yml

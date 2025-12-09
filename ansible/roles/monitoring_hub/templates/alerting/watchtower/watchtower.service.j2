@@ -1,0 +1,24 @@
+[Unit]
+Description=Agave Watchtower Monitoring Service {{ item.value.network_name }}
+After=network.target
+
+[Service]
+# Load environment variables from centralized file
+# NOTE: /usr/local/etc/validator-metrics.env must exist and be properly configured before this service starts.
+#       Ensure this file is created by a prerequisite Ansible task or manual step.
+EnvironmentFile=-/usr/local/etc/validator-metrics.env
+ExecStart=/opt/solana/active_release/bin/agave-watchtower \
+  --url {{ '${SOLANA_' ~ item.value.network_name | upper ~ '_RPC}' }} \
+  --validator-identity {{ '${' ~ item.value.network_name | upper ~ '_IDENTITY}' }} \
+  --interval 60 \
+  --monitor-active-stake \
+  --minimum-validator-identity-balance {{ '${WATCHTOWER_MIN_BALANCE_' ~ item.value.network_name | upper ~ '}' }} \
+  --rpc-timeout 30 \
+  --name-suffix "{{ item.value.network_name | capitalize }}" \
+  --unhealthy-threshold 1 \
+  --ignore-http-bad-gateway
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
