@@ -112,7 +112,7 @@
     # Step 3 - Remove related directories
     - name: Step 3 - Directories - Remove logs directory
       ansible.builtin.file:
-        path: "{{ logs_dir }}"
+        path: "{{ validator_logs_dir }}"
         state: absent
       become: true
       failed_when: false
@@ -122,7 +122,7 @@
       ansible.builtin.command: >
         solana-keygen new --no-bip39-passphrase --force -o {{ source_host_keys_dir }}/primary-target-identity.json
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
       register: overwrite_result
       loop: "{{ range(10) | list }}"
       loop_control:
@@ -149,7 +149,7 @@
 
     - name: Step 3 - Directories - Remove host keys directory
       ansible.builtin.file:
-        path: "{{ keys_dir }}"
+        path: "{{ validator_key_store }}"
         state: absent
       become: true
       failed_when: false

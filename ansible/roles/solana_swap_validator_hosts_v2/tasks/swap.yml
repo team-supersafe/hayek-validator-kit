@@ -46,7 +46,7 @@
     - name: swap - Parse vote account data before swap
       ansible.builtin.set_fact:
         vote_account_before: "{{ source_vote_account_before.stdout | from_json }}"
-      when: 
+      when:
         - inventory_hostname == source_host
         - source_vote_account_before.stdout is defined
         - source_vote_account_before.stdout != ''
@@ -102,7 +102,7 @@
         --max-delinquent-stake {{ restart_max_delinquent_stake }} --min-idle-time {{ restart_min_idle_time }}
         --skip-new-snapshot-check --skip-health-check
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
       when: inventory_hostname == source_host
       register: wait_restart_result
       failed_when: wait_restart_result.rc != 0
@@ -110,7 +110,7 @@
     - name: swap - Switch to unstaked identity on source
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_hot_spare_identity_path }}
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
       when: inventory_hostname == source_host
 
     - name: swap - Update symlink to unstaked identity
@@ -121,6 +121,15 @@
         force: true
       when: inventory_hostname == source_host
       register: wait_and_unstake_result
+
+    - name: swap - Fix ownership of source identity symlink
+      ansible.builtin.file:
+        path: "{{ source_host_identity_link_path }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+        follow: false
+      become: true
+      when: inventory_hostname == source_host
 
     - name: set fact if Restart Window and Unstake Source succeeded
       ansible.builtin.set_fact:
@@ -134,7 +143,7 @@
       ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path }}
       register: staked_identity_pubkey_stdout
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
       delegate_to: "{{ source_host }}"
       when: inventory_hostname == destination_host
 
@@ -169,7 +178,7 @@
     - name: swap - Switch to staked identity on destination
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity --require-tower {{ destination_host_primary_target_identity_path }}
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
       when: inventory_hostname == destination_host
 
     - name: swap - Update symlink to staked identity
@@ -178,5 +187,14 @@
         dest: "{{ destination_host_identity_link_path }}"
         state: link
         force: true
+      when: inventory_hostname == destination_host
+
+    - name: swap - Fix ownership of destination identity symlink
+      ansible.builtin.file:
+        path: "{{ destination_host_identity_link_path }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+        follow: false
+      become: true
       when: inventory_hostname == destination_host
   when: tower_transfer_success | default(false)

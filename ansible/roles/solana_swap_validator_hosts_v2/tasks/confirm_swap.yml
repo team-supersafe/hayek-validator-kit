@@ -4,7 +4,7 @@
   ansible.builtin.command: solana-keygen pubkey {{ source_host_hot_spare_identity_path }}
   register: source_hotspare_pubkey
   environment:
-    PATH: "{{ solana_install_dir }}"
+    PATH: "{{ system_solana_active_release_dir }}"
   when: inventory_hostname == source_host
   changed_when: false
   check_mode: false
@@ -35,7 +35,7 @@
   ansible.builtin.command: solana-keygen pubkey {{ source_vote_account_path }}
   register: source_vote_pubkey_result
   environment:
-    PATH: "{{ solana_install_dir }}"
+    PATH: "{{ system_solana_active_release_dir }}"
   when:
     - inventory_hostname == source_host
     - source_vote_account_file.stat.exists
@@ -45,7 +45,7 @@
 - name: confirm_swap - Make source vote pubkey available globally
   ansible.builtin.set_fact:
     source_vote_pubkey: "{{ source_vote_pubkey_result.stdout_lines[0] }}"
-  when: 
+  when:
     - source_vote_account_file.stat.exists
     - source_vote_pubkey_result is defined
     - source_vote_pubkey_result.stdout_lines is defined
@@ -71,7 +71,7 @@
   ansible.builtin.shell: "solana-keygen pubkey {{ destination_host_hot_spare_identity_path }}"
   register: destination_hotspare_pubkey_result
   environment:
-    PATH: "{{ solana_install_dir }}"
+    PATH: "{{ system_solana_active_release_dir }}"
   when:
     - inventory_hostname == destination_host
     - destination_host_hot_spare_identity.stat.exists
@@ -111,7 +111,7 @@
   ansible.builtin.command: solana-keygen pubkey "{{ destination_host_keys_dir }}/vote-account.json"
   register: destination_vote_pubkey_result
   environment:
-    PATH: "{{ solana_install_dir }}"
+    PATH: "{{ system_solana_active_release_dir }}"
   when:
     - inventory_hostname == destination_host
     - destination_vote_account_file.stat.exists
@@ -121,7 +121,7 @@
 - name: confirm_swap - Make destination vote pubkey available globally
   ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ destination_vote_pubkey_result.stdout_lines[0] }}"
-  when: 
+  when:
     - destination_vote_account_file is defined
     - destination_vote_account_file.stat is defined
     - destination_vote_account_file.stat.exists

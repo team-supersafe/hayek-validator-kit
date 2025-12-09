@@ -165,11 +165,25 @@
     - name: prepare - Generate hot-spare identity if it doesn't exist
       ansible.builtin.command: solana-keygen new --no-bip39-passphrase -o {{ source_host_hot_spare_identity_path }}
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
       when: not new_hot_spare_identity.stat.exists
       register: generated_hotspare
       changed_when: generated_hotspare.rc == 0
       failed_when: generated_hotspare.rc != 0
+      become: true
+
+    - name: prepare - Fix ownership and permissions of generated hot-spare identity
+      ansible.builtin.file:
+        path: "{{ source_host_hot_spare_identity_path }}"
+        mode: "{{ validator_key_file_mode }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+      become: true
+      when:
+        - inventory_hostname == source_host
+        - not new_hot_spare_identity.stat.exists
+        - generated_hotspare is defined
+        - generated_hotspare.rc == 0
   when: inventory_hostname == source_host
 
 - name: prepare - Check for identity keypair files on destination host
@@ -203,7 +217,7 @@
   ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path | trim }}
   register: source_staked_pubkey
   environment:
-    PATH: "{{ solana_install_dir }}"
+    PATH: "{{ system_solana_active_release_dir }}"
   when: inventory_hostname == source_host
   changed_when: false
   check_mode: false
@@ -212,7 +226,7 @@
   ansible.builtin.command: solana-keygen pubkey {{ destination_host_primary_target_identity_path | trim }}
   register: destination_staked_pubkey
   environment:
-    PATH: "{{ solana_install_dir }}"
+    PATH: "{{ system_solana_active_release_dir }}"
   when:
     - inventory_hostname == destination_host
     - destination_host_primary_target_identity_path is defined
