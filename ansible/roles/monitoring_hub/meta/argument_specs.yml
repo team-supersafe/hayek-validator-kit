@@ -1,0 +1,20 @@
+---
+argument_specs:
+  main:
+    short_description: "Setup monitoring hub server"
+    author: "Hayek Validator Team"
+    description:
+      - "Requires specifying the target host, ansible user, and SSL configuration flag."
+    options:
+      target_host:
+        type: str
+        required: true
+        description: "Target host to configure (inventory hostname)"
+      ansible_user:
+        type: str
+        required: true
+        description: "SSH user to connect as (e.g., alice)"
+      config_ssl:
+        type: bool
+        required: true
+        description: "Enable or disable SSL configuration (true/false)"

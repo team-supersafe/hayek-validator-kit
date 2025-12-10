@@ -6,3 +6,6 @@
 
 - name: Include Certbot configuration and certificate issuance tasks
   include_tasks: ssl_certificates/configure.yml
+
+- name: Configure grafana to use SSL
+  include_tasks: ssl_certificates/config_grafana_certificate.yml
