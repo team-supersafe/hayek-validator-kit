@@ -98,4 +98,4 @@ monitoring_services:
 
 # SSL / Let's Encrypt configuration
 ssl_enabled: "{{ config_ssl }}"
-ssl_staging: false # Use Let's Encrypt staging environment for testing
+ssl_staging: true # Use Let's Encrypt staging environment for testing
