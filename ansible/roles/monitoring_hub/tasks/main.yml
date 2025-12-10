@@ -15,11 +15,6 @@
   include_tasks: config_firewall.yml
   tags: firewall
 
-- name: Setup SSL Certificates (Let's Encrypt + Cloudflare)
-  include_tasks: ssl_certificates/main.yml
-  when: ssl_enabled | bool
-  tags: ssl_certs
-
 - name: Include monitoring hub installation tasks
   include_tasks: install.yml
 
@@ -49,6 +44,10 @@
 - name: Setup Alerting (Watchtower)
   include_tasks: setup_alerting/main.yml
   tags: setup_alerting
+
+- name: Setup SSL Certificates (Let's Encrypt + Cloudflare)
+  include_tasks: ssl_certificates/main.yml
+  when: ssl_enabled | bool
 
 - name: Summary report of monitoring hub setup
   include_tasks: summary.yml

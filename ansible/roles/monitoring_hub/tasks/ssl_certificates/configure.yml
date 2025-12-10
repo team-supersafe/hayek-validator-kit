@@ -30,9 +30,11 @@
       --email {{ ssl_email }}
       -d {{ ssl_domain }}
       -d www.{{ ssl_domain }}
+      {{ '--test-cert' if ssl_use_staging | bool else '' }}
   args:
     creates: "/etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem"
   when: not ssl_wildcard_enabled | bool
+  ignore_errors: "{{ ssl_use_staging | bool }}"
 
 - name: Issue SSL certificate with Certbot (Wildcard)
   ansible.builtin.command:
@@ -45,9 +47,11 @@
       --email {{ ssl_email }}
       -d {{ ssl_domain }}
       -d *.{{ ssl_domain }}
+      {{ '--test-cert' if ssl_use_staging | bool else '' }}
   args:
     creates: "/etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem"
   when: ssl_wildcard_enabled | bool
+  ignore_errors: "{{ ssl_use_staging | bool }}"
 
 - name: Ensure ssl-cert group has access to Let's Encrypt directories
   ansible.builtin.file:

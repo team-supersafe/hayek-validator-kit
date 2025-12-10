@@ -95,3 +95,8 @@ monitoring_services:
   - telegraf-{{ solana.network.testnet.network_name }}
   - telegraf-{{ solana.network.devnet.network_name }}
   - telegraf-{{ solana.network.localnet.network_name }}
+
+# SSL / Let's Encrypt configuration
+ssl_use_staging: true # Set to true to use Let's Encrypt staging environment (avoids rate limits)
+ssl_enabled: true
+ssl_wildcard_enabled: true

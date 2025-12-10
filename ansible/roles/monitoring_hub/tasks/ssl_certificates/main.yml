@@ -2,7 +2,7 @@
 # SSL / Certbot configuration tasks
 
 - name: Include Certbot installation tasks
-  include_tasks: install.yml
+  include_tasks: ssl_certificates/install.yml
 
 - name: Include Certbot configuration and certificate issuance tasks
-  include_tasks: configure.yml
+  include_tasks: ssl_certificates/configure.yml
