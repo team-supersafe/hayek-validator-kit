@@ -1,0 +1,24 @@
+---
+- name: Install Alert Formatter script
+  ansible.builtin.template:
+    src: alerting/alerts_formatter/alerts_formatters.py.j2
+    dest: /usr/local/bin/alerts_formatters.py
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Install Alert Formatter service
+  ansible.builtin.template:
+    src: alerting/alerts_formatter/alert-formatter.service.j2
+    dest: /etc/systemd/system/alert-formatter.service
+    mode: '0644'
+    owner: root
+    group: root
+  notify: Restart Alert Formatter
+
+- name: Enable and start Alert Formatter service
+  ansible.builtin.systemd:
+    name: alert-formatter.service
+    enabled: true
+    state: started
+    daemon_reload: true

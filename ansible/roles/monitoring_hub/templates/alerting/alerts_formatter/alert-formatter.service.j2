@@ -1,0 +1,11 @@
+[Unit]
+Description=Agave Watchtower Alert Formatter
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/alerts_formatters.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
