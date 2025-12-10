@@ -44,3 +44,29 @@
   loop:
     - /etc/letsencrypt/live
     - /etc/letsencrypt/archive
+
+- name: Create Certbot post-renewal hook to fix permissions and restart Grafana
+  ansible.builtin.copy:
+    dest: /etc/letsencrypt/renewal-hooks/post/99-fix-perms-restart-grafana.sh
+    owner: root
+    group: root
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      set -e
+      DOMAIN="{{ ssl_domain }}"
+      # Fix permissions for live and archive directories
+      chown -R root:ssl-cert /etc/letsencrypt/live/"$DOMAIN"
+      chmod -R 750 /etc/letsencrypt/live/"$DOMAIN"
+      chown -R root:ssl-cert /etc/letsencrypt/archive/"$DOMAIN"
+      chmod -R 750 /etc/letsencrypt/archive/"$DOMAIN"
+      # Restart Grafana to reload certificates
+      systemctl restart grafana-server || true
+  when: ssl_domain is defined
+
+- name: Ensure certbot automatic renewal systemd timer is enabled and running
+  ansible.builtin.systemd:
+    name: certbot.timer
+    enabled: true
+    state: started
+
