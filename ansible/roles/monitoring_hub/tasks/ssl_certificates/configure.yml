@@ -34,11 +34,6 @@
     creates: "/etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem"
   ignore_errors: false
 
-- name: Ensure certbot automatic renewal systemd timer is enabled and running
-  ansible.builtin.systemd:
-    name: certbot.timer
-    enabled: true
-    state: started
 - name: Ensure ssl-cert group has access to Let's Encrypt directories
   ansible.builtin.file:
     path: "{{ item }}"
