@@ -1,0 +1,61 @@
+---
+# Configure Cloudflare credentials and issue certificate
+
+- name: Ensure Cloudflare credentials directory exists
+  ansible.builtin.file:
+    path: /etc/letsencrypt
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create Cloudflare credentials file
+  ansible.builtin.copy:
+    dest: /etc/letsencrypt/cloudflare.ini
+    content: |
+      dns_cloudflare_api_token = {{ ssl_cloudflare_token }}
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+
+- name: Issue SSL certificate with Certbot (Standard)
+  ansible.builtin.command:
+    cmd: >
+      certbot certonly
+      --dns-cloudflare
+      --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini
+      --non-interactive
+      --agree-tos
+      --email {{ ssl_email }}
+      -d {{ ssl_domain }}
+      -d www.{{ ssl_domain }}
+  args:
+    creates: "/etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem"
+  when: not ssl_wildcard_enabled | bool
+
+- name: Issue SSL certificate with Certbot (Wildcard)
+  ansible.builtin.command:
+    cmd: >
+      certbot certonly
+      --dns-cloudflare
+      --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini
+      --non-interactive
+      --agree-tos
+      --email {{ ssl_email }}
+      -d {{ ssl_domain }}
+      -d *.{{ ssl_domain }}
+  args:
+    creates: "/etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem"
+  when: ssl_wildcard_enabled | bool
+
+- name: Ensure ssl-cert group has access to Let's Encrypt directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: root
+    group: ssl-cert
+    mode: '0750'
+    recurse: yes
+  loop:
+    - /etc/letsencrypt/live
+    - /etc/letsencrypt/archive

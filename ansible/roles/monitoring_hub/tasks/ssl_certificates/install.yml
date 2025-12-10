@@ -1,0 +1,11 @@
+---
+# Install Certbot and Cloudflare DNS plugin
+
+- name: Install Certbot and Cloudflare DNS plugin
+  ansible.builtin.apt:
+    name:
+      - certbot
+      - python3-certbot-dns-cloudflare
+      - ssl-cert
+    state: present
+    update_cache: yes

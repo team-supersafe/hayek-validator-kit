@@ -2,11 +2,6 @@
 
 # monitoring_hub role main tasks
 
-# TODO: Add task to acquire SSL certificate for secure Grafana access
-#       - Implement Let's Encrypt or custom certificate management
-#       - Configure HTTPS for Grafana web interface
-#       - Update firewall rules for HTTPS (port 443)
-
 - name: Load sensitive variables
   include_vars: secrets.yml
   no_log: true
@@ -19,6 +14,11 @@
 - name: Configure Firewall rules
   include_tasks: config_firewall.yml
   tags: firewall
+
+- name: Setup SSL Certificates (Let's Encrypt + Cloudflare)
+  include_tasks: ssl_certificates/main.yml
+  when: ssl_enabled | bool
+  tags: ssl_certs
 
 - name: Include monitoring hub installation tasks
   include_tasks: install.yml

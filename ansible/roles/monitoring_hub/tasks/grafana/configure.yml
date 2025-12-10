@@ -21,5 +21,49 @@
     mode: "{{ grafana_config.permissions.config_files.mode }}"
   notify: restart grafana
 
+- name: Configure Grafana Server Protocol to HTTPS
+  ansible.builtin.ini_file:
+    path: /etc/grafana/grafana.ini
+    section: server
+    option: protocol
+    value: "https"
+  when: ssl_enabled | bool
+  notify: restart grafana
+
+- name: Configure Grafana Domain
+  ansible.builtin.ini_file:
+    path: /etc/grafana/grafana.ini
+    section: server
+    option: domain
+    value: "{{ ssl_domain }}"
+  when: ssl_enabled | bool
+  notify: restart grafana
+
+- name: Configure Grafana SSL Certificate File
+  ansible.builtin.ini_file:
+    path: /etc/grafana/grafana.ini
+    section: server
+    option: cert_file
+    value: "/etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem"
+  when: ssl_enabled | bool
+  notify: restart grafana
+
+- name: Configure Grafana SSL Key File
+  ansible.builtin.ini_file:
+    path: /etc/grafana/grafana.ini
+    section: server
+    option: cert_key
+    value: "/etc/letsencrypt/live/{{ ssl_domain }}/privkey.pem"
+  when: ssl_enabled | bool
+  notify: restart grafana
+
+- name: Add Grafana user to ssl-cert group for SSL access
+  ansible.builtin.user:
+    name: grafana
+    groups: ssl-cert
+    append: yes
+  when: ssl_enabled | bool
+  notify: restart grafana
+
 # Note: Datasource provisioning is handled after InfluxDB configuration
 # to ensure tokens are available
