@@ -19,7 +19,7 @@
     mode: '0600'
   no_log: true
 
-- name: Issue SSL certificate with Certbot (Standard)
+- name: Issue SSL certificate with Certbot
   ansible.builtin.command:
     cmd: >
       certbot certonly
@@ -27,31 +27,12 @@
       --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini
       --non-interactive
       --agree-tos
+      {{ '--test-cert' if ssl_staging | default(false) | bool else '' }}
       --email {{ ssl_email }}
       -d {{ ssl_domain }}
-      -d www.{{ ssl_domain }}
-      {{ '--test-cert' if ssl_use_staging | bool else '' }}
   args:
     creates: "/etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem"
-  when: not ssl_wildcard_enabled | bool
-  ignore_errors: "{{ ssl_use_staging | bool }}"
-
-- name: Issue SSL certificate with Certbot (Wildcard)
-  ansible.builtin.command:
-    cmd: >
-      certbot certonly
-      --dns-cloudflare
-      --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini
-      --non-interactive
-      --agree-tos
-      --email {{ ssl_email }}
-      -d {{ ssl_domain }}
-      -d *.{{ ssl_domain }}
-      {{ '--test-cert' if ssl_use_staging | bool else '' }}
-  args:
-    creates: "/etc/letsencrypt/live/{{ ssl_domain }}/fullchain.pem"
-  when: ssl_wildcard_enabled | bool
-  ignore_errors: "{{ ssl_use_staging | bool }}"
+  ignore_errors: false
 
 - name: Ensure ssl-cert group has access to Let's Encrypt directories
   ansible.builtin.file:
