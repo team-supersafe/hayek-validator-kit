@@ -54,7 +54,7 @@ services:
       - ./localnet-ssh-keys:/localnet-ssh-keys
       - ./localnet-new-metal-box:/localnet-new-metal-box
     command: ["bash", "-c", "apt update && apt install -y openssh-client && /generate-localnet-ssh-keys.sh"]
-  
+
   gossip-entrypoint:
     build:
       context: ./
@@ -121,29 +121,8 @@ services:
         ipv4_address: 172.25.0.11
     <<: [ *validator-variables ]
 
-  # host-bravo is a validator-ready container without a validator key set. It does not have any validator running, but the tooling is already installed.
+  # host-bravo is a naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.
   host-bravo:
-    profiles: ["localnet"]
-    depends_on:
-      keygen-init:
-        condition: service_completed_successfully
-    # NO NEED TO BUILD, because we want to use the image `${COMPOSE_PROJECT_NAME}-validator`
-    # specified in *validator-variables and by now that image should be already built for host-alpha.
-    # build:
-    #   context: ./
-    #   # dockerfile: ./validator/Dockerfile
-    #   target: validator-builder
-    container_name: "host-bravo"
-    hostname: "host-bravo"
-    ports:
-      - "9222:22"
-    networks:
-      solana_network:
-        ipv4_address: 172.25.0.12
-    <<: [ *validator-variables ]
-
-  # host-charlie is a naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.
-  host-charlie:
     profiles: ["localnet"]
     depends_on:
       keygen-init:
@@ -151,6 +130,36 @@ services:
     build:
       context: ./
       target: naked-builder
+    image: ${COMPOSE_PROJECT_NAME}-ubuntu-naked
+    container_name: "host-bravo"
+    hostname: "host-bravo"
+    ports:
+      - "9222:22"
+    networks:
+      solana_network:
+        ipv4_address: 172.25.0.12
+    volumes:
+      - ./container-setup/scripts/set-container-default-user-ssh-key.sh:/container-setup/scripts/set-container-default-user-ssh-key.sh
+      - ./localnet-ssh-keys:/localnet-ssh-keys
+    environment:
+      HOST_DEFAULT_USER: ubuntu # the username of the default user in the container OS, e.g., 'ubuntu' for Ubuntu images
+      RPC_URL: http://gossip-entrypoint:8899
+    tmpfs:
+      - /run
+      - /run/lock
+      - /tmp
+    command: ["/lib/systemd/systemd", "--system"]
+
+  # host-charlie is a naked Ubuntu 24.04. This guy is not ready for anything. This is good to test bare-bone provisioning scripts.
+  host-charlie:
+    profiles: ["localnet"]
+    depends_on:
+      keygen-init:
+        condition: service_completed_successfully
+    # NO NEED TO BUILD, because we want to use the image `${COMPOSE_PROJECT_NAME}-ubuntu-naked`. By now that image should be already built for host-bravo.
+    # build:
+    #   context: ./
+    #   target: naked-builder
     image: ${COMPOSE_PROJECT_NAME}-ubuntu-naked
     container_name: "host-charlie"
     hostname: "host-charlie"
