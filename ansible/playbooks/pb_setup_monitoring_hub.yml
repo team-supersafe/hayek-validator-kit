@@ -7,7 +7,7 @@
 #
 #
 # ansible-playbook playbooks/pb_setup_monitoring_hub.yml \
-#   -i solana_localnet.yml \
+#   -i solana_localnet.yml \ # In production, use the inventory solana_host_monitoring.yml
 #   -e "target_host=host-monitoring" \
 #   -e "ansible_user=monitor" \
 #   -e "tmp_grafana_default_admin_user=admin" \
