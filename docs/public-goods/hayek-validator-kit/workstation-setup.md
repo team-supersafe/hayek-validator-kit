@@ -18,12 +18,13 @@ To successfully run and manage a Localnet in your workstation, your workstation 
 
 In addition to having a decent workstation, you must also have installed the following software:
 
-* Docker Desktop 4.41+
+* Docker Desktop 4.54+
+* Podman 1.23+
 * VSCode or Cursor
 
 ## Ansible User Config
 
-Depending on your preferred use of ZSH or BASH on your host, you will need the following environment config file:&#x20;
+Depending on your preferred use of ZSH or BASH on your host, you will need the following environment config file:
 
 ```bash
 # for zsh
@@ -33,7 +34,7 @@ cat ~/.zshenv
 cat ~/.bashrc
 ```
 
-... and check that it looks like this:&#x20;
+... and check that it looks like this:
 
 {% code overflow="wrap" %}
 ```bash
@@ -87,7 +88,7 @@ ssh-add ~/.ssh/id_rsa
 
 ### No SSH Keys
 
-If you don't have an ssh key and you don't want to use 1Password, then you must generate a new keypair for ssh access like this:&#x20;
+If you don't have an ssh key and you don't want to use 1Password, then you must generate a new keypair for ssh access like this:
 
 ```bash
 ssh-keygen -t ed25519
@@ -106,6 +107,6 @@ If you are working through your IDE (VS Code or Cursor), fully close and reopen 
 * Running `echo $ANSIBLE_REMOTE_USER` in your IDE terminal prints your ansible user
 * Running `echo $SSH_AUTH_SOCK` in your IDE terminal prints:
   * When not using ssh key stored in 1Password, you should see something like `/private/tmp/com.apple.launchd.MPKIACDzzx/Listeners`
-  * When using ssh key stored in 1Password, you should see something like  `/Users/<your_user>/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock`
+  * When using ssh key stored in 1Password, you should see something like `/Users/<your_user>/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock`
 
 You should now be ready to start the cluster.
