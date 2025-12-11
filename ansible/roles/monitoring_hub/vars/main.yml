@@ -69,7 +69,7 @@ solana:
       jito_mev: false
       doublezero_enabled: false
     localnet:
-      enabled: true
+      enabled: "{{ is_docker_container | default(false) }}"
       network_name: "localnet"
       metrics_interval: "30s"
       watchtower_min_balance: 50
