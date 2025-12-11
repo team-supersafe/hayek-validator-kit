@@ -8,7 +8,7 @@
 
 - name: Upgrade all packages to the latest version
   ansible.builtin.apt:
-    upgrade: safe
+    upgrade: dist
   when: system_upgrade_enabled | default(false)
 
 - name: Install monitoring dependencies

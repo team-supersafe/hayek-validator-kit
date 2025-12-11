@@ -37,5 +37,10 @@
 
 - name: Confirm Cloudflare Token Status
   ansible.builtin.debug:
-    msg: "Cloudflare API Token is valid and active. Message: {{ cf_token_verify.json.messages[0.message] | default('OK') }}"
-  when: (ssl_enabled | default(true) | bool) and (cf_token_verify.json is defined) and (not is_docker_container | bool)
+    msg: "Cloudflare API Token is valid and active. Message: {{ cf_token_verify.json.messages[0].message | default('OK') }}"
+  when: 
+    - (ssl_enabled | default(true) | bool)
+    - (cf_token_verify.json is defined)
+    - (not is_docker_container | bool)
+    - (cf_token_verify.json.success | bool)
+    - (cf_token_verify.json.messages | length > 0)
