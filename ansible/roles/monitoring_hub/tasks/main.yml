@@ -1,5 +1,4 @@
 ---
-
 # monitoring_hub role main tasks
 
 - name: Load sensitive variables
@@ -20,11 +19,6 @@
 
 - name: Include monitoring hub configuration tasks
   include_tasks: configure.yml
-
-# TODO: Add task to acquire SSL certificate for secure InfluxDB access
-#       - Implement Let's Encrypt or custom certificate management
-#       - Configure HTTPS for InfluxDB web interface
-#       - Update firewall rules for HTTPS (port 443)
 
 - name: Include InfluxDB tasks
   include_tasks: influxdb/main.yml
@@ -47,7 +41,7 @@
 
 - name: Setup SSL Certificates (Let's Encrypt + Cloudflare)
   include_tasks: ssl_certificates/main.yml
-  when: ssl_enabled | bool
+  when: (ssl_enabled | bool) and (not is_docker_container | bool)
 
 - name: Summary report of monitoring hub setup
   include_tasks: summary.yml

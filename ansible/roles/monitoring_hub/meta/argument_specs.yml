@@ -14,17 +14,4 @@ argument_specs:
         type: str
         required: true
         description: "SSH user to connect as (e.g., alice)"
-      config_ssl:
-        type: bool
-        required: true
-        description: >
-          Enable or disable SSL configuration (true/false).
-          This parameter is required. If omitted, playbook execution will fail with a clear error.
-          Set to true to enable SSL (HTTPS) for the monitoring hub; set to false for plain HTTP.
-      config_ssl_staging:
-        type: bool
-        required: false
-        default: false
-        description: >
-          Use Let's Encrypt staging environment for SSL certificate issuance.
-          Set to true to use staging (for testing, avoids rate limits), or false for production certificates.
+      

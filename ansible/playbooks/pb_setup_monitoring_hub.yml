@@ -17,7 +17,6 @@
 #   -e "tmp_influxdb_default_admin_password=adminpass" \
 #   -e "tmp_influxdb_default_org=HayekOrg" \
 #   -e "tmp_influxdb_default_bucket=HayekBucket" \
-#   -e "config_ssl=false" \
 #   -K
 
 - name: Setup monitoring hub server

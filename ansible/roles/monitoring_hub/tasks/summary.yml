@@ -28,13 +28,13 @@
       ✅ Telegraf (Data Collection Agents)
       ✅ Validator Metrics Service
       ✅ Alerting System (Watchtower + Formatters)
-      {% if ssl_enabled | bool %}
+      {% if (ssl_enabled | bool) and (not is_docker_container | bool) %}
       ✅ SSL Certificates (Let's Encrypt via Cloudflare){% if ssl_staging | default(false) | bool %} [⚠️ STAGING MODE]{% endif %}
       {% endif %}
       
       -----------------------------------------------
       🔗 ACCESS DASHBOARD:
-      {% if ssl_enabled | bool %}
+      {% if (ssl_enabled | bool) and (not is_docker_container | bool) %}
       https://{{ ssl_domain }}:{{ grafana_port }}
       {% else %}
       http://{{ ansible_host | default(ansible_host_ip) | default('YOUR_SERVER_IP') }}:{{ grafana_port }}
