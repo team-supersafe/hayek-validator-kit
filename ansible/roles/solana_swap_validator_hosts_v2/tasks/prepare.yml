@@ -408,7 +408,7 @@
   block:
     - name: prepare - Test SSH from source_host to destination_host
       ansible.builtin.shell: |
-        ssh -i {{ ssh_key_path }} -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 {{ destination_host }} 'exit 0'
+        ssh -i {{ ssh_key_path }} -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 {{ destination_host_address }} 'exit 0'
       delegate_to: "{{ source_host }}"
       register: ssh_test_result
       ignore_errors: true
