@@ -153,6 +153,13 @@
         source_ssh_key_path: "{{ hostvars[source_host]['source_host_ssh_key_path'] | default(hostvars[source_host]['ssh_key_path'] | default('')) }}"
       run_once: true
 
+    - name: swap - Assert source_ssh_key_path is defined and non-empty
+      ansible.builtin.assert:
+        that:
+          - source_ssh_key_path is defined
+          - source_ssh_key_path | length > 0
+        fail_msg: "source_ssh_key_path is not defined or is empty. Please ensure the SSH key path is set for source_host."
+      run_once: true
     - name: swap - Ensure SSH key has correct permissions on source host
       ansible.builtin.file:
         path: "{{ source_ssh_key_path }}"
