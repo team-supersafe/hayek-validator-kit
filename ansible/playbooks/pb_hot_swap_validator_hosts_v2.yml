@@ -43,6 +43,7 @@
       register: source_keys_dir_stat
       delegate_to: "{{ source_host }}"
       become: true
+      become_user: "{{ solana_user }}"
 
     - name: Check if destination host keys directory exists
       ansible.builtin.stat:
@@ -50,6 +51,7 @@
       register: destination_keys_dir_stat
       delegate_to: "{{ destination_host }}"
       become: true
+      become_user: "{{ solana_user }}"
 
     - name: Validate source host keys directory exists
       ansible.builtin.fail:
@@ -76,6 +78,7 @@
       register: source_keys
       delegate_to: "{{ source_host }}"
       become: true
+      become_user: "{{ solana_user }}"
 
     - name: Find validator name on destination host
       ansible.builtin.find:
@@ -84,6 +87,7 @@
       register: destination_keys
       delegate_to: "{{ destination_host }}"
       become: true
+      become_user: "{{ solana_user }}"
 
     - name: Validate source host has validator subdirectories
       ansible.builtin.fail:
