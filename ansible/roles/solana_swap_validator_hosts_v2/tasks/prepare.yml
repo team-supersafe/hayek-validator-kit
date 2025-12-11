@@ -220,6 +220,7 @@
   register: source_staked_pubkey
   environment:
     PATH: "{{ system_solana_active_release_dir }}"
+  become: true
   when: inventory_hostname == source_host
   changed_when: false
   check_mode: false
@@ -229,6 +230,7 @@
   register: destination_staked_pubkey
   environment:
     PATH: "{{ system_solana_active_release_dir }}"
+  become: true
   when:
     - inventory_hostname == destination_host
     - destination_host_primary_target_identity_path is defined
