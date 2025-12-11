@@ -250,7 +250,8 @@
   when:
     - inventory_hostname == destination_host
     - destination_staked_pubkey is defined
-
+    - destination_host_primary_target_identity_path is defined
+    - destination_host_primary_target_identity_path != ''
 - name: prepare - Set primary pubkey facts on each host
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ source_staked_pubkey.stdout_lines[0] }}"
