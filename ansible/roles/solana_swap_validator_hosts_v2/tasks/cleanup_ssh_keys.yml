@@ -1,7 +1,7 @@
 ---
 - name: cleanup - Remove generated SSH key from destination host authorized_keys
   ansible.posix.authorized_key:
-    user: sol
+    user: "{{ ansible_user }}"
     key: "{{ ssh_key_content_for_cleanup | b64decode }}"
     state: absent
   become: true
