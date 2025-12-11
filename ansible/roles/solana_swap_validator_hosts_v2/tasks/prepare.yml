@@ -106,6 +106,18 @@
     - hostvars[source_host]['ssh_key_was_generated'] is defined
     - hostvars[source_host]['pubkey'] is defined
 
+- name: prepare - Validate source_host_ssh_key_path is defined and non-empty
+  ansible.builtin.assert:
+    that:
+      - source_host_ssh_key_path is defined
+      - source_host_ssh_key_path | length > 0
+    fail_msg: >
+      source_host_ssh_key_path is not defined or is empty.
+      This variable is required for SSH operations between hosts.
+      Ensure the SSH key was generated successfully on {{ source_host }}.
+  run_once: true
+  when: not ansible_check_mode
+
 - name: prepare - Fail if public key file cannot be read
   ansible.builtin.fail:
     msg: "Failed to read SSH public key file {{ ssh_key_path }}.pub. Check if key generation succeeded."
