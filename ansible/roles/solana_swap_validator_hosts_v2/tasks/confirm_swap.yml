@@ -5,6 +5,8 @@
   register: source_hotspare_pubkey
   environment:
     PATH: "{{ system_solana_active_release_dir }}"
+  become: true
+  become_user: "{{ solana_user }}"
   when: inventory_hostname == source_host
   changed_when: false
   check_mode: false
@@ -22,6 +24,8 @@
   ansible.builtin.stat:
     path: "{{ source_vote_account_path }}"
   register: source_vote_account_file
+  become: true
+  become_user: "{{ solana_user }}"
   when: inventory_hostname == source_host
 
 - name: confirm_swap - Make source vote account file info available globally
@@ -36,8 +40,12 @@
   register: source_vote_pubkey_result
   environment:
     PATH: "{{ system_solana_active_release_dir }}"
+  become: true
+  become_user: "{{ solana_user }}"
   when:
     - inventory_hostname == source_host
+    - source_vote_account_file is defined
+    - source_vote_account_file.stat is defined
     - source_vote_account_file.stat.exists
   changed_when: false
   check_mode: false
@@ -46,6 +54,8 @@
   ansible.builtin.set_fact:
     source_vote_pubkey: "{{ source_vote_pubkey_result.stdout_lines[0] }}"
   when:
+    - source_vote_account_file is defined
+    - source_vote_account_file.stat is defined
     - source_vote_account_file.stat.exists
     - source_vote_pubkey_result is defined
     - source_vote_pubkey_result.stdout_lines is defined
@@ -57,6 +67,7 @@
     source_vote_pubkey: ""
   when:
     - source_vote_account_file is defined
+    - source_vote_account_file.stat is defined
     - not source_vote_account_file.stat.exists
   run_once: true
 
@@ -65,6 +76,8 @@
   ansible.builtin.stat:
     path: "{{ destination_host_hot_spare_identity_path }}"
   register: destination_host_hot_spare_identity
+  become: true
+  become_user: "{{ solana_user }}"
   when: inventory_hostname == destination_host
 
 - name: confirm_swap - Get destination hot-spare identity pubkey
@@ -72,6 +85,8 @@
   register: destination_hotspare_pubkey_result
   environment:
     PATH: "{{ system_solana_active_release_dir }}"
+  become: true
+  become_user: "{{ solana_user }}"
   when:
     - inventory_hostname == destination_host
     - destination_host_hot_spare_identity.stat.exists
@@ -98,6 +113,8 @@
   ansible.builtin.stat:
     path: "{{ destination_host_keys_dir }}/vote-account.json"
   register: destination_vote_account_file
+  become: true
+  become_user: "{{ solana_user }}"
   when: inventory_hostname == destination_host
 
 - name: confirm_swap - Make destination vote account file info available globally
@@ -112,8 +129,12 @@
   register: destination_vote_pubkey_result
   environment:
     PATH: "{{ system_solana_active_release_dir }}"
+  become: true
+  become_user: "{{ solana_user }}"
   when:
     - inventory_hostname == destination_host
+    - destination_vote_account_file is defined
+    - destination_vote_account_file.stat is defined
     - destination_vote_account_file.stat.exists
   changed_when: false
   check_mode: false

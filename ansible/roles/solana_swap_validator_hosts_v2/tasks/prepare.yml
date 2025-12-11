@@ -427,6 +427,11 @@
         - seconds_to_leadership is defined
         - seconds_to_leadership < restart_min_idle_time
 
+- name: prepare - Get destination host address
+  ansible.builtin.set_fact:
+    destination_host_address: "{{ hostvars[destination_host]['ansible_host'] | default(hostvars[destination_host]['inventory_hostname'] | default(destination_host)) }}"
+  run_once: true
+
 - name: prepare - Check SSH from source_host to destination_host
   block:
     - name: prepare - Test SSH from source_host to destination_host
@@ -444,4 +449,5 @@
       when:
         - not ansible_check_mode
         - inventory_hostname == source_host
-        - ssh_test_result is failed
+        - ssh_test_result is defined
+        - (ssh_test_result is failed or ssh_test_result.rc | default(1) != 0)
