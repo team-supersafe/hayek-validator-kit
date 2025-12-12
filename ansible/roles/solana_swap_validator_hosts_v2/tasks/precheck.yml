@@ -96,7 +96,7 @@
 - name: precheck - Validate validator identity matches running process
   block:
     - name: precheck - Get validator contact info and extract identity
-      ansible.builtin.shell: "{{ solana_install_dir }}/agave-validator -l {{ ledger_path }} contact-info | head -1 | sed 's/Identity: //'"
+      ansible.builtin.shell: "{{ system_solana_active_release_dir }}/agave-validator -l {{ ledger_path }} contact-info | head -1 | sed 's/Identity: //'"
       register: ledger_identity
       changed_when: false
 
@@ -114,7 +114,7 @@
       ansible.builtin.command: solana-keygen pubkey {{ running_identity_file.stdout }}
       register: running_pubkey
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
       changed_when: false
       when: running_identity_file.stdout != ''
 
