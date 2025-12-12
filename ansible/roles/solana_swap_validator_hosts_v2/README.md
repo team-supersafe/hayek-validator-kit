@@ -56,14 +56,14 @@
 
 **Legacy hosts:**
 
-- Cargo/rustup: user-specific paths under `sol` home directory
+- Cargo/rustup: user-specific paths under `sol` home directory → `/home/sol/.cargo` & `/home/sol/.rustup`
 - Build tools: per-user installation
 
 **RBAC-enabled hosts:**
 
-- Cargo/rustup: system-wide under `/usr/local` (`{{ cargo_home }}`, `{{ rustup_home }}`)
+- Cargo/rustup: system-wide under `/usr/local` (`{{ cargo_home }}`, `{{ rustup_home }}`) → `/usr/local/cargo` & `/usr/local/rustup`
 - Build tools: centralized, shared by all operators
-- `validator_root_dir` exists at `/opt/validator`
+- Build directory: centralized verasion aware repository cloning `system_shared_build_dir` → `/opt/build`
 
 ### 5. SSH key handling
 
@@ -100,14 +100,16 @@ All three must exist for `validator_rbac_enabled` to be `true`.
 
 | Legacy Variable | RBAC Variable |
 |----------------|---------------|
-| `keys_dir` | `validator_key_store` |
 | `solana_install_dir` | `system_solana_active_release_dir` |
-| `default_group` | `validator_operators_group` |
-| `default_file_mode` | `validator_key_file_mode` |
-| `default_directory_mode` | `validator_data_mode_owner_readonly` |
+| `build_dir` | `system_shared_build_dir` |
+| N/A (not used) | `validator_root_dir` |
 | `solana_user_dir` | N/A (not used) |
 | `scripts_dir` | `validator_scripts_dir` |
 | `logs_dir` | `validator_logs_dir` |
+| `keys_dir` | `validator_key_store` |
+| `default_group` | `validator_operators_group` |
+| `default_file_mode` | `validator_key_file_mode` |
+| `default_directory_mode` | `validator_data_mode_owner_readonly` |
 
 ## Order of operations to perform a validator Identity swap
 
