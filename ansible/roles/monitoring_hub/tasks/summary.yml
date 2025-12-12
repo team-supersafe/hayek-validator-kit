@@ -11,3 +11,32 @@
 
       NOTE: Store these tokens securely as they will not be shown again.
   when: influxdb_onboarding_token is defined and influxdb_write_token_result is defined
+
+- name: Display Deployment Summary
+  ansible.builtin.debug:
+    msg: |
+      ===============================================
+      🚀 MONITORING HUB DEPLOYMENT COMPLETE 🚀
+      ===============================================
+      
+      The following components have been successfully configured:
+      
+      ✅ System Updates (apt dist-upgrade)
+      ✅ Firewall Rules (UFW configured)
+      ✅ InfluxDB (Database & Buckets)
+      ✅ Grafana (Visualization Dashboard)
+      ✅ Telegraf (Data Collection Agents)
+      ✅ Validator Metrics Service
+      ✅ Alerting System (Watchtower + Formatters)
+      {% if (ssl_enabled | bool) and (not is_docker_container | bool) %}
+      ✅ SSL Certificates (Let's Encrypt via Cloudflare){% if ssl_staging | default(false) | bool %} [⚠️ STAGING MODE]{% endif %}
+      {% endif %}
+      
+      -----------------------------------------------
+      🔗 ACCESS DASHBOARD:
+      {% if (ssl_enabled | bool) and (not is_docker_container | bool) %}
+      https://{{ ssl_domain }}:{{ grafana_port }}
+      {% else %}
+      http://{{ ansible_host | default(ansible_host_ip) | default('YOUR_SERVER_IP') }}:{{ grafana_port }}
+      {% endif %}
+      -----------------------------------------------

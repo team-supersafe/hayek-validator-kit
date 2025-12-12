@@ -6,6 +6,11 @@
     update_cache: yes
     cache_valid_time: 3600
 
+- name: Upgrade all packages to the latest version
+  ansible.builtin.apt:
+    upgrade: dist
+  when: system_upgrade_enabled | default(false)
+
 - name: Install monitoring dependencies
   ansible.builtin.apt:
     name:

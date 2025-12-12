@@ -69,7 +69,7 @@ solana:
       jito_mev: false
       doublezero_enabled: false
     localnet:
-      enabled: true
+      enabled: "{{ is_docker_container | default(false) }}"
       network_name: "localnet"
       metrics_interval: "30s"
       watchtower_min_balance: 50
@@ -95,3 +95,7 @@ monitoring_services:
   - telegraf-{{ solana.network.testnet.network_name }}
   - telegraf-{{ solana.network.devnet.network_name }}
   - telegraf-{{ solana.network.localnet.network_name }}
+
+# SSL / Let's Encrypt configuration
+ssl_enabled: true
+ssl_staging: true # Use Let's Encrypt staging environment for testing
