@@ -13,3 +13,34 @@
 - name: Display environment type
   ansible.builtin.debug:
     msg: "Environment detected: {{ 'Docker Container' if is_docker_container else 'Host System' }}"
+
+- name: Resolve SSL Domain to verify it exists
+  ansible.builtin.command: "getent hosts {{ ssl_domain }}"
+  register: domain_resolution
+  failed_when: domain_resolution.rc != 0
+  changed_when: false
+  when: (ssl_enabled | default(true) | bool) and (not is_docker_container | bool)
+
+- name: Verify Cloudflare API Token
+  ansible.builtin.uri:
+    url: "https://api.cloudflare.com/client/v4/user/tokens/verify"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ ssl_cloudflare_token }}"
+      Content-Type: "application/json"
+    return_content: yes
+    status_code: 200
+  register: cf_token_verify
+  failed_when: 
+    - cf_token_verify.status != 200 or not cf_token_verify.json.success
+  when: (ssl_enabled | default(true) | bool) and (not is_docker_container | bool)
+
+- name: Confirm Cloudflare Token Status
+  ansible.builtin.debug:
+    msg: "Cloudflare API Token is valid and active. Message: {{ cf_token_verify.json.messages[0].message | default('OK') }}"
+  when: 
+    - (ssl_enabled | default(true) | bool)
+    - (cf_token_verify.json is defined)
+    - (not is_docker_container | bool)
+    - (cf_token_verify.json.success | bool)
+    - (cf_token_verify.json.messages | length > 0)

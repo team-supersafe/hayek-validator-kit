@@ -1,0 +1,8 @@
+---
+all:
+  hosts:
+    # Host for provisioning new servers
+    # Add to appropriate groups before running playbooks
+    host-monitoring:
+      ansible_host: 192.0.2.10 # Replace with assigned IP
+      ansible_port: 22
