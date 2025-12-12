@@ -183,17 +183,6 @@
       when: inventory_hostname == destination_host
       changed_when: false
 
-    - name: swap - Test SSH connection from source to destination before rsync
-      ansible.builtin.command: >
-        ssh -i {{ source_ssh_key_path }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=10
-        {{ destination_host_address }} 'exit 0'
-      delegate_to: "{{ source_host }}"
-      become: false
-      when: inventory_hostname == destination_host
-      register: ssh_test_before_rsync
-      changed_when: false
-      failed_when: ssh_test_before_rsync.rc != 0
-
     - name: swap - Rsync tower file from source to destination
       ansible.builtin.shell: |
         rsync --delay-updates -F --archive --delete \
