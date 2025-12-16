@@ -95,6 +95,7 @@
     - source_primary_pubkey != ''
 
 - name: swap - Wait for Restart Window and Unstake Source Validator
+  any_errors_fatal: true
   block:
     - name: swap - Wait for safe restart window
       ansible.builtin.command: >
@@ -132,6 +133,7 @@
       when: wait_and_unstake_result is not failed
 
 - name: swap - Transfer Tower File from Source to Destination
+  any_errors_fatal: true
   block:
     - name: swap - Get tower filename
       check_mode: false
@@ -212,6 +214,7 @@
   when: wait_and_unstake_success | default(false)
 
 - name: swap - Promote Destination to Primary Target Validator
+  any_errors_fatal: true
   block:
     - name: swap - Switch to staked identity on destination
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity --require-tower {{ destination_host_primary_target_identity_path }}
