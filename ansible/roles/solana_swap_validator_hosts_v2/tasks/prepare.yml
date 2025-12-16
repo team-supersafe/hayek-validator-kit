@@ -451,3 +451,26 @@
         - inventory_hostname == source_host
         - ssh_test_result is defined
         - (ssh_test_result is failed or ssh_test_result.rc | default(1) != 0)
+
+- name: prepare - Verify Destination Validator Health
+  block:
+    - name: prepare - Check if destination validator is caught up
+      ansible.builtin.command: >
+        solana catchup {{ solana_cluster_param }} --our-localhost {{ solana_rpc_port }}
+      environment:
+        PATH: "{{ system_solana_active_release_dir }}"
+      register: catchup_result
+      changed_when: false
+      failed_when: catchup_result.rc != 0
+      # Set a reasonable timeout to fail fast if it hangs
+      async: 60
+      poll: 5
+
+    - name: prepare - Verify destination validator RPC is ready
+      ansible.builtin.wait_for:
+        port: "{{ solana_rpc_port }}"
+        state: started
+        timeout: 10
+      when: inventory_hostname == destination_host
+
+  when: inventory_hostname == destination_host
