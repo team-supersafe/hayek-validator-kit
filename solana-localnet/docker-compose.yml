@@ -217,6 +217,7 @@ services:
     container_name: ansible-control-localnet
     environment:
       - SSH_AUTH_SOCK=/tmp/ssh-agent.sock
+      - RPC_URL=http://gossip-entrypoint:8899
     depends_on:
       gossip-entrypoint:
         condition: service_healthy
