@@ -263,7 +263,7 @@
 
 - name: prepare - Debug destination pubkey command result
   ansible.builtin.debug:
-    msg: >
+    msg: |
       Destination pubkey command result:
       RC: {{ destination_staked_pubkey.rc | default('N/A') }}
       Stdout: {{ destination_staked_pubkey.stdout | default('EMPTY') }}
@@ -303,7 +303,7 @@
 
 - name: prepare - Debug pubkey gathering results
   ansible.builtin.debug:
-    msg: >
+    msg: |
       Source pubkey: {{ source_primary_pubkey | default('NOT SET') }}
       Destination pubkey: {{ destination_primary_pubkey | default('NOT SET') }}
       Source identity path: {{ source_host_primary_target_identity_path | default('NOT SET') }}
@@ -318,7 +318,7 @@
     that:
       - source_primary_pubkey is defined and source_primary_pubkey != ''
       - destination_primary_pubkey is defined and destination_primary_pubkey != ''
-    fail_msg: >
+    fail_msg: |
       Primary pubkeys not set. Check identity files and solana-keygen commands.
       Source pubkey: {{ source_primary_pubkey | default('NOT SET') }}
       Destination pubkey: {{ destination_primary_pubkey | default('NOT SET') }}
@@ -338,15 +338,26 @@
 - name: prepare - Assert swap is not already completed
   ansible.builtin.fail:
     msg: >-
-      Swap operation aborted: The source host ({{ source_host }}) is NOT running the primary identity ({{ source_primary_pubkey }}),
+      Swap operation aborted: The desired final state is already achieved!
+
+      The source host ({{ source_host }}) is NOT running the primary identity ({{ source_primary_pubkey }}),
       and the destination host ({{ destination_host }}) IS already running it.
-      This indicates the swap has already been performed.
+
+      Current state:
+      - Source host ledger identity: {{ source_ledger_identity | default('NOT DETECTED') }}
+      - Destination host ledger identity: {{ destination_ledger_identity | default('NOT DETECTED') }}
+      - Expected primary identity: {{ source_primary_pubkey }}
+
+      This indicates the swap has already been performed. No action is needed.
   when:
     - not ansible_check_mode
     - source_primary_pubkey is defined
+    - source_primary_pubkey != ''
     - source_ledger_identity is defined
+    - source_ledger_identity != ''
     - source_ledger_identity != source_primary_pubkey
     - destination_ledger_identity is defined
+    - destination_ledger_identity != ''
     - destination_ledger_identity == source_primary_pubkey
   run_once: true
 
