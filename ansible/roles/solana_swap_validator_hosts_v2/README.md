@@ -113,6 +113,39 @@ All three must exist for `validator_rbac_enabled` to be `true`.
 
 ## Order of operations to perform a validator Identity swap
 
+### Summary of Checks Performed in `solana_swap_validator_hosts_v2` Before Confirming Swap
+
+#### 1. Precheck Phase (`tasks/precheck.yml`)
+
+- ✅ Validates source and destination hosts are different
+- ✅ Validates validator directories exist on both hosts
+- ✅ Ensures destination validator service is active and process is running
+- ✅ Gets running ledger identities for both hosts (`source_ledger_identity`, `destination_ledger_identity`)
+- ✅ Validates that ledger identity matches the running validator process identity
+
+#### 2. Prepare Phase (`tasks/prepare.yml`)
+
+- ✅ Validates RPC_URL for localnet
+- ✅ Ensures enough time remaining in epoch before swap
+- ✅ Sets up SSH keys for host-to-host communication
+- ✅ Validates identity keypair files exist on both hosts
+- ✅ Gets primary target identity pubkeys (`source_primary_pubkey`, `destination_primary_pubkey`)
+- ✅ Validates that primary pubkeys match between hosts (both should have the same primary target identity)
+- ✅ Checks if swap is already completed and fail if so
+- ✅ Checks cluster delinquency levels
+- ✅ Checks leader schedule to ensure safe restart window
+- ✅ Tests SSH connectivity from source to destination
+- ✅ Verifies destination validator health
+
+#### 3. Confirm Swap Phase (`tasks/confirm_swap.yml`)
+
+- ✅ Gets hot-spare identity pubkeys
+- ✅ Gets vote account pubkeys
+- ✅ Displays comprehensive swap operation summary
+- ✅ Fails if primary identity pubkeys don't match (duplicate check)
+- ✅ Prompts user for confirmation
+- ✅ Fails if user doesn't confirm with 'yes'
+
 Validator host swap operation happens in `tasks/swap.yml`. Here is a step by step description:
 
 1. **Wait for Restart Window and Unstake Source Validator**
@@ -162,6 +195,17 @@ This role is designed for RBAC-enabled validator hosts and uses the following RB
   - The playbook runs as `become: false` by default, with operators running tasks as their own user accounts
   - Only specific tasks that require access to validator resources (like `agave-validator` commands) use `become: true` with `become_user: "{{ solana_user }}"` to run as the `sol` service user
   - This follows the principle of least privilege: operators only escalate when necessary
+- **Special Consideration**:
+  - All `agave-validator` commands need to run as user 'sol'. This is an example in Ansible:
+
+  ```yaml
+    - name: precheck - Get validator contact info and extract identity
+      ansible.builtin.shell: "agave-validator -l /mnt/ledger contact-info | head -1 | sed 's/Identity: //'"
+      register: ledger_identity
+      changed_when: false
+      become: true
+      become_user: "sol"
+  ```
 
 ### Validations
 
