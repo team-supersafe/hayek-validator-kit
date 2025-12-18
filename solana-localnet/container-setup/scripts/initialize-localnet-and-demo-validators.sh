@@ -42,7 +42,7 @@ else
 fi
 echo -e "${RED}WARNING: THIS SIGNER ($(solana-keygen pubkey ~/.config/solana/id.json)) IS EPHEMERAL AND WILL BE DESTROYED WHEN THE ansible-control CONTAINER IS STOPPED OR DELETED!${NC}"
 
-MAX_SLEEP_SECONDS=200
+MAX_SLEEP_SECONDS=120
 CURRENT_SLEEP_SECONDS=0
 MIN_FINALIZED_SLOT=20 # Recommended value is 100. See https://github.com/mvines/validator-Identity-transition-demo?tab=readme-ov-file#start-a-test-validator-to-simulate-the-overall-solana-cluster
 
