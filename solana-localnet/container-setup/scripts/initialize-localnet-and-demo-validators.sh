@@ -42,7 +42,7 @@ else
 fi
 echo -e "${RED}WARNING: THIS SIGNER ($(solana-keygen pubkey ~/.config/solana/id.json)) IS EPHEMERAL AND WILL BE DESTROYED WHEN THE ansible-control CONTAINER IS STOPPED OR DELETED!${NC}"
 
-MAX_SLEEP_SECONDS=120
+MAX_SLEEP_SECONDS=200
 CURRENT_SLEEP_SECONDS=0
 MIN_FINALIZED_SLOT=20 # Recommended value is 100. See https://github.com/mvines/validator-Identity-transition-demo?tab=readme-ov-file#start-a-test-validator-to-simulate-the-overall-solana-cluster
 
@@ -108,12 +108,12 @@ solana -u $CLUSTER_RPC airdrop 500000
 # Provision the demo Accounts and Keys on the Ansible Control.
 # They'll be used to configure the host-alpha node in the script below.
 # The demo keys are pre-generated with all addresses starting with "DEMO"
-# to facilitate communication and debugging between team members. This 
+# to facilitate communication and debugging between team members. This
 # allows deterministic behavior and documentation. For example, localnet
 # blockchain explorer urls in the documentation are the same for all team
 # members.
 
-# WARNING: The demo keys are under source control and should not be used in 
+# WARNING: The demo keys are under source control and should not be used in
 # any other cluster other than localnet. They are meant for development and
 # testing only.
 
@@ -186,7 +186,7 @@ cleanup-host() {
 
     sudo systemctl stop sol 2> /dev/null || true
     sudo systemctl disable sol 2> /dev/null || true
-    sudo rm /etc/systemd/system/sol.service /etc/systemd/system/*/sol.service 2> /dev/null || true # remove main file and any symlinks that might be related  
+    sudo rm /etc/systemd/system/sol.service /etc/systemd/system/*/sol.service 2> /dev/null || true # remove main file and any symlinks that might be related
     sudo systemctl daemon-reload
     sudo systemctl reset-failed
   "

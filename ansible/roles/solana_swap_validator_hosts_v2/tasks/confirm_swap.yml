@@ -72,7 +72,7 @@
   run_once: true
 
 # destination
-- name: prepare - Check for hot-spare identity
+- name: confirm_swap - Check for hot-spare identity
   ansible.builtin.stat:
     path: "{{ destination_host_hot_spare_identity_path }}"
   register: destination_host_hot_spare_identity

@@ -63,8 +63,19 @@ services:
     profiles: ["localnet"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8899/health"]
-      interval: 5s
-      retries: 20
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     container_name: "gossip-entrypoint"
     hostname: "gossip-entrypoint"
     environment:
@@ -112,6 +123,15 @@ services:
     build:
       context: ./
       target: validator-builder
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     container_name: "host-alpha"
     hostname: "host-alpha"
     ports:
@@ -131,6 +151,15 @@ services:
       context: ./
       target: naked-builder
     image: ${COMPOSE_PROJECT_NAME}-ubuntu-naked
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     container_name: "host-bravo"
     hostname: "host-bravo"
     ports:
@@ -161,6 +190,15 @@ services:
     #   context: ./
     #   target: naked-builder
     image: ${COMPOSE_PROJECT_NAME}-ubuntu-naked
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     container_name: "host-charlie"
     hostname: "host-charlie"
     ports:
