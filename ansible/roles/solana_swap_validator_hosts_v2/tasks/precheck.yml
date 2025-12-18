@@ -96,9 +96,11 @@
 - name: precheck - Validate validator identity matches running process
   block:
     - name: precheck - Get validator contact info and extract identity
-      ansible.builtin.shell: "{{ solana_install_dir }}/agave-validator -l {{ ledger_path }} contact-info | head -1 | sed 's/Identity: //'"
+      ansible.builtin.shell: "{{ system_solana_active_release_dir }}/agave-validator -l {{ ledger_path }} contact-info | head -1 | sed 's/Identity: //'"
       register: ledger_identity
       changed_when: false
+      become: true
+      become_user: "{{ solana_user }}"
 
     - name: precheck - Set ledger identity fact for host
       ansible.builtin.set_fact:
@@ -114,9 +116,17 @@
       ansible.builtin.command: solana-keygen pubkey {{ running_identity_file.stdout }}
       register: running_pubkey
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
       changed_when: false
       when: running_identity_file.stdout != ''
+
+    - name: precheck - Set running pubkey fact for host
+      ansible.builtin.set_fact:
+        running_identity_pubkey: "{{ running_pubkey.stdout_lines[0] | default('') }}"
+      when:
+        - running_pubkey is defined
+        - running_pubkey.stdout_lines is defined
+        - running_pubkey.stdout_lines | length > 0
 
     - name: precheck - Fail if identity mismatch
       ansible.builtin.fail:
@@ -133,6 +143,14 @@
 
 - name: precheck - Set global facts for running ledger identities
   ansible.builtin.set_fact:
-    source_ledger_identity: "{{ hostvars[source_host]['ledger_identity_pubkey'] | default('') }}"
-    destination_ledger_identity: "{{ hostvars[destination_host]['ledger_identity_pubkey'] | default('') }}"
+    # Use ledger_identity_pubkey as primary (from contact-info), fallback to running_identity_pubkey (from process)
+    source_ledger_identity: "{{ hostvars[source_host]['ledger_identity_pubkey'] | default(hostvars[source_host]['running_identity_pubkey'] | default('')) }}"
+    destination_ledger_identity: "{{ hostvars[destination_host]['ledger_identity_pubkey'] | default(hostvars[destination_host]['running_identity_pubkey'] | default('')) }}"
+  run_once: true
+
+- name: precheck - Debug ledger identities
+  ansible.builtin.debug:
+    msg: |
+      Source host ({{ source_host }}) ledger identity: {{ source_ledger_identity }}
+      Destination host ({{ destination_host }}) ledger identity: {{ destination_ledger_identity }}
   run_once: true

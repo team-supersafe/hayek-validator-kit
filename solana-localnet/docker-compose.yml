@@ -63,8 +63,6 @@ services:
     profiles: ["localnet"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8899/health"]
-      interval: 5s
-      retries: 20
     container_name: "gossip-entrypoint"
     hostname: "gossip-entrypoint"
     environment:
@@ -217,6 +215,7 @@ services:
     container_name: ansible-control-localnet
     environment:
       - SSH_AUTH_SOCK=/tmp/ssh-agent.sock
+      - RPC_URL=http://gossip-entrypoint:8899
     depends_on:
       gossip-entrypoint:
         condition: service_healthy

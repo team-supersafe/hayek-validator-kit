@@ -86,6 +86,7 @@
 - name: prepare - Set fact to track if key was generated
   ansible.builtin.set_fact:
     ssh_key_was_generated: "{{ not ssh_key_exists.stat.exists }}"
+    source_host_ssh_key_path: "{{ ssh_key_path }}"
   when: inventory_hostname == source_host
 
 - name: prepare - Get public key content
@@ -99,10 +100,23 @@
   ansible.builtin.set_fact:
     ssh_key_was_generated: "{{ hostvars[source_host]['ssh_key_was_generated'] | default(false) }}"
     ssh_key_content_for_cleanup: "{{ hostvars[source_host]['pubkey'].content | default('') }}"
+    source_host_ssh_key_path: "{{ hostvars[source_host]['source_host_ssh_key_path'] | default(hostvars[source_host]['ssh_key_path'] | default('')) }}"
   run_once: true
   when:
     - hostvars[source_host]['ssh_key_was_generated'] is defined
     - hostvars[source_host]['pubkey'] is defined
+
+- name: prepare - Validate source_host_ssh_key_path is defined and non-empty
+  ansible.builtin.assert:
+    that:
+      - source_host_ssh_key_path is defined
+      - source_host_ssh_key_path | length > 0
+    fail_msg: >
+      source_host_ssh_key_path is not defined or is empty.
+      This variable is required for SSH operations between hosts.
+      Ensure the SSH key was generated successfully on {{ source_host }}.
+  run_once: true
+  when: not ansible_check_mode
 
 - name: prepare - Fail if public key file cannot be read
   ansible.builtin.fail:
@@ -114,7 +128,7 @@
 
 - name: prepare - Authorize key on destination_host only
   ansible.posix.authorized_key:
-    user: sol
+    user: "{{ ansible_user }}"
     key: "{{ hostvars[source_host]['pubkey'].content | b64decode }}"
     state: present
     exclusive: false
@@ -165,13 +179,37 @@
     - name: prepare - Generate hot-spare identity if it doesn't exist
       ansible.builtin.command: solana-keygen new --no-bip39-passphrase -o {{ source_host_hot_spare_identity_path }}
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
       when: not new_hot_spare_identity.stat.exists
       register: generated_hotspare
       changed_when: generated_hotspare.rc == 0
       failed_when: generated_hotspare.rc != 0
+      become: true
+
+    - name: prepare - Fix ownership and permissions of generated hot-spare identity
+      ansible.builtin.file:
+        path: "{{ source_host_hot_spare_identity_path }}"
+        mode: "{{ validator_key_file_mode }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+      become: true
+      when:
+        - inventory_hostname == source_host
+        - not new_hot_spare_identity.stat.exists
+        - generated_hotspare is defined
+        - generated_hotspare.rc == 0
   when: inventory_hostname == source_host
 
+- name: prepare - Fix ownership and permissions of existing hot-spare identity
+  ansible.builtin.file:
+    path: "{{ source_host_hot_spare_identity_path }}"
+    mode: "{{ validator_key_file_mode }}"
+    owner: "{{ solana_user }}"
+    group: "{{ validator_operators_group }}"
+  become: true
+  when:
+    - inventory_hostname == source_host
+    - new_hot_spare_identity.stat.exists
 - name: prepare - Check for identity keypair files on destination host
   block:
     - name: prepare - Check for primary target identity keypair file on destination host
@@ -203,7 +241,8 @@
   ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path | trim }}
   register: source_staked_pubkey
   environment:
-    PATH: "{{ solana_install_dir }}"
+    PATH: "{{ system_solana_active_release_dir }}"
+  become: true
   when: inventory_hostname == source_host
   changed_when: false
   check_mode: false
@@ -212,14 +251,29 @@
   ansible.builtin.command: solana-keygen pubkey {{ destination_host_primary_target_identity_path | trim }}
   register: destination_staked_pubkey
   environment:
-    PATH: "{{ solana_install_dir }}"
+    PATH: "{{ system_solana_active_release_dir }}"
+  become: true
   when:
     - inventory_hostname == destination_host
     - destination_host_primary_target_identity_path is defined
     - destination_host_primary_target_identity_path != ''
   changed_when: false
   check_mode: false
+  failed_when: destination_staked_pubkey.rc != 0 or destination_staked_pubkey.stdout == ''
 
+- name: prepare - Debug destination pubkey command result
+  ansible.builtin.debug:
+    msg: |
+      Destination pubkey command result:
+      RC: {{ destination_staked_pubkey.rc | default('N/A') }}
+      Stdout: {{ destination_staked_pubkey.stdout | default('EMPTY') }}
+      Stderr: {{ destination_staked_pubkey.stderr | default('EMPTY') }}
+      Identity path: {{ destination_host_primary_target_identity_path | default('NOT SET') }}
+  when:
+    - inventory_hostname == destination_host
+    - destination_staked_pubkey is defined
+    - destination_host_primary_target_identity_path is defined
+    - destination_host_primary_target_identity_path != ''
 - name: prepare - Set primary pubkey facts on each host
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ source_staked_pubkey.stdout_lines[0] }}"
@@ -242,20 +296,34 @@
   ansible.builtin.set_fact:
     source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'] | default('') }}"
     destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'] | default('') }}"
-    source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] | trim | replace('\n', '') }}"
-    source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] | trim | replace('\n', '') }}"
-    destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] | trim | replace('\n', '') }}"
+    source_host_primary_target_identity_path: "{{ hostvars[source_host]['source_host_primary_target_identity_path'] | default('') | trim | replace('\n', '') }}"
+    source_host_hot_spare_identity_path: "{{ hostvars[source_host]['source_host_hot_spare_identity_path'] | default('') | trim | replace('\n', '') }}"
+    destination_host_primary_target_identity_path: "{{ hostvars[destination_host]['destination_host_primary_target_identity_path'] | default('') | trim | replace('\n', '') }}"
   run_once: true
-  when:
-    - hostvars[source_host]['source_primary_pubkey'] is defined
-    - hostvars[destination_host]['destination_primary_pubkey'] is defined
+
+- name: prepare - Debug pubkey gathering results
+  ansible.builtin.debug:
+    msg: |
+      Source pubkey: {{ source_primary_pubkey | default('NOT SET') }}
+      Destination pubkey: {{ destination_primary_pubkey | default('NOT SET') }}
+      Source identity path: {{ source_host_primary_target_identity_path | default('NOT SET') }}
+      Destination identity path: {{ destination_host_primary_target_identity_path | default('NOT SET') }}
+      Source hostvars source_primary_pubkey: {{ hostvars[source_host]['source_primary_pubkey'] | default('NOT SET') }}
+      Destination hostvars destination_primary_pubkey: {{ hostvars[destination_host]['destination_primary_pubkey'] | default('NOT SET') }}
+  when: not ansible_check_mode
+  run_once: true
 
 - name: prepare - Assert primary pubkeys are available
   ansible.builtin.assert:
     that:
       - source_primary_pubkey is defined and source_primary_pubkey != ''
       - destination_primary_pubkey is defined and destination_primary_pubkey != ''
-    fail_msg: "Primary pubkeys not set. Check identity files and solana-keygen commands."
+    fail_msg: |
+      Primary pubkeys not set. Check identity files and solana-keygen commands.
+      Source pubkey: {{ source_primary_pubkey | default('NOT SET') }}
+      Destination pubkey: {{ destination_primary_pubkey | default('NOT SET') }}
+      Source identity path: {{ source_host_primary_target_identity_path | default('NOT SET') }}
+      Destination identity path: {{ destination_host_primary_target_identity_path | default('NOT SET') }}
   when: not ansible_check_mode
   run_once: true
 
@@ -270,16 +338,30 @@
 - name: prepare - Assert swap is not already completed
   ansible.builtin.fail:
     msg: >-
-      Swap operation aborted: The source host ({{ source_host }}) is NOT running the primary identity ({{ source_primary_pubkey }}),
+      Swap operation aborted: The desired final state is already achieved!
+
+      The source host ({{ source_host }}) is NOT running the primary identity ({{ source_primary_pubkey }}),
       and the destination host ({{ destination_host }}) IS already running it.
-      This indicates the swap has already been performed.
+
+      Current state:
+      - Source host identity: {{ check_source_identity | default('NOT DETECTED') }}
+      - Destination host identity: {{ check_destination_identity | default('NOT DETECTED') }}
+      - Expected primary identity: {{ source_primary_pubkey }}
+
+      This indicates the swap has already been performed. No action is needed.
+  vars:
+    # Use ledger_identity_pubkey as primary (from contact-info), fallback to running_identity_pubkey (from process)
+    check_source_identity: "{{ hostvars[source_host]['ledger_identity_pubkey'] | default(hostvars[source_host]['running_identity_pubkey'] | default('')) }}"
+    check_destination_identity: "{{ hostvars[destination_host]['ledger_identity_pubkey'] | default(hostvars[destination_host]['running_identity_pubkey'] | default('')) }}"
+    check_source_primary_pubkey: "{{ source_primary_pubkey | default('') }}"
   when:
     - not ansible_check_mode
-    - source_primary_pubkey is defined
-    - source_ledger_identity is defined
-    - source_ledger_identity != source_primary_pubkey
-    - destination_ledger_identity is defined
-    - destination_ledger_identity == source_primary_pubkey
+    - check_source_primary_pubkey != ''
+    - check_source_identity != ''
+    - check_source_identity != check_source_primary_pubkey
+    - check_destination_identity != ''
+    - check_destination_identity == check_source_primary_pubkey
+  delegate_to: localhost
   run_once: true
 
 - name: prepare - Check cluster delinquency
@@ -359,19 +441,50 @@
         - seconds_to_leadership is defined
         - seconds_to_leadership < restart_min_idle_time
 
+- name: prepare - Get destination host address
+  ansible.builtin.set_fact:
+    destination_host_address: "{{ hostvars[destination_host]['ansible_host'] | default(hostvars[destination_host]['inventory_hostname'] | default(destination_host)) }}"
+  run_once: true
+
 - name: prepare - Check SSH from source_host to destination_host
   block:
     - name: prepare - Test SSH from source_host to destination_host
       ansible.builtin.shell: |
-        ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 {{ destination_host }} 'exit 0'
+        ssh -i {{ ssh_key_path }} -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 {{ destination_host_address }} 'exit 0'
       delegate_to: "{{ source_host }}"
       register: ssh_test_result
       ignore_errors: true
       failed_when: false
+      when: inventory_hostname == source_host
 
     - name: prepare - Fail if SSH test fails
       ansible.builtin.fail:
         msg: "SSH connection from {{ source_host }} to {{ destination_host }} failed. Check SSH keys, agent forwarding, and network access."
       when:
         - not ansible_check_mode
-        - ssh_test_result is failed
+        - inventory_hostname == source_host
+        - ssh_test_result is defined
+        - (ssh_test_result is failed or ssh_test_result.rc | default(1) != 0)
+
+- name: prepare - Verify Destination Validator Health
+  block:
+    - name: prepare - Check if destination validator is caught up
+      ansible.builtin.command: >
+        solana catchup {{ solana_cluster_param }} --our-localhost {{ solana_rpc_port }}
+      environment:
+        PATH: "{{ system_solana_active_release_dir }}"
+      register: catchup_result
+      changed_when: false
+      failed_when: catchup_result.rc != 0
+      # Set a reasonable timeout to fail fast if it hangs
+      async: 60
+      poll: 5
+
+    - name: prepare - Verify destination validator RPC is ready
+      ansible.builtin.wait_for:
+        port: "{{ solana_rpc_port }}"
+        state: started
+        timeout: 10
+      when: inventory_hostname == destination_host
+
+  when: inventory_hostname == destination_host

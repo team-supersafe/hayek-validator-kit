@@ -46,7 +46,7 @@
     - name: swap - Parse vote account data before swap
       ansible.builtin.set_fact:
         vote_account_before: "{{ source_vote_account_before.stdout | from_json }}"
-      when: 
+      when:
         - inventory_hostname == source_host
         - source_vote_account_before.stdout is defined
         - source_vote_account_before.stdout != ''
@@ -95,6 +95,7 @@
     - source_primary_pubkey != ''
 
 - name: swap - Wait for Restart Window and Unstake Source Validator
+  any_errors_fatal: true
   block:
     - name: swap - Wait for safe restart window
       ansible.builtin.command: >
@@ -102,7 +103,9 @@
         --max-delinquent-stake {{ restart_max_delinquent_stake }} --min-idle-time {{ restart_min_idle_time }}
         --skip-new-snapshot-check --skip-health-check
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
+      become: true
+      become_user: "{{ solana_user }}"
       when: inventory_hostname == source_host
       register: wait_restart_result
       failed_when: wait_restart_result.rc != 0
@@ -110,7 +113,9 @@
     - name: swap - Switch to unstaked identity on source
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_hot_spare_identity_path }}
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
+      become: true
+      become_user: "{{ solana_user }}"
       when: inventory_hostname == source_host
 
     - name: swap - Update symlink to unstaked identity
@@ -128,13 +133,14 @@
       when: wait_and_unstake_result is not failed
 
 - name: swap - Transfer Tower File from Source to Destination
+  any_errors_fatal: true
   block:
     - name: swap - Get tower filename
       check_mode: false
       ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path }}
       register: staked_identity_pubkey_stdout
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
       delegate_to: "{{ source_host }}"
       when: inventory_hostname == destination_host
 
@@ -144,32 +150,78 @@
         tower_file_dest: "{{ ledger_path }}/{{ tower_file_prefix }}{{ staked_identity_pubkey_stdout.stdout }}{{ tower_file_suffix }}"
       when: inventory_hostname == destination_host
 
-    - name: swap - Rsync tower file from source to destination
-      ansible.posix.synchronize:
-        src: "{{ tower_file_src }}"
-        dest: "{{ tower_file_dest }}"
-        mode: push
-        compress: false
-        rsync_opts:
-          - "--delete"
+    - name: swap - Get SSH key path from source host
+      ansible.builtin.set_fact:
+        source_ssh_key_path: "{{ hostvars[source_host]['source_host_ssh_key_path'] | default(hostvars[source_host]['ssh_key_path'] | default('')) }}"
+      run_once: true
+
+    - name: swap - Assert source_ssh_key_path is defined and non-empty
+      ansible.builtin.assert:
+        that:
+          - source_ssh_key_path is defined
+          - source_ssh_key_path | length > 0
+        fail_msg: "source_ssh_key_path is not defined or is empty. Please ensure the SSH key path is set for source_host."
+      run_once: true
+    - name: swap - Ensure SSH key has correct permissions on source host
+      ansible.builtin.file:
+        path: "{{ source_ssh_key_path }}"
+        mode: '0600'
+        owner: "{{ ansible_user }}"
       delegate_to: "{{ source_host }}"
       become: false
-      ignore_errors: "{{ ansible_check_mode }}"
+      when: inventory_hostname == destination_host
+
+    - name: swap - Get destination host address
+      ansible.builtin.set_fact:
+        destination_host_address: "{{ hostvars[destination_host]['ansible_host'] | default(hostvars[destination_host]['inventory_hostname'] | default(destination_host)) }}"
+      run_once: true
+
+    - name: swap - Remove conflicting known_hosts entries on source host
+      ansible.builtin.shell: |
+        ssh-keygen -R {{ destination_host_address }} -f ~/.ssh/known_hosts 2>/dev/null || true
+        ssh-keygen -R {{ destination_host }} -f ~/.ssh/known_hosts 2>/dev/null || true
+      delegate_to: "{{ source_host }}"
+      become: false
+      when: inventory_hostname == destination_host
+      changed_when: false
+
+    - name: swap - Rsync tower file from source to destination
+      ansible.builtin.shell: |
+        rsync --delay-updates -F --archive --delete \
+          -e "ssh -i {{ source_ssh_key_path }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o LogLevel=ERROR -o BatchMode=yes" \
+          "{{ tower_file_src }}" "{{ ansible_user }}@{{ destination_host_address }}:{{ tower_file_dest }}"
+      delegate_to: "{{ source_host }}"
+      become: false
       when: inventory_hostname == destination_host
       register: transfer_tower_result
+      changed_when: transfer_tower_result.rc == 0
+      failed_when: transfer_tower_result.rc != 0
 
-    - name: set fact if tower transfer succeeded
+    - name: swap - Fail if tower file transfer failed
+      ansible.builtin.fail:
+        msg: >
+          Failed to transfer tower file from {{ source_host }} to {{ destination_host }}.
+          RC: {{ transfer_tower_result.rc | default('N/A') }}
+          Error: {{ transfer_tower_result.msg | default('Unknown error') }}
+      when:
+        - transfer_tower_result is failed
+        - not ansible_check_mode
+
+    - name: swap - Set fact if tower transfer succeeded
       ansible.builtin.set_fact:
         tower_transfer_success: true
       when: transfer_tower_result is not failed
   when: wait_and_unstake_success | default(false)
 
 - name: swap - Promote Destination to Primary Target Validator
+  any_errors_fatal: true
   block:
     - name: swap - Switch to staked identity on destination
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity --require-tower {{ destination_host_primary_target_identity_path }}
       environment:
-        PATH: "{{ solana_install_dir }}"
+        PATH: "{{ system_solana_active_release_dir }}"
+      become: true
+      become_user: "{{ solana_user }}"
       when: inventory_hostname == destination_host
 
     - name: swap - Update symlink to staked identity
@@ -178,5 +230,14 @@
         dest: "{{ destination_host_identity_link_path }}"
         state: link
         force: true
+      when: inventory_hostname == destination_host
+
+    - name: swap - Fix ownership of destination identity symlink
+      ansible.builtin.file:
+        path: "{{ destination_host_identity_link_path }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
+        follow: false
+      become: true
       when: inventory_hostname == destination_host
   when: tower_transfer_success | default(false)
