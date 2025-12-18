@@ -196,15 +196,15 @@ This role is designed for RBAC-enabled validator hosts and uses the following RB
   - Only specific tasks that require access to validator resources (like `agave-validator` commands) use `become: true` with `become_user: "{{ solana_user }}"` to run as the `sol` service user
   - This follows the principle of least privilege: operators only escalate when necessary
 - **Special Consideration**:
-  - All `agave-validator` commands need to run as user 'sol'. This is an example in Ansible:
+  All `agave-validator` commands need to run as user 'sol'. This is an example in Ansible:
 
   ```yaml
-    - name: precheck - Get validator contact info and extract identity
-      ansible.builtin.shell: "agave-validator -l /mnt/ledger contact-info | head -1 | sed 's/Identity: //'"
-      register: ledger_identity
-      changed_when: false
-      become: true
-      become_user: "sol"
+  - name: precheck - Get validator contact info and extract identity
+    ansible.builtin.shell: "agave-validator -l /mnt/ledger contact-info | head -1 | sed 's/Identity: //'"
+    register: ledger_identity
+    changed_when: false
+    become: true
+    become_user: "sol"
   ```
 
 ### Validations
