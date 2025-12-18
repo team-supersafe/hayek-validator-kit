@@ -288,10 +288,8 @@ WIP...
 
 | Variable                         | Default Value                                                        | Description                                                                                   |
 |----------------------------------|----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| `jito_relayer_install_dir`       | `/home/sol/.local/share/jito-relayer/install/active_release/release` | Path to the directory containing the built Jito relayer binary.                               |
-| `validator_keys_dir`             | `/home/sol/keys/{validator_name}`                                    | Directory where all key files (private/public keys, block engine keypair) are stored.         |
-| `jito_relayer_user`              | `sol`                                                                | The system user that runs the relayer and owns the files.                                     |
-| `jito_relayer_block_engine_url`  | `https://dallas.testnet.block-engine.jito.wtf`                       | The block engine URL to connect to (override for mainnet, etc.).                              |
+| `validator_keys_dir`             | `/opt/validator/keys`                                                | Base directory for validator keys (RBAC).                                                     |
+| `validator_keyset_dir`           | `/opt/validator/keys/{validator_name}`                               | Directory where specific validator keyset files are stored.                                   || `jito_relayer_block_engine_url`  | `https://dallas.testnet.block-engine.jito.wtf`                       | The block engine URL to connect to (override for mainnet, etc.).                              |
 | `jito_relayer_metrics_config`    | `host=http://metrics.jito.wtf:8086,db=relayer,u=relayer-operators,p=jito-relayer-write` | Metrics server configuration string.                                                          |
 
 **Note:** You should override these variables in your playbook or inventory as needed for your environment (e.g., for mainnet, different user, or custom paths).

@@ -65,5 +65,5 @@
 
     rm -rf "{{ validator_logs_dir }}"/*
     rm -rf "{{ validator_scripts_dir }}"/*
-    rm -rf "{{ validator_key_store }}"/*
+    rm -rf "{{ validator_keys_dir }}"/*
   become: true

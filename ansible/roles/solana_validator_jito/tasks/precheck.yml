@@ -33,14 +33,14 @@
       "The playbook variable 'validator_name' must be defined."
     success_msg: "validator_name is set to {{ validator_name }}"
 
-- name: Ensure the validator_keys_dir is defined and valid
+- name: Ensure the validator_keyset_dir is defined and valid
   ansible.builtin.assert:
     that:
-      - validator_keys_dir is defined
-      - validator_keys_dir == keys_dir + "/" + validator_name
+      - validator_keyset_dir is defined
+      - validator_keyset_dir == keys_dir + "/" + validator_name
     fail_msg: >
-      "Variable 'validator_keys_dir' must be defined."
-    success_msg: "validator_keys_dir is set to {{ validator_keys_dir }}"
+      "Variable 'validator_keyset_dir' must be defined."
+    success_msg: "validator_keyset_dir is set to {{ validator_keyset_dir }}"
 
 - name: Gather facts for localhost
   ansible.builtin.setup:

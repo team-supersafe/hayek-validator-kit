@@ -1,15 +1,14 @@
----
-- name: Debug values for validator_keys_dir and ansible_keys_dir
+- name: Debug values for validator_keyset_dir and ansible_keys_dir
   ansible.builtin.debug:
     msg: |
       Source and destination keys directories
       =======================================
-      validator_keys_dir: {{ validator_keys_dir }}
+      validator_keyset_dir: {{ validator_keyset_dir }}
       ansible_keys_dir: {{ ansible_keys_dir }}
 
-- name: jito_relayer_cohosted - relayer_keys - Ensure validator_keys_dir exists
+- name: jito_relayer_cohosted - relayer_keys - Ensure validator_keyset_dir exists
   ansible.builtin.file:
-    path: "{{ validator_keys_dir }}"
+    path: "{{ validator_keyset_dir }}"
     state: directory
     mode: '0755'
   tags: [jito_relayer, check.keys]
@@ -33,13 +32,13 @@
 - name: jito_relayer_cohosted - relayer_keys - Copy Jito Relayer Block Engine key from ansible_keys_dir
   ansible.builtin.copy:
     src: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
-    dest: "{{ validator_keys_dir }}/jito-relayer-block-eng.json"
+    dest: "{{ validator_keyset_dir }}/jito-relayer-block-eng.json"
     mode: '0600'
   tags: [jito_relayer, check.keys]
 
 - name: jito_relayer_cohosted - relayer_keys - Gen Comms Keys - Get stats of the RSA private key
   ansible.builtin.stat:
-    path: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
+    path: "{{ validator_keyset_dir }}/jito-relayer-comms-pvt.pem"
   register: comms_private_key
   tags:
     - check.keys
@@ -48,16 +47,16 @@
   when:
     - not comms_private_key.stat.exists | default(false)
   ansible.builtin.shell: |
-    openssl genrsa --out {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem 2048
+    openssl genrsa --out {{ validator_keyset_dir }}/jito-relayer-comms-pvt.pem 2048
   args:
-    creates: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
+    creates: "{{ validator_keyset_dir }}/jito-relayer-comms-pvt.pem"
   tags:
     - gen.keys.private
 
 - name: jito_relayer_cohosted - relayer_keys - Gen Comms Keys - Generate comms RSA public key
   ansible.builtin.shell: |
-    openssl rsa --in {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem --pubout --out {{ validator_keys_dir }}/jito-relayer-comms-pub.pem
+    openssl rsa --in {{ validator_keyset_dir }}/jito-relayer-comms-pvt.pem --pubout --out {{ validator_keyset_dir }}/jito-relayer-comms-pub.pem
   args:
-    creates: "{{ validator_keys_dir }}/jito-relayer-comms-pub.pem"
+    creates: "{{ validator_keyset_dir }}/jito-relayer-comms-pub.pem"
   tags:
     - gen.keys.public

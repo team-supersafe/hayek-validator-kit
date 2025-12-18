@@ -149,7 +149,7 @@
 
     - name: Step 3 - Directories - Remove host keys directory
       ansible.builtin.file:
-        path: "{{ validator_key_store }}"
+        path: "{{ validator_keys_dir }}"
         state: absent
       become: true
       failed_when: false

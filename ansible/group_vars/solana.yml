@@ -46,7 +46,7 @@ jito_forked_repo: https://github.com/team-supersafe/forked-jito-solana
 validator_root_dir: "/opt/validator"
 validator_scripts_dir: "{{ validator_root_dir }}/scripts"
 validator_logs_dir: "{{ validator_root_dir }}/logs"
-validator_key_store: "{{ validator_root_dir }}/keys"
+validator_keys_dir: "{{ validator_root_dir }}/keys"
 validator_operators_group: "validator_operators"
 
 # directory modes

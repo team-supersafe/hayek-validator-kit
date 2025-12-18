@@ -6,7 +6,7 @@
       - validator_keyset_name is defined
       - validator_type is defined
       - validator_type in ['primary', 'hot-spare']
-      - validator_key_store is defined
+      - validator_keys_dir is defined
       - solana_user is defined
       - system_solana_active_release_dir is defined
       - ansible_home_dir is defined
@@ -16,7 +16,7 @@
   block:
     - name: install_validator_keyset_rbac - Set validator keys directory
       ansible.builtin.set_fact:
-        validator_keys_dir: "{{ validator_key_store }}/{{ validator_name }}"
+        validator_keyset_dir: "{{ validator_keys_dir }}/{{ validator_name }}"
         ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_keyset_name }}"
 
     - name: install_validator_keyset_rbac - Check if hot-spare-identity.json exists in ansible_keys_dir
@@ -42,15 +42,15 @@
 
 - name: install_validator_keyset_rbac - Reset validator keys directory
   block:
-    - name: install_validator_keyset_rbac - Remove validator key store
+    - name: install_validator_keyset_rbac - Remove validator keys directory contents
       ansible.builtin.shell: |
         #!/bin/bash
         set -e
-        rm -rf "{{ validator_key_store }}"/*
+        rm -rf "{{ validator_keys_dir }}"/*
 
-    - name: install_validator_keyset_rbac - Ensure validator_keys_dir exists
+    - name: install_validator_keyset_rbac - Ensure validator_keyset_dir exists
       ansible.builtin.file:
-        path: "{{ validator_keys_dir }}"
+        path: "{{ validator_keyset_dir }}"
         state: directory
         mode: "{{ validator_data_mode_owner_readonly }}"
         owner: "{{ solana_user }}"
@@ -62,7 +62,7 @@
     - name: install_validator_keyset_rbac - Copy primary-target-identity.json to target host
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/primary-target-identity.json"
-        dest: "{{ validator_keys_dir }}/primary-target-identity.json"
+        dest: "{{ validator_keyset_dir }}/primary-target-identity.json"
         mode: "{{ validator_key_file_mode }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
@@ -71,7 +71,7 @@
     - name: install_validator_keyset_rbac - Copy vote-account.json to target host
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/vote-account.json"
-        dest: "{{ validator_keys_dir }}/vote-account.json"
+        dest: "{{ validator_keyset_dir }}/vote-account.json"
         mode: "{{ validator_key_file_mode }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
@@ -80,7 +80,7 @@
     - name: install_validator_keyset_rbac - Copy hot-spare-identity.json to target host if it exists on ansible_keys_dir
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/hot-spare-identity.json"
-        dest: "{{ validator_keys_dir }}/hot-spare-identity.json"
+        dest: "{{ validator_keyset_dir }}/hot-spare-identity.json"
         mode: "{{ validator_key_file_mode }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
@@ -90,7 +90,7 @@
     - name: install_validator_keyset_rbac - Generate hot-spare-identity.json keypair
       ansible.builtin.shell: "{{ system_solana_active_release_dir }}/solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json -f"
       args:
-        chdir: "{{ validator_keys_dir }}"
+        chdir: "{{ validator_keyset_dir }}"
       register: keygen_result
       become: true
       when: not local_hot_spare_key_exists.stat.exists | default(false)
@@ -105,15 +105,15 @@
 
     - name: install_validator_keyset_rbac - Create identity.json symlink
       ansible.builtin.file:
-        src: "{{ validator_keys_dir }}/{{ 'primary-target-identity.json' if validator_type == 'primary' else 'hot-spare-identity.json' }}"
-        dest: "{{ validator_keys_dir }}/identity.json"
+        src: "{{ validator_keyset_dir }}/{{ 'primary-target-identity.json' if validator_type == 'primary' else 'hot-spare-identity.json' }}"
+        dest: "{{ validator_keyset_dir }}/identity.json"
         state: link
         force: true
       become: true
 
     - name: Fix ownership of identity.json symlink
       ansible.builtin.file:
-        path: "{{ validator_keys_dir }}/identity.json"
+        path: "{{ validator_keyset_dir }}/identity.json"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
         follow: false
@@ -121,7 +121,7 @@
 
     - name: Fix ownership of hot-spare-identity.json
       ansible.builtin.file:
-        path: "{{ validator_keys_dir }}/hot-spare-identity.json"
+        path: "{{ validator_keyset_dir }}/hot-spare-identity.json"
         mode: "{{ validator_key_file_mode }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
@@ -132,7 +132,7 @@
     - name: install_validator_keyset_rbac - Copy jito-relayer-block-eng.json to target host if it exists on ansible_keys_dir
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/jito-relayer-block-eng.json"
-        dest: "{{ validator_keys_dir }}/jito-relayer-block-eng.json"
+        dest: "{{ validator_keyset_dir }}/jito-relayer-block-eng.json"
         mode: "{{ validator_key_file_mode }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
@@ -142,7 +142,7 @@
     - name: install_validator_keyset_rbac - Generate jito-relayer-block-eng.json keypair
       ansible.builtin.shell: "{{ system_solana_active_release_dir }}/solana-keygen new -s --no-bip39-passphrase -o jito-relayer-block-eng.json -f"
       args:
-        chdir: "{{ validator_keys_dir }}"
+        chdir: "{{ validator_keyset_dir }}"
       register: jito_keygen_result
       become: true
       when: not local_jito_key_exists.stat.exists | default(false)
@@ -154,7 +154,7 @@
 
     - name: Fix ownership of jito-relayer-block-eng.json
       ansible.builtin.file:
-        path: "{{ validator_keys_dir }}/jito-relayer-block-eng.json"
+        path: "{{ validator_keyset_dir }}/jito-relayer-block-eng.json"
         mode: "{{ validator_key_file_mode }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
@@ -163,7 +163,7 @@
     - name: install_validator_keyset_rbac - Copy Jito Relayer Comms private key to target host if it exists on ansible_keys_dir
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/jito-relayer-comms-pvt.pem"
-        dest: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
+        dest: "{{ validator_keyset_dir }}/jito-relayer-comms-pvt.pem"
         mode: "{{ validator_key_file_mode }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
@@ -172,16 +172,16 @@
 
     - name: install_validator_keyset_rbac - Generate Jito Relayer Comms RSA private key on target host if not found on ansible host
       ansible.builtin.shell: |
-        openssl genrsa --out {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem 2048
+        openssl genrsa --out {{ validator_keyset_dir }}/jito-relayer-comms-pvt.pem 2048
       args:
-        creates: "{{ validator_keys_dir }}/jito-relayer-comms-pvt.pem"
+        creates: "{{ validator_keyset_dir }}/jito-relayer-comms-pvt.pem"
       become: true
       when: not local_comms_key_exists.stat.exists | default(false)
 
     - name: install_validator_keyset_rbac - Generate Jito Relayer Comms RSA public key on target host
       ansible.builtin.shell: |
-        openssl rsa -in {{ validator_keys_dir }}/jito-relayer-comms-pvt.pem -pubout -out {{ validator_keys_dir }}/jito-relayer-comms-pub.pem
+        openssl rsa -in {{ validator_keyset_dir }}/jito-relayer-comms-pvt.pem -pubout -out {{ validator_keyset_dir }}/jito-relayer-comms-pub.pem
       args:
-        creates: "{{ validator_keys_dir }}/jito-relayer-comms-pub.pem"
+        creates: "{{ validator_keyset_dir }}/jito-relayer-comms-pub.pem"
       become: true
   when: (target_host_running_jito_relayer | default(false)) or ((jito_relayer_type is defined) and (jito_relayer_type == 'co-hosted'))
