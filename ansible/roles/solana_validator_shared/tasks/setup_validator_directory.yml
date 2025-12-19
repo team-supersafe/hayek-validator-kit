@@ -7,7 +7,7 @@
       - validator_root_dir is defined
       - validator_scripts_dir is defined
       - validator_logs_dir is defined
-      - validator_key_store is defined
+      - validator_keys_dir is defined
       - validator_root_dir_mode is defined
       - validator_scripts_dir_mode is defined
       - validator_data_mode_owner_writable is defined
@@ -39,7 +39,7 @@
     # /opt/validator/keys, sol:validator_operators, 575
     - name: Ensure solana keys directory exists
       ansible.builtin.file:
-        path: "{{ validator_key_store }}"
+        path: "{{ validator_keys_dir }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
         mode: "{{ validator_data_mode_owner_readonly }}"

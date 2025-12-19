@@ -15,7 +15,7 @@
 
 **RBAC-enabled hosts:**
 
-- Keys directory: `{{ validator_key_store }}/{{ validator_name }}` → `/opt/validator/keys/{{ validator_name }}`
+- Keys directory: `{{ validator_keys_dir }}/{{ validator_name }}` → `/opt/validator/keys/{{ validator_name }}`
 - Solana binaries: `{{ system_solana_active_release_dir }}` → `/opt/solana/active_release/bin` (system-wide)
 - Scripts: `{{ validator_scripts_dir }}` → `/opt/validator/scripts`
 - Logs: `{{ validator_logs_dir }}` → `/opt/validator/logs`
@@ -106,7 +106,7 @@ All three must exist for `validator_rbac_enabled` to be `true`.
 | `solana_user_dir` | N/A (not used) |
 | `scripts_dir` | `validator_scripts_dir` |
 | `logs_dir` | `validator_logs_dir` |
-| `keys_dir` | `validator_key_store` |
+| `keys_dir` | `validator_keys_dir` |
 | `default_group` | `validator_operators_group` |
 | `default_file_mode` | `validator_key_file_mode` |
 | `default_directory_mode` | `validator_data_mode_owner_readonly` |
@@ -183,7 +183,7 @@ Validator host swap operation happens in `tasks/swap.yml`. Here is a step by ste
 
 This role is designed for RBAC-enabled validator hosts and uses the following RBAC-specific configurations:
 
-- **Key Storage**: Keys are stored in `{{ validator_key_store }}/{{ validator_name }}` (typically `/opt/validator/keys/{{ validator_name }}`)
+- **Key Storage**: Keys are stored in `{{ validator_keyset_dir }}` (typically `/opt/validator/keys/{{ validator_name }}`)
 - **Binary Paths**: Solana binaries are accessed from `{{ system_solana_active_release_dir }}` (system-wide installation)
 - **File Ownership**: All identity files and symlinks are owned by `sol:validator_operators`
 - **File Permissions**: Key files use `{{ validator_key_file_mode }}` (0464) for secure group-based access

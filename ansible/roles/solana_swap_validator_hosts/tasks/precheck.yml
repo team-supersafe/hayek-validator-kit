@@ -14,15 +14,15 @@
     - name: precheck - Get stats of source validator directory
       ansible.builtin.stat:
         path: "{{ source_host_keys_dir }}"
-      register: source_validator_keys_dir
+      register: source_keys_dir_stat
       when: inventory_hostname == source_host
 
     - name: precheck - Set source directory validation fact
       ansible.builtin.set_fact:
         source_dir_valid: >-
           {{
-            source_validator_keys_dir.stat.isdir is defined and
-            source_validator_keys_dir.stat.isdir
+            source_keys_dir_stat.stat.isdir is defined and
+            source_keys_dir_stat.stat.isdir
           }}
       when: inventory_hostname == source_host
 
@@ -31,15 +31,15 @@
     - name: precheck - Get stats of destination validator directory
       ansible.builtin.stat:
         path: "{{ destination_host_keys_dir }}"
-      register: destination_validator_keys_dir
+      register: destination_keys_dir_stat
       when: inventory_hostname == destination_host
 
     - name: precheck - Set destination directory validation fact
       ansible.builtin.set_fact:
         destination_dir_valid: >-
           {{
-            destination_validator_keys_dir.stat.isdir is defined and
-            destination_validator_keys_dir.stat.isdir
+            destination_keys_dir_stat.stat.isdir is defined and
+            destination_keys_dir_stat.stat.isdir
           }}
       when: inventory_hostname == destination_host
 

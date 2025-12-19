@@ -23,7 +23,7 @@
 - name: precheck - Set keys dir for local ansible control host and target host
   ansible.builtin.set_fact:
     ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_keyset_name }}"
-    validator_keys_dir: "{{ keys_dir }}/{{ validator_keyset_name }}"
+    validator_keyset_dir: "{{ keys_dir }}/{{ validator_keyset_name }}"
 
 - name: precheck - Ensure a validator is installed
   block:
