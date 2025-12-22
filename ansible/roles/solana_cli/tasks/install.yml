@@ -44,6 +44,6 @@
   loop:
     - { path: "$HOME/.bashrc", line: 'export PATH="{{ solana_install_dir }}:$PATH"' }
     - { path: "$HOME/.zshrc", line: 'export PATH="{{ solana_install_dir }}:$PATH"' }
-    - { path: "$HOME/.bashrc", line: 'export RPC_URL="{{ solana_rpc_url }}"' }
-    - { path: "$HOME/.zshrc", line: 'export RPC_URL="{{ solana_rpc_url }}"' }
+    - { path: "$HOME/.bashrc", line: 'export RPC_URL="{{ solana_rpc_url | default(''http://localhost:8899'') }}"' }
+    - { path: "$HOME/.zshrc", line: 'export RPC_URL="{{ solana_rpc_url | default(''http://localhost:8899'') }}"' }
   tags: [solana_cli, install]
