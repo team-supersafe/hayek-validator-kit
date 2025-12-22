@@ -1,0 +1,5 @@
+---
+- name: Shared - Determine Solana cluster parameter
+  ansible.builtin.set_fact:
+    solana_cluster_param: "-u {{ solana_rpc_url | default('http://gossip-entrypoint:8899') }}"
+  run_once: true

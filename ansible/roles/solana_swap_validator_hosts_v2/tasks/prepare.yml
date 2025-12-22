@@ -1,23 +1,6 @@
 ---
 - name: prepare - Determine Solana cluster parameter
-  ansible.builtin.set_fact:
-    solana_cluster_param: >-
-      {%- if 'solana_mainnet' in group_names -%}
-      -um
-      {%- elif 'solana_testnet' in group_names -%}
-      -ut
-      {%- else -%}
-      --url {{ lookup('env', 'RPC_URL') | default('') }}
-      {%- endif -%}
-  run_once: true
-
-- name: prepare - Validate RPC_URL for localnet
-  ansible.builtin.fail:
-    msg: "RPC_URL environment variable is required for solana_localnet"
-  when:
-    - ('solana_localnet' in group_names or ('solana_mainnet' not in group_names and 'solana_testnet' not in group_names))
-    - solana_cluster_param | default('') | regex_search('--url $') | bool
-  run_once: true
+  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/determine_solana_cluster_param.yml
 
 - name: prepare - Ensure enough time left in epoch before swap
   block:

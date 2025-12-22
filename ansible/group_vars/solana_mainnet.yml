@@ -1,5 +1,6 @@
 ---
 #Solana Mainnet-specific, non-secret (rare) variables
+solana_rpc_url: https://api.mainnet-beta.solana.com
 jito_urls:
   amsterdam:
     block_engine: "https://amsterdam.mainnet.block-engine.jito.wtf"

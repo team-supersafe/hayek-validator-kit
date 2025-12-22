@@ -141,7 +141,6 @@ services:
       - ./localnet-ssh-keys:/localnet-ssh-keys
     environment:
       HOST_DEFAULT_USER: ubuntu # the username of the default user in the container OS, e.g., 'ubuntu' for Ubuntu images
-      RPC_URL: http://gossip-entrypoint:8899
     tmpfs:
       - /run
       - /run/lock
@@ -171,7 +170,6 @@ services:
       - ./localnet-ssh-keys:/localnet-ssh-keys
     environment:
       HOST_DEFAULT_USER: ubuntu # the username of the default user in the container OS, e.g., 'ubuntu' for Ubuntu images
-      RPC_URL: http://gossip-entrypoint:8899
     tmpfs:
       - /run
       - /run/lock
