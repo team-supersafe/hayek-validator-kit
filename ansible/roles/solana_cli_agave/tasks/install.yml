@@ -44,6 +44,6 @@
     marker: "# {mark} ANSIBLE MANAGED SOLANA ENVIRONMENT"
     block: |
       export PATH="{{ system_solana_active_release_dir }}:$PATH"
-      export RPC_URL="{{ solana_rpc_url }}"
+      export RPC_URL="{{ solana_rpc_url | default('http://localhost:8899') }}"
   become: true
   when: system_solana_active_release_dir is defined and system_solana_active_release_dir != ''
