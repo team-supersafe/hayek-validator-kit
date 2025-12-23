@@ -18,16 +18,16 @@
 
 - name: Create temporary directory for download
   ansible.builtin.file:
-    path: "{{ ansible_env.TMPDIR | default('/tmp') }}/jito-solana-{{ jito_tag }}"
+    path: "{{ ansible_facts['env']['TMPDIR'] | default('/tmp') }}/jito-solana-{{ jito_tag }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
   register: temp_dir
 
 - name: Download Jito-Solana binaries
   ansible.builtin.get_url:
     url: "{{ solana_download_url }}"
     dest: "{{ temp_dir.path }}/{{ host_arch }}.tar.bz2"
-    mode: '0644'
+    mode: "0644"
     timeout: 300
   register: download_result
 
@@ -57,7 +57,7 @@
   ansible.builtin.file:
     path: "{{ solana_installed_releases_dir }}/{{ jito_tag }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
     owner: "{{ solana_user }}"
     group: "{{ solana_user }}"
 

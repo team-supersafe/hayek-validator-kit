@@ -14,7 +14,6 @@
     system: true
     create_home: true
     home: /home/{{ solana_user }}
-    append: true
   no_log: true
   when: 
     - solana_user in users_csv.dict.keys()
