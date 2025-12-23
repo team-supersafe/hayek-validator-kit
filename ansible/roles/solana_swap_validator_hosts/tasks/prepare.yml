@@ -16,7 +16,7 @@
     msg: "RPC_URL environment variable is required for solana_localnet"
   when:
     - ('solana_localnet' in group_names or ('solana_mainnet' not in group_names and 'solana_testnet' not in group_names))
-    - solana_cluster_param | default('') | regex_search('--url $') | bool
+    - solana_cluster_param | default('') | regex_search('--url $') is not none
   run_once: true
 
 - name: prepare - Ensure enough time left in epoch before swap
@@ -113,7 +113,7 @@
     - pubkey is failed or pubkey.content is not defined or pubkey.content == ''
 
 - name: prepare - Authorize key on destination_host only
-  ansible.posix.authorized_key:
+  ansible.builtin.authorized_key:
     user: sol
     key: "{{ hostvars[source_host]['pubkey'].content | b64decode }}"
     state: present

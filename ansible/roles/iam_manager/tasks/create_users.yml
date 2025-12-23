@@ -120,7 +120,7 @@
   no_log: true
 
 - name: Add authorized keys
-  ansible.posix.authorized_key:
+  ansible.builtin.authorized_key:
     user: "{{ item.key }}"
     key: "{{ ssh_keys[item.key] }}"
     state: present
