@@ -6,6 +6,14 @@
     state: present
 
 # Create the dedicated 'sol' user for validator service from CSV
+- name: Set facts for sol user groups
+  ansible.builtin.set_fact:
+    sol_user_groups: "{{ [users_csv.dict[solana_user].group_a, users_csv.dict[solana_user].group_b, users_csv.dict[solana_user].group_c] | select('defined') | select('string') | reject('equalto', '') | map('lower') | list }}"
+  when:
+    - solana_user in users_csv.dict.keys()
+    - sol_user_in_csv | default(false) | bool
+  no_log: true
+
 - name: Create sol user for validator service
   ansible.builtin.user:
     name: "{{ solana_user }}"
@@ -14,9 +22,10 @@
     system: true
     create_home: true
     home: /home/{{ solana_user }}
-    append: true
+    groups: "{{ sol_user_groups | join(',') if sol_user_groups | default([]) | length > 0 else omit }}"
+    append: "{{ true if sol_user_groups | default([]) | length > 0 else omit }}"
   no_log: true
-  when: 
+  when:
     - solana_user in users_csv.dict.keys()
     - sol_user_in_csv | default(false) | bool
 
@@ -25,8 +34,8 @@
   ansible.builtin.set_fact:
     unique_groups: "{{
       (users_csv.dict.values() | map(attribute='group_a') | list +
-       users_csv.dict.values() | map(attribute='group_b') | list +
-       users_csv.dict.values() | map(attribute='group_c') | list) |
+      users_csv.dict.values() | map(attribute='group_b') | list +
+      users_csv.dict.values() | map(attribute='group_c') | list) |
       reject('equalto', '') |
       reject('none') |
       map('lower') |
@@ -59,7 +68,7 @@
     groups: "{{ [item.value.group_a, item.value.group_b, item.value.group_c] | select('defined') | select('string') | reject('equalto', '') | reject('none') | map('lower') | list | join(',') }}"
     append: true
   loop: "{{ users_csv.dict | dict2items }}"
-  when: item.key != solana_user 
+  when: item.key != solana_user
   no_log: true
 
 # Debug user group assignments
@@ -74,7 +83,7 @@
   ansible.builtin.file:
     path: "/home/{{ item.key }}/.ssh"
     state: directory
-    mode: '0700'
+    mode: "0700"
     owner: "{{ item.key }}"
     group: "{{ item.key }}"
   loop: "{{ users_csv.dict | dict2items }}"
@@ -121,7 +130,7 @@
   no_log: true
 
 - name: Add authorized keys
-  ansible.posix.authorized_key:
+  ansible.builtin.authorized_key:
     user: "{{ item.key }}"
     key: "{{ ssh_keys[item.key] }}"
     state: present
@@ -166,7 +175,7 @@
 - name: Set authorized_keys permissions
   ansible.builtin.file:
     path: "/home/{{ item.key }}/.ssh/authorized_keys"
-    mode: '0600'
+    mode: "0600"
     owner: "{{ item.key }}"
     group: "{{ item.key }}"
   loop: "{{ users_csv.dict | dict2items }}"
@@ -183,5 +192,3 @@
     ssh_keys is defined and
     ssh_keys[item.key] is defined
   no_log: true
-
-
