@@ -27,7 +27,7 @@
   ansible.builtin.get_url:
     url: "{{ solana_download_url }}"
     dest: "{{ temp_dir.path }}/{{ host_arch }}.tar.bz2"
-    mode: "0644"
+    mode: '0644'
     timeout: 300
   register: download_result
 
