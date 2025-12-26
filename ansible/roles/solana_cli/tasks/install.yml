@@ -34,19 +34,16 @@
   name: Install - Installing from source
   ansible.builtin.include_tasks: install_from_source.yml
 
-# Ensure Solana CLI bin path is in the user's .bashrc and .zshrc for persistent CLI access
-- name: Install - Ensure Solana CLI bin path is in .bashrc
+# Ensure Solana CLI bin path and RPC_URL are in the user's .bashrc and .zshrc
+- name: Install - Ensure Solana environment variables are in shell profiles
   ansible.builtin.lineinfile:
-    path: "$HOME/.bashrc"
-    line: 'export PATH="{{ solana_install_dir }}:$PATH"'
+    path: "{{ item.path }}"
+    line: "{{ item.line }}"
     create: yes
     state: present
-  tags: [solana_cli, install]
-
-- name: Install - Ensure Solana CLI bin path is in .zshrc
-  ansible.builtin.lineinfile:
-    path: "$HOME/.zshrc"
-    line: 'export PATH="{{ solana_install_dir }}:$PATH"'
-    create: yes
-    state: present
+  loop:
+    - { path: "$HOME/.bashrc", line: 'export PATH="{{ solana_install_dir }}:$PATH"' }
+    - { path: "$HOME/.zshrc", line: 'export PATH="{{ solana_install_dir }}:$PATH"' }
+    - { path: "$HOME/.bashrc", line: 'export RPC_URL="{{ solana_rpc_url | default(''http://localhost:8899'') }}"' }
+    - { path: "$HOME/.zshrc", line: 'export RPC_URL="{{ solana_rpc_url | default(''http://localhost:8899'') }}"' }
   tags: [solana_cli, install]

@@ -1,5 +1,6 @@
 ---
-#Solana Testnet-specific, non-secret (rare) variables
+#Solana Localnet-specific, non-secret (rare) variables
+solana_rpc_url: http://gossip-entrypoint:8899
 jito_urls:
   dallas:
     block_engine: "https://dallas.testnet.block-engine.jito.wtf"
