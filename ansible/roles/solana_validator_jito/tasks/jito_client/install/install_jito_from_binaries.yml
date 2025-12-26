@@ -57,7 +57,7 @@
   ansible.builtin.file:
     path: "{{ solana_installed_releases_dir }}/{{ jito_tag }}"
     state: directory
-    mode: "0755"
+    mode: '0755'
     owner: "{{ solana_user }}"
     group: "{{ solana_user }}"
 
