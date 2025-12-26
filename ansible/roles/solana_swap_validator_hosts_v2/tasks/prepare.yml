@@ -110,7 +110,7 @@
     - pubkey is failed or pubkey.content is not defined or pubkey.content == ''
 
 - name: prepare - Authorize key on destination_host only
-  ansible.builtin.authorized_key:
+  ansible.posix.authorized_key:
     user: "{{ ansible_user }}"
     key: "{{ hostvars[source_host]['pubkey'].content | b64decode }}"
     state: present
