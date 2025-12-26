@@ -20,7 +20,7 @@
   ansible.builtin.file:
     path: "{{ ansible_facts['env']['TMPDIR'] | default('/tmp') }}/jito-solana-{{ jito_tag }}"
     state: directory
-    mode: "0755"
+    mode: '0755'
   register: temp_dir
 
 - name: Download Jito-Solana binaries
