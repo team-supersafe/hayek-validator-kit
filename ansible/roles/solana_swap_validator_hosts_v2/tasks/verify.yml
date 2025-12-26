@@ -100,18 +100,7 @@
 - name: verify - Get vote account data after swap
   block:
     - name: verify - Determine Solana cluster parameter
-      ansible.builtin.set_fact:
-        solana_cluster_param: >-
-          {%- if 'solana_mainnet' in group_names -%}
-          -um
-          {%- elif 'solana_testnet' in group_names -%}
-          -ut
-          {%- elif 'solana_localnet' in group_names -%}
-          -ul
-          {%- else -%}
-          -ul
-          {%- endif -%}
-      run_once: true
+      ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/determine_solana_cluster_param.yml
 
     - name: verify - Get validator identity pubkey at destination host
       ansible.builtin.command: >

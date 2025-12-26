@@ -1,16 +1,9 @@
 ---
 - name: precheck - Determine Solana cluster parameter for solana commands
+  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/determine_solana_cluster_param.yml
+
+- name: precheck - Set fact for solana cluster
   ansible.builtin.set_fact:
-    solana_cluster_param: >-
-      {%- if 'solana_mainnet' in group_names -%}
-      -um
-      {%- elif 'solana_testnet' in group_names -%}
-      -ut
-      {%- elif 'solana_localnet' in group_names -%}
-      -ul
-      {%- else -%}
-      -ul
-      {%- endif -%}
     solana_cluster: >-
       {{ (group_names | select('match', '^solana_.*') | list | first | regex_replace('^solana_', '')) if (group_names | select('match', '^solana_.*') | list | length > 0) else 'localnet' }}
   run_once: true
