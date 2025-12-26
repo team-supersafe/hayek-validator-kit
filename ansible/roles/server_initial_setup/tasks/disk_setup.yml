@@ -27,9 +27,9 @@
   ansible.builtin.debug:
     msg: |
       Detected disk assignments:
-      - Ledger: /dev/{{ ledger_disk }} ({{ ansible_devices[ledger_disk].size if ledger_disk != '' else 'Not available' }})
-      - Accounts: /dev/{{ account_disk }} ({{ ansible_devices[account_disk].size if account_disk != '' else 'Not available' }})
-      - Snapshots: /dev/{{ snapshots_disk }} ({{ ansible_devices[snapshots_disk].size if snapshots_disk != '' else 'Not available' }})
+      - Ledger: /dev/{{ ledger_disk }} ({{ ansible_facts['devices'][ledger_disk].size if ledger_disk != '' else 'Not available' }})
+      - Accounts: /dev/{{ account_disk }} ({{ ansible_facts['devices'][account_disk].size if account_disk != '' else 'Not available' }})
+      - Snapshots: /dev/{{ snapshots_disk }} ({{ ansible_facts['devices'][snapshots_disk].size if snapshots_disk != '' else 'Not available' }})
 
 # Disable swap to prevent performance issues
 - name: Disable swap
@@ -48,21 +48,21 @@
     fstype: "{{ filesystem_formats.ledger }}"
     dev: "/dev/{{ ledger_disk }}"
     force: true
-  when: ledger_disk != '' and ansible_devices[ledger_disk] is defined
+  when: ledger_disk != '' and ansible_facts['devices'][ledger_disk] is defined
 
 - name: Format accounts drive
   community.general.filesystem:
     fstype: "{{ filesystem_formats.accounts }}"
     dev: "/dev/{{ account_disk }}"
     force: true
-  when: account_disk != '' and ansible_devices[account_disk] is defined
+  when: account_disk != '' and ansible_facts['devices'][account_disk] is defined
 
 - name: Format snapshots drive
   community.general.filesystem:
     fstype: "{{ filesystem_formats.snapshots }}"
     dev: "/dev/{{ snapshots_disk }}"
     force: true
-  when: snapshots_disk != '' and ansible_devices[snapshots_disk] is defined
+  when: snapshots_disk != '' and ansible_facts['devices'][snapshots_disk] is defined
 
 # Create mount point directories
 - name: Create mount directories
@@ -79,19 +79,19 @@
   ansible.builtin.command: blkid -s UUID -o value "/dev/{{ ledger_disk }}"
   register: ledger_uuid
   changed_when: false
-  when: ledger_disk != '' and ansible_devices[ledger_disk] is defined
+  when: ledger_disk != '' and ansible_facts['devices'][ledger_disk] is defined
 
 - name: Get UUID for accounts drive
   ansible.builtin.command: blkid -s UUID -o value "/dev/{{ account_disk }}"
   register: accounts_uuid
   changed_when: false
-  when: account_disk != '' and ansible_devices[account_disk] is defined
+  when: account_disk != '' and ansible_facts['devices'][account_disk] is defined
 
 - name: Get UUID for snapshots drive
   ansible.builtin.command: blkid -s UUID -o value "/dev/{{ snapshots_disk }}"
   register: snapshots_uuid
   changed_when: false
-  when: snapshots_disk != '' and ansible_devices[snapshots_disk] is defined
+  when: snapshots_disk != '' and ansible_facts['devices'][snapshots_disk] is defined
 
 # Configure fstab for automatic mounting
 - name: Configure fstab for ledger drive
