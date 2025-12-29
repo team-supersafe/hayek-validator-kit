@@ -83,7 +83,7 @@
   ansible.builtin.file:
     path: "/home/{{ item.key }}/.ssh"
     state: directory
-    mode: "0700"
+    mode: '0700'
     owner: "{{ item.key }}"
     group: "{{ item.key }}"
   loop: "{{ users_csv.dict | dict2items }}"
