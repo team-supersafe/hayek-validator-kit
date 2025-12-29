@@ -8,7 +8,7 @@ This role installs, configures, and verifies the Solana CLI tools on the target 
 - **Verify Installation**: Checks that the Solana CLI is installed and working correctly.
 
 ## Role Variables
-- `solana_user` (optional, default: `sol` if available, otherwise `ansible_user_id`): The user account to install the CLI under.
+- `solana_user` (optional, default: `sol` if available, otherwise `ansible_facts['user_id']`): The user account to install the CLI under.
 - `solana_cli_bin_path` (optional, default: `$HOME/.local/share/solana/install/active_release/bin`): Path to the Solana CLI binaries.
 - `solana_channel` (optional, default: `stable`): The release channel or version for the Solana CLI install script (e.g., `stable`, `beta`, `edge`, or a specific version like `v1.18.12`).
 

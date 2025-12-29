@@ -163,7 +163,7 @@
       delegate_to: "{{ source_host }}"
 
     - name: Step 4 - SSH - Remove SSH authorized key for sol user
-      ansible.posix.authorized_key:
+      ansible.builtin.authorized_key:
         user: sol
         key: "{{ pubkey.content | b64decode }}"
         state: absent

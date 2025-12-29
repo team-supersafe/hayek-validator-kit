@@ -2,13 +2,13 @@
 - name: Set host architecture based on system facts
   ansible.builtin.set_fact:
     host_arch: >-
-      {%- if ansible_architecture == 'aarch64' and ansible_os_family in ['Linux', 'Debian'] -%}
+      {%- if ansible_facts['architecture'] == 'aarch64' and ansible_facts['os_family'] in ['Linux', 'Debian'] -%}
         aarch64-unknown-linux-gnu
-      {%- elif ansible_architecture == 'x86_64' and ansible_os_family in ['Linux', 'Debian'] -%}
+      {%- elif ansible_facts['architecture'] == 'x86_64' and ansible_facts['os_family'] in ['Linux', 'Debian'] -%}
         x86_64-unknown-linux-gnu
-      {%- elif ansible_architecture == 'x86_64' and ansible_os_family == 'Darwin' -%}
+      {%- elif ansible_facts['architecture'] == 'x86_64' and ansible_facts['os_family'] == 'Darwin' -%}
         x86_64-apple-darwin
-      {%- elif ansible_architecture == 'arm64' and ansible_os_family == 'Darwin' -%}
+      {%- elif ansible_facts['architecture'] == 'arm64' and ansible_facts['os_family'] == 'Darwin' -%}
         aarch64-apple-darwin
       {%- else -%}
         unsupported
@@ -20,5 +20,5 @@
 
 - name: Fail if architecture is unsupported
   ansible.builtin.fail:
-    msg: "Unsupported architecture: {{ ansible_architecture }} on {{ ansible_os_family }}"
+    msg: "Unsupported architecture: {{ ansible_facts['architecture'] }} on {{ ansible_facts['os_family'] }}"
   when: host_arch == 'unsupported'
