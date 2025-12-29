@@ -135,16 +135,9 @@
     key: "{{ ssh_keys[item.key] }}"
     state: present
   loop: "{{ users_csv.dict | dict2items }}"
-  when: >
-    item.value.key is defined and
-    item.value.key != "" and
-    item.value.key is not none and
-    item.value.key | length > 0 and
-    (item.value.key.startswith('ssh-ed25519 ') or
-     item.value.key.startswith('ssh-rsa ') or
-     item.value.key.startswith('ecdsa-sha2-nistp256 ') or
-     item.value.key.startswith('ecdsa-sha2-nistp384 ') or
-     item.value.key.startswith('ecdsa-sha2-nistp521 '))
+  when: 
+    - item.value.key | default('') | length > 0
+    - item.value.key is search('^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp)')
   no_log: true
   register: ssh_key_result
   ignore_errors: true
