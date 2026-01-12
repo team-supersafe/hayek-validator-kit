@@ -170,7 +170,7 @@
     - name: Fail if Jito-Solana CLI version is not as expected
       ansible.builtin.fail:
         msg: "Jito-Solana CLI version is not as expected. Expected: {{ jito_version }}, Found: {{ jito_cli_version.stdout }}"
-      when: jito_cli_version.stdout is not regex("solana-cli .* \(src:.*; feat:.*, client:JitoLabs\)")
+      when: jito_cli_version.stdout is not regex("solana-cli .* \(src:.*; feat:.*, client:(JitoLabs|Bam)\)")
       changed_when: false
       ignore_errors: "{{ ansible_check_mode }}"
   rescue:

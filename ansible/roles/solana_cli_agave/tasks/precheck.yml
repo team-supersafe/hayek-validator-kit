@@ -37,7 +37,6 @@
 
     # Take into account client and version number
     # solana-cli 2.3.11 (src:e2b57760; feat:798020478, client:Solana)
-    # solana-cli 3.0.6 (src:90240211; feat:3073396398, client:JitoLabs)
     - name: Precheck - Extract installed version number
       ansible.builtin.set_fact:
         installed_solana_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
