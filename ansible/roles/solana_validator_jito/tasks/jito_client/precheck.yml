@@ -47,7 +47,9 @@
   tags: [jito_client.precheck]
 
 # Take into account client as well as version number
-# agave-validator 2.2.16 (src:90240211; feat:3073396398, client:JitoLabs)
+# Example outputs:
+# - agave-validator 2.2.16 (src:90240211; feat:3073396398, client:JitoLabs)
+# - agave-validator 2.2.16 (src:90240211; feat:3073396398, client:Bam)
 # Matching both we ensure jito client installation is needed or not
 - name: Precheck - Extract installed client identifier
   ansible.builtin.set_fact:
