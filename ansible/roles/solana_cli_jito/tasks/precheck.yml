@@ -35,7 +35,9 @@
       when: solana_binary.stat.exists
 
     # Take into account client and version number
-    # solana-cli 3.0.6 (src:90240211; feat:3073396398, client:JitoLabs)
+    # Example outputs:
+    # - agave-validator 2.2.16 (src:90240211; feat:3073396398, client:JitoLabs)
+    # - agave-validator 2.2.16 (src:90240211; feat:3073396398, client:Bam)
     - name: Precheck - Extract installed version number
       ansible.builtin.set_fact:
         installed_jito_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
