@@ -47,8 +47,9 @@
   tags: [jito_client.precheck]
 
 # Take into account client as well as version number
-# agave-validator 2.2.14 (src:e2b57760; feat:798020478, client:Agave)
-# agave-validator 2.2.16 (src:90240211; feat:3073396398, client:JitoLabs)
+# Example outputs:
+# - agave-validator 2.2.16 (src:90240211; feat:3073396398, client:JitoLabs)
+# - agave-validator 2.2.16 (src:90240211; feat:3073396398, client:Bam)
 # Matching both we ensure jito client installation is needed or not
 - name: Precheck - Extract installed client identifier
   ansible.builtin.set_fact:
@@ -62,5 +63,5 @@
       {{ not solana_binary.stat.exists or
          not installed_jito_version is defined or
          installed_jito_version != jito_version or
-         installed_jito_client != 'JitoLabs' }}
+         (installed_jito_client != 'JitoLabs' and installed_jito_client != 'Bam') }}
   tags: [jito_client.precheck]
