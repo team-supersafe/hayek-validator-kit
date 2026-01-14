@@ -1,7 +1,7 @@
 ---
 # SSH key configuration for host-to-host communication during swap
 # In RBAC-enabled hosts, operators SSH as their own accounts, so we use the operator's home directory
-ssh_key_path: "{{ ansible_env.HOME }}/.ssh/validator_swap_id_rsa"
+ssh_key_path: "{{ ansible_facts['env']['HOME'] }}/.ssh/validator_swap_id_rsa"
 ssh_key_type: "rsa"
 ssh_key_size: 2048
 # Tower file naming convention for PoH verification data transfer

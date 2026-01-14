@@ -76,7 +76,7 @@
 
 **RBAC-enabled hosts:**
 
-- SSH keys: Generated in operator user's home directory (`{{ ansible_env.HOME }}/.ssh/validator_swap_id_rsa`) on the source host
+- SSH keys: Generated in operator user's home directory (`{{ ansible_facts['env']['HOME'] }}/.ssh/validator_swap_id_rsa`) on the source host
 - Authorized keys: Per-operator user accounts (e.g., `/home/bob/.ssh/authorized_keys`)
 - Operators SSH as their own user accounts (not `sol`)
 - For host-to-host communication during swaps:
@@ -161,7 +161,7 @@ Validator host swap operation happens in `tasks/swap.yml`. Here is a step by ste
    - Uses rsync to copy the tower file from source to destination
    - The tower file is important for PoH (Proof of History) verification
    - **SSH Management for RBAC-Enabled Hosts**:
-     - SSH keys are generated in the operator's home directory (`{{ ansible_env.HOME }}/.ssh/validator_swap_id_rsa`) on the source host, not in the `sol` user's directory
+     - SSH keys are generated in the operator's home directory (`{{ ansible_facts['env']['HOME'] }}/.ssh/validator_swap_id_rsa`) on the source host, not in the `sol` user's directory
      - The public key is authorized for the operator user account on the destination host (not for `sol`), since operators SSH as their own accounts in RBAC environments
      - The rsync command uses the operator's SSH key with specific options to bypass host key verification:
        - `-o StrictHostKeyChecking=no` - Disables strict host key checking
@@ -188,7 +188,7 @@ This role is designed for RBAC-enabled validator hosts and uses the following RB
 - **File Ownership**: All identity files and symlinks are owned by `sol:validator_operators`
 - **File Permissions**: Key files use `{{ validator_key_file_mode }}` (0464) for secure group-based access
 - **SSH Keys**:
-  - SSH keys for host-to-host communication are generated in the operator's home directory (`{{ ansible_env.HOME }}/.ssh/validator_swap_id_rsa`) on the source host
+  - SSH keys for host-to-host communication are generated in the operator's home directory (`{{ ansible_facts['env']['HOME'] }}/.ssh/validator_swap_id_rsa`) on the source host
   - The public key is authorized for the operator user account on the destination host (not `sol`), since operators SSH as their own accounts
   - The rsync transfer uses the operator's SSH key with options to bypass host key verification for seamless operation
 - **Privilege Escalation**:
