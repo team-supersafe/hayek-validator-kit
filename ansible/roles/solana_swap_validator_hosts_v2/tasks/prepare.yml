@@ -439,15 +439,34 @@
       ignore_errors: true
       failed_when: false
       when: inventory_hostname == source_host
+    - name: prepare - Ensure source host IP is allowed in ufw on destination
+      ansible.builtin.shell: |
+        sudo ufw allow from {{ hostvars[source_host]['ansible_host'] | default(hostvars[source_host]['inventory_hostname'] | default(source_host)) }} to any port {{ ssh_port | default(22) }} proto tcp comment "validator-swap {{ source_host }}"
+      args:
+        warn: false
+      when:
+        - inventory_hostname == destination_host
+        - ansible_facts['os_family'] == 'Debian' # Only run on Ubuntu/Debian
+      register: ufw_allow_result
+      changed_when: >-
+        ufw_allow_result.stdout is defined and ('added' in ufw_allow_result.stdout or 'Skipping' not in ufw_allow_result.stdout)
+      failed_when: >-
+        ufw_allow_result.rc != 0 and ufw_allow_result.stdout is defined and 'Rule already exists' not in ufw_allow_result.stdout
 
     - name: prepare - Fail if SSH test fails
       ansible.builtin.fail:
-        msg: "SSH connection from {{ source_host }} to {{ destination_host }} failed. Check SSH keys, agent forwarding, and network access."
+        msg: |
+          SSH connection from {{ source_host }} to {{ destination_host }} failed!
+          Command: ssh -i {{ ssh_key_path }} -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 {{ destination_host_address }} 'exit 0'
+          Return code: {{ ssh_test_result.rc | default('N/A') }}
+          Stdout: {{ ssh_test_result.stdout | default('') }}
+          Stderr: {{ ssh_test_result.stderr | default('') }}
+          Possible causes: firewall (ufw), network, SSH keys, or port not open.
       when:
         - not ansible_check_mode
         - inventory_hostname == source_host
         - ssh_test_result is defined
-        - (ssh_test_result is failed or ssh_test_result.rc | default(1) != 0)
+        - (ssh_test_result is failed or ssh_test_result.rc | default(1) != 0 or (ssh_test_result.stderr is defined and ('refused' in ssh_test_result.stderr or 'timed out' in ssh_test_result.stderr or 'No route to host' in ssh_test_result.stderr)))
 
 - name: prepare - Verify Destination Validator Health
   block:
