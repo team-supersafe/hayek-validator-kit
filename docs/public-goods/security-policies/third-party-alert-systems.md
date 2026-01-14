@@ -137,3 +137,17 @@ We recommend staying informed about the latest vulnerabilities and zero days. So
 
 * CISA Cybersecurity Alerts: [https://www.cisa.gov/news-events/cybersecurity-advisories](https://www.cisa.gov/news-events/cybersecurity-advisories)
 * Solana Foundation: [https://solana.com/newsletter](https://solana.com/newsletter)
+
+### Scope
+
+This policy applies to all Ubuntu operating systems deployed on the Solana infrastructure, including validator nodes, RPCs, and monitoring servers, as well as to authorized personnel managing those systems.
+
+### General principles
+
+1. &#x20;Confidentiality: Alerts must be treated as sensitive information.
+2. Integrity: Alert sources must be verifiable and reliable.
+3. Availability: Alert systems must be operational 24/7.
+4. Legality: Compliance with current data protection and cybersecurity legislation.
+
+### Early Warning Services
+
