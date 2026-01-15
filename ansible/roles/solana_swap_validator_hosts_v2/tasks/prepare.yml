@@ -2,6 +2,12 @@
 - name: prepare - Determine Solana cluster parameter
   ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/determine_solana_cluster_param.yml
 
+- name: precheck - Set fact for solana cluster
+  ansible.builtin.set_fact:
+    solana_cluster: >-
+      {{ (group_names | select('match', '^solana_.*') | list | first | regex_replace('^solana_', '')) if (group_names | select('match', '^solana_.*') | list | length > 0) else 'localnet' }}
+  run_once: true
+
 - name: prepare - Ensure enough time left in epoch before swap
   block:
     - name: prepare - Get current epoch info
@@ -431,6 +437,7 @@
     destination_host_address: "{{ hostvars[destination_host]['ansible_host'] | default(hostvars[destination_host]['inventory_hostname'] | default(destination_host)) }}"
   run_once: true
 
+# Guarantee SSH access by adding ufw rule on destination_host only if not localnet
 - name: Ensure SSH access to destination_host by adding ufw rule on destination_host
   block:
     - name: prepare - Allow source_host SSH access to destination_host
@@ -451,6 +458,7 @@
         state: enabled
   become: true
   when:
+    - not solana_cluster == "localnet"
     - inventory_hostname == destination_host
     - ansible_facts['os_family'] == 'Debian'
 
