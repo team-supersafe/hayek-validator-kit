@@ -111,6 +111,27 @@ All three must exist for `validator_rbac_enabled` to be `true`.
 | `default_file_mode` | `validator_key_file_mode` |
 | `default_directory_mode` | `validator_data_mode_owner_readonly` |
 
+
+## Firewall and SSH Automation Notes
+
+- This role uses the Ansible `ufw` module for idempotent firewall rule management. UFW rules are added for the source host's IP and the correct SSH port, and UFW is restarted and enabled as part of the process.
+- SSH connectivity is tested robustly from the source host to the destination host. The play will fail if SSH access is not possible, ensuring firewall and key setup are correct before proceeding.
+
+### Key Variables for Firewall/SSH Logic
+
+| Variable                   | Purpose                                                      |
+|----------------------------|--------------------------------------------------------------|
+| `source_host_address`      | Source host's IP or hostname for UFW rule                    |
+| `destination_host_address` | Destination host's IP or hostname for SSH connection         |
+| `destination_host_port`    | SSH port on destination host (from inventory or default 22)  |
+
+### Troubleshooting
+
+- If SSH connectivity fails:
+   - Ensure the operator's public key is present in the destination user's `authorized_keys` file.
+   - Verify the UFW rule for the source host's IP and SSH port is present and active on the destination host.
+   - Confirm that UFW is enabled and running.
+
 ## Order of operations to perform a validator Identity swap
 
 ### Summary of Checks Performed in `solana_swap_validator_hosts_v2` Before Confirming Swap
@@ -134,7 +155,7 @@ All three must exist for `validator_rbac_enabled` to be `true`.
 - ✅ Checks if swap is already completed and fail if so
 - ✅ Checks cluster delinquency levels
 - ✅ Checks leader schedule to ensure safe restart window
-- ✅ Ensures source host IP and SSH port are allowed in destination host's ufw rules (auto-added if missing)
+- ✅ Ensures source host IP and SSH port are allowed in destination host's UFW rules using the Ansible `ufw` module (auto-added if missing)
 - ✅ Tests SSH connectivity from source to destination (robust, fails on any error)
 - ✅ Verifies destination validator health
 
