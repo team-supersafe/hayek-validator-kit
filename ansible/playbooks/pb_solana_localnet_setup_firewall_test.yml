@@ -1,0 +1,111 @@
+---
+- name: Automate Firewall Test Setup for Localnet (PR 174)
+  hosts: "{{ source_host }},{{ destination_host }}"
+  gather_facts: false
+  become: true
+  vars:
+    # source_host and destination_host are expected to be passed via CLI (-e)
+    ssh_port: 2522
+    ansible_control_ip: "172.25.0.10"
+
+  tasks:
+    - name: Configure Source Host ({{ source_host }})
+      when: inventory_hostname == source_host
+      block:
+        - name: Install openssh-client
+          apt:
+            name: openssh-client
+            state: present
+            update_cache: yes
+
+        - name: Ensure .ssh directory exists
+          file:
+            path: /home/ubuntu/.ssh
+            state: directory
+            owner: ubuntu
+            group: ubuntu
+            mode: '0700'
+
+        - name: Generate SSH RSA key for ubuntu user
+          openssh_keypair:
+            path: /home/ubuntu/.ssh/id_rsa
+            owner: ubuntu
+            group: ubuntu
+            type: rsa
+            size: 2048
+            state: present
+          register: ssh_key_gen
+
+        - name: Fetch public key from source
+          slurp:
+            src: /home/ubuntu/.ssh/id_rsa.pub
+          register: source_pubkey
+
+    - name: Configure Destination Host ({{ destination_host }})
+      when: inventory_hostname == destination_host
+      block:
+        - name: Install UFW
+          apt:
+            name: ufw
+            state: present
+            update_cache: yes
+
+        - name: Configure SSH Port {{ ssh_port }}
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: "^#?Port"
+            line: "Port {{ ssh_port }}"
+          notify: Restart SSH
+
+        - name: Disable conflicting ssh.socket
+          systemd:
+            name: ssh.socket
+            state: stopped
+            enabled: no
+          failed_when: false
+
+        - name: Ensure SSH service is enabled
+          service:
+            name: ssh
+            state: started
+            enabled: yes
+
+        - name: Allow SSH from Ansible Control ({{ ansible_control_ip }})
+          ufw:
+            rule: allow
+            proto: tcp
+            port: "{{ ssh_port }}"
+            from_ip: "{{ ansible_control_ip }}"
+            comment: "Ansible Control Access"
+
+        - name: Allow Solana Gossip and TPU ports
+          ufw:
+            rule: allow
+            proto: "{{ item.proto }}"
+            port: "{{ item.port }}"
+            comment: "{{ item.comment }}"
+          loop:
+            - { proto: 'tcp', port: '8000:8030', comment: 'Gossip/TPU TCP' }
+            - { proto: 'udp', port: '8000:8030', comment: 'Gossip/TPU UDP' }
+            - { proto: 'udp', port: '44880', comment: 'TVU UDP' }
+            - { proto: 'tcp', port: '1234', comment: 'Custom Port 1234' }
+            - { proto: 'tcp', port: '9090', comment: 'Custom Port 9090' }
+
+        - name: Enable UFW
+          ufw:
+            state: enabled
+
+        - name: Authorize Source Host Key
+          authorized_key:
+            user: ubuntu
+            key: "{{ hostvars[source_host]['source_pubkey']['content'] | b64decode }}"
+            state: present
+          when: 
+            - hostvars[source_host]['source_pubkey'] is defined
+            - hostvars[source_host]['source_pubkey']['content'] is defined
+
+  handlers:
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
