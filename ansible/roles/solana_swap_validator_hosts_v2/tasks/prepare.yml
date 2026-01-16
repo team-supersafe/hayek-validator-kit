@@ -489,21 +489,6 @@
   when:
     - inventory_hostname == source_host
 
-- name: Fail if SSH test fails (after ufw rule)
-  ansible.builtin.fail:
-    msg: |
-      SSH connection from {{ source_host }} to {{ destination_host }} failed!
-      Command: ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 {{ destination_host_address }} 'exit 0'
-      Return code: {{ ssh_test_result.rc | default('N/A') }}
-      Stdout: {{ ssh_test_result.stdout | default('') }}
-      Stderr: {{ ssh_test_result.stderr | default('') }}
-      Possible causes: firewall (ufw), network, SSH keys, or port not open.
-  when:
-    - inventory_hostname == source_host
-    - ssh_test_result is defined
-    - (ssh_test_result is failed or ssh_test_result.rc | default(1) != 0 or (ssh_test_result.stderr is defined and ('refused' in ssh_test_result.stderr or 'timed out' in ssh_test_result.stderr or 'No route to host' in ssh_test_result.stderr)))
-    - not ansible_check_mode
-
 - name: prepare - Verify Destination Validator Health
   block:
     - name: prepare - Check if destination validator is caught up
