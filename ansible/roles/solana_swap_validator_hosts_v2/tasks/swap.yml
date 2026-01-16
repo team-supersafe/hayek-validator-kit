@@ -244,7 +244,7 @@
 # Remove ufw rule for source host after successful swap
 - name: swap - Remove ufw allow rule for source host IP on destination
   ansible.builtin.shell: |
-    sudo ufw delete allow from {{ hostvars[source_host]['ansible_host'] | default(hostvars[source_host]['inventory_hostname'] | default(source_host)) }} to any port {{ ssh_port | default(22) }} proto tcp
+    sudo ufw delete allow from {{ hostvars[source_host]['ansible_host'] | default(hostvars[source_host]['inventory_hostname'] | default(source_host)) }} to any port {{ destination_host_port | default(22) }} proto tcp
   args:
     warn: false
   register: ufw_delete_result
