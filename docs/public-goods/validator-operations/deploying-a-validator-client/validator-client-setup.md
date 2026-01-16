@@ -56,8 +56,7 @@ Visit the official documentation to know the [Hardware Recommendations](https://
 Ensure that the network cluster delinquency is lower than the requirement set by Solana on the official communication channels before starting the installation. This is usually a percentage, like 3% or 5%, depending on the upgrade path:
 
 1. **Official Communication Channels**: Monitor the Solana Tech Cluster announcements on Discord for [Mainnet](https://discord.com/channels/428295358100013066/669406841830244375), [Testnet](https://app.gitbook.com/u/mWd8rWP4UVguErb6G6hVhYUW13D3), and [Devnet](https://discord.com/channels/428295358100013066/749059399875690557).
-2.  **Current Delinquent Stake**: Check the actual delinquent stake percentage in the cluster using the Solana CLI tool (use `-ut` for testnet `-ud` for devnet, and \* `-um` or no flag for mainnet):\
-
+2.  **Current Delinquent Stake**: Check the actual delinquent stake percentage in the cluster using the Solana CLI tool (use `-ut` for testnet `-ud` for devnet, and \* `-um` or no flag for mainnet):<br>
 
     ```bash
     solana validators -ut | grep "Delinquent Stake"
@@ -137,16 +136,14 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
 1. Change to your local repo directory. If you haven't cloned the [hayek-validator-kit](https://app.gitbook.com/u/mWd8rWP4UVguErb6G6hVhYUW13D3) repo yet, do so by following these instructions [github-repo.md](../../hayek-validator-kit/github-repo.md "mention")
 2. Connect to your Ansible Control. See [#connecting-to-ansible-control](../../hayek-validator-kit/ansible-control.md#connecting-to-ansible-control "mention")
 3. When the Ansible control is ready, open an SSH connection from your Ansible Control to the target host to add the fingerprint to our known hosts to avoid access permission problems when running the playbook, this will also ensures proper connectivity to the destination host.
-4.  Change to the `ansible` directory.\
-
+4.  Change to the `ansible` directory.<br>
 
     ```bash
     cd ansible
     ```
 
     \
-    To run the playbook for  `validator_client = agave` use this command template replacing all `<placeholders>` with the actual choice for each placeholder:\
-
+    To run the playbook for  `validator_client = agave` use this command template replacing all `<placeholders>` with the actual choice for each placeholder:<br>
 
     ```bash
     ansible-playbook playbooks/pb_setup_validator_agave.yml \
@@ -161,8 +158,7 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
     ```
 
     \
-    To run the playbook for  `validator_client = jito` use this command template replacing all `<placeholders>` with the actual choice for each placeholder:\
-
+    To run the playbook for  `validator_client = jito` use this command template replacing all `<placeholders>` with the actual choice for each placeholder:<br>
 
     ```bash
     ansible-playbook playbooks/pb_setup_validator_jito.yml \
@@ -179,95 +175,85 @@ Solana Cluster Grouping is essential to end up installing a validator node for t
       -e "use_official_repo=true"
     ```
 
+### Check Validator Health
 
-5.  After setup is completed open a SSH session to your host to monitor validator startup and verify that the co-hosted relayer is working properly.\
-    \
-    Check validator process status\
+After the validator software is correctly installed, the validator has to join the cluster and start voting. This involves multiple steps that happen in parallel, and automated ways, but with multiple failure points possible (mostly due to network conditions and the capacity of the validator to keep up with the rest of the network).
 
+To check this process after your setup is completed, open a SSH session to your host to monitor validator startup and verify that the co-hosted relayer is working properly.
 
-    ```bash
-    ps aux | grep agave-validator
-    ```
+{% code title="Check validator process status" %}
+```shellscript
+ps aux | grep agave-validator
+```
+{% endcode %}
 
-    \
-    Check the logs, conveniently in another SSH session for better situation awareness\
+{% code title="Check the logs (tip: use a different SSH session for better situational awareness)" %}
+```bash
+tail -f ~/logs/agave-validator.log
+```
+{% endcode %}
 
+To have a better understanding on what to look for when inspecting the logs see: [#initial-startup-monitoring](../metrics-and-monitoring/inspecting-logs.md#initial-startup-monitoring "mention") and for the Jito Relayer see: [#jito-relayer-logs](../metrics-and-monitoring/inspecting-logs.md#jito-relayer-logs "mention")
 
-    ```bash
-    tail -f ~/logs/agave-validator.log
-    ```
+{% code title="Monitor the validator startup process" %}
+```bash
+agave-validator -l /mnt/ledger monitor
+```
+{% endcode %}
 
-    \
-    To have a better understanding on what to look for when inspecting the logs see: [#initial-startup-monitoring](../metrics-and-monitoring/inspecting-logs.md#initial-startup-monitoring "mention") and for the Jito Relayer see: [#jito-relayer-logs](../metrics-and-monitoring/inspecting-logs.md#jito-relayer-logs "mention")\
-    \
-    Monitor the validator startup process\
+While the validator is starting up you can see several stages passing by, Connecting to RPC, Downloading snapshot, Loading ledger, Health check and slot processing status. This is known as the catchup process.
 
+The monitor process runs indefinitely showing the slot processing status. Here is how slot processing status looks like:
 
-    ```bash
-    agave-validator -l /mnt/ledger monitor
-    ```
+```bash
+$ agave-validator -l /mnt/ledger/ monitor
+Ledger location: /mnt/ledger/
+Identity: hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ
+Genesis Hash: 4uhcVJyU9pJkvQyS88uRDiswHXSCkY3zQawwpjk2NsNY
+Version: 3.0.2
+Shred Version: 9065
+Gossip Address: 67.213.118.77:8001
+TPU Address: 67.213.118.77:11222
+⠉ 160:31:18 | Processed Slot: 359481063 | Confirmed Slot: 359481063 | Finalized Slot: 359481029 | Full Snapshot Slot: 358092557 | Incremental Snapshot Slot: 358103854 | Transactions: 636783949018 | ◎116.007341756
+```
 
-    \
-    While the validator is starting up you can see several stages passing by, Connecting to RPC, Downloading snapshot, Loading ledger, Health check and slot processing status. This is known as the catchup process.\
-    \
-    The monitor process runs indefinitely showing the slot processing status. Here is how slot processing status looks like.\
+If you get connection errors see [#agave-monitor](client-troubleshooting.md#agave-monitor "mention")
 
+Typically if you are a few thousand slots behind or more, unless you have a really good hardware, it might not be feasible to catch up. Watch [THIS VIDEO](https://youtu.be/HKR5dn5CSZo?si=F19E4xtqqKgd7kUm\&t=1974) if you get stuck here.
 
-    ```bash
-    $ agave-validator -l /mnt/ledger/ monitor
-    Ledger location: /mnt/ledger/
-    Identity: hyt8ZV8sweXyxva1S9tibC4iTaixfFfx8icpGXtNDUJ
-    Genesis Hash: 4uhcVJyU9pJkvQyS88uRDiswHXSCkY3zQawwpjk2NsNY
-    Version: 3.0.2
-    Shred Version: 9065
-    Gossip Address: 67.213.118.77:8001
-    TPU Address: 67.213.118.77:11222
-    ⠉ 160:31:18 | Processed Slot: 359481063 | Confirmed Slot: 359481063 | Finalized Slot: 359481029 | Full Snapshot Slot: 358092557 | Incremental Snapshot Slot: 358103854 | Transactions: 636783949018 | ◎116.007341756
-    ```
+Snapshot finder tool: [https://github.com/c29r3/solana-snapshot-finder](https://github.com/c29r3/solana-snapshot-finder) This is a python script that tests a bunch of RPC endpoints that are open to check what the best download speed is and then downloads the snapshot from that one.
 
-    \
-    If you get connection errors see [#agave-monitor](client-troubleshooting.md#agave-monitor "mention")\
-    \
-    Typically if you are a few thousand slots behind or more, unless you have a really good hardware, it might not be feasible to catch up. See [https://youtu.be/HKR5dn5CSZo?si=F19E4xtqqKgd7kUm\&t=1974](https://youtu.be/HKR5dn5CSZo?si=F19E4xtqqKgd7kUm\&t=1974).\
+### Troubleshooting
 
+#### What to do if you can't catch up <a href="#what-to-do-if-you-cant-catch-up" id="what-to-do-if-you-cant-catch-up"></a>
 
-    Snapshot finder tool: [https://github.com/c29r3/solana-snapshot-finder](https://github.com/c29r3/solana-snapshot-finder) This is a python script that tests a bunch of RPC endpoints that are open to check what the best download speed is and then downloads the snapshot from that one.\
+* See [https://youtu.be/HKR5dn5CSZo?si=Kmul5ry-tsstZ0QL\&t=1958](https://youtu.be/HKR5dn5CSZo?si=Kmul5ry-tsstZ0QL\&t=1958)
+* Wait! Catchup rate is variable and l've seen it improve very quickly after falling for a while
+* Remove `-no-snapshot-fetch` and download a new snapshot (you will have a hole in your validator's ledger)
+* Manually download a snapshot [https://github.com/c29r3/solana-snapshot-finder](https://github.com/c29r3/solana-snapshot-finder) is popular
 
+#### Possible Reasons for falling behind (can't catch up) <a href="#possible-reasons-for-falling-behind-cant-catch-up" id="possible-reasons-for-falling-behind-cant-catch-up"></a>
 
-    #### What to do if you can't catch up <a href="#what-to-do-if-you-cant-catch-up" id="what-to-do-if-you-cant-catch-up"></a>
+* See [https://youtu.be/HKR5dn5CSZo?si=xvu47Bcre3L3jF2f\&t=2120](https://youtu.be/HKR5dn5CSZo?si=xvu47Bcre3L3jF2f\&t=2120)
+* Snapshots you are downloading are too old (try using known validator, increase minimal download speed, snapshot finder)
+* If snapshot is good, but you still can't catch up, it's likely a hardware perf issue
+  * Check CPU, Thermal Design Power (TDP), NVMe drives, IOPS, Network, etc.
+  * Try another server for a month?
+  * Consider upgrading
 
-    * See [https://youtu.be/HKR5dn5CSZo?si=Kmul5ry-tsstZ0QL\&t=1958](https://youtu.be/HKR5dn5CSZo?si=Kmul5ry-tsstZ0QL\&t=1958)
-    * Wait! Catchup rate is variable and l've seen it improve very quickly after falling for a while
-    * Remove -no-snapshot-fetch and download a new snapshot (you will have a hole in your validator's ledger)
-    * Manually download a snapshot [https://github.com/c29r3/solana-snapshot-finder](https://github.com/c29r3/solana-snapshot-finder) is popular
+When monitor stage "Loading ledger" finishes you can use the following command to see the catchup rate in detail (use `-ut` for testnet `-ud` for devnet, and `* -um` or no flag for mainnet):
 
+Typical output (while catching up and when is fully caughtup):
 
+```bash
+solana catchup -ut --our-localhost 8899
+# ⠄ 77 slot(s) behind (us:320589449 them:320589526), our node is gaining at 6.0 slots/second (AVG: 5.0 slots/second, ETA: slot 320589524 in 
 
-    #### Possible Reasons for falling behind (can't catch up) <a href="#possible-reasons-for-falling-behind-cant-catch-up" id="possible-reasons-for-falling-behind-cant-catch-up"></a>
+solana catchup -ut --our-localhost 8899
+# hytUYBP59GaVyiqG2ebrDozwoziVd17V5HYRPHp5R2W has caught up (us:320587019 them:320587015)
+```
 
-    * See [https://youtu.be/HKR5dn5CSZo?si=xvu47Bcre3L3jF2f\&t=2120](https://youtu.be/HKR5dn5CSZo?si=xvu47Bcre3L3jF2f\&t=2120)
-    * Snapshots you are downloading are too old (try using known validator, increase minimal download speed, snapshot finder)
-    * If snapshot is good, but you still can't catch up, it's likely a hardware perf issue
-      * Check CPU, Thermal Design Power (TDP), NVMe drives, IOPS, Network, etc.
-      * Try another server for a month?
-      * Consider upgrading
-
-    \
-    Whe monitor stage "Loading ledger" finishes you can use the following command to see the catchup rate in detail (use -ut for testnet -ud for devnet, and \* -um or no flag for mainnet):\
-    \
-    Typical output (while catching up and when is fully caughtup):\
-
-
-    ```bash
-    solana catchup -ut --our-localhost 8899
-    # ⠄ 77 slot(s) behind (us:320589449 them:320589526), our node is gaining at 6.0 slots/second (AVG: 5.0 slots/second, ETA: slot 320589524 in 
-
-    solana catchup -ut --our-localhost 8899
-    # hytUYBP59GaVyiqG2ebrDozwoziVd17V5HYRPHp5R2W has caught up (us:320587019 them:320587015)
-    ```
-
-    \
-    See [#check-catchup-speed](client-troubleshooting.md#check-catchup-speed "mention")
+See [#check-catchup-speed](client-troubleshooting.md#check-catchup-speed "mention")
 
 ## Hot-Spare Setup
 
