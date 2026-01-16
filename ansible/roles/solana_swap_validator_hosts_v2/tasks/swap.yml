@@ -256,4 +256,3 @@
     - tower_transfer_success | default(false)
     - inventory_hostname == destination_host
     - ansible_facts['os_family'] == 'Debian'
-    - ansible_facts['os_family'] == 'Debian'
