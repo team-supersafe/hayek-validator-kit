@@ -1,4 +1,10 @@
 ---
+- name: precheck - Set fact for solana cluster
+  ansible.builtin.set_fact:
+    solana_cluster: >-
+      {{ (group_names | select('match', '^solana_.*') | list | first | regex_replace('^solana_', '')) if (group_names | select('match', '^solana_.*') | list | length > 0) else 'localnet' }}
+  run_once: true
+
 - name: precheck - Validate source and destination hosts are different
   ansible.builtin.fail:
     msg: >-
