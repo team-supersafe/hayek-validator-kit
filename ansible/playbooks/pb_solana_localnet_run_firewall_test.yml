@@ -16,7 +16,7 @@
     - name: Ensure SSH access to destination_host by adding ufw rule on destination_host
       block:
         - name: prepare - Allow source_host SSH access to destination_host
-          ansible.builtin.ufw:
+          community.general.ufw:
             rule: allow
             proto: tcp
             port: "{{ destination_host_port }}"
@@ -66,4 +66,19 @@
         - inventory_hostname == source_host
       tags:
         - ssh_only
+        - ufw_and_ssh
+
+    - name: swap - Remove ufw allow rule for source host IP on destination
+      community.general.ufw:
+        rule: allow
+        proto: tcp
+        port: "{{ destination_host_port | default(22) }}"
+        from_ip: "{{ source_host_address }}"
+        comment: "validator-swap {{ source_host }}"
+        delete: true
+      become: true
+      when:
+        - inventory_hostname == destination_host
+        - ansible_facts['os_family'] == 'Debian'
+      tags:
         - ufw_and_ssh

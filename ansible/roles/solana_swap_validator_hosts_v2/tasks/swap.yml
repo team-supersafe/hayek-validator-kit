@@ -241,19 +241,16 @@
       become: true
       when: inventory_hostname == destination_host
 
-# Remove ufw rule for source host after successful swap
+# Remove ufw rule for source host after swap
 - name: swap - Remove ufw allow rule for source host IP on destination
-  ansible.builtin.shell: |
-    ufw delete allow from {{ source_host_address }} to any port {{ destination_host_port | default(22) }} proto tcp
-  args:
-    warn: false
-  register: ufw_delete_result
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    port: "{{ destination_host_port | default(22) }}"
+    from_ip: "{{ source_host_address }}"
+    comment: "validator-swap {{ source_host }}"
+    delete: true
   become: true
-  changed_when: >-
-    ufw_delete_result.stdout is defined and 'deleted' in ufw_delete_result.stdout
-  failed_when: >-
-    ufw_delete_result.rc != 0 and ufw_delete_result.stdout is defined and 'Could not delete non-existent rule' not in ufw_delete_result.stdout
   when:
-    - tower_transfer_success | default(false)
     - inventory_hostname == destination_host
     - ansible_facts['os_family'] == 'Debian'
