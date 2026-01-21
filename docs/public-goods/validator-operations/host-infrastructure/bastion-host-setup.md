@@ -189,27 +189,24 @@ In the workstation, the configuration needs to specify which targeted traffic to
 
 First, create a new file named `bastion-tunnel.conf` with the following content:
 
-```ini
-[Interface]
+<pre class="language-ini"><code class="lang-ini">[Interface]
 ## Replace with content of your private key file 
 PrivateKey = YOUR_CLIENT_PRIVATE_KEY_HERE
+## Replace with the workstation's peer IP server config 
 Address = 10.10.0.2/24
-DNS = 1.1.1.1
-
+## Leave as is, or use your custom DNS
+<strong>DNS = 1.1.1.1
+</strong>
 [Peer]
 ## Replace with the server's public key (provided by admin)
 PublicKey = YOUR_SERVER_PUBLIC_KEY_HERE
+## Replace wit the server's public IP; leave the same port
 Endpoint = 192.168.1.100:51820
-## Replace with your target server IPs (e.g., testnet server, mainnet server, etc.)
+## Replace with your target server IPs or subnets (e.g., testnet server, mainnet server, etc.)
 AllowedIPs = 192.168.1.200/32,192.168.1.210/32,
+## Leave as is
 PersistentKeepalive = 25
-```
-
-{% hint style="info" %}
-Replace `YOUR_CLIENT_PRIVATE_KEY_HERE` with content of your private key file  \
-Replace `YOUR_SERVER_PUBLIC_KEY_HERE` with the server's public key (provided by admin)\
-**AllowedIPs**: Replace `192.168.1.200/32` with your target server IP (e.g., testnet server, mainnet server, etc.)&#x20;
-{% endhint %}
+</code></pre>
 
 #### Import and Activate Tunnel
 
