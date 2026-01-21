@@ -132,7 +132,7 @@ sudo systemctl start wg-quick@wg0
 sudo systemctl status wg-quick@wg0
 ```
 
-### Client Workstation Setup&#x20;
+## Client Workstation Setup&#x20;
 
 For clients (or users) connect to the bastion host, they must also have a proper setup, as follows.
 
