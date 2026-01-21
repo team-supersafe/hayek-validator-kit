@@ -136,7 +136,7 @@ sudo systemctl status wg-quick@wg0
 
 For clients (or users) connect to the bastion host, they must also have a proper setup, as follows.
 
-### Install WireGuard on the Workstation
+### Workstation Install
 
 Download and install WireGuard from the official website:
 
@@ -147,7 +147,7 @@ Visit [https://www.wireguard.com/install/](https://www.wireguard.com/install/) a
   &#xNAN;**`brew install wireguard-tools`**
 * **Linux**: Use your distribution's package manager
 
-### Generate Client Keys
+### Generate Workstation Keys
 
 **For Windows:**
 
@@ -183,7 +183,7 @@ cat ~/wg_user_public.key
 Get-Content "$env:USERPROFILE\wg_user_private.key"
 ```
 
-#### Create Client Configuration
+### Workstation Configuration
 
 Create a new file named `bastion-tunnel.conf` with the following content:
 
