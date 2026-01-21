@@ -6,14 +6,18 @@ This documentation describes how to fully configure a **WireGuard VPN Bastion Ho
 Server: Ubuntu Bastion Host (192.168.1.100)
 ```
 
-## Install WireGuard
+## Server Setup
+
+### Install WireGuard
+
+First, install WireGuard on the Bastion Host server:
 
 ```bash
 sudo apt update
 sudo apt install wireguard -y
 ```
 
-### Generate Server Keys
+#### Generate Server Keys
 
 WireGuard uses **Curve25519** public-key cryptography for authentication. The server needs a private key (kept secret) and a public key (shared with clients).
 
@@ -128,9 +132,11 @@ sudo systemctl start wg-quick@wg0
 sudo systemctl status wg-quick@wg0
 ```
 
-### Setup WireGuard Client
+### Client Workstation Setup&#x20;
 
-#### Install WireGuard Client
+For clients (or users) connect to the bastion host, they must also have a proper setup, as follows.
+
+#### Install WireGuard on the Workstation
 
 Download and install WireGuard from the official website:
 
