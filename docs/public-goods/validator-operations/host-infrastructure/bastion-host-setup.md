@@ -60,38 +60,37 @@ Add this config to the newly created config file:
 
 ```bash
 [Interface]
+## The private server IP. Leave as is
 Address = 10.10.0.1/24
+## WireGuard listening port (51820/udp). Leave as is
 ListenPort = 51820
+## Replace with the content of  /etc/wireguard/server_private.key
 PrivateKey = YOUR_SERVER_PRIVATE_KEY_HERE
-SaveConfig = false  # Prevent WireGuard from overwriting this config on changes
+## Prevent WireGuard from overwriting this config on changes
+SaveConfig = false  
 
+## Firewall rules for SSH-only access
 PostUp = bash -c "sysctl -w net.ipv4.ip_forward=1; iptables -I FORWARD -i wg0 -j ACCEPT; iptables -I FORWARD -o wg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT; iptables -t nat -A POSTROUTING -s 10.10.0.0/24 -o enp1s0 -j MASQUERADE"
 PostDown = bash -c "iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT; iptables -t nat -D POSTROUTING -s 10.10.0.0/24 -o enp1s0 -j MASQUERADE"
 
 # === alan ===
 [Peer]
+## Replace with the client's Workstation WireGuard public key (generated at Alan's Workstation)
 PublicKey = YOUR_CLIENT_PUBLIC_KEY_HERE
 AllowedIPs = 10.10.0.2/32
 ```
 
-#### Configuration Breakdown:
+{% hint style="info" %}
+#### Where to get the workstation WireGuard's public key?
 
-> * `Address`: VPN IP of the bastion server (10.10.0.1/24)
-> * `ListenPort`: WireGuard listening port (51820/udp)
-> * `PrivateKey`: Server's private key (replace with actual key)
-> * `SaveConfig = false`: Prevents automatic config changes
-> * `PostUp/PostDown`: Firewall rules for SSH-only access
-> * `PublicKey`: Client's public key (replace with actual key)
-> * `AllowedIPs`: Client's VPN IP range (10.10.0.2/32)
+Each peer block in the configuration, is the "allow list" for who can connect through the WireGuard tunnel. Each workstation must be configured here, and must also provide its WireGuard Public Key (which is different from the workstation SSH key).&#x20;
 
-> Replace `YOUR_SERVER_PRIVATE_KEY_HERE` with the content of  `/etc/wireguard/server_private.key` \
-> Replace `YOUR_CLIENT_PUBLIC_KEY_HERE` with the client's public key (will be provided by Alan)
+Go to [#generate-workstation-keys](bastion-host-setup.md#generate-workstation-keys "mention") to see how to generate this key.
+{% endhint %}
 
 #### Enable Forwarding (Required for Routing)
 
-{% hint style="info" %}
-This must remain enabled for the bastion to allow SSH forwarding.
-{% endhint %}
+Forwarding must be enabled for the bastion to allow SSH forwarding.
 
 ```bash
 sudo sed -i '/^net.ipv4.ip_forward/d' /etc/sysctl.conf
@@ -143,8 +142,7 @@ Download and install WireGuard from the official website:
 Visit [https://www.wireguard.com/install/](https://www.wireguard.com/install/) and download the appropriate version for your platform:
 
 * **Windows**: Download the Windows installer
-* **macOS**: Download from App Store and install Wireguard tools via Homebrew\
-  &#xNAN;**`brew install wireguard-tools`**
+* **macOS**: Download from App Store&#x20;
 * **Linux**: Use your distribution's package manager
 
 ### Generate Workstation Keys
@@ -157,7 +155,19 @@ wg genkey | Out-File -FilePath "$env:USERPROFILE\wg_user_private.key" -Encoding 
 Get-Content "$env:USERPROFILE\wg_user_private.key" | wg pubkey | Out-File -FilePath "$env:USERPROFILE\wg_user_public.key" -Encoding ASCII
 ```
 
-**For macOS/Ubuntu:**
+**For macOS:**
+
+```bash
+# Install WireGuard tools
+brew install wireguard-tools  # Ubuntu/Debian
+
+# Generate keys
+umask 077
+wg genkey | tee ~/wg_user_private.key | wg pubkey > ~/wg_user_public.key
+chmod 600 ~/wg_user_private.key
+```
+
+**For Linux/Ubuntu:**
 
 ```bash
 # Install WireGuard tools
@@ -185,7 +195,7 @@ Get-Content "$env:USERPROFILE\wg_user_private.key"
 
 ### Workstation Configuration
 
-In the workstation, the configuration needs to specify which targeted traffic to route through WireGuard, as we don't want all the traffic, but only those targetting the destination servers protected by the Bastion Host.
+In the workstation, the configuration needs to specify which targeted traffic to route through WireGuard, as we don't want all the traffic, but only those targeting the destination servers protected by the Bastion Host.
 
 First, create a new file named `bastion-tunnel.conf` with the following content:
 
@@ -208,7 +218,7 @@ AllowedIPs = XXX.XXX.XXX.XXX/32,XXX.XXX.XXX.XXX/32,
 PersistentKeepalive = 25
 </code></pre>
 
-#### Import and Activate Tunnel on Workstation
+#### Activate Tunnel on Workstation
 
 Once you have installed the WireGuard client and created the configuration file, you need to import this configuration into the WireGuard app.
 
