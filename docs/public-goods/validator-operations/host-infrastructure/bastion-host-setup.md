@@ -185,17 +185,22 @@ Get-Content "$env:USERPROFILE\wg_user_private.key"
 
 ### Workstation Configuration
 
-Create a new file named `bastion-tunnel.conf` with the following content:
+In the workstation, the configuration needs to specify which targeted traffic to route through WireGuard, as we don't want all the traffic, but only those targetting the destination servers protected by the Bastion Host.
+
+First, create a new file named `bastion-tunnel.conf` with the following content:
 
 ```ini
 [Interface]
+## Replace with content of your private key file 
 PrivateKey = YOUR_CLIENT_PRIVATE_KEY_HERE
 Address = 10.10.0.2/24
 DNS = 1.1.1.1
 
 [Peer]
+## Replace with the server's public key (provided by admin)
 PublicKey = YOUR_SERVER_PUBLIC_KEY_HERE
 Endpoint = 192.168.1.100:51820
+## Replace with your target server IPs (e.g., testnet server, mainnet server, etc.)
 AllowedIPs = 192.168.1.200/32,192.168.1.210/32,
 PersistentKeepalive = 25
 ```
