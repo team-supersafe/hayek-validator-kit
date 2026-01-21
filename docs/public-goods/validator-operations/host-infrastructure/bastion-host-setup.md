@@ -136,7 +136,7 @@ sudo systemctl status wg-quick@wg0
 
 For clients (or users) connect to the bastion host, they must also have a proper setup, as follows.
 
-#### Install WireGuard on the Workstation
+### Install WireGuard on the Workstation
 
 Download and install WireGuard from the official website:
 
@@ -147,7 +147,7 @@ Visit [https://www.wireguard.com/install/](https://www.wireguard.com/install/) a
   &#xNAN;**`brew install wireguard-tools`**
 * **Linux**: Use your distribution's package manager
 
-#### Generate Client Keys
+### Generate Client Keys
 
 **For Windows:**
 
@@ -169,7 +169,7 @@ wg genkey | tee ~/wg_user_private.key | wg pubkey > ~/wg_user_public.key
 chmod 600 ~/wg_user_private.key
 ```
 
-#### Share the public key content with the system administrator
+Share the public key content with the system administrator
 
 **macOS/Linux:**
 
