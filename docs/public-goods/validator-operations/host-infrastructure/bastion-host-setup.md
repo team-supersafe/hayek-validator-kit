@@ -138,38 +138,24 @@ Visit [https://www.wireguard.com/install/](https://www.wireguard.com/install/) a
 
 * **Windows**: Download the Windows installer
 * **macOS**: Download from App Store and install Wireguard tools via Homebrew\
-  `brew install wireguard-tools`
+  &#xNAN;**`brew install wireguard-tools`**
 * **Linux**: Use your distribution's package manager
 
 #### Generate Client Keys
 
-**For Mac:**
-
-```bash
-umask 077
-wg genkey | tee ~/wg_user_private.key | wg pubkey > ~/wg_user_public.key
-chmod 600 ~/wg_user_private.key
-```
-
 **For Windows:**
 
 ```powershell
-# The wg.exe tool is included with the WireGuard installation
-
 # Generate keys
 wg genkey | Out-File -FilePath "$env:USERPROFILE\wg_user_private.key" -Encoding ASCII
 Get-Content "$env:USERPROFILE\wg_user_private.key" | wg pubkey | Out-File -FilePath "$env:USERPROFILE\wg_user_public.key" -Encoding ASCII
 ```
 
-**For Linux:**
+**For macOS/Ubuntu:**
 
 ```bash
 # Install WireGuard tools
 sudo apt install wireguard-tools  # Ubuntu/Debian
-# OR
-sudo dnf install wireguard-tools  # Fedora
-# OR
-sudo pacman -S wireguard-tools    # Arch
 
 # Generate keys
 umask 077
