@@ -2,16 +2,18 @@
 
 This documentation describes how to fully configure a **WireGuard VPN Bastion Host** on Ubuntu and allow macOS or Windows clients to connect using their own keys and access the bastion server over SSH only. The VPN is configured to **allow only SSH access to the bastion host (192.168.1.100)** via the tunnel. All other traffic (e.g. web browsing or general internet access) uses the client's normal internet connection.
 
-## Server: Ubuntu Bastion Host (`192.168.1.100`)
+```
+Server: Ubuntu Bastion Host (192.168.1.100)
+```
 
-### Install WireGuard
+## Install WireGuard
 
 ```bash
 sudo apt update
 sudo apt install wireguard -y
 ```
 
-#### Generate Server Keys
+### Generate Server Keys
 
 WireGuard uses **Curve25519** public-key cryptography for authentication. The server needs a private key (kept secret) and a public key (shared with clients).
 
@@ -33,8 +35,6 @@ SERVER_PUBLIC_KEY=$(cat /etc/wireguard/server_public.key)
 echo "Server Public Key: $SERVER_PUBLIC_KEY"
 ```
 
-#### Identify Network Interface
-
 Find your main network interface
 
 ```bash
@@ -43,9 +43,9 @@ ip route show default | awk '/default/ {print $5}'
 
 Common interfaces: `eth0`, `ens3`, `enp0s3`, etc. Note this for later use.
 
-#### Configure WireGuard Interface
+### Configure WireGuard
 
-Example WireGuard Configuration for Bastion Server
+Create the WireGuard config file and make the necessary configurations
 
 ```bash
 ##Create an empty config file
@@ -61,8 +61,8 @@ ListenPort = 51820
 PrivateKey = YOUR_SERVER_PRIVATE_KEY_HERE
 SaveConfig = false  # Prevent WireGuard from overwriting this config on changes
 
-PostUp = bash -c "iptables -A FORWARD -i wg0 -o YOUR_NETWORK_INTERFACE -s 10.10.0.0/24 -d 192.168.1.100 -p tcp --dport 22 -j ACCEPT; iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT; iptables -t nat -A POSTROUTING -s 10.10.0.0/24 -o YOUR_NETWORK_INTERFACE -j MASQUERADE"
-PostDown = bash -c "iptables -D FORWARD -i wg0 -o YOUR_NETWORK_INTERFACE -s 10.10.0.0/24 -d 192.168.1.100 -p tcp --dport 22 -j ACCEPT; iptables -D FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT; iptables -t nat -D POSTROUTING -s 10.10.0.0/24 -o YOUR_NETWORK_INTERFACE -j MASQUERADE"
+PostUp = bash -c "sysctl -w net.ipv4.ip_forward=1; iptables -I FORWARD -i wg0 -j ACCEPT; iptables -I FORWARD -o wg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT; iptables -t nat -A POSTROUTING -s 10.10.0.0/24 -o enp1s0 -j MASQUERADE"
+PostDown = bash -c "iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT; iptables -t nat -D POSTROUTING -s 10.10.0.0/24 -o enp1s0 -j MASQUERADE"
 
 # === alan ===
 [Peer]
