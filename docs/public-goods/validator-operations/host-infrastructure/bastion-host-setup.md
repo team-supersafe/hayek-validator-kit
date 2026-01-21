@@ -25,7 +25,7 @@ wg genkey | tee /etc/wireguard/server_private.key | wg pubkey > /etc/wireguard/s
 The private key must remain secret and secure. The public key will be shared with clients to establish the VPN connection.
 {% endhint %}
 
-Save these keys for later use in variables:
+Configure environment variables for these keys. We'll use these later:
 
 ```bash
 SERVER_PRIVATE_KEY=$(cat /etc/wireguard/server_private.key)
@@ -47,7 +47,11 @@ Common interfaces: `eth0`, `ens3`, `enp0s3`, etc. Note this for later use.
 
 Example WireGuard Configuration for Bastion Server
 
+```bash
+nano ???
 ```
+
+```bash
 [Interface]
 Address = 10.10.0.1/24
 ListenPort = 51820
