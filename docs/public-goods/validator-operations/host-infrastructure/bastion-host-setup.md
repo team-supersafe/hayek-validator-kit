@@ -232,7 +232,7 @@ To restrict SSH access to only the bastion host, configure the firewall on your 
 
 ```bash
 # Allow SSH only from the bastion host IP
-sudo ufw allow from 192.168.1.100 to any port 2522 proto tcp
+sudo ufw allow from XXX.XXX.XXX.XXX to any port 2522 proto tcp comment "bastion host"
 
 # Deny SSH from all other sources
 sudo ufw deny 2522/tcp
