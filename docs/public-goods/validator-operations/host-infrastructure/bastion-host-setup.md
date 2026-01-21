@@ -2,11 +2,11 @@
 
 This documentation describes how to fully configure a **WireGuard VPN Bastion Host** on Ubuntu and allow macOS or Windows clients to connect using their own keys and access the bastion server over SSH only. The VPN is configured to **allow only SSH access to the bastion host (192.168.1.100)** via the tunnel. All other traffic (e.g. web browsing or general internet access) uses the client's normal internet connection.
 
+## Server Setup
+
 ```
 Server: Ubuntu Bastion Host (192.168.1.100)
 ```
-
-## Server Setup
 
 ### Install WireGuard
 
