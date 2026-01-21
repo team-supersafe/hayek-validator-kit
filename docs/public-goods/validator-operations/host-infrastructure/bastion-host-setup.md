@@ -224,6 +224,8 @@ Once you have installed the WireGuard client and created the configuration file,
 3. Select your configuration file
 4. Click **Activate**
 
+## Protecting Target Servers
+
 ### Firewall Configuration for Target Servers
 
 To restrict SSH access to only the bastion host, configure the firewall on your target servers:
@@ -239,7 +241,7 @@ sudo ufw deny 2522/tcp
 sudo ufw reload 
 ```
 
-### Troubleshooting
+## Troubleshooting
 
 Server-side checks:
 
