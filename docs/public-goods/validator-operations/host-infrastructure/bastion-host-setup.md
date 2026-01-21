@@ -17,6 +17,7 @@ WireGuard uses **Curve25519** public-key cryptography for authentication. The se
 
 ```bash
 umask 077
+sudo su
 wg genkey | tee /etc/wireguard/server_private.key | wg pubkey > /etc/wireguard/server_public.key
 ```
 
