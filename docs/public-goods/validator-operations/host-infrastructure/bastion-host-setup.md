@@ -48,8 +48,11 @@ Common interfaces: `eth0`, `ens3`, `enp0s3`, etc. Note this for later use.
 Example WireGuard Configuration for Bastion Server
 
 ```bash
-nano ???
+##Create an empty config file
+nano /etc/wireguard/wg0.conf
 ```
+
+Add this config to the newly created config file:
 
 ```bash
 [Interface]
