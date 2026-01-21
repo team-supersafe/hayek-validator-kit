@@ -25,7 +25,7 @@ wg genkey | tee /etc/wireguard/server_private.key | wg pubkey > /etc/wireguard/s
 The private key must remain secret and secure. The public key will be shared with clients to establish the VPN connection.
 {% endhint %}
 
-#### Save These for Later
+Save these keys for later use in variables:
 
 ```bash
 SERVER_PRIVATE_KEY=$(cat /etc/wireguard/server_private.key)
