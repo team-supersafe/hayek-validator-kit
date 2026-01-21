@@ -201,16 +201,16 @@ Address = 10.10.0.2/24
 ## Replace with the server's public key (provided by admin)
 PublicKey = YOUR_SERVER_PUBLIC_KEY_HERE
 ## Replace wit the server's public IP; leave the same port
-Endpoint = 192.168.1.100:51820
+Endpoint = XXX.XXX.XXX.XXX:51820
 ## Replace with your target server IPs or subnets (e.g., testnet server, mainnet server, etc.)
-AllowedIPs = 192.168.1.200/32,192.168.1.210/32,
+AllowedIPs = XXX.XXX.XXX.XXX/32,XXX.XXX.XXX.XXX/32,
 ## Leave as is
 PersistentKeepalive = 25
 </code></pre>
 
-#### Import and Activate Tunnel
+#### Import and Activate Tunnel on Workstation
 
-Once you have installed the WireGuard client and created the configuration file, you need to import this configuration into the WireGuard application.
+Once you have installed the WireGuard client and created the configuration file, you need to import this configuration into the WireGuard app.
 
 **For macOS:**
 
@@ -227,8 +227,6 @@ Once you have installed the WireGuard client and created the configuration file,
 4. Click **Activate**
 
 ## Protecting Target Servers
-
-### Firewall Configuration for Target Servers
 
 To restrict SSH access to only the bastion host, configure the firewall on your target servers:
 
