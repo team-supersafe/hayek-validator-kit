@@ -4,9 +4,16 @@ This documentation describes how to fully configure a **WireGuard VPN Bastion Ho
 
 ## Server Setup
 
-```
-Server: Ubuntu Bastion Host (192.168.1.100)
-```
+### Requirements
+
+The bastion host has very low hardware requirements:
+
+* One virtual CPU (vCPU) setup or better
+* 2GB of RAM or more
+* 10GB disk or more
+* A static IP address
+* Ubuntu 24.04 or higher
+* Access to a user with sudo access to run the setup and configuration.
 
 ### Install WireGuard
 
