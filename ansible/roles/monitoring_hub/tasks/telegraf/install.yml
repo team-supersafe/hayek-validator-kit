@@ -13,11 +13,10 @@
     creates: /etc/apt/keyrings/influxdata-archive.gpg
 
 - name: Add InfluxData repository (jammy fallback)
-  ansible.builtin.shell: |
-    echo "deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/ubuntu jammy stable" > /etc/apt/sources.list.d/influxdb.list
-
-- name: Update apt cache
-  ansible.builtin.apt:
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/ubuntu jammy stable"
+    state: present
+    filename: influxdb
     update_cache: true
 
 - name: Install telegraf
