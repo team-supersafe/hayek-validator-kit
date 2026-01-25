@@ -6,6 +6,13 @@
     dest: /tmp/influxdata-archive.key
     mode: '0644'
 
+- name: Ensure /etc/apt/keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
 - name: Import InfluxData GPG key to apt
   ansible.builtin.shell: |
     gpg --dearmor < /tmp/influxdata-archive.key > /etc/apt/keyrings/influxdata-archive.gpg
