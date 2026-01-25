@@ -19,6 +19,17 @@
   args:
     creates: /etc/apt/keyrings/influxdata-archive.gpg
 
+- name: Remove legacy InfluxData repository entry (old signed-by key)
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/influxdata.gpg] https://repos.influxdata.com/debian stable main"
+    state: absent
+    filename: influxdata
+
+- name: Remove legacy InfluxData keyring if present
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/influxdata.gpg
+    state: absent
+
 - name: Add InfluxData repository (jammy fallback)
   ansible.builtin.apt_repository:
     repo: "deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/ubuntu jammy stable"
