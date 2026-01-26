@@ -1,24 +1,40 @@
 ---
 # Install Telegraf on Ubuntu
-- name: Download InfluxData GPG key
+- name: Create GPG keyring directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download InfluxData GPG key (rotated key)
   ansible.builtin.get_url:
-    url: https://repos.influxdata.com/influxdata-archive_compat.key
-    dest: /tmp/influxdata-archive_compat.key
+    url: https://repos.influxdata.com/influxdata-archive.key
+    dest: /tmp/influxdata-archive.key
     mode: '0644'
 
 - name: Import InfluxData GPG key to apt
   ansible.builtin.shell: |
-    gpg --dearmor < /tmp/influxdata-archive_compat.key > /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg
+    gpg --dearmor < /tmp/influxdata-archive.key > /etc/apt/keyrings/influxdata-archive.gpg
   args:
-    creates: /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg
+    creates: /etc/apt/keyrings/influxdata-archive.gpg
+
+- name: Remove legacy InfluxData repository entry (old signed-by key)
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/influxdata.gpg] https://repos.influxdata.com/debian stable main"
+    state: absent
+    filename: influxdata
+
+- name: Remove legacy InfluxData keyring if present
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/influxdata.gpg
+    state: absent
 
 - name: Add InfluxData repository (jammy fallback)
-  ansible.builtin.shell: |
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/ubuntu jammy stable" > /etc/apt/sources.list.d/influxdb.list
-
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/ubuntu jammy stable"
+    state: present
+    filename: influxdb
+    update_cache: true
 
 - name: Install telegraf
   ansible.builtin.apt:
@@ -28,6 +44,6 @@
 # Install necessary dependencies
 - name: Ensure required packages are installed
   ansible.builtin.apt:
-    name: 
+    name:
       - iputils-ping
     state: present
