@@ -18,6 +18,7 @@
     regexp: '^deb \[signed-by=/etc/apt/(trusted\.gpg\.d|keyrings)/influxdata(-archive)?\.gpg\] https://repos\.influxdata\.com/ubuntu jammy stable'
     state: absent
     backup: yes
+  ignore_errors: yes
 
 - name: Add InfluxData repository (jammy fallback, correct keyring)
   ansible.builtin.apt_repository:
