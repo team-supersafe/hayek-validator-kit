@@ -1,35 +1,25 @@
 ---
 # Install Telegraf on Ubuntu
-- name: Create GPG keyring directory
+- name: Ensure keyrings directory exists
   ansible.builtin.file:
     path: /etc/apt/keyrings
     state: directory
     mode: '0755'
 
-- name: Download InfluxData GPG key (rotated key)
+- name: Download InfluxData GPG key
   ansible.builtin.get_url:
     url: https://repos.influxdata.com/influxdata-archive.key
-    dest: /tmp/influxdata-archive.key
+    dest: /etc/apt/keyrings/influxdata-archive.gpg
     mode: '0644'
 
-- name: Import InfluxData GPG key to apt
-  ansible.builtin.shell: |
-    gpg --dearmor < /tmp/influxdata-archive.key > /etc/apt/keyrings/influxdata-archive.gpg
-  args:
-    creates: /etc/apt/keyrings/influxdata-archive.gpg
-
-- name: Remove legacy InfluxData repository entry (old signed-by key)
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/etc/apt/keyrings/influxdata.gpg] https://repos.influxdata.com/debian stable main"
+- name: Remove any InfluxData repo with old signed-by path
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list.d/influxdb.list
+    regexp: '^deb \[signed-by=/etc/apt/trusted.gpg.d/influxdata-archive.gpg\] https://repos.influxdata.com/ubuntu jammy stable'
     state: absent
-    filename: influxdata
+    backup: yes
 
-- name: Remove legacy InfluxData keyring if present
-  ansible.builtin.file:
-    path: /etc/apt/keyrings/influxdata.gpg
-    state: absent
-
-- name: Add InfluxData repository (jammy fallback)
+- name: Add InfluxData repository (jammy fallback, correct keyring)
   ansible.builtin.apt_repository:
     repo: "deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/ubuntu jammy stable"
     state: present
