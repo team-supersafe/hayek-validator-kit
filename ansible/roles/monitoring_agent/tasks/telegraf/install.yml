@@ -6,11 +6,11 @@
     state: directory
     mode: '0755'
 
-- name: Download InfluxData GPG key
-  ansible.builtin.get_url:
-    url: https://repos.influxdata.com/influxdata-archive.key
-    dest: /etc/apt/keyrings/influxdata-archive.gpg
-    mode: '0644'
+- name: Download and add InfluxData GPG key
+  ansible.builtin.shell: |
+    curl -s https://repos.influxdata.com/influxdata-archive.key | gpg --dearmor | tee /etc/apt/keyrings/influxdata-archive.gpg > /dev/null
+  args:
+    creates: /etc/apt/keyrings/influxdata-archive.gpg
 
 - name: Remove any InfluxData repo with old signed-by path
   ansible.builtin.lineinfile:
