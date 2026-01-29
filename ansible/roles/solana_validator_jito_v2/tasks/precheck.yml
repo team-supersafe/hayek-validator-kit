@@ -8,6 +8,17 @@
   delegate_to: localhost
   run_once: true
 
+- name: Set ansible_home_dir for ansible-control host
+  ansible.builtin.set_fact:
+    ansible_home_dir: "{{ lookup('env', 'HOME') }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Set keys dir for local ansible control host and target host
+  ansible.builtin.set_fact:
+    ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+    validator_keyset_dir: "{{ keys_dir }}/{{ validator_name }}"
+
 - name: Check required validator keypairs
   block:
     - name: Check if primary-target-identity.json exists in ansible_keys_dir
