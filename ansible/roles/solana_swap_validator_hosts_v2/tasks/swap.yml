@@ -109,6 +109,12 @@
       when: inventory_hostname == source_host
       register: wait_restart_result
       failed_when: wait_restart_result.rc != 0
+    
+    - name: Store current timestamp
+      ansible.builtin.command: date
+      register: current_timestamp
+      delegate_to: localhost
+      run_once: true
 
     - name: swap - Switch to unstaked identity on source
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_hot_spare_identity_path }}
@@ -188,7 +194,7 @@
     - name: swap - Rsync tower file from source to destination
       ansible.builtin.shell: |
         rsync --delay-updates -F --archive --delete \
-          -e "ssh -i {{ source_ssh_key_path }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o LogLevel=ERROR -o BatchMode=yes" \
+          -e "ssh -i {{ source_ssh_key_path }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o LogLevel=ERROR -o BatchMode=yes -p {{ destination_host_port }}" \
           "{{ tower_file_src }}" "{{ ansible_user }}@{{ destination_host_address }}:{{ tower_file_dest }}"
       delegate_to: "{{ source_host }}"
       become: false
@@ -231,6 +237,24 @@
         state: link
         force: true
       when: inventory_hostname == destination_host
+
+    - name: Calculate elapsed time since current_timestamp
+      ansible.builtin.command: >
+        bash -c "echo $(( $(date +%s) - $(date -d '{{ current_timestamp.stdout }}' +%s) ))"
+      register: elapsed_time
+      delegate_to: localhost
+      run_once: true
+
+    - name: Print elapsed time
+      ansible.builtin.debug:
+        msg: |
+          ===============================================
+          🟣 SWAP DURATION
+          ===============================================
+          Elapsed time since current_timestamp: {{ elapsed_time.stdout }} seconds
+          ===============================================
+      run_once: true
+      delegate_to: localhost
 
     - name: swap - Fix ownership of destination identity symlink
       ansible.builtin.file:
