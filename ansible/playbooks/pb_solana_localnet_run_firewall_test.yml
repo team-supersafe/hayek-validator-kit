@@ -1,0 +1,84 @@
+---
+- name: POC - Test SSH and Firewall for Validator Swap
+  hosts: "{{ source_host }},{{ destination_host }}"
+  user: "{{ operator_user }}"
+  become: false
+  gather_facts: true
+
+  vars:
+    # source_host and destination_host are expected to be passed via CLI (-e)
+    source_host_address: "{{ hostvars[source_host]['ansible_host'] | default(hostvars[source_host]['inventory_hostname'] | default(source_host)) }}"
+    destination_host_address: "{{ hostvars[destination_host]['ansible_host'] | default(hostvars[destination_host]['inventory_hostname'] | default(destination_host)) }}"
+    # Hardcoded port 2522 for this specific firewall test scenario
+    destination_host_port: 2522
+
+  tasks:
+    - name: Ensure SSH access to destination_host by adding ufw rule on destination_host
+      block:
+        - name: prepare - Allow source_host SSH access to destination_host
+          community.general.ufw:
+            rule: allow
+            proto: tcp
+            port: "{{ destination_host_port }}"
+            from_ip: "{{ source_host_address }}"
+            comment: "validator-swap {{ source_host }}"
+
+        - name: Restart UFW service
+          ansible.builtin.service:
+            name: ufw
+            state: restarted
+
+        - name: Ensure UFW is enabled and started
+          community.general.ufw:
+            state: enabled
+      become: true
+      when:
+        - inventory_hostname == destination_host
+        - ansible_facts['os_family'] == 'Debian'
+      tags:
+        - ufw_and_ssh
+
+    - name: Robust SSH connectivity test from source_host to destination_host
+      block:
+        - name: Run SSH command from source_host to destination_host on inventory port
+          ansible.builtin.shell: >
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -p {{ destination_host_port }} {{ operator_user }}@{{ destination_host_address }} 'exit 0'
+          delegate_to: "{{ source_host }}"
+          register: ssh_test_result
+          ignore_errors: true
+          failed_when: false
+
+        - name: Fail if SSH connection did not succeed
+          delegate_to: "{{ source_host }}"
+          ansible.builtin.fail:
+            msg: |
+              SSH connection from {{ source_host }} to {{ destination_host }} on port {{ destination_host_port }} failed!
+              Command: ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -p {{ destination_host_port }} {{ operator_user }}@{{ destination_host_address }} 'exit 0'
+              Return code: {{ ssh_test_result.rc | default('N/A') }}
+              Stdout: {{ ssh_test_result.stdout | default('') }}
+              Stderr: {{ ssh_test_result.stderr | default('') }}
+              Possible causes: firewall (ufw), network, SSH keys, or port not open.
+          when:
+            - ssh_test_result is defined
+            - (ssh_test_result is failed or ssh_test_result.rc | default(1) != 0 or (ssh_test_result.stderr is defined and ('refused' in ssh_test_result.stderr or 'timed out' in ssh_test_result.stderr or 'No route to host' in ssh_test_result.stderr)))
+            - not ansible_check_mode
+      when:
+        - inventory_hostname == source_host
+      tags:
+        - ssh_only
+        - ufw_and_ssh
+
+    - name: swap - Remove ufw allow rule for source host IP on destination
+      community.general.ufw:
+        rule: allow
+        proto: tcp
+        port: "{{ destination_host_port | default(22) }}"
+        from_ip: "{{ source_host_address }}"
+        comment: "validator-swap {{ source_host }}"
+        delete: true
+      become: true
+      when:
+        - inventory_hostname == destination_host
+        - ansible_facts['os_family'] == 'Debian'
+      tags:
+        - ufw_and_ssh

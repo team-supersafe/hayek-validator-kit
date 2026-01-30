@@ -1,0 +1,113 @@
+---
+- name: Automate Firewall Test Setup for Localnet (PR 174)
+  hosts: "{{ source_host }},{{ destination_host }}"
+  user: "{{ operator_user | default('ubuntu') }}"
+  gather_facts: false
+  become: true
+  vars:
+    # source_host and destination_host are expected to be passed via CLI (-e)
+    ssh_port: 2522
+    ansible_control_ip: "172.25.0.10"
+
+  tasks:
+    - name: Configure Source Host ({{ source_host }})
+      when: inventory_hostname == source_host
+      block:
+        - name: Install openssh-client
+          ansible.builtin.apt:
+            name: openssh-client
+            state: present
+            update_cache: yes
+
+        - name: Ensure .ssh directory exists
+          ansible.builtin.file:
+            path: "/home/{{ operator_user }}/.ssh"
+            state: directory
+            owner: "{{ operator_user }}"
+            group: "{{ operator_user }}"
+            mode: '0700'
+
+        - name: Generate SSH RSA key for "{{ operator_user }}" user
+          community.crypto.openssh_keypair:
+            path: "/home/{{ operator_user }}/.ssh/id_rsa"
+            type: rsa
+            size: 4096
+            owner: "{{ operator_user }}"
+            group: "{{ operator_user }}"
+            state: present
+            mode: '0600'
+          register: ssh_key_gen
+
+        - name: Fetch public key from source
+          ansible.builtin.slurp:
+            src: "/home/{{ operator_user }}/.ssh/id_rsa.pub"
+          register: source_pubkey
+
+    - name: Configure Destination Host ({{ destination_host }})
+      when: inventory_hostname == destination_host
+      block:
+        - name: Install UFW
+          ansible.builtin.apt:
+            name: ufw
+            state: present
+            update_cache: yes
+
+        - name: Configure SSH Port {{ ssh_port }}
+          ansible.builtin.lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: "^#?Port"
+            line: "Port {{ ssh_port }}"
+          notify: Restart SSH
+
+        - name: Disable conflicting ssh.socket
+          ansible.builtin.systemd:
+            name: ssh.socket
+            state: stopped
+            enabled: no
+          failed_when: false
+
+        - name: Ensure SSH service is enabled
+          ansible.builtin.service:
+            name: ssh
+            state: started
+            enabled: yes
+
+        - name: Allow SSH from Ansible Control ({{ ansible_control_ip }})
+          community.general.ufw:
+            rule: allow
+            proto: tcp
+            port: "{{ ssh_port }}"
+            from_ip: "{{ ansible_control_ip }}"
+            comment: "Ansible Control Access"
+
+        - name: Allow Solana Gossip and TPU ports
+          community.general.ufw:
+            rule: allow
+            proto: "{{ item.proto }}"
+            port: "{{ item.port }}"
+            comment: "{{ item.comment }}"
+          loop:
+            - { proto: 'tcp', port: '8000:8030', comment: 'Gossip/TPU TCP' }
+            - { proto: 'udp', port: '8000:8030', comment: 'Gossip/TPU UDP' }
+            - { proto: 'udp', port: '44880', comment: 'TVU UDP' }
+            - { proto: 'tcp', port: '1234', comment: 'Custom Port 1234' }
+            - { proto: 'tcp', port: '9090', comment: 'Custom Port 9090' }
+
+        - name: Enable UFW
+          community.general.ufw:
+            state: enabled
+
+        - name: Authorize Source Host Key
+          ansible.posix.authorized_key:
+            user: "{{ operator_user }}"
+            key: "{{ hostvars[source_host]['source_pubkey']['content'] | b64decode }}"
+            state: present
+          when: 
+            - hostvars[source_host]['source_pubkey'] is defined
+            - hostvars[source_host]['source_pubkey']['content'] is defined
+
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
