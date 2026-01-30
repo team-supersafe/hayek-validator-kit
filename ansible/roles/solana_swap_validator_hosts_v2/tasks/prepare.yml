@@ -289,12 +289,12 @@
 - name: prepare - Debug pubkey gathering results
   ansible.builtin.debug:
     msg: |
-      Source pubkey: {{ source_primary_pubkey | default('NOT SET') }}
-      Destination pubkey: {{ destination_primary_pubkey | default('NOT SET') }}
-      Source identity path: {{ source_host_primary_target_identity_path | default('NOT SET') }}
-      Destination identity path: {{ destination_host_primary_target_identity_path | default('NOT SET') }}
-      Source hostvars source_primary_pubkey: {{ hostvars[source_host]['source_primary_pubkey'] | default('NOT SET') }}
-      Destination hostvars destination_primary_pubkey: {{ hostvars[destination_host]['destination_primary_pubkey'] | default('NOT SET') }}
+      Source Primary Target Identity pubkey: {{ source_primary_pubkey | default('NOT SET') }}
+      Destination Primary Target Identity pubkey: {{ destination_primary_pubkey | default('NOT SET') }}
+      Source Primary Target Identity keypair path: {{ source_host_primary_target_identity_path | default('NOT SET') }}
+      Destination Primary Target Identity keypair path: {{ destination_host_primary_target_identity_path | default('NOT SET') }}
+      Global fact source_primary_pubkey: {{ hostvars[source_host]['source_primary_pubkey'] | default('NOT SET') }}
+      Global fact destination_primary_pubkey: {{ hostvars[destination_host]['destination_primary_pubkey'] | default('NOT SET') }}
   when: not ansible_check_mode
   run_once: true
 
@@ -460,25 +460,30 @@
   block:
     - name: Run SSH command from source_host to destination_host on inventory port
       ansible.builtin.shell: >
-        ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -p {{ destination_host_port }} {{ operator_user }}@{{ destination_host_address }} 'exit 0'
+        ssh -i {{ ssh_key_path }} -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -p {{ destination_host_port }} {{ operator_user }}@{{ destination_host_address }} 'exit 0'
       delegate_to: "{{ source_host }}"
       register: ssh_test_result
       ignore_errors: true
       failed_when: false
 
     - name: Fail if SSH connection did not succeed
-      delegate_to: "{{ source_host }}"
+      delegate_to: localhost
+      run_once: true
       ansible.builtin.fail:
         msg: |
           SSH connection from {{ source_host }} to {{ destination_host }} on port {{ destination_host_port }} failed!
-          Command: ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -p {{ destination_host_port }} {{ operator_user }}@{{ destination_host_address }} 'exit 0'
+          Command: ssh -i {{ ssh_key_path }} -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -p {{ destination_host_port }} {{ operator_user }}@{{ destination_host_address }} 'exit 0'
           Return code: {{ ssh_test_result.rc | default('N/A') }}
           Stdout: {{ ssh_test_result.stdout | default('') }}
           Stderr: {{ ssh_test_result.stderr | default('') }}
           Possible causes: firewall (ufw), network, SSH keys, or port not open.
       when:
         - ssh_test_result is defined
-        - (ssh_test_result is failed or ssh_test_result.rc | default(1) != 0 or (ssh_test_result.stderr is defined and ('refused' in ssh_test_result.stderr or 'timed out' in ssh_test_result.stderr or 'No route to host' in ssh_test_result.stderr)))
+        - (ssh_test_result.rc | default(1) != 0 or
+          (ssh_test_result.stderr is defined and
+            ('refused' in ssh_test_result.stderr or
+            'timed out' in ssh_test_result.stderr or
+            'No route to host' in ssh_test_result.stderr)))
         - not ansible_check_mode
   when:
     - inventory_hostname == source_host
