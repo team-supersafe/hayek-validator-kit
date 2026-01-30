@@ -5,7 +5,6 @@
 # Validates system requirements and prerequisites
 - name: Include precheck tasks
   ansible.builtin.import_tasks: precheck.yml
-  tags: precheck
 
 # Sets up basic system configuration and timezone
 - name: Include initial setup tasks

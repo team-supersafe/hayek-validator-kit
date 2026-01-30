@@ -70,6 +70,37 @@ declare -A check_categories=(
   # Add more categories here in the future
 )
 
+# RAID/OS disk check: Allow RAID for root only
+check_raid_for_root_only() {
+  echo -e "\n${YELLOW}=== RAID Configuration ===${NC}"
+  echo -e "${BLUE}Checking RAID devices...${NC}"
+  local raid_lines
+  local nonroot_raid=0
+  local root_raid=0
+  raid_lines=$(lsblk -P -o NAME,TYPE,MOUNTPOINT | grep 'TYPE="raid')
+  if [ -z "$raid_lines" ]; then
+    echo -e "${GREEN}No RAID devices detected.${NC}"
+    return 0
+  fi
+  while IFS= read -r line; do
+    local mp
+    mp=$(echo "$line" | sed -n 's/.*MOUNTPOINT="\([^"]*\)".*/\1/p')
+    if [ "$mp" = "/" ]; then
+      root_raid=1
+    else
+      nonroot_raid=1
+    fi
+  done <<< "$raid_lines"
+  if [ "$nonroot_raid" -eq 1 ]; then
+    echo -e "${RED}RAID detected on non-root device(s). This setup is not supported for Solana validator nodes.${NC}"
+    echo "$raid_lines"
+    return 1
+  elif [ "$root_raid" -eq 1 ]; then
+    echo -e "${YELLOW}RAID detected for root/OS disk only. This is allowed.${NC}"
+    return 0
+  fi
+}
+
 # Array of sysctl checks in format: "parameter expected_value"
 declare -A checks=(
   ["net.ipv4.tcp_rmem"]="10240 87380 12582912"
@@ -258,6 +289,11 @@ check_cpu_governor() {
 
 # Run all checks
 echo -e "${BLUE}Starting system health checks...${NC}"
+
+# RAID/OS disk check (allow RAID for root only)
+if ! check_raid_for_root_only; then
+  ((failures++))
+fi
 
 # Run sysctl checks by category
 for category in "${!check_categories[@]}"; do

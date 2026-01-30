@@ -37,25 +37,27 @@
   become: false
   run_once: true
 
-# Precheck: Fail if RAID devices are detected (md/raid type in lsblk)
-- name: Check for RAID devices (md/raid) in lsblk
+# Precheck: Allow RAID if used only for root/OS, fail if RAID is present elsewhere
+- name: Get RAID devices and their mountpoints
   ansible.builtin.shell: |
-    lsblk -o NAME,TYPE | grep -E '\s(md|raid)[0-9]*$' || true
-  register: raid_devices_check
+    lsblk -P -o NAME,TYPE,MOUNTPOINT | grep 'TYPE="raid' || true
+  register: raid_devices_info
   changed_when: false
   check_mode: false
+  tags: [disk-setup]
 
-- name: Fail if RAID devices are present
+- name: Fail if RAID devices are present and not used for root
   ansible.builtin.fail:
     msg: |
-      RAID configuration detected on this server. This setup is not supported for Solana validator nodes.
-      Please remove or reconfigure RAID devices before proceeding.
+      RAID configuration detected on non-root device. This setup is not supported for Solana validator nodes.
       Detected RAID devices:
-      {{ raid_devices_check.stdout }}
-  when: raid_devices_check.stdout | length > 0
+      {{ raid_devices_info.stdout }}
+  when: >
+    raid_devices_info.stdout_lines | select('search', 'MOUNTPOINT="/"') | length < raid_devices_info.stdout_lines | length
   delegate_to: "{{ inventory_hostname }}"
   become: true
   run_once: false
+  tags: [disk-setup]
 
 - name: Check CPU configuration for Solana servers
   block:
@@ -122,6 +124,7 @@
         fail_msg: "ERROR! AMD SMT/Hyperthreading is not enabled. Current status: {{ smt_check.stdout }}"
         success_msg: "AMD SMT/Hyperthreading correctly enabled"
 
+  # Disk configuration checks for Solana servers
 - name: Check disk configuration for Solana servers
   block:
     # Get system disk information
@@ -156,10 +159,10 @@
       ansible.builtin.debug:
         msg: "{{ disk_info.stdout_lines }}"
 
-    # Get available disks (excluding system disk)
+    # Get available disks (excluding system disk unless using root for snapshots)
     - name: Get available disks
       ansible.builtin.shell: |
-        # Get disks sorted by size (excluding system disk)
+        # Get disks sorted by size (excluding system disk unless using root for snapshots)
         lsblk -b -d -o NAME,SIZE | grep -v "NAME" | sort -k2 -nr | while read name size; do
           if [ "$name" != "{{ system_disk.stdout | basename }}" ]; then
             echo "$name"
@@ -191,22 +194,22 @@
             - Accounts: {{ mount_points.accounts }} ({{ filesystem_formats.accounts }})
             - Snapshots: {{ mount_points.snapshots }} ({{ filesystem_formats.snapshots }})
 
-    
-    - name: Verify minimum number of disks
+    - name: Verify minimum number of disks (allow root for snapshots)
       ansible.builtin.assert:
-        that: available_disks_list | length >= min_required_disks
-        fail_msg: "ERROR! Insufficient number of disks. Need at least {{ min_required_disks }} disks for ledger, accounts, and snapshots."
-        success_msg: "Sufficient number of disks available (found {{ available_disks_list | length }}, required {{ min_required_disks }})"
+        that: (available_disks_list | length + 1) >= min_required_disks
+        fail_msg: "ERROR! Insufficient number of disks. Need at least {{ min_required_disks }} disks for ledger, accounts, and snapshots (root disk can be used for snapshots)."
+        success_msg: "Sufficient number of disks available (found {{ available_disks_list | length }} + root, required {{ min_required_disks }})"
 
-    - name: Verify mount points are NOT mounted
+    - name: Verify mount points are NOT mounted (except snapshots if on root)
       ansible.builtin.shell: |
-        mount | grep -E '{{ mount_points.ledger }}|{{ mount_points.accounts }}|{{ mount_points.snapshots }}' || true
+        mount | grep -E '{{ mount_points.ledger }}|{{ mount_points.accounts }}' || true
       register: mount_points_check
       changed_when: false
       check_mode: false
 
-    - name: Verify no existing mounts
+    - name: Verify no existing mounts (except snapshots if on root)
       ansible.builtin.assert:
         that: mount_points_check.stdout_lines | length == 0
-        fail_msg: "ERROR! Found existing mounts for {{ mount_points.ledger }}, {{ mount_points.accounts }}, or {{ mount_points.snapshots }}. Please unmount these directories before proceeding."
-        success_msg: "No existing mounts found for required directories"
+        fail_msg: "ERROR! Found existing mounts for {{ mount_points.ledger }} or {{ mount_points.accounts }}. Please unmount these directories before proceeding."
+        success_msg: "No existing mounts found for required directories (snapshots on root is allowed)"
+  tags: [disk-setup]
