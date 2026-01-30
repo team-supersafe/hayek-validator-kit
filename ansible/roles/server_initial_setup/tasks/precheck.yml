@@ -10,6 +10,7 @@
   delegate_to: localhost
   become: false
   run_once: true
+  tags: [precheck]
 
 - name: Debug authorized IPs CSV content
   ansible.builtin.debug:
@@ -18,6 +19,7 @@
   become: false
   no_log: true
   run_once: true
+  tags: [precheck]
 
 - name: Fail if authorized IPs CSV is missing or empty
   ansible.builtin.fail:
@@ -28,6 +30,7 @@
   delegate_to: localhost
   become: false
   run_once: true
+  tags: [precheck]
 
 - name: Fail if authorized IPs CSV missing required field 'ip'
   ansible.builtin.fail:
@@ -36,6 +39,7 @@
   delegate_to: localhost
   become: false
   run_once: true
+  tags: [precheck]
 
 # Precheck: Allow RAID if used only for root/OS, fail if RAID is present elsewhere
 - name: Get RAID devices and their mountpoints
@@ -44,7 +48,7 @@
   register: raid_devices_info
   changed_when: false
   check_mode: false
-  tags: [disk-setup]
+  tags: [precheck, disk-setup]
 
 - name: Fail if RAID devices are present and not used for root
   ansible.builtin.fail:
@@ -57,7 +61,7 @@
   delegate_to: "{{ inventory_hostname }}"
   become: true
   run_once: false
-  tags: [disk-setup]
+  tags: [precheck, disk-setup]
 
 - name: Check CPU configuration for Solana servers
   block:
@@ -117,12 +121,12 @@
             - CPU Scaling Driver: {{ pstate_check.stdout }}
             - AMD SMT/Hyperthreading: {{ smt_check.stdout }}
 
-            
     - name: Verify AMD SMT/Hyperthreading is enabled
       ansible.builtin.assert:
         that: smt_check.stdout == "on"
         fail_msg: "ERROR! AMD SMT/Hyperthreading is not enabled. Current status: {{ smt_check.stdout }}"
         success_msg: "AMD SMT/Hyperthreading correctly enabled"
+  tags: [precheck]
 
   # Disk configuration checks for Solana servers
 - name: Check disk configuration for Solana servers
@@ -212,4 +216,4 @@
         that: mount_points_check.stdout_lines | length == 0
         fail_msg: "ERROR! Found existing mounts for {{ mount_points.ledger }} or {{ mount_points.accounts }}. Please unmount these directories before proceeding."
         success_msg: "No existing mounts found for required directories (snapshots on root is allowed)"
-  tags: [disk-setup]
+  tags: [precheck, disk-setup]
