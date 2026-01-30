@@ -2,12 +2,10 @@
 # This role performs disk setup and configuration for Solana validator
 # This role uses disk information collected by precheck.yml
 
-# Get available disks excluding those in use by the system
+# Get available disks excluding those in use by the system (snapshots can be on root)
 - name: Get available disks
   ansible.builtin.shell: |
-    # Get disks sorted by size and check if they are in use
-    lsblk -b -d -o NAME,SIZE | grep -v "NAME" | sort -k2 -nr | while read name size; do
-      # Skip if disk is mounted (check /proc/mounts for efficiency)
+    lsblk -b -d -o NAME,TYPE,SIZE | awk '$2 == "disk"' | sort -k3 -nr | while read name type size; do
       if ! grep -q "/dev/$name" /proc/mounts; then
         echo "$name"
       fi
@@ -15,21 +13,50 @@
   register: available_disks_list
   changed_when: false
 
-# Assign disks by size using information from available disks
-- name: Assign disks by size
+# Get root device for snapshots if needed
+- name: Get root device
+  ansible.builtin.shell: |
+    findmnt -n -o SOURCE /
+  register: root_device
+  changed_when: false
+
+# Assign disks by size, use root for snapshots if not enough disks
+- name: Assign disks by size (snapshots on root if needed)
   ansible.builtin.set_fact:
     ledger_disk: "{{ available_disks_list.stdout_lines[0] if available_disks_list.stdout_lines | length > 0 else '' }}"
     account_disk: "{{ available_disks_list.stdout_lines[1] if available_disks_list.stdout_lines | length > 1 else '' }}"
-    snapshots_disk: "{{ available_disks_list.stdout_lines[2] if available_disks_list.stdout_lines | length > 2 else '' }}"
+    snapshots_disk: >-
+      {{
+        (available_disks_list.stdout_lines[2] if available_disks_list.stdout_lines | length > 2
+          else (
+            (root_device.stdout | regex_replace('^/dev/', '')).split('p')[0] if 'nvme' in root_device.stdout
+            else (root_device.stdout | regex_replace('^/dev/', '') | regex_replace('[0-9]+$', ''))
+          )
+      )
+      }}
+
+# Fail early if any assigned disk is not present in ansible_facts['devices']
+- name: Fail if any assigned disk is not present in ansible_facts['devices']
+  ansible.builtin.assert:
+    that:
+      - ledger_disk == '' or ledger_disk in ansible_facts['devices']
+      - account_disk == '' or account_disk in ansible_facts['devices']
+      - snapshots_disk == '' or snapshots_disk in ansible_facts['devices']
+    fail_msg: |
+      One or more assigned disks (ledger, accounts, snapshots) are not present in ansible_facts['devices'].
+      ledger_disk: {{ ledger_disk }}
+      account_disk: {{ account_disk }}
+      snapshots_disk: {{ snapshots_disk }}
+      Available devices: {{ ansible_facts['devices'].keys() | list }}
 
 # Display disk assignments for verification
 - name: Show disk assignments
   ansible.builtin.debug:
     msg: |
       Detected disk assignments:
-      - Ledger: /dev/{{ ledger_disk }} ({{ ansible_facts['devices'][ledger_disk].size if ledger_disk != '' else 'Not available' }})
-      - Accounts: /dev/{{ account_disk }} ({{ ansible_facts['devices'][account_disk].size if account_disk != '' else 'Not available' }})
-      - Snapshots: /dev/{{ snapshots_disk }} ({{ ansible_facts['devices'][snapshots_disk].size if snapshots_disk != '' else 'Not available' }})
+      - Ledger: /dev/{{ ledger_disk }} ({{ ansible_facts['devices'][ledger_disk].size if ledger_disk in ansible_facts['devices'] else 'Not available' }})
+      - Accounts: /dev/{{ account_disk }} ({{ ansible_facts['devices'][account_disk].size if account_disk in ansible_facts['devices'] else 'Not available' }})
+      - Snapshots: /dev/{{ snapshots_disk }} ({{ ansible_facts['devices'][snapshots_disk].size if snapshots_disk in ansible_facts['devices'] else 'Not available' }})
 
 # Disable swap to prevent performance issues
 - name: Disable swap
@@ -42,7 +69,7 @@
     regexp: '^([^#].+swap.+)'
     replace: '# \1'
 
-# Format drives with appropriate filesystems
+# Format drives with appropriate filesystems (skip snapshots if on root)
 - name: Format ledger drive
   community.general.filesystem:
     fstype: "{{ filesystem_formats.ledger }}"
@@ -57,12 +84,17 @@
     force: true
   when: account_disk != '' and ansible_facts['devices'][account_disk] is defined
 
-- name: Format snapshots drive
+- name: Format snapshots drive (skip if snapshots on root)
   community.general.filesystem:
     fstype: "{{ filesystem_formats.snapshots }}"
     dev: "/dev/{{ snapshots_disk }}"
     force: true
-  when: snapshots_disk != '' and ansible_facts['devices'][snapshots_disk] is defined
+  when:
+    - snapshots_disk != ''
+    - ansible_facts['devices'][snapshots_disk] is defined
+    - ansible_facts['devices'][snapshots_disk].partitions is defined
+    - ansible_facts['devices'][snapshots_disk].partitions | type_debug == 'list'
+    - "'/' not in (ansible_facts['devices'][snapshots_disk].partitions | map(attribute='mountpoint') | list)"
 
 # Create mount point directories
 - name: Create mount directories
@@ -74,7 +106,7 @@
     group: "{{ mount_point_permissions.group }}"
   loop: "{{ mount_directories }}"
 
-# Get UUIDs for fstab configuration
+# Get UUIDs for fstab configuration (skip snapshots if on root)
 - name: Get UUID for ledger drive
   ansible.builtin.command: blkid -s UUID -o value "/dev/{{ ledger_disk }}"
   register: ledger_uuid
@@ -87,13 +119,17 @@
   changed_when: false
   when: account_disk != '' and ansible_facts['devices'][account_disk] is defined
 
-- name: Get UUID for snapshots drive
+- name: Get UUID for snapshots drive (skip if snapshots on root)
   ansible.builtin.command: blkid -s UUID -o value "/dev/{{ snapshots_disk }}"
   register: snapshots_uuid
   changed_when: false
-  when: snapshots_disk != '' and ansible_facts['devices'][snapshots_disk] is defined
+  when:
+    - snapshots_disk != ''
+    - ansible_facts['devices'][snapshots_disk].partitions is defined
+    - ansible_facts['devices'][snapshots_disk].partitions | type_debug == 'list'
+    - "'/' not in (ansible_facts['devices'][snapshots_disk].partitions | map(attribute='mountpoint') | list)"
 
-# Configure fstab for automatic mounting
+# Configure fstab for automatic mounting (skip snapshots if on root)
 - name: Configure fstab for ledger drive
   ansible.posix.mount:
     path: "{{ mount_points.ledger }}"
@@ -116,7 +152,7 @@
     state: present
   when: accounts_uuid.stdout is defined and accounts_uuid.stdout != ""
 
-- name: Configure fstab for snapshots drive
+- name: Configure fstab for snapshots drive (skip if snapshots on root)
   ansible.posix.mount:
     path: "{{ mount_points.snapshots }}"
     src: "UUID={{ snapshots_uuid.stdout }}"
@@ -125,9 +161,12 @@
     dump: 0
     passno: 2
     state: present
-  when: snapshots_uuid.stdout is defined and snapshots_uuid.stdout != ""
+  when:
+    - snapshots_uuid.stdout is defined
+    - snapshots_uuid.stdout != ""
+    - "'/' not in (ansible_facts['devices'][snapshots_disk].partitions | map(attribute='mountpoint') | list)"
 
-# Mount all configured filesystems
+# Mount all configured filesystems (snapshots on root is already mounted)
 - name: Mount all filesystems
   ansible.builtin.command: mount -a
   changed_when: false
