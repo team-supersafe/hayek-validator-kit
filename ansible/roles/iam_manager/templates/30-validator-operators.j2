@@ -170,17 +170,50 @@
 
 # Log management (basic log viewing inherited from viewers)
 
-# Configuration management
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp {{ validator_config_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ validator_config_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_config_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_config_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown {{ validator_config_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_config_dir }}
+# Allow copying validator config directories to any backup location
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ system_solana_install_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ system_shared_build_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ jito_relayer_install_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ validator_logs_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ validator_keys_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ validator_scripts_dir }} *
 
-# Key management
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/solana-keygen
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/agave-validator
+# Allow moving validator config directories to any location (also allows rename)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ system_solana_install_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ system_shared_build_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ jito_relayer_install_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ validator_logs_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ validator_keys_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ validator_scripts_dir }} *
+
+# Allow deleting files inside validator directories (also deleting the full directory)
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ system_solana_install_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ system_solana_install_dir }}/*
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ system_shared_build_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ system_shared_build_dir }}/*
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ jito_relayer_install_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ jito_relayer_install_dir }}/*
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_logs_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_logs_dir }}/*
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_keys_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_keys_dir }}/*
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_scripts_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_scripts_dir }}/*
+
+# Alow removing the symbolic link to the current validator identity.
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm identity.json
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keys_dir }}/*/identity.json
+
+# Alow building a symbolic link in the current directory
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s * identity.json
+
+# Allow building a symbolik link using validator paths
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keys_dir }}/*/primary-target-identity.json {{ validator_keys_dir }}/*/identity.json
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keys_dir }}/*/hot-spare-identity.json {{ validator_keys_dir }}/*/identity.json
+
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown {{ validator_logs_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_keys_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_scripts_dir }}
 
 # Directory management
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_ledger_dir }}
@@ -189,6 +222,10 @@
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_ledger_dir }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_accounts_dir }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_snapshots_dir }}
+
+# Key management
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/solana-keygen
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/agave-validator
 
 # Monitoring and debugging
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/strace -p

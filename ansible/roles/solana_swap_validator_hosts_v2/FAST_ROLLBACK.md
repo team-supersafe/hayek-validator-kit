@@ -5,13 +5,17 @@ If the swap process fails after the source validator has been demoted (identity 
 ## 1. Set Keyset Path
 
 ```sh
+# For mainnet
 KEYSET_PATH=/opt/validator/keys/hayek-mainnet
+# For testnet
+KEYSET_PATH=/opt/validator/keys/hayek-testnet
 ```
 
 ## 2. Restore Symbolic Link
 
 ```sh
-ln -sf $KEYSET_PATH/primary-target-identity.json $KEYSET_PATH/identity.json
+sudo rm $KEYSET_PATH/identity.json
+ln -s $KEYSET_PATH/primary-target-identity.json $KEYSET_PATH/identity.json
 ```
 
 ## 3. Become the `sol` User
@@ -38,3 +42,10 @@ You should see your primary identity back in play.
 
 - This procedure should be followed immediately if the swap fails after the source validator is demoted, to minimize downtime and risk of delinquency.
 - Investigate and resolve the root cause of the swap failure before retrying.
+- **Validator operators must have sudo permission to delete the identity.json file.** The Ansible sudoers template should include a rule like:
+
+    ```text
+    %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm /opt/validator/keys/*/identity.json
+    ```
+
+    (or the appropriate path for your deployment)

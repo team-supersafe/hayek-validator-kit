@@ -11,9 +11,15 @@
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/less {{ validator_log_file }}
 
 # Configuration viewing (read-only)
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/cat {{ validator_config_dir }}
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ validator_config_dir }}
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/find {{ validator_config_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ system_solana_install_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ system_shared_build_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ validator_root_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ jito_relayer_install_dir }}
+
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/find {{ system_solana_install_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/find {{ system_shared_build_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/find {{ validator_root_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/find {{ jito_relayer_install_dir }}
 
 # Process monitoring (read-only)
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/pgrep -f {{ validator_service }}
@@ -56,7 +62,7 @@
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/sar
 
 # Log analysis (read-only)
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/grep -r {{ validator_log_dir }}
+%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/grep -r {{ validator_logs_dir }}
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/awk
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/sort
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/uniq
