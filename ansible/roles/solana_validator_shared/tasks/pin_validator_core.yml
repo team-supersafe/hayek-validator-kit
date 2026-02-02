@@ -1,0 +1,9 @@
+- name: Pin validator process to CPU core
+  command: /opt/validator/scripts/fix_core_affinity_bug_for_poh.sh
+  become: true
+  register: pin_core_result
+  changed_when: pin_core_result.rc == 0
+  failed_when: pin_core_result.rc != 0
+  tags:
+    - poh_core_affinity
+    - validator_tuning

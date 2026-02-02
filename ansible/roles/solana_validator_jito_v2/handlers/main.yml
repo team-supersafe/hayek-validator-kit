@@ -16,6 +16,10 @@
     state: restarted
   become: true
 
+- name: handlers - Pin validator process to CPU core
+  import_tasks: "{{ role_path }}/../../solana_validator_shared/tasks/pin_validator_core.yml"
+  listen: handlers - Restart validator service
+
 - name: handlers - Restart validator logrotate timer
   ansible.builtin.systemd:
     name: "validator-logrotate-{{ validator_service_name }}.timer"
