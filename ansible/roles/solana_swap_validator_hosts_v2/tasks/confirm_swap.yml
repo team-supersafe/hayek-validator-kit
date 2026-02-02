@@ -149,15 +149,21 @@
     - destination_vote_pubkey_result is defined
     - destination_vote_pubkey_result.stdout_lines is defined
     - destination_vote_pubkey_result.stdout_lines | length > 0
-  run_once: true
 
 - name: confirm_swap - Ensure destination_vote_pubkey is undefined when vote account doesn't exist
   ansible.builtin.set_fact:
     destination_vote_pubkey: ""
   when:
+    - inventory_hostname == destination_host
     - destination_vote_account_file is defined
     - destination_vote_account_file.stat is defined
     - not destination_vote_account_file.stat.exists
+
+- name: Set final value for destination_vote_pubkey
+  ansible.builtin.set_fact:
+    destination_vote_pubkey: "{{ hostvars[destination_host]['destination_vote_pubkey'] }}"
+  when:
+    - hostvars[destination_host]['destination_vote_pubkey'] is defined
   run_once: true
 
 - name: confirm_swap - Display Swap Operation Summary
@@ -226,7 +232,6 @@
 
       Please review the above information carefully.
       ===============================================
-  delegate_to: localhost
   run_once: true
 
 - name: confirm_swap - Fail if attempting to swap between different validator identities

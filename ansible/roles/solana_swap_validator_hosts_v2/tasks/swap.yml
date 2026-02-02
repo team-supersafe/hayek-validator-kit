@@ -94,52 +94,8 @@
     - source_primary_pubkey is defined
     - source_primary_pubkey != ''
 
-- name: swap - Wait for Restart Window and Unstake Source Validator
-  any_errors_fatal: true
-  block:
-    - name: swap - Wait for safe restart window
-      ansible.builtin.command: >
-        agave-validator --ledger {{ ledger_path }} wait-for-restart-window
-        --max-delinquent-stake {{ restart_max_delinquent_stake }} --min-idle-time {{ restart_min_idle_time }}
-        --skip-new-snapshot-check --skip-health-check
-      environment:
-        PATH: "{{ system_solana_active_release_dir }}"
-      become: true
-      become_user: "{{ solana_user }}"
-      when: inventory_hostname == source_host
-      register: wait_restart_result
-      failed_when: wait_restart_result.rc != 0
-    
-    - name: Store current timestamp
-      ansible.builtin.command: date
-      register: current_timestamp
-      delegate_to: localhost
-      run_once: true
-
-    - name: swap - Switch to unstaked identity on source
-      ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_hot_spare_identity_path }}
-      environment:
-        PATH: "{{ system_solana_active_release_dir }}"
-      become: true
-      become_user: "{{ solana_user }}"
-      when: inventory_hostname == source_host
-
-    - name: swap - Update symlink to unstaked identity
-      ansible.builtin.file:
-        src: "{{ source_host_hot_spare_identity_path }}"
-        dest: "{{ source_host_identity_link_path }}"
-        state: link
-        force: true
-      when: inventory_hostname == source_host
-      register: wait_and_unstake_result
-
-    - name: set fact if Restart Window and Unstake Source succeeded
-      ansible.builtin.set_fact:
-        wait_and_unstake_success: true
-      when: wait_and_unstake_result is not failed
-
-- name: swap - Transfer Tower File from Source to Destination
-  any_errors_fatal: true
+# Pre-swap facts gathering
+- name: Pre-swap facts gathering
   block:
     - name: swap - Get tower filename
       check_mode: false
@@ -168,6 +124,7 @@
           - source_ssh_key_path | length > 0
         fail_msg: "source_ssh_key_path is not defined or is empty. Please ensure the SSH key path is set for source_host."
       run_once: true
+
     - name: swap - Ensure SSH key has correct permissions on source host
       ansible.builtin.file:
         path: "{{ source_ssh_key_path }}"
@@ -191,6 +148,53 @@
       when: inventory_hostname == destination_host
       changed_when: false
 
+- name: swap - Wait for Restart Window and Unstake Source Validator
+  any_errors_fatal: true
+  block:
+    - name: swap - Wait for safe restart window
+      ansible.builtin.command: >
+        agave-validator --ledger {{ ledger_path }} wait-for-restart-window
+        --max-delinquent-stake {{ restart_max_delinquent_stake }} --min-idle-time {{ restart_min_idle_time }}
+        --skip-new-snapshot-check --skip-health-check
+      environment:
+        PATH: "{{ system_solana_active_release_dir }}"
+      become: true
+      become_user: "{{ solana_user }}"
+      when: inventory_hostname == source_host
+      register: wait_restart_result
+      failed_when: wait_restart_result.rc != 0
+
+    # Start measuring time for swap duration
+    - name: Store current timestamp
+      ansible.builtin.command: date
+      register: current_timestamp
+      delegate_to: localhost
+      run_once: true
+
+    # Step 1: Switch to unstaked identity on source
+    - name: swap - Switch to unstaked identity on source
+      ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity {{ source_host_hot_spare_identity_path }}
+      environment:
+        PATH: "{{ system_solana_active_release_dir }}"
+      become: true
+      become_user: "{{ solana_user }}"
+      when: inventory_hostname == source_host
+
+    # Step 2: Update symlink to unstaked identity
+    - name: swap - Update symlink to unstaked identity
+      ansible.builtin.file:
+        src: "{{ source_host_hot_spare_identity_path }}"
+        dest: "{{ source_host_identity_link_path }}"
+        state: link
+        force: true
+      become: true
+      when: inventory_hostname == source_host
+      register: wait_and_unstake_result
+
+- name: swap - Transfer Tower File from Source to Destination
+  any_errors_fatal: true
+  block:
+    # Step 3: Rsync tower file from source to destination
     - name: swap - Rsync tower file from source to destination
       ansible.builtin.shell: |
         rsync --delay-updates -F --archive --delete \
@@ -212,16 +216,12 @@
       when:
         - transfer_tower_result is failed
         - not ansible_check_mode
-
-    - name: swap - Set fact if tower transfer succeeded
-      ansible.builtin.set_fact:
-        tower_transfer_success: true
-      when: transfer_tower_result is not failed
-  when: wait_and_unstake_success | default(false)
+  when: wait_and_unstake_result is not failed
 
 - name: swap - Promote Destination to Primary Target Validator
   any_errors_fatal: true
   block:
+    # Step 4: Switch to staked identity on destination
     - name: swap - Switch to staked identity on destination
       ansible.builtin.command: agave-validator -l {{ ledger_path }} set-identity --require-tower {{ destination_host_primary_target_identity_path }}
       environment:
@@ -230,12 +230,14 @@
       become_user: "{{ solana_user }}"
       when: inventory_hostname == destination_host
 
+    # Step 5: Update symlink to staked identity on destination
     - name: swap - Update symlink to staked identity
       ansible.builtin.file:
         src: "{{ destination_host_primary_target_identity_path }}"
         dest: "{{ destination_host_identity_link_path }}"
         state: link
         force: true
+      become: true
       when: inventory_hostname == destination_host
 
     - name: Calculate elapsed time since current_timestamp
@@ -256,16 +258,7 @@
       run_once: true
       delegate_to: localhost
 
-    - name: swap - Fix ownership of destination identity symlink
-      ansible.builtin.file:
-        path: "{{ destination_host_identity_link_path }}"
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
-        follow: false
-      become: true
-      when: inventory_hostname == destination_host
-
-# Remove ufw rule for source host after swap
+# Step 6: Cleanup firewall rules
 - name: swap - Remove ufw allow rule for source host IP on destination
   community.general.ufw:
     rule: allow
