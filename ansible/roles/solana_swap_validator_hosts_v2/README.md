@@ -99,7 +99,7 @@ All three must exist for `validator_rbac_enabled` to be `true`.
 ### 7. Variable mapping summary
 
 | Legacy Variable | RBAC Variable |
-|----------------|---------------|
+| ---------------- | --------------- |
 | `solana_install_dir` | `system_solana_active_release_dir` |
 | `build_dir` | `system_shared_build_dir` |
 | N/A (not used) | `validator_root_dir` |
@@ -110,6 +110,27 @@ All three must exist for `validator_rbac_enabled` to be `true`.
 | `default_group` | `validator_operators_group` |
 | `default_file_mode` | `validator_key_file_mode` |
 | `default_directory_mode` | `validator_data_mode_owner_readonly` |
+
+
+## Firewall and SSH Automation Notes
+
+- This role uses the Ansible `ufw` module for idempotent firewall rule management. UFW rules are added for the source host's IP and the correct SSH port, and UFW is restarted and enabled as part of the process.
+- SSH connectivity is tested robustly from the source host to the destination host. The play will fail if SSH access is not possible, ensuring firewall and key setup are correct before proceeding.
+
+### Key Variables for Firewall/SSH Logic
+
+| Variable                   | Purpose                                                      |
+|----------------------------|--------------------------------------------------------------|
+| `source_host_address`      | Source host's IP or hostname for UFW rule                    |
+| `destination_host_address` | Destination host's IP or hostname for SSH connection         |
+| `destination_host_port`    | SSH port on destination host (from inventory or default 22)  |
+
+### Troubleshooting
+
+- If SSH connectivity fails:
+   - Ensure the operator's public key is present in the destination user's `authorized_keys` file.
+   - Verify the UFW rule for the source host's IP and SSH port is present and active on the destination host.
+   - Confirm that UFW is enabled and running.
 
 ## Order of operations to perform a validator Identity swap
 
@@ -134,7 +155,8 @@ All three must exist for `validator_rbac_enabled` to be `true`.
 - ✅ Checks if swap is already completed and fail if so
 - ✅ Checks cluster delinquency levels
 - ✅ Checks leader schedule to ensure safe restart window
-- ✅ Tests SSH connectivity from source to destination
+- ✅ Ensures source host IP and SSH port are allowed in destination host's UFW rules using the Ansible `ufw` module (auto-added if missing)
+- ✅ Tests SSH connectivity from source to destination (robust, fails on any error)
 - ✅ Verifies destination validator health
 
 #### 3. Confirm Swap Phase (`tasks/confirm_swap.yml`)
@@ -146,73 +168,31 @@ All three must exist for `validator_rbac_enabled` to be `true`.
 - ✅ Prompts user for confirmation
 - ✅ Fails if user doesn't confirm with 'yes'
 
-Validator host swap operation happens in `tasks/swap.yml`. Here is a step by step description:
+#### 4. Swap Phase (`tasks/swap.yml`)
 
 1. **Wait for Restart Window and Unstake Source Validator**
-   - First, it waits for a safe restart window on the source validator using `agave-validator wait-for-restart-window`
-   - Then it switches the source validator to use its hot-spare identity
-   - Finally, it updates the identity symlink to point to the hot-spare identity
+   - Waits for a safe restart window on the source validator using `agave-validator wait-for-restart-window`
+   - Switches the source validator to use its hot-spare identity
+   - Updates the identity symlink to point to the hot-spare identity
    - The symlink ownership is set to `sol:validator_operators` with appropriate permissions
    - This effectively takes the source validator out of active voting
-   - **RBAC Note**: All `agave-validator` commands are executed with `become: true` and `become_user: "{{ solana_user }}"` because the validator binary requires access to ledger files and other resources that only the `sol` service user has permission to access
+   - **RBAC Note**: All `agave-validator` commands are executed with `become: true` and `become_user: "{{ solana_user }}"`
 
 2. **Transfer Tower File**
    - Gets the tower filename by checking the primary target identity's public key
    - Uses rsync to copy the tower file from source to destination
    - The tower file is important for PoH (Proof of History) verification
-   - **SSH Management for RBAC-Enabled Hosts**:
-     - SSH keys are generated in the operator's home directory (`{{ ansible_facts['env']['HOME'] }}/.ssh/validator_swap_id_rsa`) on the source host, not in the `sol` user's directory
-     - The public key is authorized for the operator user account on the destination host (not for `sol`), since operators SSH as their own accounts in RBAC environments
-     - The rsync command uses the operator's SSH key with specific options to bypass host key verification:
-       - `-o StrictHostKeyChecking=no` - Disables strict host key checking
-       - `-o UserKnownHostsFile=/dev/null` - Bypasses the known_hosts file entirely
-       - `-o CheckHostIP=no` - Disables IP address checking
-       - `-o BatchMode=yes` - Prevents interactive prompts
-     - Before rsync, any conflicting known_hosts entries are removed to prevent verification failures
-     - An SSH connection test is performed first to verify connectivity before attempting the file transfer
-   - **Legacy vs RBAC**: In legacy hosts, SSH keys were stored in `/home/sol/.ssh/` and authorized for the `sol` user. In RBAC-enabled hosts, keys are in the operator's home directory and authorized for the operator user account
+   - **Firewall/ufw**: The ufw rule is removed from the destination host after a successful swap
+   - **SSH Management for RBAC-Enabled Hosts**: SSH keys are generated in the operator's home directory, authorized for the operator user account, and all host key verification is bypassed for the transfer
+   - An SSH connection test is performed first to verify connectivity before attempting the file transfer
 
 3. **Promote Destination to Primary Target Validator**
    - Switches the destination validator to use the primary target identity
    - Updates the identity symlink on the destination to point to the primary target identity
    - The symlink ownership is set to `sol:validator_operators` with appropriate permissions
    - This effectively makes the destination validator the new primary validator
-   - **RBAC Note**: The `agave-validator set-identity` command is executed with `become: true` and `become_user: "{{ solana_user }}"` for the same permission reasons as step 1
+   - **RBAC Note**: The `agave-validator set-identity` command is executed with `become: true` and `become_user: "{{ solana_user }}"`
 
-### RBAC-Specific Considerations
+### Fast Rollback
 
-This role is designed for RBAC-enabled validator hosts and uses the following RBAC-specific configurations:
-
-- **Key Storage**: Keys are stored in `{{ validator_keyset_dir }}` (typically `/opt/validator/keys/{{ validator_name }}`)
-- **Binary Paths**: Solana binaries are accessed from `{{ system_solana_active_release_dir }}` (system-wide installation)
-- **File Ownership**: All identity files and symlinks are owned by `sol:validator_operators`
-- **File Permissions**: Key files use `{{ validator_key_file_mode }}` (0464) for secure group-based access
-- **SSH Keys**:
-  - SSH keys for host-to-host communication are generated in the operator's home directory (`{{ ansible_facts['env']['HOME'] }}/.ssh/validator_swap_id_rsa`) on the source host
-  - The public key is authorized for the operator user account on the destination host (not `sol`), since operators SSH as their own accounts
-  - The rsync transfer uses the operator's SSH key with options to bypass host key verification for seamless operation
-- **Privilege Escalation**:
-  - The playbook runs as `become: false` by default, with operators running tasks as their own user accounts
-  - Only specific tasks that require access to validator resources (like `agave-validator` commands) use `become: true` with `become_user: "{{ solana_user }}"` to run as the `sol` service user
-  - This follows the principle of least privilege: operators only escalate when necessary
-- **Special Consideration**:
-  All `agave-validator` commands need to run as user 'sol'. This is an example in Ansible:
-
-  ```yaml
-  - name: precheck - Get validator contact info and extract identity
-    ansible.builtin.shell: "agave-validator -l /mnt/ledger contact-info | head -1 | sed 's/Identity: //'"
-    register: ledger_identity
-    changed_when: false
-    become: true
-    become_user: "sol"
-  ```
-
-### Validations
-
-- The playbook input parameters `source_host`, `destination_host`, `source_validator_name` and `destination_validator_name` are required. This is enforced during the precheck (`tasks/precheck.yml`) to ensure that the playbook goal can be achieved.
-- Summary of what will happen is presented before executing the swap
-- Keys may have the new naming convention or the old naming convention in the swap source host
-  Allows for a grace period to support old naming convention in the swap source host (`tasks/prepare.yml`)
-- Keys on the swap source host may be different than those on the swap destination host
-  The playbook enforces that both validator hosts contain the same key set to avoid spinning a different validator identity
-- Both source and destination hosts must be RBAC-enabled (this role does not support legacy hosts)
+If the swap fails after the source validator is demoted, follow the documented procedure in `FAST_ROLLBACK.md` to restore the primary identity and validator service on the source host.

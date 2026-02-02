@@ -8,6 +8,8 @@
       - jito_relayer_install_dir is defined
       - jito_relayer_user is defined
       - jito_relayer_metrics_config is defined
+      - validator_name is defined
+      - validator_keys_dir is defined
     fail_msg: "One or more required variables for Jito relayer installation are not defined."
 
 # Check if we need to install the relayer
