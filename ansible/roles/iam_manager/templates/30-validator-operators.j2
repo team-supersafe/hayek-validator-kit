@@ -201,11 +201,11 @@
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_scripts_dir }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_scripts_dir }}/*
 
-# Alow removing the symbolic link to the current validator identity.
+# Allow removing the symbolic link to the current validator identity.
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm identity.json
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keys_dir }}/*/identity.json
 
-# Alow building a symbolic link in the current directory
+# Allow building a symbolic link in the current directory
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s * identity.json
 
 # Allow building a symbolik link using validator paths
