@@ -10,7 +10,7 @@
       This wait may take several minutes on testnet/mainnet.
 
 - name: Pin validator process to CPU core
-  command: /opt/validator/scripts/fix_core_affinity_bug_for_poh.sh
+  command: "{{ validator_scripts_dir }}/fix_core_affinity_bug_for_poh.sh"
   become: true
   register: pin_core_result
   changed_when: "'Successfully set affinity' in pin_core_result.stdout"
