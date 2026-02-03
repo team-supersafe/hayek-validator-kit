@@ -143,6 +143,7 @@
   ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ destination_vote_pubkey_result.stdout_lines[0] }}"
   when:
+    - inventory_hostname == destination_host
     - destination_vote_account_file is defined
     - destination_vote_account_file.stat is defined
     - destination_vote_account_file.stat.exists
