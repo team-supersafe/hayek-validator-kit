@@ -185,6 +185,8 @@
       ansible.builtin.file:
         src: "{{ source_host_hot_spare_identity_path }}"
         dest: "{{ source_host_identity_link_path }}"
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
         state: link
         force: true
       become: true
@@ -236,6 +238,8 @@
         src: "{{ destination_host_primary_target_identity_path }}"
         dest: "{{ destination_host_identity_link_path }}"
         state: link
+        owner: "{{ solana_user }}"
+        group: "{{ validator_operators_group }}"
         force: true
       become: true
       when: inventory_hostname == destination_host
