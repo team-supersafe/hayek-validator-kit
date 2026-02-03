@@ -30,6 +30,13 @@
   import_tasks: verify.yml
   tags: [solana_validator_jito, verify]
 
+- name: Pin validator process to CPU core
+  import_tasks: "{{ playbook_dir }}/../roles/solana_validator_shared/tasks/pin_validator_core.yml"
+  when:
+    - run_poh_cpu_affinity_fix | default(false) | bool
+    - validator_type | default('primary') == 'primary'
+  tags: [solana_validator_jito, pin_validator_core]
+
 - name: Print Summary
   import_tasks: summary.yml
   tags: [solana_validator_jito, summary]

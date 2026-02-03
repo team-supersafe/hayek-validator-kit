@@ -1,9 +1,32 @@
+---
+- name: Inform the operator about PoH pinning wait and manual override
+  debug:
+    msg: |
+      Waiting to pin the PoH (Proof of History) thread to CPU 2.
+      This will happen automatically as soon as the validator is caught up and starts voting.
+      You can interrupt this process at any time with Ctrl+C.
+      To retry manually later, run:
+        {{ validator_scripts_dir }}/fix_core_affinity_bug_for_poh.sh
+      This wait may take several minutes on testnet/mainnet.
+
 - name: Pin validator process to CPU core
   command: /opt/validator/scripts/fix_core_affinity_bug_for_poh.sh
   become: true
   register: pin_core_result
   changed_when: pin_core_result.rc == 0
-  failed_when: pin_core_result.rc != 0
+  failed_when: false  # Temporarily disable failure to capture output
   tags:
     - poh_core_affinity
     - validator_tuning
+
+- name: Show script result (stderr)
+  debug:
+    msg: |
+      --- PoH CPU Affinity Script Output ---
+      {{ pin_core_result.stderr | default('No stderr output.') }}
+      --------------------------------------
+
+- name: Fail if script did not succeed
+  fail:
+    msg: "Script failed with rc={{ pin_core_result.rc }}. See output above."
+  when: pin_core_result.rc != 0

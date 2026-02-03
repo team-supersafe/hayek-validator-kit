@@ -17,6 +17,7 @@
 
 # Process management
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/pkill -f {{ validator_service }}
+%validator_operators ALL=(root) NOPASSWD: /usr/bin/taskset
 
 # System monitoring
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/htop
