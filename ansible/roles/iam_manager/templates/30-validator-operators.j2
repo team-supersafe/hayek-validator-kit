@@ -212,9 +212,9 @@
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keys_dir }}/*/primary-target-identity.json {{ validator_keys_dir }}/*/identity.json
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keys_dir }}/*/hot-spare-identity.json {{ validator_keys_dir }}/*/identity.json
 
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown {{ validator_logs_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_keys_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_scripts_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown {{ validator_logs_dir }}/*
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_keys_dir }}/*
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_scripts_dir }}/*
 
 # Directory management
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_ledger_dir }}
