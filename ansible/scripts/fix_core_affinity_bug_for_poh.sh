@@ -44,8 +44,25 @@ done
 
 # Check and set affinity
 current_affinity=$(taskset -cp "$thread_pid" | awk '{print $NF}')
-if [ "$current_affinity" == "$TARGET_CORE" ]; then
-    echo "Affinity for $POH_THREAD_NAME already set to core $TARGET_CORE."
+affinity_tokens=$(echo "$current_affinity" | tr ',' ' ')
+core_in_affinity=0
+for token in $affinity_tokens; do
+    if [[ "$token" == *-* ]]; then
+        start=${token%-*}
+        end=${token#*-}
+        if [ "$TARGET_CORE" -ge "$start" ] && [ "$TARGET_CORE" -le "$end" ]; then
+            core_in_affinity=1
+            break
+        fi
+    else
+        if [ "$TARGET_CORE" -eq "$token" ]; then
+            core_in_affinity=1
+            break
+        fi
+    fi
+done
+if [ "$core_in_affinity" -eq 1 ]; then
+    echo "Affinity for $POH_THREAD_NAME already set to include core $TARGET_CORE."
     logger "set_affinity: solPohTickProd_already_set"
     exit 0
 else
