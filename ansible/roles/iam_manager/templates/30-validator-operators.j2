@@ -180,12 +180,12 @@
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ validator_scripts_dir }} *
 
 # Allow moving validator config directories to any location (also allows rename)
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ system_solana_install_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ system_shared_build_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ jito_relayer_install_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ validator_logs_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ validator_keys_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv -r {{ validator_scripts_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ system_solana_install_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ system_shared_build_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ jito_relayer_install_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ validator_logs_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ validator_keys_dir }} *
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ validator_scripts_dir }} *
 
 # Allow deleting files inside validator directories (but not the directories themselves)
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ system_solana_install_dir }}/*
