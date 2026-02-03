@@ -13,20 +13,25 @@
   command: /opt/validator/scripts/fix_core_affinity_bug_for_poh.sh
   become: true
   register: pin_core_result
-  changed_when: pin_core_result.rc == 0
-  failed_when: false  # Temporarily disable failure to capture output
+  changed_when: "'Successfully set affinity' in pin_core_result.stdout"
+  failed_when: false  # Result is handled in the next task
   tags:
     - poh_core_affinity
     - validator_tuning
 
-- name: Show script result (stderr)
+- name: Show script result
   debug:
     msg: |
-      --- PoH CPU Affinity Script Output ---
-      {{ pin_core_result.stderr | default('No stderr output.') }}
-      --------------------------------------
+      {{ pin_core_result.stdout }}
+  when: pin_core_result.stdout | length > 0
+  tags:
+    - poh_core_affinity
+    - validator_tuning
 
 - name: Fail if script did not succeed
   fail:
-    msg: "Script failed with rc={{ pin_core_result.rc }}. See output above."
+    msg: "Script failed with rc={{ pin_core_result.rc }}. Check logs above."
   when: pin_core_result.rc != 0
+  tags:
+    - poh_core_affinity
+    - validator_tuning
