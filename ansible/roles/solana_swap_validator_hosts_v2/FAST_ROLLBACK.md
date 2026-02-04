@@ -15,7 +15,7 @@ KEYSET_PATH=/opt/validator/keys/hayek-testnet
 
 ```sh
 sudo rm $KEYSET_PATH/identity.json
-ln -s $KEYSET_PATH/primary-target-identity.json $KEYSET_PATH/identity.json
+sudo ln -s $KEYSET_PATH/primary-target-identity.json $KEYSET_PATH/identity.json
 ```
 
 ## 3. Become the `sol` User
