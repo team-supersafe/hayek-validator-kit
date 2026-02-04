@@ -219,8 +219,8 @@
         - transfer_tower_result is failed
         - not ansible_check_mode
   when:
-    - hostvars[source_host].wait_and_unstake_result is defined
-    - hostvars[source_host].wait_and_unstake_result is not failed
+    - hostvars[source_host].get('wait_and_unstake_result', {}) is defined
+    - hostvars[source_host].get('wait_and_unstake_result', {}).get('failed', false) == false
 
 - name: swap - Promote Destination to Primary Target Validator
   any_errors_fatal: true
