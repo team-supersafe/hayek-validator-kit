@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Configuration
+# Use SOLANA_USER from argument, environment, or default to 'sol'
+SOLANA_USER="${1:-${SOLANA_USER:-sol}}"
 MAX_WAIT=3600  # 1 hour
 SLEEP_INTERVAL=10
 POH_THREAD_NAME="solPohTickProd"
@@ -21,7 +23,7 @@ echo "Found agave-validator (PID: $solana_pid). Waiting for thread '$POH_THREAD_
 ELAPSED=0
 while true; do
     thread_pid=$(ps -T -p "$solana_pid" -o spid,comm | grep "$POH_THREAD_NAME" | awk '{print $1}')
-    
+
     if [ -n "$thread_pid" ]; then
         echo "Found thread '$POH_THREAD_NAME' with SPID: $thread_pid"
         break
@@ -77,7 +79,7 @@ if [ "$core_in_affinity" -eq 1 ]; then
     exit 0
 else
     echo "Current affinity for $POH_THREAD_NAME: $current_affinity. Changing to core $TARGET_CORE..."
-    if sudo -u sol taskset -cp "$TARGET_CORE" "$thread_pid" > /dev/null; then
+    if sudo -u "$SOLANA_USER" taskset -cp "$TARGET_CORE" "$thread_pid" > /dev/null; then
         echo "Successfully set affinity to core $TARGET_CORE."
         logger "set_affinity: set_done"
         exit 0
