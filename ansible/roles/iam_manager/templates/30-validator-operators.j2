@@ -200,10 +200,6 @@
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm identity.json
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keys_dir }}/*/identity.json
 
-# Allow building a symbolic link in the current directory
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s primary-target-identity.json identity.json
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s hot-spare-identity.json identity.json
-
 # Allow building a symbolic link using validator paths
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keys_dir }}/*/primary-target-identity.json {{ validator_keys_dir }}/*/identity.json
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keys_dir }}/*/hot-spare-identity.json {{ validator_keys_dir }}/*/identity.json
