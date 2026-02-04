@@ -12,7 +12,7 @@
 - name: Pin validator process to CPU core
   command: "{{ validator_scripts_dir }}/fix_core_affinity_bug_for_poh.sh"
   become: true
-  become_user: "{{ validator_operator_user }}"
+  become_user: "{{ solana_user }}"
   register: pin_core_result
   changed_when: "'Successfully set affinity' in pin_core_result.stdout"
   failed_when: false  # Result is handled in the next task
