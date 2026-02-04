@@ -181,21 +181,6 @@
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ validator_scripts_dir }} *
 
 # Allow moving validator config directories to any location (also allows rename)
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ system_solana_install_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ system_shared_build_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ jito_relayer_install_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ validator_logs_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ validator_keys_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ validator_scripts_dir }} *
-
-# Allow deleting files inside validator directories (but not the directories themselves)
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ system_solana_install_dir }}/*
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ system_shared_build_dir }}/*
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ jito_relayer_install_dir }}/*
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_logs_dir }}/*
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_keys_dir }}/*
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm -r {{ validator_scripts_dir }}/*
-
 # Allow removing the symbolic link to the current validator identity.
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm identity.json
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keys_dir }}/*/identity.json
