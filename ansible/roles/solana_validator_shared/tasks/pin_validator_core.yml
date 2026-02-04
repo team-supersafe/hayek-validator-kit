@@ -7,7 +7,7 @@
       You can interrupt this process at any time with Ctrl+C.
       To retry manually later, run:
         {{ validator_scripts_dir }}/fix_core_affinity_bug_for_poh.sh
-      This wait may take several minutes on testnet/mainnet.
+      This wait may take up to about an hour on testnet/mainnet, depending on network conditions.
 
 - name: Pin validator process to CPU core
   command: "{{ validator_scripts_dir }}/fix_core_affinity_bug_for_poh.sh"
