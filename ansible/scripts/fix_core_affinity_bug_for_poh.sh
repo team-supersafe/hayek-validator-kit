@@ -9,7 +9,7 @@ TARGET_CORE=2
 echo "--- PoH CPU Affinity Management ---"
 
 # Find main agave-validator process
-solana_pid=$(pgrep -f "^agave-validator --identity")
+solana_pid=$(pgrep -f "agave-validator.*--identity")
 if [ -z "$solana_pid" ]; then
     echo "Error: agave-validator process not found."
     logger "set_affinity: solana_validator_404"
