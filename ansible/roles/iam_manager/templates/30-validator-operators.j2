@@ -161,7 +161,6 @@
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt remove logrotate
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/dpkg --configure -a
 
-
 # Development tools and utilities
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/curl
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/wget
@@ -172,9 +171,8 @@
 
 # Log management (basic log viewing inherited from viewers)
 
-# Allow moving validator config directories to any location (also allows rename)
-# Allow removing the symbolic link to the current validator identity.
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keys_dir }}/identity.json
+# Allow removing the symbolic link to the current validator identity based on usual keyset location.
+# /opt/validator/keys/validator-keyset-name/identity.json where validator-keyset-name is *
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keys_dir }}/*/identity.json
 
 # Allow building a symbolic link using validator paths
