@@ -172,14 +172,6 @@
 
 # Log management (basic log viewing inherited from viewers)
 
-# Allow copying validator config directories to any backup location
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ system_solana_install_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ system_shared_build_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ jito_relayer_install_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ validator_logs_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ validator_keys_dir }} *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp -r {{ validator_scripts_dir }} *
-
 # Allow moving validator config directories to any location (also allows rename)
 # Allow removing the symbolic link to the current validator identity.
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keys_dir }}/identity.json
@@ -189,9 +181,8 @@
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keys_dir }}/*/primary-target-identity.json {{ validator_keys_dir }}/*/identity.json
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keys_dir }}/*/hot-spare-identity.json {{ validator_keys_dir }}/*/identity.json
 
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown {{ validator_logs_dir }}/*.log*
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_keys_dir }}/*.json
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_scripts_dir }}/*.sh
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown sol:validator_operators {{ validator_logs_dir }}/*.log*
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown sol:validator_operators {{ validator_keys_dir }}/*/*.json
 
 # Directory management
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_ledger_dir }}
