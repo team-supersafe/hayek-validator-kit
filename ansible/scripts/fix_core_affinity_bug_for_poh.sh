@@ -46,18 +46,28 @@ done
 current_affinity=$(taskset -cp "$thread_pid" | awk '{print $NF}')
 affinity_tokens=$(echo "$current_affinity" | tr ',' ' ')
 core_in_affinity=0
+
+# Helper function to check if a value is numeric
+is_numeric() {
+    [[ "$1" =~ ^[0-9]+$ ]]
+}
+
 for token in $affinity_tokens; do
     if [[ "$token" == *-* ]]; then
         start=${token%-*}
         end=${token#*-}
-        if [ "$TARGET_CORE" -ge "$start" ] && [ "$TARGET_CORE" -le "$end" ]; then
-            core_in_affinity=1
-            break
+        if is_numeric "$start" && is_numeric "$end"; then
+            if [ "$TARGET_CORE" -ge "$start" ] && [ "$TARGET_CORE" -le "$end" ]; then
+                core_in_affinity=1
+                break
+            fi
         fi
     else
-        if [ "$TARGET_CORE" -eq "$token" ]; then
-            core_in_affinity=1
-            break
+        if is_numeric "$token"; then
+            if [ "$TARGET_CORE" -eq "$token" ]; then
+                core_in_affinity=1
+                break
+            fi
         fi
     fi
 done
