@@ -182,7 +182,7 @@
 
 # Allow moving validator config directories to any location (also allows rename)
 # Allow removing the symbolic link to the current validator identity.
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm identity.json
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keys_dir }}/identity.json
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keys_dir }}/*/identity.json
 
 # Allow building a symbolic link using validator paths
