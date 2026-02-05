@@ -17,6 +17,7 @@
 
 # Process management
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/pkill -f {{ validator_service }}
+%validator_operators ALL=(sol) NOPASSWD: /usr/bin/taskset
 
 # System monitoring
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/htop
@@ -158,7 +159,7 @@
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt remove python3-pip
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt remove jq
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/apt remove logrotate
-
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/dpkg --configure -a
 
 # Development tools and utilities
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/curl
@@ -170,25 +171,17 @@
 
 # Log management (basic log viewing inherited from viewers)
 
-# Configuration management
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/cp {{ validator_config_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mv {{ validator_config_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_config_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_config_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown {{ validator_config_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chmod {{ validator_config_dir }}
-
-# Key management
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/solana-keygen
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/agave-validator
-
 # Directory management
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_ledger_dir }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_accounts_dir }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_snapshots_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_ledger_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_accounts_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R {{ validator_snapshots_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R sol\:{{ validator_operators_group }} {{ validator_ledger_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R sol\:{{ validator_operators_group }} {{ validator_accounts_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R sol\:{{ validator_operators_group }} {{ validator_snapshots_dir }}
+
+# Key management
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/solana-keygen
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/agave-validator
 
 # Monitoring and debugging
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/strace -p

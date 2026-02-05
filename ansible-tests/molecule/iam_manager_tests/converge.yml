@@ -100,7 +100,7 @@
 
     - name: Create and configure validator log directory (after iam_manager role)
       ansible.builtin.file:
-        path: "{{ validator_log_dir }}"
+        path: "{{ validator_logs_dir }}"
         owner: "{{ solana_user }}"
         group: validator_operators
         mode: '0775'  # Set group sticky bit so files inherit group

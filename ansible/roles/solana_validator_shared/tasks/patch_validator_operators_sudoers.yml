@@ -1,0 +1,33 @@
+---
+# Set validator keys directory fact
+- name: Set validator keys directory
+  ansible.builtin.set_fact:
+    validator_keyset_dir: "{{ validator_keys_dir }}/{{ validator_name }}"
+
+# Patch /etc/sudoers.d/30-validator-operators with per-validator keyset rules
+- name: Ensure validator_operators can remove identity symlink
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers.d/30-validator-operators
+    line: "%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keyset_dir }}/identity.json"
+    create: false
+    state: present
+    validate: 'visudo -cf %s'
+  become: true
+
+- name: Ensure validator_operators can link primary-target-identity.json
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers.d/30-validator-operators
+    line: "%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keyset_dir }}/primary-target-identity.json {{ validator_keyset_dir }}/identity.json"
+    create: false
+    state: present
+    validate: 'visudo -cf %s'
+  become: true
+
+- name: Ensure validator_operators can link hot-spare-identity.json
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers.d/30-validator-operators
+    line: "%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keyset_dir }}/hot-spare-identity.json {{ validator_keyset_dir }}/identity.json"
+    create: false
+    state: present
+    validate: 'visudo -cf %s'
+  become: true

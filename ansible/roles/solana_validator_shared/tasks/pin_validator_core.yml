@@ -1,0 +1,38 @@
+---
+- name: Inform the operator about PoH pinning wait and manual override
+  debug:
+    msg: |
+      Waiting to pin the PoH (Proof of History) thread to CPU 2.
+      This will happen automatically as soon as the validator is caught up and starts voting.
+      You can interrupt this process at any time with Ctrl+C.
+      To retry manually later, run:
+        {{ validator_scripts_dir }}/fix_core_affinity_bug_for_poh.sh
+      This wait may take up to about an hour on testnet/mainnet, depending on network conditions.
+
+- name: Pin validator process to CPU core
+  command: "{{ validator_scripts_dir }}/fix_core_affinity_bug_for_poh.sh {{ solana_user }}"
+  become: true
+  become_user: "{{ solana_user }}"
+  register: pin_core_result
+  changed_when: "'Successfully set affinity' in pin_core_result.stdout"
+  failed_when: false  # Result is handled in the next task
+  tags:
+    - poh_core_affinity
+    - validator_tuning
+
+- name: Show script result
+  debug:
+    msg: |
+      {{ pin_core_result.stdout }}
+  when: pin_core_result.stdout | length > 0
+  tags:
+    - poh_core_affinity
+    - validator_tuning
+
+- name: Fail if script did not succeed
+  fail:
+    msg: "Script failed with rc={{ pin_core_result.rc }}. Check logs above."
+  when: pin_core_result.rc != 0
+  tags:
+    - poh_core_affinity
+    - validator_tuning

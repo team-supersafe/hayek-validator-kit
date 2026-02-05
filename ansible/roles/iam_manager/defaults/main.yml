@@ -1,10 +1,30 @@
 # Validator configuration defaults
 solana_user: sol
-validator_service: sol.service
-validator_log_file: /home/{{ solana_user }}/logs/agave-validator.log
-validator_log_dir: /home/{{ solana_user }}/logs
-validator_config_dir: /home/{{ solana_user }}/.local/
-validator_ledger_dir: /mnt/ledger
-validator_accounts_dir: /mnt/accounts
-validator_snapshots_dir: /mnt/snapshots
+validator_service: "sol.service"
 iam_set_immutable: true
+
+# Disk mount points configuration
+mount_base_path: '/mnt'
+validator_ledger_dir: "{{ mount_base_path }}/ledger"
+validator_accounts_dir: "{{ mount_base_path }}/accounts"
+validator_snapshots_dir: "{{ mount_base_path }}/snapshots"
+
+# System wide installation path for solana binaries
+cargo_home: "/usr/local/cargo"
+rustup_home: "/usr/local/rustup"
+system_solana_install_dir: "/opt/solana"
+system_solana_active_release_dir: "{{ system_solana_install_dir }}/active_release/bin"
+system_solana_installed_releases_dir: "{{ system_solana_install_dir }}/releases"
+system_shared_build_dir: "/opt/build"
+jito_relayer_install_dir: "/opt/jito-relayer"
+jito_relayer_releases_dir: "{{ jito_relayer_install_dir }}/releases"
+
+# Validator configuration directories
+validator_root_dir: "/opt/validator"
+validator_scripts_dir: "{{ validator_root_dir }}/scripts"
+validator_logs_dir: "{{ validator_root_dir }}/logs"
+validator_keys_dir: "{{ validator_root_dir }}/keys"
+
+# Validator specific files
+validator_log_file: "{{ validator_logs_dir }}/agave-validator.log"
+validator_operators_group: "validator_operators"

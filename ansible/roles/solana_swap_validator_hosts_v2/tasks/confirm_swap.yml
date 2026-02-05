@@ -54,6 +54,7 @@
   ansible.builtin.set_fact:
     source_vote_pubkey: "{{ source_vote_pubkey_result.stdout_lines[0] }}"
   when:
+    - inventory_hostname == source_host
     - source_vote_account_file is defined
     - source_vote_account_file.stat is defined
     - source_vote_account_file.stat.exists
@@ -139,25 +140,43 @@
   changed_when: false
   check_mode: false
 
-- name: confirm_swap - Make destination vote pubkey available globally
+
+# Set destination_vote_pubkey on destination host only
+- name: confirm_swap - Set destination vote pubkey on destination host
   ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ destination_vote_pubkey_result.stdout_lines[0] }}"
   when:
+    - inventory_hostname == destination_host
     - destination_vote_account_file is defined
     - destination_vote_account_file.stat is defined
     - destination_vote_account_file.stat.exists
     - destination_vote_pubkey_result is defined
     - destination_vote_pubkey_result.stdout_lines is defined
     - destination_vote_pubkey_result.stdout_lines | length > 0
-  run_once: true
 
+# Ensure destination_vote_pubkey is undefined when vote account doesn't exist (destination host only)
 - name: confirm_swap - Ensure destination_vote_pubkey is undefined when vote account doesn't exist
   ansible.builtin.set_fact:
     destination_vote_pubkey: ""
   when:
+    - inventory_hostname == destination_host
     - destination_vote_account_file is defined
     - destination_vote_account_file.stat is defined
     - not destination_vote_account_file.stat.exists
+
+# Propagate destination_vote_pubkey globally for use elsewhere
+- name: confirm_swap - Propagate destination vote pubkey globally
+  ansible.builtin.set_fact:
+    destination_vote_pubkey: "{{ hostvars[destination_host]['destination_vote_pubkey'] }}"
+  run_once: true
+  when:
+    - hostvars[destination_host]['destination_vote_pubkey'] is defined
+
+- name: Set final value for destination_vote_pubkey
+  ansible.builtin.set_fact:
+    destination_vote_pubkey: "{{ hostvars[destination_host]['destination_vote_pubkey'] }}"
+  when:
+    - hostvars[destination_host]['destination_vote_pubkey'] is defined
   run_once: true
 
 - name: confirm_swap - Display Swap Operation Summary
@@ -226,7 +245,6 @@
 
       Please review the above information carefully.
       ===============================================
-  delegate_to: localhost
   run_once: true
 
 - name: confirm_swap - Fail if attempting to swap between different validator identities
