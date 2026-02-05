@@ -140,7 +140,9 @@
   changed_when: false
   check_mode: false
 
-- name: confirm_swap - Make destination vote pubkey available globally
+
+# Set destination_vote_pubkey on destination host only
+- name: confirm_swap - Set destination vote pubkey on destination host
   ansible.builtin.set_fact:
     destination_vote_pubkey: "{{ destination_vote_pubkey_result.stdout_lines[0] }}"
   when:
@@ -152,6 +154,7 @@
     - destination_vote_pubkey_result.stdout_lines is defined
     - destination_vote_pubkey_result.stdout_lines | length > 0
 
+# Ensure destination_vote_pubkey is undefined when vote account doesn't exist (destination host only)
 - name: confirm_swap - Ensure destination_vote_pubkey is undefined when vote account doesn't exist
   ansible.builtin.set_fact:
     destination_vote_pubkey: ""
@@ -160,6 +163,14 @@
     - destination_vote_account_file is defined
     - destination_vote_account_file.stat is defined
     - not destination_vote_account_file.stat.exists
+
+# Propagate destination_vote_pubkey globally for use elsewhere
+- name: confirm_swap - Propagate destination vote pubkey globally
+  ansible.builtin.set_fact:
+    destination_vote_pubkey: "{{ hostvars[destination_host]['destination_vote_pubkey'] }}"
+  run_once: true
+  when:
+    - hostvars[destination_host]['destination_vote_pubkey'] is defined
 
 - name: Set final value for destination_vote_pubkey
   ansible.builtin.set_fact:
