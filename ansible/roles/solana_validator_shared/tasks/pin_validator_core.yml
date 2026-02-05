@@ -10,7 +10,7 @@
       This wait may take up to about an hour on testnet/mainnet, depending on network conditions.
 
 - name: Pin validator process to CPU core
-  command: "{{ validator_scripts_dir }}/fix_core_affinity_bug_for_poh.sh"
+  command: "{{ validator_scripts_dir }}/fix_core_affinity_bug_for_poh.sh {{ solana_user }}"
   become: true
   become_user: "{{ solana_user }}"
   register: pin_core_result
