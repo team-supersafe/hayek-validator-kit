@@ -7,6 +7,9 @@
 - name: configure - Install validator keyset using shared task
   ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/install_validator_keyset.yml
 
+- name: configure - Patch validator operators sudoers
+  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/patch_validator_operators_sudoers.yml
+
 - name: configure - Set validator script path
   ansible.builtin.set_fact:
     validator_script_path: "{{ validator_scripts_dir }}/run-{{ validator_name }}.sh"

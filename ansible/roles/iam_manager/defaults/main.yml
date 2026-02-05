@@ -1,6 +1,6 @@
 # Validator configuration defaults
 solana_user: sol
-validator_service: sol.service
+validator_service: "sol.service"
 iam_set_immutable: true
 
 # Disk mount points configuration
@@ -27,3 +27,4 @@ validator_keys_dir: "{{ validator_root_dir }}/keys"
 
 # Validator specific files
 validator_log_file: "{{ validator_logs_dir }}/agave-validator.log"
+validator_operators_group: "validator_operators"

@@ -171,24 +171,13 @@
 
 # Log management (basic log viewing inherited from viewers)
 
-# Allow removing the symbolic link to the current validator identity based on usual keyset location.
-# /opt/validator/keys/validator-keyset-name/identity.json where validator-keyset-name is *
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/rm {{ validator_keys_dir }}/*/identity.json
-
-# Allow building a symbolic link using validator paths
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keys_dir }}/*/primary-target-identity.json {{ validator_keys_dir }}/*/identity.json
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/ln -s {{ validator_keys_dir }}/*/hot-spare-identity.json {{ validator_keys_dir }}/*/identity.json
-
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown sol:validator_operators {{ validator_logs_dir }}/*.log*
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown sol:validator_operators {{ validator_keys_dir }}/*/*.json
-
 # Directory management
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_ledger_dir }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_accounts_dir }}
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/mkdir -p {{ validator_snapshots_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R sol:validator_operators {{ validator_ledger_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R sol:validator_operators {{ validator_accounts_dir }}
-%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R sol:validator_operators {{ validator_snapshots_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R sol\:{{ validator_operators_group }} {{ validator_ledger_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R sol\:{{ validator_operators_group }} {{ validator_accounts_dir }}
+%validator_operators ALL=(ALL) NOPASSWD: /usr/bin/chown -R sol\:{{ validator_operators_group }} {{ validator_snapshots_dir }}
 
 # Key management
 %validator_operators ALL=(ALL) NOPASSWD: /usr/bin/solana-keygen
