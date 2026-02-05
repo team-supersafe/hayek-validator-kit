@@ -79,7 +79,7 @@ if [ "$core_in_affinity" -eq 1 ]; then
     exit 0
 else
     echo "Current affinity for $POH_THREAD_NAME: $current_affinity. Changing to core $TARGET_CORE..."
-    if sudo -u "$SOLANA_USER" taskset -cp "$TARGET_CORE" "$thread_pid" > /dev/null; then
+    if taskset -cp "$TARGET_CORE" "$thread_pid" > /dev/null; then
         echo "Successfully set affinity to core $TARGET_CORE."
         logger "set_affinity: set_done"
         exit 0
