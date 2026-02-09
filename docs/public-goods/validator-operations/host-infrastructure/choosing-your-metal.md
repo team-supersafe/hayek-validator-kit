@@ -213,10 +213,10 @@ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver
 Expected output
 
 * `acpi-cpufreq`&#x20;
-* This driver is the fallback when amd\_pstate is not availble. It is less efficient, for when amd\_pstate is missing. Ok for hot-spare servers.
+* This driver is the fallback when `amd_pstate` is not availble. It is less efficient, but ok to use for hot-spare servers and testnet validators.
 
 {% hint style="warning" %}
-If none of the drivers listed above exist, you can either Delete the metal box and get a new one to see if you get lucky, OR contact support to activate these drivers in the BIOS
+If none of the drivers listed above exist, you can either Delete the metal box and get a new one to see if you get lucky, OR contact support to activate the `amd_pstate` driver in the BIOS.
 {% endhint %}
 
 **Performance Optimization:** Another verification you can do is to ensure that Governor is active, so that the kernel is assigned to manage CPU frequency and not BIOS. If you don't see any active driver, it's necessary to access the BIOS and activate it. One of the drivers you should see is amd\_pstate.
