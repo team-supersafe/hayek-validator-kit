@@ -193,15 +193,27 @@ htop
 
 #### **Verify CPU Governor**
 
-```
+```bash
 # Check CPU frequency drivers
 ls /sys/devices/system/cpu/cpu0/cpufreq
 ```
 
-Expected drivers:
+Expected output (driver):
 
-* ✅ amd\_pstate (more efficient, recommended)
-* 2️⃣ acpi-cpufreq (less efficient, for when amd\_pstate is missing. Ok for hot-spare servers)
+* ✅ amd\_pstate&#x20;
+* This is the most efficient driver, and the recommended one for Solana
+
+If `amd_pstate` is not present, check for its fallback:
+
+```bash
+# check if acpi-cpufreq is in use
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver
+```
+
+Expected output
+
+* `acpi-cpufreq`&#x20;
+* This driver is the fallback when amd\_pstate is not availble. It is less efficient, for when amd\_pstate is missing. Ok for hot-spare servers.
 
 {% hint style="warning" %}
 If none of the drivers listed above exist, you can either Delete the metal box and get a new one to see if you get lucky, OR contact support to activate these drivers in the BIOS
