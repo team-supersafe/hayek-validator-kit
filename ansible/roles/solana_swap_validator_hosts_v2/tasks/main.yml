@@ -1,6 +1,7 @@
 ---
 - name: Import precheck tasks
   ansible.builtin.import_tasks: precheck.yml
+  tags: precheck
 
 - name: Import prepare tasks
   ansible.builtin.import_tasks: prepare.yml

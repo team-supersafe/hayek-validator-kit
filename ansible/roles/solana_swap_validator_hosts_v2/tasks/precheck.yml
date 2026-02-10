@@ -1,4 +1,29 @@
 ---
+- name: precheck - Ensure operator user variables are defined
+  ansible.builtin.assert:
+    that:
+      - operator_user is defined
+      - validator_operators_group is defined
+    fail_msg: >-
+      operator_user and validator_operators_group must be defined to validate RBAC membership.
+  run_once: true
+
+- name: precheck - Validate operator user belongs to validator_operators on destination host
+  block:
+    - name: precheck - Get operator user groups
+      ansible.builtin.command: "id -nG {{ operator_user }}"
+      register: operator_user_groups
+      changed_when: false
+
+    - name: precheck - Fail if operator user is not in validator_operators group
+      ansible.builtin.fail:
+        msg: >-
+          operator_user '{{ operator_user }}' is not a member of '{{ validator_operators_group }}'
+          on destination host {{ destination_host }}. Run the playbook as a user in the operator group.
+      when: validator_operators_group not in operator_user_groups.stdout.split()
+  delegate_to: "{{ destination_host }}"
+  run_once: true
+
 - name: precheck - Set fact for solana cluster
   ansible.builtin.set_fact:
     solana_cluster: >-
