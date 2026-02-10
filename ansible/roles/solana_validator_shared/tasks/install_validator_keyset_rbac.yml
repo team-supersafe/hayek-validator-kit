@@ -188,6 +188,7 @@
     - name: Fix ownership of generated .pem files
       ansible.builtin.file:
         path: "{{ item }}"
+        mode: "{{ validator_key_file_mode }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
       loop:
