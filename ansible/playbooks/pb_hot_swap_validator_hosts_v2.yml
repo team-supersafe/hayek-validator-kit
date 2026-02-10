@@ -15,7 +15,7 @@
 #   -e "destination_host=host-bravo" \
 #   -e "operator_user=bob" \
 #   -e "deprovision_source_host=true" \ # Optional: Use this to deprovision all validator-related files, folders, services, and keys from the source host
-#   -K # Sudo password prompt for privvileged tasks
+#   -K # Sudo password prompt for privileged tasks
 
 - name: Perform Hot Swap Validator hosts
   hosts: "{{ source_host }},{{ destination_host }}"
