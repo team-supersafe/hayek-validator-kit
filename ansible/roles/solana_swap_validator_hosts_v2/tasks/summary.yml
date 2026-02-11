@@ -52,6 +52,9 @@
       Impact analysis could not be completed.
       This may be due to network connectivity issues or the validator not being active.
       {% endif %}
+
+      ===============================================
+      🟣 SWAP DURATION ==> {{ swap_duration_seconds | default('N/A') }} seconds
       ===============================================
   delegate_to: localhost
   run_once: true
