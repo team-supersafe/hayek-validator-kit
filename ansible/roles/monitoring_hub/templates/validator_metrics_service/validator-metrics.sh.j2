@@ -573,74 +573,76 @@ send_validator_metrics() {
     TOTAL_LEADER_SLOTS=$(echo "$LEADER_SLOTS" | jq 'length' 2>/dev/null || echo 0)
   fi
 
-  if [[ -n "$ACTIVATING_STAKE" || -n "$RANK" || -n "$WIZ_SCORE" || -n "$RPC_VERSION" || -n "$GOSSIP_VERSION" || -n "$TVC_RANK" || "$ACTIVATING_STAKE_CLI" != "0" || "$DEACTIVATING_STAKE_CLI" != "0" ]]; then
-    TIMESTAMP=$(date +%s%N)
-    TAGS="host=${HOST},pubkey=${IDENTITY_KEY}"
-    FIELDS=""
+  TIMESTAMP=$(date +%s%N)
+  TAGS="host=${HOST},pubkey=${IDENTITY_KEY}"
+  FIELDS=""
+  HAS_VALIDATOR_DETAILS=0
 
-    [[ -n "$ACTIVATING_STAKE" && "$ACTIVATING_STAKE" != "null" ]] && FIELDS+="activating_stake=${ACTIVATING_STAKE}"
-    [[ -n "$ACTIVATING_STAKE_CLI" && "$ACTIVATING_STAKE_CLI" != "0" ]] && FIELDS+="${FIELDS:+,}activating_stake_cli=${ACTIVATING_STAKE_CLI}"
-    [[ -n "$DEACTIVATING_STAKE_CLI" && "$DEACTIVATING_STAKE_CLI" != "0" ]] && FIELDS+="${FIELDS:+,}deactivating_stake_cli=${DEACTIVATING_STAKE_CLI}"
-    [[ -n "$RANK" ]] && FIELDS+="${FIELDS:+,}rank=${RANK}"
-    [[ -n "$WIZ_SCORE" ]] && FIELDS+="${FIELDS:+,}wiz_score=${WIZ_SCORE}"
-    [[ -n "$RPC_VERSION" && "$RPC_VERSION" != "null" ]] && FIELDS+="${FIELDS:+,}rpc_version=\"${RPC_VERSION}\""
-    [[ -n "$GOSSIP_VERSION" ]] && FIELDS+="${FIELDS:+,}gossip_version=\"${GOSSIP_VERSION}\""
-    [[ "$IS_JITO" == "true" ]] && FIELDS+="${FIELDS:+,}is_jito=t"
-    [[ "$IS_JITO" == "false" ]] && FIELDS+="${FIELDS:+,}is_jito=f"
-    [[ -n "$TVC_RANK" ]] && FIELDS+="${FIELDS:+,}tvc_rank=${TVC_RANK}"
-    [[ -n "$DOUBLEZERO_BALANCE" ]] && FIELDS+="${FIELDS:+,}doublezero_balance=${DOUBLEZERO_BALANCE}"
+  [[ -n "$ACTIVATING_STAKE" && "$ACTIVATING_STAKE" != "null" ]] && { FIELDS+="activating_stake=${ACTIVATING_STAKE}"; HAS_VALIDATOR_DETAILS=1; }
+  [[ -n "$ACTIVATING_STAKE_CLI" && "$ACTIVATING_STAKE_CLI" != "0" ]] && { FIELDS+="${FIELDS:+,}activating_stake_cli=${ACTIVATING_STAKE_CLI}"; HAS_VALIDATOR_DETAILS=1; }
+  [[ -n "$DEACTIVATING_STAKE_CLI" && "$DEACTIVATING_STAKE_CLI" != "0" ]] && { FIELDS+="${FIELDS:+,}deactivating_stake_cli=${DEACTIVATING_STAKE_CLI}"; HAS_VALIDATOR_DETAILS=1; }
+  [[ -n "$RANK" ]] && { FIELDS+="${FIELDS:+,}rank=${RANK}"; HAS_VALIDATOR_DETAILS=1; }
+  [[ -n "$WIZ_SCORE" ]] && { FIELDS+="${FIELDS:+,}wiz_score=${WIZ_SCORE}"; HAS_VALIDATOR_DETAILS=1; }
+  [[ -n "$RPC_VERSION" && "$RPC_VERSION" != "null" ]] && { FIELDS+="${FIELDS:+,}rpc_version=\"${RPC_VERSION}\""; HAS_VALIDATOR_DETAILS=1; }
+  [[ -n "$GOSSIP_VERSION" ]] && { FIELDS+="${FIELDS:+,}gossip_version=\"${GOSSIP_VERSION}\""; HAS_VALIDATOR_DETAILS=1; }
+  [[ "$IS_JITO" == "true" ]] && { FIELDS+="${FIELDS:+,}is_jito=t"; HAS_VALIDATOR_DETAILS=1; }
+  [[ "$IS_JITO" == "false" ]] && { FIELDS+="${FIELDS:+,}is_jito=f"; HAS_VALIDATOR_DETAILS=1; }
+  [[ -n "$TVC_RANK" ]] && { FIELDS+="${FIELDS:+,}tvc_rank=${TVC_RANK}"; HAS_VALIDATOR_DETAILS=1; }
+  [[ -n "$DOUBLEZERO_BALANCE" ]] && { FIELDS+="${FIELDS:+,}doublezero_balance=${DOUBLEZERO_BALANCE}"; HAS_VALIDATOR_DETAILS=1; }
 
-    # Add the new slot duration and epoch end metrics
-    FIELDS+="${FIELDS:+,}slot_duration_ms=${SLOT_DURATION_MS}"
-    FIELDS+="${FIELDS:+,}time_to_epoch_end_s=${TIME_TO_EPOCH_END_S}"
-    FIELDS+="${FIELDS:+,}time_to_epoch_end_human=\"${EPOCH_END_HUMAN}\""
-    FIELDS+="${FIELDS:+,}epoch_completed_pct=${EPOCH_COMPLETED_PCT}"
+  # Always emit baseline metrics so this validator stays visible in Grafana.
+  FIELDS+="${FIELDS:+,}slot_duration_ms=${SLOT_DURATION_MS}"
+  FIELDS+="${FIELDS:+,}time_to_epoch_end_s=${TIME_TO_EPOCH_END_S}"
+  FIELDS+="${FIELDS:+,}time_to_epoch_end_human=\"${EPOCH_END_HUMAN}\""
+  FIELDS+="${FIELDS:+,}epoch_completed_pct=${EPOCH_COMPLETED_PCT}"
+  FIELDS+="${FIELDS:+,}validator_details_ok=${HAS_VALIDATOR_DETAILS}i"
 
-    if [[ "$TOTAL_LEADER_SLOTS" -gt 0 && "$SLOT_INDEX" -ge 0 ]]; then
-      NEXT_LEADER_SLOT=$(echo "$LEADER_SLOTS" | jq '[.[] | select(. > '"$SLOT_INDEX"')] | min // empty')
-      LAST_LEADER_SLOT=$(echo "$LEADER_SLOTS" | jq '[.[] | select(. <= '"$SLOT_INDEX"')] | max // empty')
-      LEADER_SLOTS_PASSED=$(echo "$LEADER_SLOTS" | jq '[.[] | select(. <= '"$SLOT_INDEX"')] | length')
-      LEADER_SLOTS_REMAINING=$(echo "$LEADER_SLOTS" | jq '[.[] | select(. > '"$SLOT_INDEX"')] | length')
-      REMAINING_RATIO=$(awk -v rem="$LEADER_SLOTS_REMAINING" -v total="$TOTAL_LEADER_SLOTS" 'BEGIN { if (total>0) printf "%.2f", (rem / total) * 100; else print 0 }')
+  if [[ "$TOTAL_LEADER_SLOTS" -gt 0 && "$SLOT_INDEX" -ge 0 ]]; then
+    NEXT_LEADER_SLOT=$(echo "$LEADER_SLOTS" | jq '[.[] | select(. > '"$SLOT_INDEX"')] | min // empty')
+    LAST_LEADER_SLOT=$(echo "$LEADER_SLOTS" | jq '[.[] | select(. <= '"$SLOT_INDEX"')] | max // empty')
+    LEADER_SLOTS_PASSED=$(echo "$LEADER_SLOTS" | jq '[.[] | select(. <= '"$SLOT_INDEX"')] | length')
+    LEADER_SLOTS_REMAINING=$(echo "$LEADER_SLOTS" | jq '[.[] | select(. > '"$SLOT_INDEX"')] | length')
+    REMAINING_RATIO=$(awk -v rem="$LEADER_SLOTS_REMAINING" -v total="$TOTAL_LEADER_SLOTS" 'BEGIN { if (total>0) printf "%.2f", (rem / total) * 100; else print 0 }')
 
-      FIELDS+="${FIELDS:+,}leader_slot_count=${TOTAL_LEADER_SLOTS},leader_slots_passed=${LEADER_SLOTS_PASSED},leader_slots_remaining=${LEADER_SLOTS_REMAINING},leader_slots_remaining_ratio=${REMAINING_RATIO}"
+    FIELDS+="${FIELDS:+,}leader_slot_count=${TOTAL_LEADER_SLOTS},leader_slots_passed=${LEADER_SLOTS_PASSED},leader_slots_remaining=${LEADER_SLOTS_REMAINING},leader_slots_remaining_ratio=${REMAINING_RATIO}"
 
-      if [[ -n "$NEXT_LEADER_SLOT" ]]; then
-        SLOTS_REMAINING=$((NEXT_LEADER_SLOT - SLOT_INDEX))
-        TIME_TO_NEXT_LEADER_SLOT_S=$(awk -v slots="$SLOTS_REMAINING" -v dur="$SLOT_DURATION_MS" 'BEGIN { printf "%.2f", (slots * dur) / 1000 }')
-        PROGRESS_TO_NEXT=$(awk -v a="$SLOT_INDEX" -v b="$NEXT_LEADER_SLOT" 'BEGIN { if (b>0) printf "%.2f", (a/b)*100; else print 0 }')
-        FIELDS+="${FIELDS:+,}time_to_next_leader_slot_s=${TIME_TO_NEXT_LEADER_SLOT_S},leader_progress_percentage=${PROGRESS_TO_NEXT}"
+    if [[ -n "$NEXT_LEADER_SLOT" ]]; then
+      SLOTS_REMAINING=$((NEXT_LEADER_SLOT - SLOT_INDEX))
+      TIME_TO_NEXT_LEADER_SLOT_S=$(awk -v slots="$SLOTS_REMAINING" -v dur="$SLOT_DURATION_MS" 'BEGIN { printf "%.2f", (slots * dur) / 1000 }')
+      PROGRESS_TO_NEXT=$(awk -v a="$SLOT_INDEX" -v b="$NEXT_LEADER_SLOT" 'BEGIN { if (b>0) printf "%.2f", (a/b)*100; else print 0 }')
+      FIELDS+="${FIELDS:+,}time_to_next_leader_slot_s=${TIME_TO_NEXT_LEADER_SLOT_S},leader_progress_percentage=${PROGRESS_TO_NEXT}"
 
-        if [[ -n "$LAST_LEADER_SLOT" && "$NEXT_LEADER_SLOT" -ne "$LAST_LEADER_SLOT" ]]; then
-          PROGRESS_SINCE_LAST=$(awk -v current="$SLOT_INDEX" -v last="$LAST_LEADER_SLOT" -v next_slot="$NEXT_LEADER_SLOT" 'BEGIN { if ((next_slot - last) > 0) printf "%.2f", ((current - last) / (next_slot - last)) * 100; else printf "0.00" }')
-        else
-          PROGRESS_SINCE_LAST=$(awk -v current="$SLOT_INDEX" -v next_slot="$NEXT_LEADER_SLOT" 'BEGIN { if (next_slot > 0) printf "%.2f", (current / next_slot) * 100; else printf "0.00" }')
-        fi
-        FIELDS+="${FIELDS:+,}leader_progress_since_last=${PROGRESS_SINCE_LAST}"
-
-        # Add time between leader slots metric
-        if [[ -n "$LAST_LEADER_SLOT" ]]; then
-          SLOTS_BETWEEN=$((NEXT_LEADER_SLOT - LAST_LEADER_SLOT))
-          TIME_BETWEEN_LEADER_SLOTS_S=$(awk -v slots="$SLOTS_BETWEEN" -v dur="$SLOT_DURATION_MS" 'BEGIN { printf "%.2f", (slots * dur) / 1000 }')
-          FIELDS+="${FIELDS:+,}time_between_leader_slots_s=${TIME_BETWEEN_LEADER_SLOTS_S}"
-        fi
+      if [[ -n "$LAST_LEADER_SLOT" && "$NEXT_LEADER_SLOT" -ne "$LAST_LEADER_SLOT" ]]; then
+        PROGRESS_SINCE_LAST=$(awk -v current="$SLOT_INDEX" -v last="$LAST_LEADER_SLOT" -v next_slot="$NEXT_LEADER_SLOT" 'BEGIN { if ((next_slot - last) > 0) printf "%.2f", ((current - last) / (next_slot - last)) * 100; else printf "0.00" }')
       else
-        FIELDS+="${FIELDS:+,}time_to_next_leader_slot_s=0,leader_progress_percentage=0.00,leader_progress_since_last=0.00"
+        PROGRESS_SINCE_LAST=$(awk -v current="$SLOT_INDEX" -v next_slot="$NEXT_LEADER_SLOT" 'BEGIN { if (next_slot > 0) printf "%.2f", (current / next_slot) * 100; else printf "0.00" }')
       fi
-    fi
+      FIELDS+="${FIELDS:+,}leader_progress_since_last=${PROGRESS_SINCE_LAST}"
 
-    NEXT_EPOCH_SLOT_COUNT=$(get_next_epoch_leader_slot_count "$IDENTITY_KEY" "$CLUSTER")
-    if [[ -n "$NEXT_EPOCH_SLOT_COUNT" ]]; then
-      FIELDS+="${FIELDS:+,}next_epoch_leader_slot_count=${NEXT_EPOCH_SLOT_COUNT}"
+      # Add time between leader slots metric
+      if [[ -n "$LAST_LEADER_SLOT" ]]; then
+        SLOTS_BETWEEN=$((NEXT_LEADER_SLOT - LAST_LEADER_SLOT))
+        TIME_BETWEEN_LEADER_SLOTS_S=$(awk -v slots="$SLOTS_BETWEEN" -v dur="$SLOT_DURATION_MS" 'BEGIN { printf "%.2f", (slots * dur) / 1000 }')
+        FIELDS+="${FIELDS:+,}time_between_leader_slots_s=${TIME_BETWEEN_LEADER_SLOTS_S}"
+      fi
+    else
+      FIELDS+="${FIELDS:+,}time_to_next_leader_slot_s=0,leader_progress_percentage=0.00,leader_progress_since_last=0.00"
     fi
+  fi
 
-    LINE="nodemonitor,${TAGS} ${FIELDS} ${TIMESTAMP}"
-    curl -s -XPOST "${INFLUX_URL}/api/v2/write?org=${INFLUX_ORG}&bucket=${INFLUX_BUCKET}&precision=ns" \
-      -H "Authorization: Token ${INFLUX_TOKEN}" \
-      --data-raw "$LINE"
+  NEXT_EPOCH_SLOT_COUNT=$(get_next_epoch_leader_slot_count "$IDENTITY_KEY" "$CLUSTER")
+  if [[ -n "$NEXT_EPOCH_SLOT_COUNT" ]]; then
+    FIELDS+="${FIELDS:+,}next_epoch_leader_slot_count=${NEXT_EPOCH_SLOT_COUNT}"
+  fi
+
+  LINE="nodemonitor,${TAGS} ${FIELDS} ${TIMESTAMP}"
+  curl -s -XPOST "${INFLUX_URL}/api/v2/write?org=${INFLUX_ORG}&bucket=${INFLUX_BUCKET}&precision=ns" \
+    -H "Authorization: Token ${INFLUX_TOKEN}" \
+    --data-raw "$LINE"
+  if [[ "$HAS_VALIDATOR_DETAILS" -eq 1 ]]; then
     echo "✅ Validator metrics sent for $HOST"
   else
-    echo "❌ Error: invalid validator metrics for $HOST (vote=$VOTE_ACCOUNT, id=$IDENTITY_KEY)"
+    echo "⚠️ Validator baseline metrics sent for $HOST (validator-specific fields missing)"
   fi
 }
 

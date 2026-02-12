@@ -3,12 +3,14 @@ import re
 import time
 import subprocess
 import urllib.request
+import urllib.error
 import json
 import os
 import urllib.parse
 import threading
 import logging
-from datetime import datetime, timedelta
+import argparse
+from datetime import datetime, timedelta, timezone
 
 # Load environment variables from centralized file
 def load_environment():
@@ -184,8 +186,14 @@ VALIDATOR_CONFIGS = {
 }
 
 # Global Settings
-ENABLE_DISCORD = False
-ENABLE_TELEGRAM = True
+def env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ("1", "true", "yes", "on")
+
+ENABLE_DISCORD = env_bool("ENABLE_DISCORD", False)
+ENABLE_TELEGRAM = env_bool("ENABLE_TELEGRAM", True)
 SHOW_FULL_VALIDATOR_ID = True
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 SOLANA_BIN = os.environ.get("SOLANA_BIN")
@@ -494,6 +502,9 @@ def send_to_discord_custom(webhook_url, message):
                 print("Discord message sent successfully")
             else:
                 print(f"Failed to send Discord message: {response.status}")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8', errors='ignore')
+        print(f"Error sending Discord message: HTTP {e.code} - {error_body}")
     except Exception as e:
         print(f"Error sending Discord message: {e}")
 
@@ -524,28 +535,34 @@ def send_to_telegram_custom(bot_token, chat_id, message):
     except Exception as e:
         print(f"Error sending Telegram message: {e}")
 
-def send_alert_for_validator(validator_name, config, alert_type, format_function, **kwargs):
+def send_alert_for_validator(validator_name, config, alert_type, format_function, channels=None, **kwargs):
     """
     Send alert for a specific validator
     """
     DISCORD_WEBHOOK = config["discord_webhook"]
     TELEGRAM_CHAT_ID = config["telegram_chat_id"]
+    requested_channels = channels or {"discord", "telegram"}
+    sent_any = False
 
     # Send to Discord
-    if ENABLE_DISCORD and DISCORD_WEBHOOK:
+    if "discord" in requested_channels and ENABLE_DISCORD and DISCORD_WEBHOOK:
         discord_message = format_function(platform="discord", **kwargs)
         if discord_message:
             logger = setup_logging_for_validator(validator_name)
             logger.info(f"Sending Discord alert: {alert_type}")
             send_to_discord_custom(DISCORD_WEBHOOK, discord_message)
+            sent_any = True
 
     # Send to Telegram
-    if ENABLE_TELEGRAM and TELEGRAM_CHAT_ID:
+    if "telegram" in requested_channels and ENABLE_TELEGRAM and TELEGRAM_CHAT_ID:
         telegram_message = format_function(platform="telegram", **kwargs)
         if telegram_message:
             logger = setup_logging_for_validator(validator_name)
             logger.info(f"Sending Telegram alert: {alert_type}")
             send_to_telegram_custom(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, telegram_message)
+            sent_any = True
+
+    return sent_any
 
 def should_send_delinquent_alert(validator_name, validator_id):
     """
@@ -956,7 +973,82 @@ def monitor_all_validators():
     for thread in threads:
         thread.join()
 
+def send_test_alert(validator_name, platform="telegram"):
+    """
+    Send a test alert for a specific validator and platform
+    """
+    if validator_name not in VALIDATOR_CONFIGS:
+        print(f"Unknown validator '{validator_name}'. Valid options: {', '.join(VALIDATOR_CONFIGS.keys())}")
+        return 1
+
+    config = VALIDATOR_CONFIGS[validator_name]
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+    message = (
+        f"TEST ALERT\n"
+        f"Validator: {config.get('name', validator_name)}\n"
+        f"Network: {validator_name}\n"
+        f"Time (UTC): {timestamp}"
+    )
+    if platform == "both":
+        requested_channels = {"discord", "telegram"}
+    elif platform == "discord":
+        requested_channels = {"discord"}
+    else:
+        requested_channels = {"telegram"}
+
+    failed = False
+
+    if "telegram" in requested_channels:
+        chat_id = config.get("telegram_chat_id")
+        if not ENABLE_TELEGRAM:
+            print("Telegram test skipped: ENABLE_TELEGRAM is false")
+            failed = True
+        elif not TELEGRAM_BOT_TOKEN or not chat_id:
+            print("Telegram test failed: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID for this validator")
+            failed = True
+
+    if "discord" in requested_channels:
+        webhook = config.get("discord_webhook")
+        if not ENABLE_DISCORD:
+            print("Discord test skipped: ENABLE_DISCORD is false")
+            failed = True
+        elif not webhook:
+            print("Discord test failed: missing DISCORD_WEBHOOK for this validator")
+            failed = True
+
+    if failed:
+        return 1
+
+    print(f"Sending test alert for {validator_name} via {platform}...")
+    sent = send_alert_for_validator(
+        validator_name,
+        config,
+        "test",
+        lambda platform, **kwargs: message,
+        channels=requested_channels
+    )
+    return 0 if sent else 1
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Solana Multi-Validator Alert Formatter")
+    parser.add_argument(
+        "--send-test",
+        dest="send_test",
+        choices=sorted(VALIDATOR_CONFIGS.keys()),
+        help="Send a test alert for a specific validator and exit"
+    )
+    parser.add_argument(
+        "--send-test-platform",
+        dest="send_test_platform",
+        choices=["telegram", "discord", "both"],
+        default="telegram",
+        help="Notification platform used with --send-test (default: telegram)"
+    )
+    args = parser.parse_args()
+
+    if args.send_test:
+        exit(send_test_alert(args.send_test, args.send_test_platform))
+
     # Main loop with retry on error for continuous operation
     print("Solana Multi-Validator Alert Formatter")
     print(f"Discord enabled: {ENABLE_DISCORD}, Telegram enabled: {ENABLE_TELEGRAM}")
