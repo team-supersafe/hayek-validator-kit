@@ -144,4 +144,9 @@ if [ $(grep -c $voteAccount <<< $validatorCheck) == 0  ]; then echo "validator n
         status=2
         logentry="nodemonitor,pubkey=$identityPubkey status=$status $now"
     fi
- echo $logentry
+
+# Defensive cleanup: avoid invalid line protocol from empty/null numeric fields.
+logentry=$(echo "$logentry" \
+  | sed -E 's/=null([, ])/=0\1/g; s/=NaN([, ])/=0\1/g; s/=\+Inf([, ])/=0\1/g; s/=-Inf([, ])/=0\1/g; s/=, /=0 /g; s/=,/=0,/g; s/,,+/,/g')
+
+echo "$logentry"
