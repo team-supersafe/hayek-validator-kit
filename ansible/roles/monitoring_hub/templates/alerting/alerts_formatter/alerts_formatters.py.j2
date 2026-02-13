@@ -6,6 +6,7 @@ import urllib.request
 import urllib.error
 import json
 import os
+import sys
 import urllib.parse
 import threading
 import logging
@@ -83,7 +84,7 @@ def validate_environment():
         print("")
         print("Please ensure these variables are defined in /usr/local/etc/validator-metrics.env")
         print("The script cannot run safely without these credentials.")
-        exit(1)
+        sys.exit(1)
 
     print("✅ All critical environment variables are set")
 
@@ -190,7 +191,10 @@ def env_bool(name, default=False):
     value = os.environ.get(name)
     if value is None:
         return default
-    return value.strip().lower() in ("1", "true", "yes", "on")
+    value_stripped = value.strip()
+    if value_stripped == "":
+        return default
+    return value_stripped.lower() in ("1", "true", "yes", "on")
 
 ENABLE_DISCORD = env_bool("ENABLE_DISCORD", False)
 ENABLE_TELEGRAM = env_bool("ENABLE_TELEGRAM", True)
@@ -975,7 +979,11 @@ def monitor_all_validators():
 
 def send_test_alert(validator_name, platform="telegram"):
     """
-    Send a test alert for a specific validator and platform
+    Send a test alert for a specific validator and platform.
+
+    Exit status semantics:
+    - Return 0 when at least one requested channel sends successfully.
+    - Return 1 when none of the requested channels can be sent.
     """
     if validator_name not in VALIDATOR_CONFIGS:
         print(f"Unknown validator '{validator_name}'. Valid options: {', '.join(VALIDATOR_CONFIGS.keys())}")
@@ -996,37 +1004,46 @@ def send_test_alert(validator_name, platform="telegram"):
     else:
         requested_channels = {"telegram"}
 
-    failed = False
+    sendable_channels = set()
+    had_channel_failure = False
 
     if "telegram" in requested_channels:
         chat_id = config.get("telegram_chat_id")
         if not ENABLE_TELEGRAM:
             print("Telegram test skipped: ENABLE_TELEGRAM is false")
-            failed = True
+            had_channel_failure = True
         elif not TELEGRAM_BOT_TOKEN or not chat_id:
             print("Telegram test failed: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID for this validator")
-            failed = True
+            had_channel_failure = True
+        else:
+            sendable_channels.add("telegram")
 
     if "discord" in requested_channels:
         webhook = config.get("discord_webhook")
         if not ENABLE_DISCORD:
             print("Discord test skipped: ENABLE_DISCORD is false")
-            failed = True
+            had_channel_failure = True
         elif not webhook:
             print("Discord test failed: missing DISCORD_WEBHOOK for this validator")
-            failed = True
+            had_channel_failure = True
+        else:
+            sendable_channels.add("discord")
 
-    if failed:
+    if not sendable_channels:
+        print("No requested channels are sendable for this test alert.")
         return 1
 
-    print(f"Sending test alert for {validator_name} via {platform}...")
+    channels_label = ", ".join(sorted(sendable_channels))
+    print(f"Sending test alert for {validator_name} via: {channels_label}")
     sent = send_alert_for_validator(
         validator_name,
         config,
         "test",
         lambda platform, **kwargs: message,
-        channels=requested_channels
+        channels=sendable_channels
     )
+    if sent and had_channel_failure:
+        print("Test alert partially succeeded: at least one requested channel was unavailable.")
     return 0 if sent else 1
 
 if __name__ == "__main__":
@@ -1047,7 +1064,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.send_test:
-        exit(send_test_alert(args.send_test, args.send_test_platform))
+        sys.exit(send_test_alert(args.send_test, args.send_test_platform))
 
     # Main loop with retry on error for continuous operation
     print("Solana Multi-Validator Alert Formatter")

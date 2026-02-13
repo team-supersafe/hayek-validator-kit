@@ -479,6 +479,11 @@ send_validator_metrics() {
   local DOUBLEZERO_ENABLED="$8"
   local DOUBLEZERO_DEPOSIT_PDA="$9"
 
+  if [[ -z "${HOST//[[:space:]]/}" || -z "${IDENTITY_KEY//[[:space:]]/}" ]]; then
+    echo "⚠️ Skipping validator metrics: HOST and IDENTITY_KEY must be non-empty"
+    return 1
+  fi
+
   echo "📊 Collecting validator metrics for $HOST..."
 
   ACTIVATING_STAKE=""
