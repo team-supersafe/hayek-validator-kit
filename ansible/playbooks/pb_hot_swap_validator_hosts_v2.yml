@@ -14,7 +14,9 @@
 #   -e "source_host=host-alpha" \
 #   -e "destination_host=host-bravo" \
 #   -e "operator_user=bob" \
-#   -e "deprovision_source_host=true" # Optional: Use this to deprovision all validator-related files, folders, services, and keys from the source host
+#   -e "deprovision_source_host=true" \
+#   # Optional: Use this to deprovision all validator-related files, folders, services, and keys from the source host
+#   -K # Sudo password prompt for privileged tasks
 
 - name: Perform Hot Swap Validator hosts
   hosts: "{{ source_host }},{{ destination_host }}"
@@ -36,6 +38,7 @@
             - operator_user
           Optional:
             - deprovision_source_host (set to true to deprovision all validator-related files, folders, services, and keys from the source host)
+      tags: precheck
 
     - name: Check if source host keys directory exists
       ansible.builtin.stat:
@@ -44,6 +47,7 @@
       delegate_to: "{{ source_host }}"
       become: true
       become_user: "{{ solana_user }}"
+      tags: precheck
 
     - name: Check if destination host keys directory exists
       ansible.builtin.stat:
@@ -52,6 +56,7 @@
       delegate_to: "{{ destination_host }}"
       become: true
       become_user: "{{ solana_user }}"
+      tags: precheck
 
     - name: Validate source host keys directory exists
       ansible.builtin.fail:
@@ -61,6 +66,7 @@
           Please ensure a validator is properly installed before attempting a hot swap.
       when: not source_keys_dir_stat.stat.exists
       run_once: true
+      tags: precheck
 
     - name: Validate destination host keys directory exists
       ansible.builtin.fail:
@@ -70,6 +76,7 @@
           Please ensure a validator is properly installed before attempting a hot swap.
       when: not destination_keys_dir_stat.stat.exists
       run_once: true
+      tags: precheck
 
     - name: Find validator name on source host
       ansible.builtin.find:
@@ -79,6 +86,7 @@
       delegate_to: "{{ source_host }}"
       become: true
       become_user: "{{ solana_user }}"
+      tags: precheck
 
     - name: Find validator name on destination host
       ansible.builtin.find:
@@ -88,6 +96,7 @@
       delegate_to: "{{ destination_host }}"
       become: true
       become_user: "{{ solana_user }}"
+      tags: precheck
 
     - name: Validate source host has validator subdirectories
       ansible.builtin.fail:
@@ -97,6 +106,7 @@
           Please ensure a validator is properly installed on '{{ source_host }}' before attempting a hot swap.
       when: source_keys.files | length == 0
       run_once: true
+      tags: precheck
 
     - name: Validate destination host has validator subdirectories
       ansible.builtin.fail:
@@ -106,16 +116,19 @@
           Please ensure a validator is properly installed on '{{ destination_host }}' before attempting a hot swap.
       when: destination_keys.files | length == 0
       run_once: true
+      tags: precheck
 
     - name: Set source validator name fact
       ansible.builtin.set_fact:
         source_validator_name: "{{ source_keys.files[0].path | basename }}"
       delegate_to: "{{ source_host }}"
+      tags: precheck
 
     - name: Set destination validator name fact
       ansible.builtin.set_fact:
         destination_validator_name: "{{ destination_keys.files[0].path | basename }}"
       delegate_to: "{{ destination_host }}"
+      tags: precheck
 
   roles:
     - role: solana_swap_validator_hosts_v2

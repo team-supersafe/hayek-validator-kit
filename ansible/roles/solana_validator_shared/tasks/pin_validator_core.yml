@@ -12,7 +12,6 @@
 - name: Pin validator process to CPU core
   command: "{{ validator_scripts_dir }}/fix_core_affinity_bug_for_poh.sh {{ solana_user }}"
   become: true
-  become_user: "{{ solana_user }}"
   register: pin_core_result
   changed_when: "'Successfully set affinity' in pin_core_result.stdout"
   failed_when: false  # Result is handled in the next task
@@ -23,8 +22,9 @@
 - name: Show script result
   debug:
     msg: |
-      {{ pin_core_result.stdout }}
-  when: pin_core_result.stdout | length > 0
+      stdout: {{ pin_core_result.stdout | default('(empty)') }}
+      stderr: {{ pin_core_result.stderr | default('(empty)') }}
+  when: (pin_core_result.stdout | length > 0) or (pin_core_result.stderr | length > 0)
   tags:
     - poh_core_affinity
     - validator_tuning

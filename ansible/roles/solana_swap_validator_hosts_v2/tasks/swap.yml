@@ -253,16 +253,11 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Print elapsed time
-      ansible.builtin.debug:
-        msg: |
-          ===============================================
-          🟣 SWAP DURATION
-          ===============================================
-          Elapsed time since current_timestamp: {{ elapsed_time.stdout }} seconds
-          ===============================================
-      run_once: true
+    - name: Persist swap duration for summary
+      ansible.builtin.set_fact:
+        swap_duration_seconds: "{{ elapsed_time.stdout | trim | int }}"
       delegate_to: localhost
+      run_once: true
 
 # Step 6: Cleanup firewall rules
 - name: swap - Remove ufw allow rule for source host IP on destination
