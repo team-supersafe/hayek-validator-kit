@@ -1,0 +1,110 @@
+---
+# Deploy monitoring hub template files without running the full monitoring_hub role.
+#
+# Usage:
+#   ansible-playbook playbooks/pb_deploy_monitoring_templates_per_network.yml \
+#     -i solana_host_monitoring.yml \
+#     -e "target_host=host-monitoring" \
+#     -e "ansible_user=monitor" \
+#     -e "target_network=mainnet" \
+#     -K
+#
+# Supported target_network values:
+#   mainnet, testnet, debug, devnet, localnet
+#
+# This playbook deploys:
+#   - alerts_formatters.py.j2      -> /usr/local/bin/alerts_formatters.py
+#   - monitor.sh.j2 (selected net) -> /etc/telegraf/scripts/monitor-<network>.sh
+#   - monitor.env.j2               -> /usr/local/etc/validator-metrics.env
+#   - validator-metrics.sh.j2      -> /usr/local/bin/validator-metrics.sh
+
+- name: Deploy selected monitoring templates
+  hosts: "{{ target_host }}"
+  user: "{{ ansible_user }}"
+  become: true
+  vars:
+    allowed_networks:
+      - mainnet
+      - testnet
+      - debug
+      - devnet
+      - localnet
+
+  pre_tasks:
+    - name: Validate target_network input
+      ansible.builtin.assert:
+        that:
+          - target_network is defined
+          - target_network in allowed_networks
+        fail_msg: "target_network must be one of: {{ allowed_networks | join(', ') }}"
+
+    - name: Load monitoring role variables
+      ansible.builtin.include_vars:
+        file: ../roles/monitoring_hub/vars/main.yml
+
+    - name: Load monitoring role secrets
+      ansible.builtin.include_vars:
+        file: ../roles/monitoring_hub/vars/secrets.yml
+      no_log: true
+
+    - name: Build selected network item for monitor template
+      ansible.builtin.set_fact:
+        selected_network_item:
+          key: "{{ target_network }}"
+          value: "{{ solana.network[target_network] }}"
+
+    - name: Ensure deployment directories exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: /usr/local/bin
+          owner: root
+          group: root
+          mode: "0755"
+        - path: /usr/local/etc
+          owner: root
+          group: root
+          mode: "0755"
+        - path: /etc/telegraf/scripts
+          owner: telegraf
+          group: telegraf
+          mode: "0755"
+
+  tasks:
+    - name: Deploy alert formatter script
+      ansible.builtin.template:
+        src: ../roles/monitoring_hub/templates/alerting/alerts_formatter/alerts_formatters.py.j2
+        dest: /usr/local/bin/alerts_formatters.py
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy monitor environment file
+      ansible.builtin.template:
+        src: ../roles/monitoring_hub/templates/validator_metrics_service/monitor.env.j2
+        dest: /usr/local/etc/validator-metrics.env
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Deploy validator metrics script
+      ansible.builtin.template:
+        src: ../roles/monitoring_hub/templates/validator_metrics_service/validator-metrics.sh.j2
+        dest: /usr/local/bin/validator-metrics.sh
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy per-network monitor script
+      ansible.builtin.template:
+        src: ../roles/monitoring_hub/templates/telegraf/monitor.sh.j2
+        dest: "/etc/telegraf/scripts/monitor-{{ selected_network_item.value.network_name }}.sh"
+        owner: telegraf
+        group: telegraf
+        mode: "0755"
+      vars:
+        item: "{{ selected_network_item }}"
