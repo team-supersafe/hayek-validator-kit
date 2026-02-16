@@ -8,6 +8,8 @@
 #     -e "ansible_user=monitor" \
 #     -e "target_network=mainnet" \
 #     -K
+# 
+# TIP: Use --check --diff to preview changes before applying.
 #
 # Supported target_network values:
 #   mainnet, testnet, debug, devnet, localnet
@@ -29,6 +31,16 @@
       - debug
       - devnet
       - localnet
+    # Compatibility defaults so monitoring_hub/vars/secrets.yml can be loaded
+    # without requiring full pb_setup_monitoring_hub bootstrap variables.
+    tmp_grafana_default_admin_user: "{{ deploy_tmp_grafana_default_admin_user | default('admin') }}"
+    tmp_grafana_default_admin_password: "{{ deploy_tmp_grafana_default_admin_password | default('admin') }}"
+    tmp_influxdb_default_admin_user: "{{ deploy_tmp_influxdb_default_admin_user | default('admin') }}"
+    tmp_influxdb_default_admin_password: "{{ deploy_tmp_influxdb_default_admin_password | default('adminpass') }}"
+    tmp_influxdb_default_org: "{{ deploy_tmp_influxdb_default_org | default('') }}"
+    tmp_influxdb_default_bucket: "{{ deploy_tmp_influxdb_default_bucket | default('solana_metrics') }}"
+    grafana_admin_password: "{{ deploy_grafana_admin_password | default('admin') }}"
+    grafana_url: "{{ deploy_grafana_url | default('http://localhost:3000') }}"
 
   pre_tasks:
     - name: Validate target_network input
@@ -52,6 +64,18 @@
         selected_network_item:
           key: "{{ target_network }}"
           value: "{{ solana.network[target_network] }}"
+
+    - name: Ensure required deploy variables are provided
+      ansible.builtin.assert:
+        that:
+          - influxdb_init_org is defined
+          - (influxdb_init_org | string | trim | length) > 0
+          - solana_metrics_token is defined
+          - (solana_metrics_token | string | trim | length) > 0
+        fail_msg: >-
+          Missing required variables for monitor.env rendering.
+          Provide these via inventory or -e:
+          influxdb_init_org, solana_metrics_token.
 
     - name: Ensure deployment directories exist
       ansible.builtin.file:
