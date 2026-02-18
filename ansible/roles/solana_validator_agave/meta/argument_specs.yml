@@ -5,7 +5,7 @@ argument_specs:
     author: "Hayek Validator Team"
     description:
       - "Installs and configures an Agave Solana validator"
-      - "Automatically installs dependencies (rust_env, solana_cli_agave, solana_validator_shared)"
+      - "Automatically installs dependencies (solana_cli_agave, solana_validator_shared)"
       - "Configures validator keys and startup scripts"
     options:
       validator_name:
