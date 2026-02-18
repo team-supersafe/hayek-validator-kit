@@ -1,7 +1,7 @@
 ---
 # monitoring_hub role main tasks
 
-- name: Load sensitive variables
+- name: Check monitoring hub secrets file exists
   ansible.builtin.stat:
     path: "{{ role_path }}/vars/secrets.yml"
   register: monitoring_hub_secrets_file
@@ -16,7 +16,7 @@
       environment-specific values.
   no_log: true
 
-- name: Load sensitive variables
+- name: Include monitoring hub secrets variables
   ansible.builtin.include_vars:
     file: "{{ role_path }}/vars/secrets.yml"
   no_log: true
