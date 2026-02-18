@@ -6,3 +6,10 @@ all:
     host-monitoring:
       ansible_host: 192.0.2.10 # Replace with assigned IP
       ansible_port: 22
+
+  children:
+    # Solana baseline variables (group_vars/solana.yml) are required by
+    # IAM-related playbooks/roles after defaults deduplication.
+    solana:
+      hosts:
+        host-monitoring:

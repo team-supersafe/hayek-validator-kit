@@ -1,4 +1,24 @@
 ---
+# Precheck 0: Ensure baseline Solana variables are available
+# These values are expected from group_vars/solana.yml (via inventory grouping)
+# or explicit variable overrides.
+- name: Validate required Solana baseline variables are defined
+  ansible.builtin.assert:
+    that:
+      - mount_base_path is defined
+      - system_solana_install_dir is defined
+      - system_solana_active_release_dir is defined
+      - system_solana_installed_releases_dir is defined
+      - validator_root_dir is defined
+      - validator_scripts_dir is defined
+      - validator_logs_dir is defined
+      - validator_keys_dir is defined
+      - validator_operators_group is defined
+    fail_msg: >-
+      Missing required Solana baseline variables for iam_manager.
+      Add the target host to the 'solana' inventory group (recommended),
+      or define these vars explicitly in inventory/group_vars.
+
 # Precheck 1: Read and validate CSV file
 # This task reads the CSV file containing user information and validates its structure
 - name: Read users from CSV
