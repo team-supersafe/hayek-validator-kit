@@ -10,7 +10,8 @@
 #   -i solana_new_metal_box.yml \
 #   -e "target_host=new-metal-box" \
 #   -e "ansible_user=ubuntu" \
-#   -e "csv_file=iam_setup.csv"  # REQUIRED: specify the CSV filename
+#   -e "csv_file=iam_setup.csv" \  # REQUIRED
+#   -e "users_base_dir=$HOME/new-metal-box"  # OPTIONAL: directory containing the CSV file
 
 - name: Setup server users
   hosts: "{{ target_host }}"
