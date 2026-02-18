@@ -31,7 +31,7 @@
       - debug
       - devnet
       - localnet
-    # Compatibility defaults so monitoring_hub/vars/secrets.yml can be loaded
+    # Compatibility defaults so monitoring_hub secrets can be loaded
     # without requiring full pb_setup_monitoring_hub bootstrap variables.
     tmp_grafana_default_admin_user: "{{ deploy_tmp_grafana_default_admin_user | default('admin') }}"
     tmp_grafana_default_admin_password: "{{ deploy_tmp_grafana_default_admin_password | default('admin') }}"
@@ -53,6 +53,22 @@
     - name: Load monitoring role variables
       ansible.builtin.include_vars:
         file: ../roles/monitoring_hub/vars/main.yml
+
+    - name: Check monitoring role secrets file exists
+      ansible.builtin.stat:
+        path: ../roles/monitoring_hub/vars/secrets.yml
+      delegate_to: localhost
+      become: false
+      register: monitoring_hub_secrets_file
+
+    - name: Assert monitoring role secrets file is present
+      ansible.builtin.assert:
+        that:
+          - monitoring_hub_secrets_file.stat.exists
+        fail_msg: >-
+          Missing ../roles/monitoring_hub/vars/secrets.yml. Copy
+          ../roles/monitoring_hub/vars/secrets.yml.example to secrets.yml and
+          fill it with environment-specific values.
 
     - name: Load monitoring role secrets
       ansible.builtin.include_vars:

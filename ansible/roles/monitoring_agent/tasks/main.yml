@@ -2,7 +2,22 @@
 # Main Monitoring Agent tasks orchestrator
 
 - name: Include secrets variables
-  ansible.builtin.include_vars: vars/secrets.yml
+  ansible.builtin.stat:
+    path: "{{ role_path }}/vars/secrets.yml"
+  register: monitoring_agent_secrets_file
+
+- name: Assert monitoring agent secrets file is present
+  ansible.builtin.assert:
+    that:
+      - monitoring_agent_secrets_file.stat.exists
+    fail_msg: >-
+      Missing {{ role_path }}/vars/secrets.yml. Copy
+      {{ role_path }}/vars/secrets.yml.example to secrets.yml and fill it with
+      environment-specific values.
+
+- name: Include secrets variables
+  ansible.builtin.include_vars:
+    file: "{{ role_path }}/vars/secrets.yml"
   no_log: true
 
 - name: Include Telegraf tasks

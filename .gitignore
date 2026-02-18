@@ -218,6 +218,10 @@ BenchmarkDotNet.Artifacts/
 
 # .NET Core
 project.lock.json
+
+# Local secrets (use the tracked *.example templates instead)
+ansible/roles/monitoring_hub/vars/secrets.yml
+ansible/roles/monitoring_agent/vars/secrets.yml
 project.fragment.lock.json
 artifacts/
 
