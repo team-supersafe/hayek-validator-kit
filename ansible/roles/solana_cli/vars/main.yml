@@ -1,2 +1,0 @@
----
-solana_installed_releases_dir: "{{ solana_user_dir }}/.local/share/solana/install/releases"
