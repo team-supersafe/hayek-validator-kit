@@ -6,7 +6,7 @@ argument_specs:
     description:
       - "Installs and configures a Jito Solana validator"
       - "Supports both co-hosted and shared relayer configurations"
-      - "Automatically installs dependencies (rust_env, solana_cli)"
+      - "Automatically installs dependencies (rust_env_v2, solana_cli_jito, solana_validator_shared)"
       - "Configures validator keys and startup scripts"
     options:
       validator_name:
