@@ -1,8 +1,24 @@
 ---
 # monitoring_hub role main tasks
 
-- name: Load sensitive variables
-  include_vars: secrets.yml
+- name: Check monitoring hub secrets file exists
+  ansible.builtin.stat:
+    path: "{{ role_path }}/vars/secrets.yml"
+  register: monitoring_hub_secrets_file
+
+- name: Assert secrets file is present
+  ansible.builtin.assert:
+    that:
+      - monitoring_hub_secrets_file.stat.exists
+    fail_msg: >-
+      Missing {{ role_path }}/vars/secrets.yml. Copy
+      {{ role_path }}/vars/secrets.yml.example to secrets.yml and fill it with
+      environment-specific values.
+  no_log: true
+
+- name: Include monitoring hub secrets variables
+  ansible.builtin.include_vars:
+    file: "{{ role_path }}/vars/secrets.yml"
   no_log: true
   tags:
     - validator_metrics_service
