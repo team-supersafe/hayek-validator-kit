@@ -1,9 +1,0 @@
----
-dependencies:
-  - role: rust_env
-  - role: solana_cli
-    vars:
-      agave_version: "{{ jito_version }}"
-  - role: solana_validator_shared
-    vars:
-      validator_name: "{{ validator_name }}"
