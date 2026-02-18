@@ -106,6 +106,7 @@
         owner: root
         group: root
         mode: "0755"
+      register: deploy_alert_formatter_result
 
     - name: Deploy monitor environment file
       ansible.builtin.template:
@@ -114,6 +115,7 @@
         owner: root
         group: root
         mode: "0600"
+      register: deploy_monitor_env_result
 
     - name: Deploy validator metrics script
       ansible.builtin.template:
@@ -122,6 +124,7 @@
         owner: root
         group: root
         mode: "0755"
+      register: deploy_validator_metrics_script_result
 
     - name: Deploy per-network monitor script
       ansible.builtin.template:
@@ -132,3 +135,17 @@
         mode: "0755"
       vars:
         item: "{{ selected_network_item }}"
+
+    - name: Restart alert formatter service when script changed
+      ansible.builtin.systemd:
+        name: alert-formatter.service
+        state: restarted
+        daemon_reload: true
+      when: deploy_alert_formatter_result.changed
+
+    - name: Restart validator metrics service when env or script changed
+      ansible.builtin.systemd:
+        name: validator-metrics.service
+        state: restarted
+        daemon_reload: true
+      when: deploy_monitor_env_result.changed or deploy_validator_metrics_script_result.changed

@@ -6,6 +6,7 @@
     mode: '0755'
     owner: root
     group: root
+  notify: Restart Alert Formatter
 
 - name: Install Alert Formatter service
   ansible.builtin.template:
