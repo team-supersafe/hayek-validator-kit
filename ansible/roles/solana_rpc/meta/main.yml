@@ -1,4 +1,0 @@
----
-dependencies:
-  - role: rust_env
-  - role: solana_cli
