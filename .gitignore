@@ -218,10 +218,6 @@ BenchmarkDotNet.Artifacts/
 
 # .NET Core
 project.lock.json
-
-# Local secrets (use the tracked *.example templates instead)
-ansible/roles/monitoring_hub/vars/secrets.yml
-ansible/roles/monitoring_agent/vars/secrets.yml
 project.fragment.lock.json
 artifacts/
 
@@ -565,6 +561,10 @@ solana-localnet/validator-keys/*
 *.pass
 .vault_pass
 *.vault_pass
+
+# Ansible local secrets (templates are tracked as *.example)
+ansible/roles/monitoring_hub/vars/secrets.yml
+ansible/roles/monitoring_agent/vars/secrets.yml
 
 # Ignoring initial-setup until migrated
 ansible/initial-setup

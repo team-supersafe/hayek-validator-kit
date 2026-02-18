@@ -41,6 +41,9 @@
     tmp_influxdb_default_bucket: "{{ deploy_tmp_influxdb_default_bucket | default('solana_metrics') }}"
     grafana_admin_password: "{{ deploy_grafana_admin_password | default('admin') }}"
     grafana_url: "{{ deploy_grafana_url | default('http://localhost:3000') }}"
+    monitoring_hub_vars_main_file_path: "{{ playbook_dir }}/../roles/monitoring_hub/vars/main.yml"
+    monitoring_hub_secrets_file_path: "{{ playbook_dir }}/../roles/monitoring_hub/vars/secrets.yml"
+    monitoring_hub_secrets_example_file_path: "{{ playbook_dir }}/../roles/monitoring_hub/vars/secrets.yml.example"
 
   pre_tasks:
     - name: Validate target_network input
@@ -52,27 +55,28 @@
 
     - name: Load monitoring role variables
       ansible.builtin.include_vars:
-        file: ../roles/monitoring_hub/vars/main.yml
+        file: "{{ monitoring_hub_vars_main_file_path }}"
 
     - name: Check monitoring role secrets file exists
       ansible.builtin.stat:
-        path: ../roles/monitoring_hub/vars/secrets.yml
+        path: "{{ monitoring_hub_secrets_file_path }}"
       delegate_to: localhost
       become: false
-      register: monitoring_hub_secrets_file
+      register: monitoring_hub_secrets_file_stat
 
     - name: Assert monitoring role secrets file is present
       ansible.builtin.assert:
         that:
-          - monitoring_hub_secrets_file.stat.exists
+          - monitoring_hub_secrets_file_stat.stat.exists
         fail_msg: >-
-          Missing ../roles/monitoring_hub/vars/secrets.yml. Copy
-          ../roles/monitoring_hub/vars/secrets.yml.example to secrets.yml and
-          fill it with environment-specific values.
+          Missing {{ monitoring_hub_secrets_file_path }}. Copy
+          {{ monitoring_hub_secrets_example_file_path }} to secrets.yml and fill
+          it with environment-specific values.
+      no_log: true
 
     - name: Load monitoring role secrets
       ansible.builtin.include_vars:
-        file: ../roles/monitoring_hub/vars/secrets.yml
+        file: "{{ monitoring_hub_secrets_file_path }}"
       no_log: true
 
     - name: Build selected network item for monitor template

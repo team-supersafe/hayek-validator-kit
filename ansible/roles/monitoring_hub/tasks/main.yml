@@ -14,6 +14,7 @@
       Missing {{ role_path }}/vars/secrets.yml. Copy
       {{ role_path }}/vars/secrets.yml.example to secrets.yml and fill it with
       environment-specific values.
+  no_log: true
 
 - name: Load sensitive variables
   ansible.builtin.include_vars:
