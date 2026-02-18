@@ -1,7 +1,0 @@
----
-- name: restart jito-relayer
-  ansible.builtin.systemd:
-    name: "{{ jito_relayer_service_name }}"
-    state: restarted
-    enabled: true
-  become: true
