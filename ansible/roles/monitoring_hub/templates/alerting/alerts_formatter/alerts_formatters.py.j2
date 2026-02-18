@@ -3,12 +3,15 @@ import re
 import time
 import subprocess
 import urllib.request
+import urllib.error
 import json
 import os
+import sys
 import urllib.parse
 import threading
 import logging
-from datetime import datetime, timedelta
+import argparse
+from datetime import datetime, timedelta, timezone
 
 # Load environment variables from centralized file
 def load_environment():
@@ -16,77 +19,32 @@ def load_environment():
     env_file = "/usr/local/etc/validator-metrics.env"
     if os.path.exists(env_file):
         print(f"🔧 Loading environment variables from {env_file}")
-        # Source the environment file by reading and setting variables
+        # Parse only KEY=VALUE or export KEY=VALUE lines.
+        var_name_pattern = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
         with open(env_file, 'r') as f:
             for line in f:
                 line = line.strip()
+                if line.startswith("# Support for bash/zsh") or line.startswith("if "):
+                    break
                 if not line or line.startswith('#'):
                     continue
 
-                # Handle 'export KEY=VALUE' or 'KEY=VALUE'
-                if line.startswith('export ') and '=' in line:
-                    var_assignment = line[7:]  # Remove 'export '
-                elif '=' in line:
-                    var_assignment = line
-                else:
+                var_assignment = line[7:].strip() if line.startswith('export ') else line
+                if '=' not in var_assignment:
                     continue
 
-                if '=' in var_assignment:
-                    key, value = var_assignment.split('=', 1)
-                    key = key.strip()
-                    value = value.strip()
-                    # Remove quotes if present
-                    value = value.strip('"\'')
-                    os.environ[key] = value
+                key, value = var_assignment.split('=', 1)
+                key = key.strip()
+                if not var_name_pattern.match(key):
+                    continue
+
+                value = value.strip().strip('"\'')
+                os.environ[key] = value
     else:
         print(f"⚠️ Environment file not found at {env_file}")
 
 # Load environment variables at startup
 load_environment()
-
-# Validate critical environment variables
-def validate_environment():
-    """Validate that all critical environment variables are set"""
-    missing_vars = []
-
-    # Check critical variables
-    critical_vars = [
-        "MAINNET_IDENTITY",
-        "TESTNET_IDENTITY",
-        "LOCALNET_IDENTITY",
-        "SOLANA_MAINNET_RPC",
-        "SOLANA_TESTNET_RPC",
-        "SOLANA_LOCALNET_RPC",
-        "TELEGRAM_BOT_TOKEN",
-        "DISCORD_WEBHOOK_MAINNET",
-        "DISCORD_WEBHOOK_TESTNET",
-        "DISCORD_WEBHOOK_LOCALNET",
-        "TELEGRAM_CHAT_ID_MAINNET",
-        "TELEGRAM_CHAT_ID_TESTNET",
-        "TELEGRAM_CHAT_ID_LOCALNET",
-        "WATCHTOWER_MIN_BALANCE_MAINNET",
-        "WATCHTOWER_MIN_BALANCE_TESTNET",
-        "WATCHTOWER_MIN_BALANCE_LOCALNET",
-        "WATCHTOWER_MIN_BALANCE_DEBUG"
-    ]
-
-    for var in critical_vars:
-        if not os.environ.get(var):
-            missing_vars.append(var)
-
-    if missing_vars:
-        print("❌ ERROR: Missing required environment variables:")
-        for var in missing_vars:
-            print(f"  - {var}")
-        print("")
-        print("Please ensure these variables are defined in /usr/local/etc/validator-metrics.env")
-        print("The script cannot run safely without these credentials.")
-        exit(1)
-
-    print("✅ All critical environment variables are set")
-
-# Validate environment variables
-validate_environment()
 
 # Multi-Validator Configuration
 # Uses environment variables from /usr/local/etc/validator-metrics.env
@@ -184,11 +142,109 @@ VALIDATOR_CONFIGS = {
 }
 
 # Global Settings
-ENABLE_DISCORD = False
-ENABLE_TELEGRAM = True
+def env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    value_stripped = value.strip()
+    if value_stripped == "":
+        return default
+    return value_stripped.lower() in ("1", "true", "yes", "on")
+
+ENABLE_DISCORD = env_bool("ENABLE_DISCORD", False)
+ENABLE_TELEGRAM = env_bool("ENABLE_TELEGRAM", True)
 SHOW_FULL_VALIDATOR_ID = True
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 SOLANA_BIN = os.environ.get("SOLANA_BIN")
+
+VALIDATOR_ENV_REQUIREMENTS = {
+    "mainnet": {
+        "identity": "MAINNET_IDENTITY",
+        "rpc": "SOLANA_MAINNET_RPC",
+        "min_balance": "WATCHTOWER_MIN_BALANCE_MAINNET",
+        "telegram_chat_id": "TELEGRAM_CHAT_ID_MAINNET",
+        "discord_webhook": "DISCORD_WEBHOOK_MAINNET",
+    },
+    "mainnet-debug": {
+        "identity": "DEBUG_IDENTITY",
+        "rpc": "SOLANA_MAINNET_RPC",
+        "min_balance": "WATCHTOWER_MIN_BALANCE_DEBUG",
+        "telegram_chat_id": "TELEGRAM_CHAT_ID_MAINNET",
+        "discord_webhook": "DISCORD_WEBHOOK_MAINNET",
+    },
+    "testnet": {
+        "identity": "TESTNET_IDENTITY",
+        "rpc": "SOLANA_TESTNET_RPC",
+        "min_balance": "WATCHTOWER_MIN_BALANCE_TESTNET",
+        "telegram_chat_id": "TELEGRAM_CHAT_ID_TESTNET",
+        "discord_webhook": "DISCORD_WEBHOOK_TESTNET",
+    },
+    "localnet": {
+        "identity": "LOCALNET_IDENTITY",
+        "rpc": "SOLANA_LOCALNET_RPC",
+        "min_balance": "WATCHTOWER_MIN_BALANCE_LOCALNET",
+        "telegram_chat_id": "TELEGRAM_CHAT_ID_LOCALNET",
+        "discord_webhook": "DISCORD_WEBHOOK_LOCALNET",
+    },
+}
+
+def validate_environment(send_test_validator=None, send_test_platform="telegram"):
+    """Validate required environment variables for current execution mode."""
+    missing_vars = []
+
+    if send_test_validator:
+        validators_to_validate = [send_test_validator]
+    else:
+        validators_to_validate = [
+            name for name, cfg in VALIDATOR_CONFIGS.items() if cfg.get("enabled", True)
+        ]
+
+    if not send_test_validator and not SOLANA_BIN:
+        missing_vars.append("SOLANA_BIN")
+
+    if send_test_validator and send_test_platform == "both":
+        requested_channels = {"telegram", "discord"}
+    elif send_test_validator and send_test_platform == "discord":
+        requested_channels = {"discord"}
+    elif send_test_validator:
+        requested_channels = {"telegram"}
+    else:
+        requested_channels = {"telegram", "discord"}
+
+    for validator_name in validators_to_validate:
+        requirements = VALIDATOR_ENV_REQUIREMENTS.get(validator_name, {})
+        if not requirements:
+            continue
+
+        if send_test_validator is None:
+            for key in ("identity", "rpc", "min_balance"):
+                env_name = requirements[key]
+                if not os.environ.get(env_name):
+                    missing_vars.append(env_name)
+
+        if "telegram" in requested_channels and ENABLE_TELEGRAM:
+            if not TELEGRAM_BOT_TOKEN:
+                missing_vars.append("TELEGRAM_BOT_TOKEN")
+            telegram_chat_var = requirements.get("telegram_chat_id")
+            if telegram_chat_var and not os.environ.get(telegram_chat_var):
+                missing_vars.append(telegram_chat_var)
+
+        if "discord" in requested_channels and ENABLE_DISCORD:
+            discord_webhook_var = requirements.get("discord_webhook")
+            if discord_webhook_var and not os.environ.get(discord_webhook_var):
+                missing_vars.append(discord_webhook_var)
+
+    if missing_vars:
+        print("❌ ERROR: Missing required environment variables:")
+        for var in sorted(set(missing_vars)):
+            print(f"  - {var}")
+        print("")
+        print("Please ensure these variables are defined in /usr/local/etc/validator-metrics.env")
+        print("The script cannot run safely without these credentials.")
+        sys.exit(1)
+
+    validated_targets = ", ".join(validators_to_validate) if validators_to_validate else "none"
+    print(f"✅ Environment variables validated for: {validated_targets}")
 
 # Separate state tracking for each validator
 validator_states = {
@@ -494,6 +550,9 @@ def send_to_discord_custom(webhook_url, message):
                 print("Discord message sent successfully")
             else:
                 print(f"Failed to send Discord message: {response.status}")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8', errors='ignore')
+        print(f"Error sending Discord message: HTTP {e.code} - {error_body}")
     except Exception as e:
         print(f"Error sending Discord message: {e}")
 
@@ -521,31 +580,40 @@ def send_to_telegram_custom(bot_token, chat_id, message):
                 print("Telegram message sent successfully")
             else:
                 print(f"Failed to send Telegram message: {response_data}")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8', errors='ignore')
+        print(f"Error sending Telegram message: HTTP {e.code} - {error_body}")
     except Exception as e:
         print(f"Error sending Telegram message: {e}")
 
-def send_alert_for_validator(validator_name, config, alert_type, format_function, **kwargs):
+def send_alert_for_validator(validator_name, config, alert_type, format_function, channels=None, **kwargs):
     """
     Send alert for a specific validator
     """
     DISCORD_WEBHOOK = config["discord_webhook"]
     TELEGRAM_CHAT_ID = config["telegram_chat_id"]
+    requested_channels = channels or {"discord", "telegram"}
+    sent_any = False
 
     # Send to Discord
-    if ENABLE_DISCORD and DISCORD_WEBHOOK:
+    if "discord" in requested_channels and ENABLE_DISCORD and DISCORD_WEBHOOK:
         discord_message = format_function(platform="discord", **kwargs)
         if discord_message:
             logger = setup_logging_for_validator(validator_name)
             logger.info(f"Sending Discord alert: {alert_type}")
             send_to_discord_custom(DISCORD_WEBHOOK, discord_message)
+            sent_any = True
 
     # Send to Telegram
-    if ENABLE_TELEGRAM and TELEGRAM_CHAT_ID:
+    if "telegram" in requested_channels and ENABLE_TELEGRAM and TELEGRAM_CHAT_ID:
         telegram_message = format_function(platform="telegram", **kwargs)
         if telegram_message:
             logger = setup_logging_for_validator(validator_name)
             logger.info(f"Sending Telegram alert: {alert_type}")
             send_to_telegram_custom(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, telegram_message)
+            sent_any = True
+
+    return sent_any
 
 def should_send_delinquent_alert(validator_name, validator_id):
     """
@@ -956,7 +1024,97 @@ def monitor_all_validators():
     for thread in threads:
         thread.join()
 
+def send_test_alert(validator_name, platform="telegram"):
+    """
+    Send a test alert for a specific validator and platform.
+
+    Exit status semantics:
+    - Return 0 when at least one requested channel sends successfully.
+    - Return 1 when none of the requested channels can be sent.
+    """
+    if validator_name not in VALIDATOR_CONFIGS:
+        print(f"Unknown validator '{validator_name}'. Valid options: {', '.join(VALIDATOR_CONFIGS.keys())}")
+        return 1
+
+    config = VALIDATOR_CONFIGS[validator_name]
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+    message = (
+        f"TEST ALERT\n"
+        f"Validator: {config.get('name', validator_name)}\n"
+        f"Network: {validator_name}\n"
+        f"Time (UTC): {timestamp}"
+    )
+    if platform == "both":
+        requested_channels = {"discord", "telegram"}
+    elif platform == "discord":
+        requested_channels = {"discord"}
+    else:
+        requested_channels = {"telegram"}
+
+    sendable_channels = set()
+    had_channel_failure = False
+
+    if "telegram" in requested_channels:
+        chat_id = config.get("telegram_chat_id")
+        if not ENABLE_TELEGRAM:
+            print("Telegram test skipped: ENABLE_TELEGRAM is false")
+            had_channel_failure = True
+        elif not TELEGRAM_BOT_TOKEN or not chat_id:
+            print("Telegram test failed: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID for this validator")
+            had_channel_failure = True
+        else:
+            sendable_channels.add("telegram")
+
+    if "discord" in requested_channels:
+        webhook = config.get("discord_webhook")
+        if not ENABLE_DISCORD:
+            print("Discord test skipped: ENABLE_DISCORD is false")
+            had_channel_failure = True
+        elif not webhook:
+            print("Discord test failed: missing DISCORD_WEBHOOK for this validator")
+            had_channel_failure = True
+        else:
+            sendable_channels.add("discord")
+
+    if not sendable_channels:
+        print("No requested channels are sendable for this test alert.")
+        return 1
+
+    channels_label = ", ".join(sorted(sendable_channels))
+    print(f"Sending test alert for {validator_name} via: {channels_label}")
+    sent = send_alert_for_validator(
+        validator_name,
+        config,
+        "test",
+        lambda platform, **kwargs: message,
+        channels=sendable_channels
+    )
+    if sent and had_channel_failure:
+        print("Test alert partially succeeded: at least one requested channel was unavailable.")
+    return 0 if sent else 1
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Solana Multi-Validator Alert Formatter")
+    parser.add_argument(
+        "--send-test",
+        dest="send_test",
+        choices=sorted(VALIDATOR_CONFIGS.keys()),
+        help="Send a test alert for a specific validator and exit"
+    )
+    parser.add_argument(
+        "--send-test-platform",
+        dest="send_test_platform",
+        choices=["telegram", "discord", "both"],
+        default="telegram",
+        help="Notification platform used with --send-test (default: telegram)"
+    )
+    args = parser.parse_args()
+
+    validate_environment(args.send_test, args.send_test_platform)
+
+    if args.send_test:
+        sys.exit(send_test_alert(args.send_test, args.send_test_platform))
+
     # Main loop with retry on error for continuous operation
     print("Solana Multi-Validator Alert Formatter")
     print(f"Discord enabled: {ENABLE_DISCORD}, Telegram enabled: {ENABLE_TELEGRAM}")
