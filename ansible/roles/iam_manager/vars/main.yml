@@ -1,6 +1,7 @@
 ---
 # CSV file containing user information (username, groups, email, etc.)
-users_file: "~/new-metal-box/{{ csv_file }}"
+# Keep csv_file for backward compatibility with existing playbook usage.
+users_file: "{{ users_base_dir }}/{{ csv_file }}"
 
 # Password aging configuration
 password_max_days: 90
