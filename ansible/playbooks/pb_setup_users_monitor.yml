@@ -5,6 +5,9 @@
 # ------
 # Run from /ansible directory:
 #
+# NOTE:
+#   Target host must inherit Solana baseline vars (group_vars/solana.yml).
+#   Recommended: include the host under the `solana` group in inventory.
 #
 # ansible-playbook playbooks/pb_setup_users_monitor.yml \
 #   -i solana_new_metal_box.yml \

@@ -12,7 +12,7 @@
   tags: [solana_validator_agave, prepare]
 
 - name: Cleanup the host from existing validator data
-  import_tasks: host_cleanup.yml
+  import_tasks: ../../solana_validator_shared/tasks/cleanup_validator_data.yml
   when: (force_host_cleanup | default(false)) | bool
   tags: [solana_validator_agave, cleanup]
 
@@ -34,3 +34,7 @@
     - run_poh_cpu_affinity_fix | default(false) | bool
     - validator_type | default('primary') == 'primary'
   tags: [solana_validator_agave, pin_validator_core]
+
+- name: Print summary
+  import_tasks: summary.yml
+  tags: [solana_validator_agave, summary]
