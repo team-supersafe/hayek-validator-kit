@@ -131,10 +131,25 @@
   # Disk configuration checks for Solana servers
 - name: Check disk configuration for Solana servers
   block:
+    - name: Validate special two-disk layout request scope
+      ansible.builtin.fail:
+        msg: >
+          allow_unconventional_testnet_two_disk_layout=true is only valid when
+          solana_cluster=testnet.
+      when:
+        - allow_unconventional_testnet_two_disk_layout | default(false) | bool
+        - (solana_cluster | default('')) != 'testnet'
+
     # Get system disk information
     - name: Get system disk
       ansible.builtin.shell: |
-        root_disk=$(mount | grep ' / ' | awk '{print $1}' | sed 's/[0-9]*$//')
+        root_device=$(findmnt -n -o SOURCE /)
+        root_disk="${root_device#/dev/}"
+        if [[ "$root_disk" == nvme*n*p* ]]; then
+          root_disk="${root_disk%p*}"
+        else
+          root_disk=$(echo "$root_disk" | sed 's/[0-9]*$//')
+        fi
         echo "$root_disk"
       register: system_disk
       changed_when: false
@@ -168,7 +183,7 @@
       ansible.builtin.shell: |
         # Get disks sorted by size (excluding system disk unless using root for snapshots)
         lsblk -b -d -o NAME,SIZE | grep -v "NAME" | sort -k2 -nr | while read name size; do
-          if [ "$name" != "{{ system_disk.stdout | basename }}" ]; then
+          if [ "$name" != "{{ system_disk.stdout }}" ]; then
             echo "$name"
           fi
         done
@@ -179,7 +194,7 @@
     # Store disk information for later use
     - name: Store disk information
       ansible.builtin.set_fact:
-        system_disk_name: "{{ system_disk.stdout | basename }}"
+        system_disk_name: "{{ system_disk.stdout }}"
         available_disks_list: "{{ available_disks.stdout_lines }}"
         disk_info_detailed: "{{ disk_info.stdout_lines }}"
 
@@ -198,11 +213,28 @@
             - Accounts: {{ mount_points.accounts }} ({{ filesystem_formats.accounts }})
             - Snapshots: {{ mount_points.snapshots }} ({{ filesystem_formats.snapshots }})
 
-    - name: Verify minimum number of disks (allow root for snapshots)
+    - name: Verify minimum number of disks for standard layout
       ansible.builtin.assert:
         that: (available_disks_list | length + 1) >= min_required_disks
         fail_msg: "ERROR! Insufficient number of disks. Need at least {{ min_required_disks }} disks for ledger, accounts, and snapshots (root disk can be used for snapshots)."
         success_msg: "Sufficient number of disks available (found {{ available_disks_list | length }} + root, required {{ min_required_disks }})"
+      when: not (
+        (allow_unconventional_testnet_two_disk_layout | default(false) | bool)
+        and ((solana_cluster | default('')) == 'testnet')
+        )
+
+    - name: Verify special two-disk layout preconditions
+      ansible.builtin.assert:
+        that:
+          - (available_disks_list | length + 1) == 2
+        fail_msg: >
+          Special two-disk testnet layout requires exactly 2 disks total
+          (1 root + 1 non-root available). Detected:
+          {{ available_disks_list | length + 1 }} total disks.
+        success_msg: "Special two-disk layout preconditions satisfied (2 disks total)"
+      when:
+        - allow_unconventional_testnet_two_disk_layout | default(false) | bool
+        - (solana_cluster | default('')) == 'testnet'
 
     - name: Verify mount points are NOT mounted (except snapshots if on root)
       ansible.builtin.shell: |

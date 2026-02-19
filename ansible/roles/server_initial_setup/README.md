@@ -105,6 +105,34 @@ ansible-playbook playbooks/pb_setup_metal_box.yml \
 
 > **Note:** Before running the playbook, users with the `sysadmin` role must have previously logged in and provisioned a password using the Password Self-Service system. This is required for privilege escalation (`-K` flag).
 
+## Special Testnet Two-Disk Mode (Opt-In)
+
+For exceptional testnet hosts with exactly two disks (`1 root + 1 data`), you can enable a special disk setup mode.
+
+- Required conditions:
+  - `solana_cluster=testnet`
+  - `allow_unconventional_testnet_two_disk_layout=true`
+- Safety rules:
+  - This mode is rejected outside testnet.
+  - This mode requires exactly 2 disks total.
+  - Default disk setup remains unchanged unless this mode is explicitly enabled.
+- Resulting layout:
+  - `/mnt/accounts` is mounted on the non-root data disk.
+  - `/mnt/ledger` and `/mnt/snapshots` remain on the root filesystem.
+
+Example:
+
+```sh
+ansible-playbook playbooks/pb_setup_metal_box.yml \
+  -i solana_new_metal_box.yml \
+  -e "target_host=new-metal-box" \
+  -e "ansible_user=alice" \
+  -e "csv_file=authorized_ips.csv" \
+  -e "solana_cluster=testnet" \
+  -e "allow_unconventional_testnet_two_disk_layout=true" \
+  -K
+```
+
 
 
 
@@ -155,4 +183,3 @@ To verify that the server has the optimal configuration for a Solana validator, 
    bash /opt/validator/scripts/health_check.sh 
 ```
 ---
-
