@@ -5,6 +5,9 @@
   ansible.builtin.stat:
     path: "{{ role_path }}/vars/secrets.yml"
   register: monitoring_agent_secrets_file
+  delegate_to: localhost
+  become: false
+  run_once: true
 
 - name: Assert monitoring agent secrets file is present
   ansible.builtin.assert:
@@ -15,6 +18,9 @@
       {{ role_path }}/vars/secrets.yml.example to secrets.yml and fill it with
       environment-specific values.
   no_log: true
+  delegate_to: localhost
+  become: false
+  run_once: true
 
 - name: Include secrets variables
   ansible.builtin.include_vars:
