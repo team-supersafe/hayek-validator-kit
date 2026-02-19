@@ -3,6 +3,10 @@ solana_user: sol
 validator_service: "sol.service"
 iam_set_immutable: true
 
+# Base directory that contains IAM CSV files.
+# Can be overridden from inventory/host_vars/group_vars or -e.
+users_base_dir: "{{ lookup('env', 'HOME') }}/new-metal-box"
+
 # Disk mount points configuration
 mount_base_path: '/mnt'
 validator_ledger_dir: "{{ mount_base_path }}/ledger"
