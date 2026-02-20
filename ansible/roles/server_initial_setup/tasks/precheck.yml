@@ -145,11 +145,10 @@
       ansible.builtin.shell: |
         root_device=$(findmnt -n -o SOURCE /)
         root_disk="${root_device#/dev/}"
-        if [[ "$root_disk" == nvme*n*p* ]]; then
-          root_disk="${root_disk%p*}"
-        else
-          root_disk=$(echo "$root_disk" | sed 's/[0-9]*$//')
-        fi
+        case "$root_disk" in
+          nvme*n*p*) root_disk="${root_disk%p*}" ;;
+          *) root_disk=$(echo "$root_disk" | sed 's/[0-9]*$//') ;;
+        esac
         echo "$root_disk"
       register: system_disk
       changed_when: false
@@ -182,7 +181,7 @@
     - name: Get available disks
       ansible.builtin.shell: |
         # Get disks sorted by size (excluding system disk unless using root for snapshots)
-        lsblk -b -d -o NAME,SIZE | grep -v "NAME" | sort -k2 -nr | while read name size; do
+        lsblk -b -d -o NAME,TYPE,SIZE | awk '$2 == "disk"' | sort -k3 -nr | while read name type size; do
           if [ "$name" != "{{ system_disk.stdout }}" ]; then
             echo "$name"
           fi
