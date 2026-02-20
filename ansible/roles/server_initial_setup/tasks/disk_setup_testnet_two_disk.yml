@@ -13,15 +13,20 @@
       solana_cluster=testnet.
     success_msg: "Special two-disk testnet layout enabled"
 
-- name: Get root device
-  ansible.builtin.shell: |
-    findmnt -n -o SOURCE /
-  register: root_device
-  changed_when: false
-
 - name: Discover available non-root unmounted disks
   ansible.builtin.shell: |
-    root_disk="{{ (root_device.stdout | regex_replace('^/dev/', '')).split('p')[0] if 'nvme' in root_device.stdout else (root_device.stdout | regex_replace('^/dev/', '') | regex_replace('[0-9]+$', '')) }}"
+    root_source=$(findmnt -n -o SOURCE /)
+    root_node=$(basename "$(readlink -f "$root_source")")
+
+    # Walk PKNAME chain to normalize mapper/partition roots to the top-level disk.
+    while true; do
+      parent=$(lsblk -ndo PKNAME "/dev/$root_node" 2>/dev/null | head -n1)
+      [ -z "$parent" ] && break
+      root_node="$parent"
+    done
+
+    root_disk="$root_node"
+
     lsblk -b -d -o NAME,TYPE,SIZE | awk '$2 == "disk"' | sort -k3 -nr | while read name type size; do
       if [ "$name" != "$root_disk" ] && ! grep -q "/dev/$name" /proc/mounts; then
         echo "$name"

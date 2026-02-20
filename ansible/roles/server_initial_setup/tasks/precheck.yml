@@ -143,13 +143,17 @@
     # Get system disk information
     - name: Get system disk
       ansible.builtin.shell: |
-        root_device=$(findmnt -n -o SOURCE /)
-        root_disk="${root_device#/dev/}"
-        case "$root_disk" in
-          nvme*n*p*) root_disk="${root_disk%p*}" ;;
-          *) root_disk=$(echo "$root_disk" | sed 's/[0-9]*$//') ;;
-        esac
-        echo "$root_disk"
+        root_source=$(findmnt -n -o SOURCE /)
+        root_node=$(basename "$(readlink -f "$root_source")")
+
+        # Walk PKNAME chain to normalize mapper/partition roots to the top-level disk.
+        while true; do
+          parent=$(lsblk -ndo PKNAME "/dev/$root_node" 2>/dev/null | head -n1)
+          [ -z "$parent" ] && break
+          root_node="$parent"
+        done
+
+        echo "$root_node"
       register: system_disk
       changed_when: false
       check_mode: false
