@@ -24,6 +24,9 @@
 - name: Include selected disk setup tasks
   ansible.builtin.include_tasks:
     file: "{{ 'disk_setup_testnet_two_disk.yml' if (allow_unconventional_testnet_two_disk_layout | default(false) | bool) and ((solana_cluster | default('')) == 'testnet') else 'disk_setup.yml' }}"
+    apply:
+      tags:
+        - disk-setup
   tags: disk-setup
 
 # Sets up CPU isolation for optimal validator performance
