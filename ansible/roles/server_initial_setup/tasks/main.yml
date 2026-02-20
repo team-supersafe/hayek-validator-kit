@@ -21,19 +21,9 @@
   tags: system-tuning
 
 # Configures storage devices and mount points for validator data
-- name: Include special testnet two-disk setup tasks
-  ansible.builtin.import_tasks: disk_setup_testnet_two_disk.yml
-  when:
-    - allow_unconventional_testnet_two_disk_layout | default(false) | bool
-    - (solana_cluster | default('')) == 'testnet'
-  tags: disk-setup
-
-- name: Include default disk setup tasks
-  ansible.builtin.import_tasks: disk_setup.yml
-  when: not (
-    (allow_unconventional_testnet_two_disk_layout | default(false) | bool)
-    and ((solana_cluster | default('')) == 'testnet')
-    )
+- name: Include selected disk setup tasks
+  ansible.builtin.include_tasks:
+    file: "{{ 'disk_setup_testnet_two_disk.yml' if (allow_unconventional_testnet_two_disk_layout | default(false) | bool) and ((solana_cluster | default('')) == 'testnet') else 'disk_setup.yml' }}"
   tags: disk-setup
 
 # Sets up CPU isolation for optimal validator performance
