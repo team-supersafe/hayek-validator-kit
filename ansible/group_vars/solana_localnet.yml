@@ -15,7 +15,8 @@ jito_urls:
 
 expected_genesis_hash: ""
 solana_metrics_url: ""
-limit_ledger_size: 50000000
+# Keep ledger size bounded (value is in shreds, ~2 GB target)
+limit_ledger_size: 1700000
 poh_pinned_cpu_core_enabled: false
 poh_pinned_cpu_core: 2
 

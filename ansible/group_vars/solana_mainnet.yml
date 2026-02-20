@@ -41,6 +41,8 @@ jito_urls:
 expected_genesis_hash: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d'
 solana_metrics_url: 'https://metrics.solana.com:8086,db=mainnet-beta,u=mainnet-beta_write,p=password'
 
+# Not specifying a value for limit_ledger_size will use the default ~500GB.
+
 poh_pinned_cpu_core_enabled: true
 poh_pinned_cpu_core: 2
 

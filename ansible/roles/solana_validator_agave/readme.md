@@ -155,6 +155,13 @@ echo 'export PATH=~/.local/share/solana/install/active_release/bin:$PATH' >> ~/.
 
 ## Create Validator Startup Script
 
+Ledger retention policy used by this repository:
+- `--limit-ledger-size` value is in **shreds** (not bytes).
+- Cluster defaults:
+  - `mainnet`: `400000000` (about 500 GB target)
+  - `testnet`: `160000000` (about 200 GB target)
+  - `localnet`: `1700000` (about 2 GB target)
+
 1. Create script file and make executable
 
 ```sh
