@@ -11,7 +11,12 @@
 #   -e "target_host=new-metal-box" \
 #   -e "ansible_user=alice" \
 #   -e "csv_file=authorized_ips.csv" \
+#   -e "solana_cluster=testnet" \
+#   -e "allow_unconventional_testnet_two_disk_layout=true" \
 #   -K
+#
+#   # solana_cluster is REQUIRED only for special testnet two-disk mode
+#   # allow_unconventional_testnet_two_disk_layout is OPTIONAL opt-in for special testnet two-disk mode
 
 - name: Setup Metal Box Server
   hosts: "{{ target_host }}"

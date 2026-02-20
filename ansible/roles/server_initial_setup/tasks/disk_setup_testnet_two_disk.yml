@@ -1,0 +1,146 @@
+---
+# Special disk setup for unconventional testnet servers with exactly two disks:
+# - Root disk: OS + /mnt/ledger + /mnt/snapshots (directories on root filesystem)
+# - Data disk: /mnt/accounts (dedicated filesystem)
+
+- name: Assert special two-disk mode guardrails
+  ansible.builtin.assert:
+    that:
+      - allow_unconventional_testnet_two_disk_layout | default(false) | bool
+      - (solana_cluster | default('')) == 'testnet'
+    fail_msg: >
+      Special two-disk layout is only allowed when explicitly requested and
+      solana_cluster=testnet.
+    success_msg: "Special two-disk testnet layout enabled"
+
+- name: Discover available non-root unmounted disks
+  ansible.builtin.shell: |
+    root_source=$(findmnt -n -o SOURCE /)
+    root_node=$(basename "$(readlink -f "$root_source")")
+
+    # Walk PKNAME chain to normalize mapper/partition roots to the top-level disk.
+    while true; do
+      parent=$(lsblk -ndo PKNAME "/dev/$root_node" 2>/dev/null | head -n1)
+      [ -z "$parent" ] && break
+      root_node="$parent"
+    done
+
+    root_disk="$root_node"
+
+    lsblk -b -d -o NAME,TYPE,SIZE | awk '$2 == "disk"' | sort -k3 -nr | while read name type size; do
+      if [ "$name" != "$root_disk" ] && ! grep -q "/dev/$name" /proc/mounts; then
+        echo "$name"
+      fi
+    done
+  register: available_disks_list
+  changed_when: false
+
+- name: Verify exactly one data disk is available for accounts
+  ansible.builtin.assert:
+    that:
+      - available_disks_list.stdout_lines | length == 1
+    fail_msg: >
+      Special two-disk layout requires exactly one non-root available disk for accounts.
+      Detected non-root available disks: {{ available_disks_list.stdout_lines | join(', ') }}
+    success_msg: "Detected exactly one non-root available disk for accounts"
+
+- name: Assign special two-disk layout targets
+  ansible.builtin.set_fact:
+    account_disk: "{{ available_disks_list.stdout_lines[0] }}"
+
+- name: Show special disk assignments
+  ansible.builtin.debug:
+    msg: |
+      Special testnet two-disk assignments:
+      - Ledger: {{ mount_points.ledger }} on root filesystem
+      - Accounts: /dev/{{ account_disk }}
+      - Snapshots: {{ mount_points.snapshots }} on root filesystem
+
+- name: Disable swap
+  ansible.builtin.command: swapoff -a
+  become: true
+  changed_when: false
+
+- name: Comment out swap in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].+swap.+)'
+    replace: '# \1'
+  become: true
+
+- name: Check existing filesystem on accounts drive
+  ansible.builtin.command: lsblk -n -o FSTYPE "/dev/{{ account_disk }}"
+  register: accounts_disk_fstype
+  changed_when: false
+  become: true
+
+- name: Ensure accounts drive is unformatted before setup
+  ansible.builtin.assert:
+    that:
+      - accounts_disk_fstype.stdout | trim == ""
+    fail_msg: >
+      Refusing to format /dev/{{ account_disk }} because it already has filesystem:
+      {{ accounts_disk_fstype.stdout | trim }}
+      Use a fresh disk for this special setup mode.
+    success_msg: "Accounts drive is unformatted and safe to initialize"
+
+- name: Format accounts drive
+  community.general.filesystem:
+    fstype: "{{ filesystem_formats.accounts }}"
+    dev: "/dev/{{ account_disk }}"
+  become: true
+
+- name: Create mount directories
+  ansible.builtin.file:
+    path: "{{ mount_points[item] }}"
+    state: directory
+    mode: "{{ mount_point_permissions.mode }}"
+    owner: "{{ mount_point_permissions.owner }}"
+    group: "{{ mount_point_permissions.group }}"
+  loop: "{{ mount_directories }}"
+  become: true
+
+- name: Ensure ledger mount is not configured in fstab
+  ansible.posix.mount:
+    path: "{{ mount_points.ledger }}"
+    state: absent
+  become: true
+
+- name: Ensure snapshots mount is not configured in fstab
+  ansible.posix.mount:
+    path: "{{ mount_points.snapshots }}"
+    state: absent
+  become: true
+
+- name: Get UUID for accounts drive
+  ansible.builtin.command: blkid -s UUID -o value "/dev/{{ account_disk }}"
+  register: accounts_uuid
+  changed_when: false
+  become: true
+
+- name: Configure fstab for accounts drive
+  ansible.posix.mount:
+    path: "{{ mount_points.accounts }}"
+    src: "UUID={{ accounts_uuid.stdout }}"
+    fstype: "{{ filesystem_formats.accounts }}"
+    opts: defaults,noatime
+    dump: 0
+    passno: 2
+    state: present
+  when: accounts_uuid.stdout is defined and accounts_uuid.stdout != ""
+  become: true
+
+- name: Mount all configured filesystems
+  ansible.builtin.command: mount -a
+  become: true
+  changed_when: false
+
+- name: Set ownership and permissions on mount points after mounting
+  ansible.builtin.file:
+    path: "{{ mount_points[item] }}"
+    mode: "{{ mount_point_permissions.mode }}"
+    owner: "{{ mount_point_permissions.owner }}"
+    group: "{{ mount_point_permissions.group }}"
+    recurse: true
+  loop: "{{ mount_directories }}"
+  become: true
