@@ -5,7 +5,7 @@ argument_specs:
     author: "Hayek Validator Team"
     description:
       - "Installs and configures a Jito Solana validator"
-      - "Supports both co-hosted and shared relayer configurations"
+      - "Uses BAM for transaction flow"
       - "Automatically installs dependencies (rust_env_v2, solana_cli_jito, solana_validator_shared)"
       - "Configures validator keys and startup scripts"
     options:
@@ -21,12 +21,7 @@ argument_specs:
       jito_version:
         type: str
         required: true
-        description: "Version of Jito to install"
-      jito_relayer_type:
-        type: str
-        required: true
-        choices: ["co-hosted", "shared"]
-        description: "Type of Jito relayer configuration"
+        description: "Version of Jito to install (minimum 3.0.10 for BAM mode)"
       solana_cluster:
         type: str
         required: true

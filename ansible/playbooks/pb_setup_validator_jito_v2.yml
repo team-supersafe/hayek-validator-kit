@@ -1,7 +1,7 @@
 ---
 # Jito Validator Setup
 # -------------------
-# Sets up a Solana validator with Jito client for MEV capabilities.
+# Sets up a Solana validator with Jito client using BAM.
 #
 # Usage:
 # ------
@@ -23,32 +23,34 @@
 #   -e "validator_name=hayek-mainnet" \
 #   -e "validator_type=hot-spare" \
 #   -e "solana_cluster=mainnet" \
-#   -e "jito_version=2.3.6" \
-#   -e "jito_relayer_type=co-hosted" \
-#   -e "jito_relayer_version=0.4.2" \
+#   -e "jito_version=3.0.4" \
 #   -e "build_from_source=true" \
 #   -e "use_official_repo=true" \
 #   -K
 #
-# Example running against localnet host (create inventory from README reference)
+# Example running against localnet host
 # ansible-playbook playbooks/pb_setup_validator_jito_v2.yml \
-#   -i solana_setup_host.yml \
+#   -i solana_localnet.yml \
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
 #   -e "ansible_user=bob" \
-#   -e "validator_name=penny" \
+#   -e "validator_name=demo2" \
 #   -e "validator_type=hot-spare" \
 #   -e "solana_cluster=localnet" \
-#   -e "jito_version=2.2.15" \
-#   -e "jito_relayer_type=shared" \
-#   -e "jito_relayer_version=0.3.1" \
-#   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
-#   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
-#   -e "force_host_cleanup=true" \ # Optional: Use if target host is running a validator in a different cluster
-#   -e "run_poh_cpu_affinity_fix=true" \ # Optional: Pin validator process to specific CPU core to improve PoH stability
+#   -e "jito_version=3.0.4" \
+#   -e "build_from_source=true" \
+#   -e "use_official_repo=true" \
+#   -e "force_host_cleanup=true" \
+#   -e "run_poh_cpu_affinity_fix=true" \
 #   -K
+#
+# Extended vars:
+# - build_from_source (OPTIONAL): Build from source instead of using precompiled binaries.
+# - use_official_repo (OPTIONAL): Use official repository instead of forked repository.
+# - force_host_cleanup (OPTIONAL): Cleanup target host if it has validator data from a different cluster.
+# - run_poh_cpu_affinity_fix (OPTIONAL): Pin validator process to specific CPU core to improve PoH stability.
 
-- name: Install Jito Client with shared or co-hosted relayer
+- name: Install Jito Client with BAM
   hosts: "{{ target_host }}"
   user: "{{ ansible_user }}"
   become: false

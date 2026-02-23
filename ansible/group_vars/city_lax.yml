@@ -1,4 +1,4 @@
 # Los Angeles specific variables
-jito_mainnet_block_engine_city: "salt_lake_city"
-jito_testnet_block_engine_city: "dallas"
-jito_localnet_block_engine_city: "dallas"
+jito_mainnet_bam_region: "salt_lake_city"
+jito_testnet_bam_region: "dallas"
+jito_localnet_bam_region: "dallas"

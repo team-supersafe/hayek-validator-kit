@@ -1,22 +1,29 @@
 ---
-- name: prepare - Build Jito block engine city key
+- name: prepare - Build Jito BAM region key
   ansible.builtin.set_fact:
-    jito_block_engine_city_key: "jito_{{ solana_cluster }}_block_engine_city"
+    jito_bam_region_key: "jito_{{ solana_cluster }}_bam_region"
 
-- name: prepare - Set Jito target city
+- name: prepare - Set Jito BAM target region
   ansible.builtin.set_fact:
-    jito_target_city: "{{ hostvars[inventory_hostname][jito_block_engine_city_key] }}"
+    jito_target_bam_region: "{{ hostvars[inventory_hostname][jito_bam_region_key] | default('') }}"
 
-- name: prepare - Verify Jito target city is set
+- name: prepare - Verify Jito BAM target region is set
   ansible.builtin.fail:
-    msg: "Host {{ inventory_hostname }} must be assigned to a city group (city_dal, city_man, etc.) in the inventory"
-  when: jito_target_city == ''
+    msg: "Host {{ inventory_hostname }} must be assigned to a BAM region group (city_dal, city_man, etc.) in the inventory"
+  when: jito_target_bam_region == ''
 
-- name: prepare - Set Jito URLs
+- name: prepare - Verify Jito BAM endpoint mapping exists for region
+  ansible.builtin.assert:
+    that:
+      - jito_bam_endpoints is defined
+      - jito_bam_endpoints[jito_target_bam_region] is defined
+    fail_msg: "No Jito BAM endpoint mapping found for region '{{ jito_target_bam_region }}' in jito_bam_endpoints."
+
+- name: prepare - Set Jito BAM endpoint URLs
   ansible.builtin.set_fact:
-    jito_relayer_url: "{{ 'http://127.0.0.1:11226' if jito_relayer_type == 'co-hosted' else jito_urls[jito_target_city].relayer }}"
-    jito_block_engine_url: "{{ jito_urls[jito_target_city].block_engine }}"
-    jito_shred_receiver_addr: "{{ jito_urls[jito_target_city].shred_receiver_addr }}"
+    jito_bam_url: "{{ jito_bam_endpoints[jito_target_bam_region].bam_url }}"
+    jito_block_engine_url: "{{ jito_bam_endpoints[jito_target_bam_region].block_engine_url }}"
+    jito_shred_receiver_addr: "{{ jito_bam_endpoints[jito_target_bam_region].shred_receiver_addr }}"
 
 - name: prepare - Stop validator service
   block:
@@ -39,18 +46,18 @@
       when: service_status.status is defined and service_status.status.ActiveState == "active"
       become: true
 
-- name: prepare - Stop and remove relayer service if exists
+- name: prepare - Stop and remove legacy relayer service if exists
   block:
-    - name: prepare - jito_relayer_cohosted - Check the jito-relayer service status
+    - name: prepare - legacy relayer cleanup - Check jito-relayer service status
       ansible.builtin.systemd:
-        name: "{{ jito_relayer_service_name }}"
+        name: "jito-relayer"
       register: relayer_service_status
       changed_when: false
       failed_when: false
 
-    - name: prepare - jito_relayer_cohosted - Stop jito-relayer service if running
+    - name: prepare - legacy relayer cleanup - Stop jito-relayer service if running
       ansible.builtin.systemd:
-        name: "{{ jito_relayer_service_name }}"
+        name: "jito-relayer"
         state: stopped
         enabled: false
       register: relayer_stop_result
@@ -60,13 +67,13 @@
       when: relayer_service_status.status is defined and relayer_service_status.status.ActiveState == "active"
       become: true
 
-    - name: prepare - jito_relayer_cohosted - Remove jito-relayer service unit file
+    - name: prepare - legacy relayer cleanup - Remove jito-relayer service unit file
       ansible.builtin.file:
-        path: "/etc/systemd/system/{{ jito_relayer_service_name }}.service"
+        path: "/etc/systemd/system/jito-relayer.service"
         state: absent
       become: true
 
-    - name: prepare - jito_relayer_cohosted - Reload systemd daemon
+    - name: prepare - legacy relayer cleanup - Reload systemd daemon
       ansible.builtin.systemd:
         daemon_reload: true
       become: true
