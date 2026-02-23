@@ -1,5 +1,7 @@
 # Jito-Solana Client (MEV)
 
+> Note: This role is BAM-only. Relayer-based setup (`--relayer-url`, co-hosted/shared relayer) has been removed.
+
 ## Table of Contents
 - [JITO-SOLANA CLIENT (MEVs)](#jito-solana-client-mevs)
 - [SETUP JITO-SOLANA VALIDATOR CLIENT](#setup-jito-solana-validator-client)
@@ -185,40 +187,40 @@ Use the same startup script you would create for the agave-validator and add the
 
 ### Testnet Arguments
 
-Please look at testnet connection information for the values of BLOCK_ENGINE_URL, RELAYER_URL, and SHRED_RECEIVER_ADDR.
+Please look at testnet connection information for the values of BAM_URL, BLOCK_ENGINE_URL, and SHRED_RECEIVER_ADDR.
 - See https://docs.jito.wtf/lowlatencytxnsend/#api
 
 ```sh
+BAM_URL=http://dallas.testnet.bam.jito.wtf
 BLOCK_ENGINE_URL=https://dallas.testnet.block-engine.jito.wtf
-RELAYER_URL=http://dallas.testnet.relayer.jito.wtf:8100
-SHRED_RECEIVER_ADDR=141.98.218.45:1002
+SHRED_RECEIVER_ADDR=141.98.218.12:1002
 exec agave-validator \
     # base agave-validators parameters...
     --tip-payment-program-pubkey GJHtFqM9agxPmkeKjHny6qiRKrXZALvvFGiKf11QE7hy \
-    --tip-distribution-program-pubkey F2Zu7QZiTYUhPd7u9ukRVwxh7B71oA3NMJcHuCHc29P2 \
-    --merkle-root-upload-authority GZctHpWXmsZC1YHACTGGcHhYxjdRqQvTpYkb9LMvxDib \
+    --tip-distribution-program-pubkey DzvGET57TAgEDxvm3ERUM4GNcsAJdqjDLCne9sdfY4wf \
+    --merkle-root-upload-authority 7T4inmPmtNBX3MhLwJ9hFsSMnGJYYkKioVABSNTWVRuS \
     --commission-bps 800 \
-    --relayer-url ${RELAYER_URL} \
+    --bam-url ${BAM_URL} \
     --block-engine-url ${BLOCK_ENGINE_URL} \
     --shred-receiver-address ${SHRED_RECEIVER_ADDR}
 ```
 
 ### Mainnet Arguments
 
-Please look at mainnet connection information for the values of BLOCK_ENGINE_URL, RELAYER_URL, and SHRED_RECEIVER_ADDR.
+Please look at mainnet connection information for the values of BAM_URL, BLOCK_ENGINE_URL, and SHRED_RECEIVER_ADDR.
 - See https://docs.jito.wtf/lowlatencytxnsend/#api
 
 ```sh
+BAM_URL=http://ny.mainnet.bam.jito.wtf
 BLOCK_ENGINE_URL=https://ny.mainnet.block-engine.jito.wtf
-RELAYER_URL=http://ny.mainnet.relayer.jito.wtf:8100
 SHRED_RECEIVER_ADDR=141.98.216.96:1002
 agave-validator \
     # base agave-validators parameters...
     --tip-payment-program-pubkey T1pyyaTNZsKv2WcRAB8oVnk93mLJw2XzjtVYqCsaHqt \
     --tip-distribution-program-pubkey 4R3gSG8BpU4t19KYj8CfnbtRpnT8gtk4dvTHxVRwc2r7 \
-    --merkle-root-upload-authority GZctHpWXmsZC1YHACTGGcHhYxjdRqQvTpYkb9LMvxDib \
+    --merkle-root-upload-authority 8F4jGUmxF36vQ6yabnsxX6AQVXdKBhs8kGSUuRKSg8Xt \
     --commission-bps 800 \
-    --relayer-url ${RELAYER_URL} \
+    --bam-url ${BAM_URL} \
     --block-engine-url ${BLOCK_ENGINE_URL} \
     --shred-receiver-address ${SHRED_RECEIVER_ADDR}
 ```
@@ -254,7 +256,6 @@ agave-validator help
 # --> set-identity                             Set the validator identity
 #     set-log-filter                           Adjust the validator log filter
 #     set-public-address                       Specify addresses to advertise in gossip
-# --> set-relayer-config                       Set configuration for connection to a relayer
 # --> set-shred-receiver-address               Changes shred receiver address
 # --> set-shred-retransmit-receiver-address    Changes shred retransmit receiver address
 #     staked-nodes-overrides                   Overrides stakes of specific node identities.
@@ -269,26 +270,23 @@ agave-validator help
 
 ![alt text](/images-webp/validator-setup/jito_check_correct_functioning.webp)
 
-### Check if correctly connecting to relayer and block engine
+### Check if correctly connecting to BAM and block engine
 Look for the following metrics emitted in the validator logfile:
   - `block_engine_stage-stats`: emitted once per second when connected to the block engine.
-  - `relayer_stage-stats`: emitted once per second when connected to the relayer.
 
 ```sh
 tail -n 1000 logs/agave-validator.log | grep block_engine_stage-stats
-tail -n 1000 logs/agave-validator.log | grep relayer_stage-stats
 ```
 ![alt text](/images-webp/validator-setup/jito_check_connecting_to_relayer_and_block_engine.webp)
 
-### Check if correctly authenticating with relayers and block engine
+### Check if correctly authenticating with BAM and block engine
 Look for the following metrics emitted in the validator logfile:
-  - `auth_tokens_update_loop-tokens_generated`: emitted infrequently when the validator authenticates with the block engine and relayer.
+  - `auth_tokens_update_loop-tokens_generated`: emitted infrequently when the validator authenticates with the block engine and BAM.
   - `auth_tokens_update_loop-refresh_access_token`: emitted semi-frequently when the validator refreshes access tokens.
-  - `relayer_stage-wait_for_auth` + `block_engine_stage-wait_for_auth`: emitted when waiting to authenticate with the relayer and block engine.
-  - `auth_tokens_update_loop-refresh_connect_error`: emitted when the validator can't connect to the relayer and/or relayer. check the url for which one is having issues connecting.
+  - `auth_tokens_update_loop-refresh_connect_error`: emitted when the validator can't connect to BAM and/or block engine.
   - `auth_tokens_update_loop-refresh_loop_error`: emitted when there's an error refreshing authentication tokens.
-  - `relayer_stage-connect_error` + `block_engine_stage-connect_error`:errors connecting to the relayer or block engine.
-  - `relayer_stage-stream_error` + `block_engine_stage-stream_error`: errors streaming from the relayer or block engine.
+  - `block_engine_stage-connect_error`: errors connecting to the block engine.
+  - `block_engine_stage-stream_error`: errors streaming from the block engine.
 
 ## Monitor Jito Validators
 - See https://jito-foundation.gitbook.io/mev/jito-solana/data-tracking/tracking-jito-solana-validators#current-jito-validators
@@ -398,4 +396,4 @@ curl -X POST https://kobe.mainnet.jito.network/api/v1/validators  -H "Content-Ty
 ```
 
 Related Docs:
-* [Jito Relayer](/ansible-new-michel/roles/jito_relayer/readme.md)
+* BAM validator setup: https://bam.dev/validators/

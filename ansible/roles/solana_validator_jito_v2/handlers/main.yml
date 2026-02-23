@@ -4,12 +4,6 @@
     daemon_reload: true
   become: true
 
-- name: handlers - Restart relayer service
-  ansible.builtin.systemd:
-    name: "{{ jito_relayer_service_name }}"
-    state: restarted
-  become: true
-
 - name: handlers - Restart validator service
   ansible.builtin.systemd:
     name: "{{ validator_service_name }}"

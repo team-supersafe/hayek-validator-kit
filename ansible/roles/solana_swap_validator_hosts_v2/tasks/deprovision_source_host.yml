@@ -81,27 +81,6 @@
       become: true
       delegate_to: "{{ source_host }}"
 
-    - name: Step 1 - Service - Check the jito-relayer service status
-      ansible.builtin.systemd:
-        name: "{{ jito_relayer_service_name }}"
-      register: relayer_service_status
-      changed_when: false
-      failed_when: false
-      delegate_to: "{{ source_host }}"
-
-    - name: Step 1 - Service - Stop jito-relayer service if running
-      ansible.builtin.systemd:
-        name: "{{ jito_relayer_service_name }}"
-        state: stopped
-        enabled: false
-      register: relayer_stop_result
-      retries: 3
-      delay: 10
-      until: relayer_stop_result is success
-      when: relayer_service_status.status.ActiveState == "active"
-      become: true
-      delegate_to: "{{ source_host }}"
-
     # Step 2 - Reload systemd daemon
     - name: Step 2 - Service - Reload systemd daemon
       ansible.builtin.systemd:
