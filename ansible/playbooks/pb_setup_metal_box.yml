@@ -11,12 +11,19 @@
 #   -e "target_host=new-metal-box" \
 #   -e "ansible_user=alice" \
 #   -e "csv_file=authorized_ips.csv" \
+#   -e "host_name=validator-nyc-01" \
 #   -e "solana_cluster=testnet" \
 #   -e "allow_unconventional_testnet_two_disk_layout=true" \
 #   -K
 #
-#   # solana_cluster is REQUIRED only for special testnet two-disk mode
-#   # allow_unconventional_testnet_two_disk_layout is OPTIONAL opt-in for special testnet two-disk mode
+# Extended vars:
+# - host_name (OPTIONAL): OS hostname to set before reboot. If omitted, hostname is unchanged.
+# - solana_cluster (REQUIRED only for special testnet two-disk mode)
+# - allow_unconventional_testnet_two_disk_layout (OPTIONAL opt-in for special testnet two-disk mode)
+#
+# Reboot behavior:
+# - At the end of setup, the playbook waits 10 seconds and then reboots automatically.
+# - Press Ctrl+C during the countdown to abort before reboot.
 
 - name: Setup Metal Box Server
   hosts: "{{ target_host }}"

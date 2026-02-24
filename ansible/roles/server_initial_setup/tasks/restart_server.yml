@@ -1,16 +1,14 @@
 ---
-# Ask if the server should be restarted
-- name: Ask if you want to restart the server
+- name: Countdown before automatic reboot
   ansible.builtin.pause:
+    seconds: 10
     prompt: |
-      Do you want to restart the server now? (y/n)
+      Server reboot will start automatically in 10 seconds.
 
-      Skipping the restart means some optimizations (such as CPU isolation and kernel tuning) will not be active until the next reboot.
-  register: restart_response
+      Press Ctrl+C now to abort the playbook before reboot.
   delegate_to: localhost
   run_once: true
 
-# Display reconnection instructions if restart is requested
 - name: Display reconnection instructions
   ansible.builtin.debug:
     msg: |
@@ -22,20 +20,15 @@
 
       Please allow a few minutes for the server to complete the restart.
       -------------------------------------------------
-  when: restart_response.user_input | lower == 'y'
   run_once: true
   delegate_to: localhost
 
-# Send reboot command (fire and forget)
 - name: Initiate server reboot
-  become: true
-  ansible.builtin.shell: "nohup systemctl reboot >/dev/null 2>&1 &"
-  when: restart_response.user_input | lower == 'y'
-  async: 1
-  poll: 0
-  changed_when: true
+  ansible.builtin.reboot:
+    reboot_timeout: 900
+    connect_timeout: 5
+    post_reboot_delay: 10
+    test_command: whoami
 
-# End playbook after reboot initiation
 - name: End playbook - Server is rebooting
   ansible.builtin.meta: end_play
-  when: restart_response.user_input | lower == 'y'

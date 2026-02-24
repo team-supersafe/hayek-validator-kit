@@ -100,10 +100,12 @@ ansible-playbook playbooks/pb_setup_metal_box.yml \
    -e "target_host=new-metal-box" \
    -e "ansible_user=alice" \
    -e "csv_file=authorized_ips.csv" \
+   -e "host_name=validator-nyc-01" \
    -K
 ```
 
 > **Note:** Before running the playbook, users with the `sysadmin` role must have previously logged in and provisioned a password using the Password Self-Service system. This is required for privilege escalation (`-K` flag).
+> **Note:** `host_name` is optional. If omitted, the existing hostname is kept.
 
 ## Special Testnet Two-Disk Mode (Opt-In)
 
@@ -157,14 +159,12 @@ Type IP here
 This step is a safety measure to ensure you are provisioning the correct server. Type the IP address shown to continue. If you are not sure, press Ctrl+C to cancel the process.
 
 
-## Server Restart Prompt
+## Server Reboot Countdown
 
-At the end of the playbook, you will be prompted with:
-```bash
-   Do you want to restart the server now? (y/n)
+At the end of the playbook, reboot is automatic after a 10-second countdown:
+- Press `Ctrl+C` during the countdown to abort before reboot.
+- If not aborted, the host reboots and Ansible waits for it to come back.
 
-   Skipping the restart means some optimizations (such as CPU isolation and kernel tuning) will not be active until the next reboot.
-```
 ## After Playbook Completion
 
 At the end of the playbook, the server will be rebooted automatically. You must reconnect using:
