@@ -23,7 +23,7 @@
 #   -e "validator_name=hayek-mainnet" \
 #   -e "validator_type=hot-spare" \
 #   -e "solana_cluster=mainnet" \
-#   -e "jito_version=3.0.4" \
+#   -e "jito_version=3.1.8" \
 #   -e "build_from_source=true" \
 #   -e "use_official_repo=true" \
 #   -K
@@ -37,7 +37,7 @@
 #   -e "validator_name=demo2" \
 #   -e "validator_type=hot-spare" \
 #   -e "solana_cluster=localnet" \
-#   -e "jito_version=3.0.4" \
+#   -e "jito_version=3.1.8" \
 #   -e "build_from_source=true" \
 #   -e "use_official_repo=true" \
 #   -e "force_host_cleanup=true" \
