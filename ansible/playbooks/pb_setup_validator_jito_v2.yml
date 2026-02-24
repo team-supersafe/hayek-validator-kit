@@ -23,7 +23,7 @@
 #   -e "validator_name=hayek-mainnet" \
 #   -e "validator_type=hot-spare" \
 #   -e "solana_cluster=mainnet" \
-#   -e "jito_version=3.0.4" \
+#   -e "jito_version=3.1.8" \
 #   -e "build_from_source=true" \
 #   -e "use_official_repo=true" \
 #   -K
@@ -37,7 +37,7 @@
 #   -e "validator_name=demo2" \
 #   -e "validator_type=hot-spare" \
 #   -e "solana_cluster=localnet" \
-#   -e "jito_version=3.0.4" \
+#   -e "jito_version=3.1.8" \
 #   -e "build_from_source=true" \
 #   -e "use_official_repo=true" \
 #   -e "force_host_cleanup=true" \
@@ -54,6 +54,8 @@
   hosts: "{{ target_host }}"
   user: "{{ ansible_user }}"
   become: false
+  vars:
+    jito_min_bam_version: "3.0.10"
 
   pre_tasks:
     - name: Assert required parameters are defined
@@ -61,8 +63,17 @@
         that:
           - target_host is defined
           - ansible_user is defined
+          - jito_version is defined
         fail_msg: >
-          Missing required playbook variables: target_host, ansible_user
+          Missing required playbook variables: target_host, ansible_user, jito_version
+
+    - name: Enforce minimum Jito version for BAM support
+      ansible.builtin.assert:
+        that:
+          - jito_version is version(jito_min_bam_version, '>=')
+        fail_msg: >-
+          jito_version={{ jito_version }} is too old for BAM mode.
+          Set jito_version >= {{ jito_min_bam_version }}.
 
     - name: Debug ansible_limit and target_host
       ansible.builtin.debug:

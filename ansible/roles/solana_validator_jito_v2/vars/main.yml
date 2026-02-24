@@ -1,6 +1,5 @@
 ---
 # Override the default validator directories with V2 values
-jito_min_bam_version: "3.0.10"
 keys_dir: "{{ validator_keys_dir }}"
 solana_install_dir: "{{ system_solana_active_release_dir }}"
 default_group: "{{ validator_operators_group }}"

@@ -15,14 +15,6 @@
       - jito_bam_endpoints
       - jito_mainnet_bam_region / jito_testnet_bam_region / jito_localnet_bam_region
 
-- name: Precheck - Enforce minimum Jito version for BAM support
-  ansible.builtin.assert:
-    that:
-      - jito_version is version(jito_min_bam_version, '>=')
-    fail_msg: >-
-      jito_version={{ jito_version }} is too old for BAM mode.
-      Set jito_version >= {{ jito_min_bam_version }} (bam-client release baseline).
-
 - name: Set value for validator_keyset_dir
   ansible.builtin.set_fact:
     validator_keyset_dir: "{{ validator_keys_dir + '/' + validator_name }}"
