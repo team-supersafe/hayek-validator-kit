@@ -56,6 +56,14 @@
   run_once: true
   delegate_to: localhost
 
+- name: Update SSH connection port for reboot wait
+  ansible.builtin.set_fact:
+    ansible_port: "{{ firewall.ssh_port }}"
+    ansible_ssh_port: "{{ firewall.ssh_port }}"
+  when:
+    - firewall.ssh_port is defined
+    - (ansible_port | default(ansible_ssh_port | default(22)) | int) != (firewall.ssh_port | int)
+
 - name: Initiate server reboot
   ansible.builtin.reboot:
     reboot_timeout: 900
