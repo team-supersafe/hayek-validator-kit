@@ -8,7 +8,8 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
 
 - No immediate replacement of existing local scripts.
 - No production cluster behavior change in this phase.
-- No OIDC/S3 publish enforcement in PR-2.
+- No release-path publish in PR-3.
+- No OIDC/S3 publish enforcement in PR-3.
 
 ## Current State
 
@@ -40,7 +41,7 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
 - Implement CI build jobs for `agave` and `jito-solana` on `x86_64` and `aarch64`.
 - Generate `manifest.json` as workflow artifact.
 
-3. PR-3
+3. PR-3 (completed)
 - Add S3 staging publish (`staging/` paths) and checksum outputs.
 - Keep release publish behind manual approval.
 
@@ -64,18 +65,28 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
 - Workflow:
   - `.github/workflows/solana-binary-pipeline.yml`
 
-## Current Workflow Behavior (PR-2)
+## Current Workflow Behavior (PR-3)
 
 - Trigger: manual `workflow_dispatch`.
-- Inputs: `client`, `version`, `arch`, `dry_run`.
+- Inputs: `client`, `version`, `arch`, `dry_run`, `publish_staging`, `s3_bucket`, `aws_region`, `staging_prefix`.
 - Matrix: `{agave,jito-solana} x {x86_64,aarch64}` (filtered by inputs).
 - Runner requirement: ARM builds use `ubuntu-24.04-arm` GitHub runner availability.
 - Builds:
   - Runs `build-cli-no-upload.sh` per matrix item.
   - Produces `solana-release-<arch>-unknown-linux-gnu.tar.bz2`.
   - Produces per-item metadata JSON with checksum and target S3 key.
+  - Produces per-item `<archive>.sha256` checksum sidecar.
 - Artifacts:
   - `build-archive-<client>-<arch>-v<version>`
   - `build-meta-<client>-<arch>-v<version>`
+  - `build-checksum-<client>-<arch>-v<version>`
   - `build-manifest-v<version>` containing aggregated `manifest.json`
-- Explicitly not included yet: S3 uploads/promotions (PR-3+).
+  - `build-manifest-sha256-v<version>`
+- Staging publish (optional):
+  - Enabled with `publish_staging=true`.
+  - Uploads archives and `.sha256` files to `s3://<bucket>/<staging_prefix>/<release_key>`.
+  - Uploads staging manifest to `s3://<bucket>/<staging_prefix>/manifests/solana-binary-manifest-v<version>.json` (+ `.sha256`).
+  - Uses repository secrets:
+    - `SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID`
+    - `SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY`
+- Explicitly not included yet: release-path publish and promotion workflow (PR-4+).
