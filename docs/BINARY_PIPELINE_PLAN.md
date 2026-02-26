@@ -4,11 +4,11 @@
 
 Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitHub Actions the canonical build and release path.
 
-## Non-Goals (PR-1 Scaffold)
+## Non-Goals (Current)
 
 - No immediate replacement of existing local scripts.
-- No production cluster behavior change in this PR.
-- No immediate OIDC role enforcement in this PR.
+- No production cluster behavior change in this phase.
+- No OIDC/S3 publish enforcement in PR-2.
 
 ## Current State
 
@@ -31,12 +31,12 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
 
 ## Incremental PR Sequence
 
-1. PR-1 (this scaffold)
+1. PR-1 (completed)
 - Add pipeline architecture documentation.
 - Add workflow scaffold with manual dispatch and matrix planning.
 - Default to dry-run mode (no publish side effects).
 
-2. PR-2
+2. PR-2 (completed)
 - Implement CI build jobs for `agave` and `jito-solana` on `x86_64` and `aarch64`.
 - Generate `manifest.json` as workflow artifact.
 
@@ -55,10 +55,27 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
 ## Source Paths Used By Pipeline
 
 - Build scripts:
+  - `solana-localnet/build-solana-cli/build-cli-no-upload.sh`
   - `solana-localnet/build-solana-cli/build-solana-cli-and-upload-to-s3.sh`
   - `solana-localnet/build-solana-cli/build-jito-solana-cli-and-upload-to-s3.sh`
   - `solana-localnet/build-solana-cli/upload-solana-binaries-to-s3.sh`
   - `solana-localnet/build-solana-cli/run-build-in-container.sh`
 
-- Workflow scaffold:
+- Workflow:
   - `.github/workflows/solana-binary-pipeline.yml`
+
+## Current Workflow Behavior (PR-2)
+
+- Trigger: manual `workflow_dispatch`.
+- Inputs: `client`, `version`, `arch`, `dry_run`.
+- Matrix: `{agave,jito-solana} x {x86_64,aarch64}` (filtered by inputs).
+- Runner requirement: ARM builds use `ubuntu-24.04-arm` GitHub runner availability.
+- Builds:
+  - Runs `build-cli-no-upload.sh` per matrix item.
+  - Produces `solana-release-<arch>-unknown-linux-gnu.tar.bz2`.
+  - Produces per-item metadata JSON with checksum and target S3 key.
+- Artifacts:
+  - `build-archive-<client>-<arch>-v<version>`
+  - `build-meta-<client>-<arch>-v<version>`
+  - `build-manifest-v<version>` containing aggregated `manifest.json`
+- Explicitly not included yet: S3 uploads/promotions (PR-3+).

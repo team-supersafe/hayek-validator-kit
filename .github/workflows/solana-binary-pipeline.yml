@@ -26,14 +26,13 @@ on:
           - x86_64
           - aarch64
       dry_run:
-        description: "Dry-run only (recommended for scaffold)"
+        description: "Plan only (skip actual build jobs)"
         required: true
-        default: true
+        default: false
         type: boolean
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   plan:
@@ -81,7 +80,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Compute S3 object key (dry-run scaffold)
+      - name: Compute release key
+        id: release-key
         shell: bash
         run: |
           set -euo pipefail
@@ -95,20 +95,123 @@ jobs:
             key="jito-solana/releases/download/v${version}-jito/solana-release-${arch}-unknown-linux-gnu.tar.bz2"
           fi
 
-          echo "client=$client"
-          echo "version=$version"
-          echo "arch=$arch"
+          echo "s3_key=$key" >>"$GITHUB_OUTPUT"
+          echo "release_url=https://solv-store.s3.us-east-1.amazonaws.com/${key}" >>"$GITHUB_OUTPUT"
+
+      - name: Matrix item summary
+        shell: bash
+        run: |
+          echo "client=${{ matrix.client }}"
+          echo "version=${{ inputs.version }}"
+          echo "arch=${{ matrix.arch }}"
           echo "runner=${{ matrix.runner }}"
-          echo "s3_key=$key"
+          echo "s3_key=${{ steps.release-key.outputs.s3_key }}"
+          echo "release_url=${{ steps.release-key.outputs.release_url }}"
 
-      - name: Scaffold mode
+      - name: Dry-run item
         if: inputs.dry_run
+        shell: bash
         run: |
-          echo "Dry-run enabled. Build/publish is intentionally not executed in PR-1 scaffold."
+          echo "dry_run=true, skipping build for this matrix item."
 
-      - name: Non-dry-run not yet enabled in scaffold
+      - name: Install build dependencies
         if: ${{ !inputs.dry_run }}
+        shell: bash
         run: |
-          echo "Non-dry-run execution is intentionally blocked in PR-1 scaffold."
-          echo "Use dry_run=true. Build/publish implementation lands in a follow-up PR."
-          exit 1
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            pkg-config \
+            libudev-dev \
+            llvm \
+            libclang-dev \
+            libssl-dev \
+            protobuf-compiler \
+            cmake \
+            git \
+            curl \
+            wget \
+            unzip \
+            ca-certificates \
+            zlib1g-dev \
+            libprotobuf-dev \
+            jq
+
+      - name: Setup Rust toolchain
+        if: ${{ !inputs.dry_run }}
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build archive
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          ./solana-localnet/build-solana-cli/build-cli-no-upload.sh \
+            "${{ matrix.client }}" \
+            "${{ inputs.version }}" \
+            "${{ matrix.arch }}" \
+            out \
+            "out/metadata-${{ matrix.client }}-${{ matrix.arch }}.json"
+
+      - name: Upload binary artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-archive-${{ matrix.client }}-${{ matrix.arch }}-v${{ inputs.version }}
+          path: out/solana-release-${{ matrix.arch }}-unknown-linux-gnu.tar.bz2
+          if-no-files-found: error
+
+      - name: Upload metadata artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-meta-${{ matrix.client }}-${{ matrix.arch }}-v${{ inputs.version }}
+          path: out/metadata-${{ matrix.client }}-${{ matrix.arch }}.json
+          if-no-files-found: error
+
+  manifest:
+    if: ${{ !inputs.dry_run }}
+    needs: binary-pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download metadata artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-meta-*-v${{ inputs.version }}
+          path: metadata
+          merge-multiple: true
+
+      - name: Build combined manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          files=(metadata/metadata-*.json)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No metadata files found to build manifest."
+            exit 1
+          fi
+
+          mkdir -p out
+          jq -s \
+            --arg version "${{ inputs.version }}" \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{
+              version: $version,
+              generated_at: $generated_at,
+              entries: (sort_by(.client, .arch))
+            }' \
+            "${files[@]}" >out/manifest.json
+
+          echo "Manifest generated at out/manifest.json"
+          cat out/manifest.json
+
+      - name: Upload combined manifest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-manifest-v${{ inputs.version }}
+          path: out/manifest.json
+          if-no-files-found: error
