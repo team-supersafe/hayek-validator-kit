@@ -12,6 +12,18 @@
   ansible.builtin.debug:
     msg: "Start Jito-Solana CLI setup for version {{ jito_version }}"
 
+- name: Precheck - Enforce build_from_source=true on production clusters
+  ansible.builtin.assert:
+    that:
+      - build_from_source | default(true) | bool
+    fail_msg: >-
+      Production clusters require build_from_source=true. Received
+      build_from_source={{ build_from_source | default('undefined') }}
+      for solana_cluster={{ solana_cluster }}.
+  when:
+    - solana_cluster is defined
+    - (solana_cluster | lower) in ['mainnet', 'mainnet-beta', 'testnet']
+
 - name: Add hosts to known_hosts to comply with ansible config host_key_checking
   ansible.builtin.known_hosts:
     name: "{{ item }}"

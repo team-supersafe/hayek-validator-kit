@@ -48,9 +48,9 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
 - Add promotion workflow from staging to release paths (no rebuild).
 - Add release manifest publication.
 
-5. PR-5
-- Enforce CI-only publishing via GitHub OIDC role and S3 policy.
-- Block production playbooks from `build_from_source=false`.
+5. PR-5 (completed)
+- Enforce CI-only publishing via GitHub OIDC role and S3 policy templates.
+- Block production CLI setup from `build_from_source=false`.
 
 ## Source Paths Used By Pipeline
 
@@ -106,3 +106,26 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
 - Secrets used:
   - `SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID`
   - `SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY`
+- Note: this was superseded in PR-5 by OIDC role assumption via `aws_role_to_assume`.
+
+## OIDC + Production Guard Behavior (PR-5)
+
+- Workflows updated:
+  - `.github/workflows/solana-binary-pipeline.yml`
+  - `.github/workflows/solana-binary-promote.yml`
+- New workflow input:
+  - `aws_role_to_assume`: IAM role ARN used by GitHub OIDC.
+- Authentication change:
+  - Removed static AWS key usage for publish/promotion paths.
+  - AWS auth now uses `aws-actions/configure-aws-credentials@v4` with `role-to-assume`.
+  - Publish-related jobs now require `permissions.id-token: write`.
+- Policy templates added:
+  - `solana-localnet/build-solana-cli/solv-s3-oidc-trust-policy.json`
+  - `solana-localnet/build-solana-cli/solv-s3-ci-role-policy.json`
+  - `solana-localnet/build-solana-cli/solv-store-bucket-policy-ci-only.json`
+- Production enforcement:
+  - `ansible/roles/solana_cli_agave/tasks/precheck.yml`
+  - `ansible/roles/solana_cli_jito/tasks/precheck.yml`
+  - Both now fail fast when:
+    - `solana_cluster` is `testnet`, `mainnet`, or `mainnet-beta`, and
+    - `build_from_source` is false.

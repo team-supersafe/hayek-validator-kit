@@ -1,0 +1,27 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyWritesOutsideCiRoleForManagedPrefixes",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": [
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::solv-store/staging/*",
+        "arn:aws:s3:::solv-store/agave/releases/download/*",
+        "arn:aws:s3:::solv-store/jito-solana/releases/download/*",
+        "arn:aws:s3:::solv-store/manifests/*"
+      ],
+      "Condition": {
+        "StringNotLike": {
+          "aws:PrincipalArn": [
+            "arn:aws:iam::<AWS_ACCOUNT_ID>:role/<CI_OIDC_ROLE_NAME>"
+          ]
+        }
+      }
+    }
+  ]
+}
