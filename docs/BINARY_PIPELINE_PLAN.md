@@ -8,8 +8,7 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
 
 - No immediate replacement of existing local scripts.
 - No production cluster behavior change in this phase.
-- No release-path publish in PR-3.
-- No OIDC/S3 publish enforcement in PR-3.
+- No OIDC/S3 publish enforcement in PR-4.
 
 ## Current State
 
@@ -45,7 +44,7 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
 - Add S3 staging publish (`staging/` paths) and checksum outputs.
 - Keep release publish behind manual approval.
 
-4. PR-4
+4. PR-4 (completed)
 - Add promotion workflow from staging to release paths (no rebuild).
 - Add release manifest publication.
 
@@ -64,6 +63,7 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
 
 - Workflow:
   - `.github/workflows/solana-binary-pipeline.yml`
+  - `.github/workflows/solana-binary-promote.yml`
 
 ## Current Workflow Behavior (PR-3)
 
@@ -89,4 +89,20 @@ Stop laptop-dependent binary publishing for Agave/Jito/Firedancer by making GitH
   - Uses repository secrets:
     - `SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID`
     - `SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY`
-- Explicitly not included yet: release-path publish and promotion workflow (PR-4+).
+- Explicitly not included yet: CI-only publisher enforcement (PR-5).
+
+## Promotion Workflow Behavior (PR-4)
+
+- Workflow: `.github/workflows/solana-binary-promote.yml`
+- Trigger: manual `workflow_dispatch`.
+- Inputs: `version`, `client`, `arch`, `source_bucket`, `source_prefix`, `destination_bucket`, `destination_prefix`, `aws_region`, `dry_run`.
+- Promotion path:
+  - Validates staging object and `.sha256` existence for each matrix item.
+  - Copies from staging key to release key (no rebuild) when `dry_run=false`.
+  - Generates per-item promotion metadata artifact.
+- Release manifest:
+  - Aggregates promotion metadata into `manifest-release.json` + `.sha256`.
+  - Publishes to `s3://<destination_bucket>/<destination_prefix>/manifests/solana-binary-manifest-v<version>.json` when `dry_run=false`.
+- Secrets used:
+  - `SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID`
+  - `SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY`
