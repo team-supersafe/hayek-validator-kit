@@ -1,0 +1,114 @@
+name: solana-binary-pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      client:
+        description: "Client to process"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - agave
+          - jito-solana
+      version:
+        description: "Version (example: 3.0.14)"
+        required: true
+        type: string
+      arch:
+        description: "Architecture target"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - x86_64
+          - aarch64
+      dry_run:
+        description: "Dry-run only (recommended for scaffold)"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - name: Build matrix from inputs
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          clients_json='["agave","jito-solana"]'
+          if [[ "${{ inputs.client }}" != "all" ]]; then
+            clients_json='["${{ inputs.client }}"]'
+          fi
+
+          arch_json='["x86_64","aarch64"]'
+          if [[ "${{ inputs.arch }}" != "all" ]]; then
+            arch_json='["${{ inputs.arch }}"]'
+          fi
+
+          matrix="$(jq -cn --argjson clients "$clients_json" --argjson arches "$arch_json" '
+            [ $clients[] as $c | $arches[] as $a |
+              {
+                client: $c,
+                arch: $a,
+                runner: (if $a == "aarch64" then "ubuntu-24.04-arm" else "ubuntu-latest" end)
+              }
+            ]'
+          )"
+
+          echo "matrix=$matrix" >>"$GITHUB_OUTPUT"
+          echo "$matrix" | jq '.'
+
+  binary-pipeline:
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.plan.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute S3 object key (dry-run scaffold)
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+          client="${{ matrix.client }}"
+          arch="${{ matrix.arch }}"
+
+          if [[ "$client" == "agave" ]]; then
+            key="agave/releases/download/v${version}/solana-release-${arch}-unknown-linux-gnu.tar.bz2"
+          else
+            key="jito-solana/releases/download/v${version}-jito/solana-release-${arch}-unknown-linux-gnu.tar.bz2"
+          fi
+
+          echo "client=$client"
+          echo "version=$version"
+          echo "arch=$arch"
+          echo "runner=${{ matrix.runner }}"
+          echo "s3_key=$key"
+
+      - name: Scaffold mode
+        if: inputs.dry_run
+        run: |
+          echo "Dry-run enabled. Build/publish is intentionally not executed in PR-1 scaffold."
+
+      - name: Non-dry-run not yet enabled in scaffold
+        if: ${{ !inputs.dry_run }}
+        run: |
+          echo "Non-dry-run execution is intentionally blocked in PR-1 scaffold."
+          echo "Use dry_run=true. Build/publish implementation lands in a follow-up PR."
+          exit 1
