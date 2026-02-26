@@ -1,4 +1,4 @@
-## Requirements: CSV Files for Users/Roles and Authorized IPs
+# Requirements: CSV Files for Users/Roles and Authorized IPs
 
 For testing, you will need two CSV files:
 
@@ -9,12 +9,11 @@ These CSVs should be placed in your **local computer**:
 
    ~/new-metal-box/
 
-
-### Example: Users and Roles CSV (`~/new-metal-box/iam_setup_dev.csv`)
+## Example: Users and Roles CSV (`~/new-metal-box/iam_setup_dev.csv`)
 
 > **Testing Tip:** For testing purposes only, it is recommended to use the same public key for all users in the CSV. This allows you to access the server as each user and verify their roles and permissions work as expected. Use a public key you have access to.
 
-```
+```csv
 user,key,group_a,group_b,group_c
 alice,ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEexamplekeyforalice alice@example.com,sysadmin,,
 bob,ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEexamplekeyforbob bob@example.com,,validator_operators,
@@ -23,7 +22,7 @@ carla,ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEexamplekeyforcarla carla@example.com
 
 ### Example: Authorized IPs CSV (`~/new-metal-box/authorized_ips.csv`)
 
-```
+```csv
 ip,comment
 203.0.113.1,Admin Office
 198.51.100.2,VPN Gateway
@@ -36,16 +35,14 @@ ip,comment
 The first step is to acquire a bare metal server. It is recommended to use Latitude as a provider for best compatibility.
 
 You can follow the necessary documentation here:
-https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/choosing-your-metal#latitude-complete-provisioning
+<https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/choosing-your-metal#latitude-complete-provisioning>
 
-**For testing, you can use the m4.metal.medium server**
-
+## For testing, you can use the m4.metal.medium server
 
 ## Post-Provisioning Verifications
 
 Once you have selected the necessary server for your tests, you should run a quick check to ensure the server meets the minimum requirements. You can follow this documentation:
-https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/choosing-your-metal#post-provisioning-verifications
-
+<https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/choosing-your-metal#post-provisioning-verifications>
 
 ## Update Inventory
 
@@ -60,26 +57,23 @@ https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/
        ansible_port: 22
  ```
 
-
 ## User and Role Setup
 
 After updating your inventory with the IP of the server to be provisioned and verifying that the server meets the minimum requirements (no RAID enabled and SMT is active), you need to create the users and roles using the playbook `pb_setup_server_users.yml`.
 
-
 To execute this playbook, follow the documentation here:
-https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/user-access#user-setup
+<https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/user-access#user-setup>
 
-Once the users have been created on the server, to continue with the setup and testing, you must access the server with a user that belongs to the sysadmin group and provision a password using the Password Self-Service system. 
+Once the users have been created on the server, to continue with the setup and testing, you must access the server with a user that belongs to the sysadmin group and provision a password using the Password Self-Service system.
 See the documentation here:
-https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/user-access#password-self-service
-
-
+<https://docs.hayek.fi/dev-public-goods/validator-operations/host-infrastructure/user-access#password-self-service>
 
 ## Server Configuration and Hardening
 
 At this point, the server is ready to be configured.
 
 This role automates the initial configuration and hardening of a Solana validator server, including:
+
 - System tuning
 - Disk and mount setup
 - SSH and firewall configuration
@@ -93,17 +87,19 @@ This role automates the initial configuration and hardening of a Solana validato
    - Do **not** use real IPs or sensitive names in your public documentation.
 
 2. **Run the playbook:**
-   
+
  ```sh
 ansible-playbook playbooks/pb_setup_metal_box.yml \
    -i solana_new_metal_box.yml \
    -e "target_host=new-metal-box" \
    -e "ansible_user=alice" \
    -e "csv_file=authorized_ips.csv" \
+   -e "host_name=validator-nyc-01" \
    -K
 ```
 
 > **Note:** Before running the playbook, users with the `sysadmin` role must have previously logged in and provisioned a password using the Password Self-Service system. This is required for privilege escalation (`-K` flag).
+> **Note:** `host_name` is optional. If omitted, the existing hostname is kept.
 
 ## Special Testnet Two-Disk Mode (Opt-In)
 
@@ -133,12 +129,9 @@ ansible-playbook playbooks/pb_setup_metal_box.yml \
   -K
 ```
 
-
-
-
 Upon running the playbook, you will see a confirmation asking you to verify the IP of the host you are about to change:
 
-```
+```text
 TASK [Show server IP and location for confirmation] ******************************
 [Show server IP and location for confirmation]
 IMPORTANT: You are about to run this playbook on the server with IP: 192.168.1.100
@@ -154,17 +147,72 @@ If you are not sure, press Ctrl+C to cancel.
 
 Type IP here
 ```
+
 This step is a safety measure to ensure you are provisioning the correct server. Type the IP address shown to continue. If you are not sure, press Ctrl+C to cancel the process.
 
+## Server Reboot Countdown
 
-## Server Restart Prompt
+At the end of the playbook, reboot is automatic after a 10-second countdown:
 
-At the end of the playbook, you will be prompted with:
-```bash
-   Do you want to restart the server now? (y/n)
+- Press `Ctrl+C` during the countdown to abort before reboot.
+- If not aborted, the host reboots and Ansible waits for it to come back.
 
-   Skipping the restart means some optimizations (such as CPU isolation and kernel tuning) will not be active until the next reboot.
+## Tag-Scoped Reboot and Hostname Testing
+
+You can validate reboot-path changes on disposable VMs without running the full role.
+
+- `host_name` remains optional and is now applied in the pre-reboot stage.
+- New tag: `pre-reboot-hostname`
+- Hostname pre-reboot tasks also carry `restart`, so `--tags restart` is enough.
+
+### Test Matrix (Runbook)
+
+- Scenario A: Reboot only, no hostname change requested.
+- Scenario B: Reboot with valid hostname.
+- Scenario C: Reboot with invalid hostname (must fail before reboot).
+- Scenario D: Idempotency spot-check by running Scenario B twice.
+
+### Commands
+
+1. Validate task selection:
+
+```sh
+cd ansible
+ansible-playbook playbooks/pb_setup_metal_box.yml \
+  -i <inventory> \
+  -e "target_host=<vm_host> ansible_user=<user> csv_file=<any>.csv host_name=validator-test-01" \
+  --list-tasks --tags restart
 ```
+
+Expected: pre-reboot hostname tasks plus reboot tasks only.
+
+1. Functional reboot plus hostname:
+
+```sh
+ansible-playbook playbooks/pb_setup_metal_box.yml \
+  -i <inventory> \
+  -e "target_host=<vm_host> ansible_user=<user> csv_file=<any>.csv host_name=validator-test-01" \
+  -K --tags restart
+```
+
+1. Post-checks:
+
+```sh
+ansible <vm_host> -i <inventory> -b -m command -a "hostnamectl --static"
+ansible <vm_host> -i <inventory> -b -m shell -a "grep -E '^127\\.0\\.1\\.1\\s+validator-test-01$' /etc/hosts"
+```
+
+1. Negative validation:
+
+```sh
+ansible-playbook playbooks/pb_setup_metal_box.yml \
+  -i <inventory> \
+  -e "target_host=<vm_host> ansible_user=<user> csv_file=<any>.csv host_name=-badname-" \
+  -K --tags restart
+```
+
+Expected: hostname assertion fails and reboot is not triggered.
+
 ## After Playbook Completion
 
 At the end of the playbook, the server will be rebooted automatically. You must reconnect using:
@@ -180,6 +228,5 @@ Note: If your user belongs to the `validator_operators` or `sysadmin` group, you
 To verify that the server has the optimal configuration for a Solana validator, you can use the health_check script:
 
 ```sh
-   bash /opt/validator/scripts/health_check.sh 
+   bash /opt/validator/scripts/health_check.sh
 ```
----
