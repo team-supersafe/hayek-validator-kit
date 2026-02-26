@@ -45,6 +45,11 @@ on:
         required: true
         default: "us-east-1"
         type: string
+      aws_role_to_assume:
+        description: "IAM role ARN for GitHub OIDC (required when publish_staging=true)"
+        required: false
+        default: ""
+        type: string
       staging_prefix:
         description: "S3 prefix for staging publish"
         required: true
@@ -280,26 +285,24 @@ jobs:
       - binary-pipeline
       - manifest
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - name: Validate staging AWS secrets
+      - name: Validate OIDC role input
         shell: bash
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
-          if [[ -z "${AWS_ACCESS_KEY_ID}" || -z "${AWS_SECRET_ACCESS_KEY}" ]]; then
-            echo "Missing required secrets for staging publish:"
-            echo "- SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID"
-            echo "- SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY"
+          if [[ -z "${{ inputs.aws_role_to_assume }}" ]]; then
+            echo "publish_staging=true requires aws_role_to_assume to be set."
             exit 1
           fi
 
-      - name: Configure AWS credentials (staging)
+      - name: Configure AWS credentials with GitHub OIDC (staging)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ inputs.aws_role_to_assume }}
+          role-session-name: gha-solanabin-stage-${{ github.run_id }}
           aws-region: ${{ inputs.aws_region }}
 
       - name: Download archive artifacts

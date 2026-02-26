@@ -50,6 +50,11 @@ on:
         required: true
         default: "us-east-1"
         type: string
+      aws_role_to_assume:
+        description: "IAM role ARN for GitHub OIDC"
+        required: false
+        default: ""
+        type: string
       dry_run:
         description: "Plan only (validate staging objects, no copy)"
         required: true
@@ -100,26 +105,24 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.plan.outputs.matrix) }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - name: Validate promotion AWS secrets
+      - name: Validate OIDC role input
         shell: bash
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
-          if [[ -z "${AWS_ACCESS_KEY_ID}" || -z "${AWS_SECRET_ACCESS_KEY}" ]]; then
-            echo "Missing required secrets for promotion:"
-            echo "- SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID"
-            echo "- SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY"
+          if [[ -z "${{ inputs.aws_role_to_assume }}" ]]; then
+            echo "aws_role_to_assume is required for promotion."
             exit 1
           fi
 
-      - name: Configure AWS credentials (promotion)
+      - name: Configure AWS credentials with GitHub OIDC (promotion)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ inputs.aws_role_to_assume }}
+          role-session-name: gha-solanabin-promote-${{ github.run_id }}-${{ matrix.client }}-${{ matrix.arch }}
           aws-region: ${{ inputs.aws_region }}
 
       - name: Promote staging object to release key
@@ -219,26 +222,24 @@ jobs:
   publish-release-manifest:
     needs: promote
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - name: Validate promotion AWS secrets
+      - name: Validate OIDC role input
         shell: bash
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
-          if [[ -z "${AWS_ACCESS_KEY_ID}" || -z "${AWS_SECRET_ACCESS_KEY}" ]]; then
-            echo "Missing required secrets for manifest publication:"
-            echo "- SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID"
-            echo "- SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY"
+          if [[ -z "${{ inputs.aws_role_to_assume }}" ]]; then
+            echo "aws_role_to_assume is required for manifest publication."
             exit 1
           fi
 
-      - name: Configure AWS credentials (manifest publication)
+      - name: Configure AWS credentials with GitHub OIDC (manifest publication)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.SOLANA_BINARY_UPLOAD_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ inputs.aws_role_to_assume }}
+          role-session-name: gha-solanabin-manifest-${{ github.run_id }}
           aws-region: ${{ inputs.aws_region }}
 
       - name: Download promotion metadata artifacts
