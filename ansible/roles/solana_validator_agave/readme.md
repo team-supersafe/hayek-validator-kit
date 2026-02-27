@@ -337,9 +337,9 @@ agave-validator help
 
 
 # https://discord.com/channels/428295358100013066/560174212967432193/1264221841053057075
+BAM_URL=http://ny.mainnet.bam.jito.wtf
 BLOCK_ENGINE_URL=https://ny.mainnet.block-engine.jito.wtf
 SHRED_RECEIVER_ADDR=141.98.216.96:1002
-RELAYER_URL=http://ny.mainnet.relayer.jito.wtf:8100
 exec solana-validator \
     --identity ~/validator-keypair.json \
     --vote-account [redacted] \
@@ -372,9 +372,9 @@ exec solana-validator \
     --limit-ledger-size \
     --tip-payment-program-pubkey T1pyyaTNZsKv2WcRAB8oVnk93mLJw2XzjtVYqCsaHqt \
     --tip-distribution-program-pubkey 4R3gSG8BpU4t19KYj8CfnbtRpnT8gtk4dvTHxVRwc2r7 \
-    --merkle-root-upload-authority GZctHpWXmsZC1YHACTGGcHhYxjdRqQvTpYkb9LMvxDib \
+    --merkle-root-upload-authority 8F4jGUmxF36vQ6yabnsxX6AQVXdKBhs8kGSUuRKSg8Xt \
     --commission-bps 0 \
-    --relayer-url ${RELAYER_URL} \
+    --bam-url ${BAM_URL} \
     --block-engine-url ${BLOCK_ENGINE_URL} \
     --shred-receiver-address ${SHRED_RECEIVER_ADDR}
 

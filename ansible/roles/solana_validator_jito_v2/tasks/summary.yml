@@ -45,9 +45,6 @@
       🔍 Check for running validator process:
       ps aux | grep validator
 
-      🔄 Check for running Jito Relayer process (if installed):
-      ps aux | grep jito-relayer
-
       📊 Monitor validator startup:
       agave-validator -l {{ ledger_path }} monitor
 
@@ -56,7 +53,5 @@
 
       🔍 Inspect logs:
       tail -f {{ validator_logs_dir }}/agave-validator.log
-      Inspect Jito Relayer logs
-      journalctl -u {{ jito_relayer_service_name }} -f
 
       ====================================================

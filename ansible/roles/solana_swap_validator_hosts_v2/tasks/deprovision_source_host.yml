@@ -81,24 +81,31 @@
       become: true
       delegate_to: "{{ source_host }}"
 
-    - name: Step 1 - Service - Check the jito-relayer service status
+    - name: Step 1 - Service - Build legacy relayer service name
+      ansible.builtin.set_fact:
+        legacy_relayer_service_name: "{{ (jito_relayer_service_name | default('jito-relayer')) | regex_replace('\\.service$', '') }}"
+      delegate_to: "{{ source_host }}"
+
+    - name: Step 1 - Service - Check if legacy relayer service exists and is running
       ansible.builtin.systemd:
-        name: "{{ jito_relayer_service_name }}"
-      register: relayer_service_status
+        name: "{{ legacy_relayer_service_name }}"
+      register: legacy_relayer_service_status
       changed_when: false
       failed_when: false
       delegate_to: "{{ source_host }}"
 
-    - name: Step 1 - Service - Stop jito-relayer service if running
+    - name: Step 1 - Service - Stop legacy relayer service if running
       ansible.builtin.systemd:
-        name: "{{ jito_relayer_service_name }}"
+        name: "{{ legacy_relayer_service_name }}"
         state: stopped
         enabled: false
-      register: relayer_stop_result
+      register: legacy_relayer_stop_result
       retries: 3
       delay: 10
-      until: relayer_stop_result is success
-      when: relayer_service_status.status.ActiveState == "active"
+      until: legacy_relayer_stop_result is success
+      when:
+        - legacy_relayer_service_status.status is defined
+        - legacy_relayer_service_status.status.ActiveState == "active"
       become: true
       delegate_to: "{{ source_host }}"
 

@@ -12,9 +12,5 @@ validator_ledger_dir: "{{ mount_base_path }}/ledger"
 validator_accounts_dir: "{{ mount_base_path }}/accounts"
 validator_snapshots_dir: "{{ mount_base_path }}/snapshots"
 
-# System wide installation path for solana binaries
-jito_relayer_install_dir: "/opt/jito-relayer"
-jito_relayer_releases_dir: "{{ jito_relayer_install_dir }}/releases"
-
 # Validator specific files
 validator_log_file: "{{ validator_logs_dir }}/agave-validator.log"

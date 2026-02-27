@@ -48,21 +48,16 @@
 
 - name: prepare - Stop and remove legacy relayer service if exists
   block:
-    - name: prepare - legacy relayer cleanup - Build relayer service names
-      ansible.builtin.set_fact:
-        legacy_relayer_service_base: "{{ (jito_relayer_service_name | default('jito-relayer')) | regex_replace('\\.service$', '') }}"
-        legacy_relayer_service_unit: "{{ ((jito_relayer_service_name | default('jito-relayer')) | regex_replace('\\.service$', '')) ~ '.service' }}"
-
     - name: prepare - legacy relayer cleanup - Check jito-relayer service status
       ansible.builtin.systemd:
-        name: "{{ legacy_relayer_service_base }}"
+        name: "jito-relayer"
       register: relayer_service_status
       changed_when: false
       failed_when: false
 
     - name: prepare - legacy relayer cleanup - Stop jito-relayer service if running
       ansible.builtin.systemd:
-        name: "{{ legacy_relayer_service_base }}"
+        name: "jito-relayer"
         state: stopped
         enabled: false
       register: relayer_stop_result
@@ -74,7 +69,7 @@
 
     - name: prepare - legacy relayer cleanup - Remove jito-relayer service unit file
       ansible.builtin.file:
-        path: "/etc/systemd/system/{{ legacy_relayer_service_unit }}"
+        path: "/etc/systemd/system/jito-relayer.service"
         state: absent
       become: true
 

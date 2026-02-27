@@ -100,7 +100,6 @@ All three must exist for `validator_rbac_enabled` to be `true`.
 
 | Legacy Variable | RBAC Variable |
 | ---------------- | --------------- |
-| `solana_install_dir` | `system_solana_active_release_dir` |
 | `build_dir` | `system_shared_build_dir` |
 | N/A (not used) | `validator_root_dir` |
 | `solana_user_dir` | N/A (not used) |

@@ -14,7 +14,6 @@
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ system_solana_install_dir }}
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ system_shared_build_dir }}
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ validator_root_dir }}
-%validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/ls -la {{ jito_relayer_install_dir }}
 
 # Process monitoring (read-only)
 %validator_viewers ALL=(ALL) NOPASSWD: /usr/bin/pgrep -f {{ validator_service }}
