@@ -2,5 +2,7 @@
 # XDP defaults (default-on, fail-open)
 xdp_enabled: true
 xdp_mode: "native"
-xdp_min_supported_version: "3.0.0"
+xdp_experimental_retransmit_xdp_cpu_cores: 1
+xdp_experimental_retransmit_xdp_zero_copy: true
+xdp_min_supported_version: "3.0.9"
 xdp_min_kernel_version: "5.10.0"
