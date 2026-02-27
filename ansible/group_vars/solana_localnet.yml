@@ -1,22 +1,22 @@
 ---
-#Solana Localnet-specific, non-secret (rare) variables
+# Solana Localnet-specific, non-secret (rare) variables
 solana_rpc_url: http://gossip-entrypoint:8899
-jito_urls:
+jito_bam_endpoints:
   dallas:
-    block_engine: "https://dallas.testnet.block-engine.jito.wtf"
-    relayer: "http://dallas.testnet.relayer.jito.wtf:8100"
+    bam_url: "http://dallas.testnet.bam.jito.wtf"
+    block_engine_url: "https://dallas.testnet.block-engine.jito.wtf"
     shred_receiver_addr: "141.98.218.12:1002"
     ntp_server: "ntp.dallas.jito.wtf"
   newyork:
-    block_engine: "https://ny.testnet.block-engine.jito.wtf"
-    relayer: "http://ny.testnet.relayer.jito.wtf:8100"
+    bam_url: "http://ny.testnet.bam.jito.wtf"
+    block_engine_url: "https://ny.testnet.block-engine.jito.wtf"
     shred_receiver_addr: "64.130.35.224:1002"
     ntp_server: "ntp.dallas.jito.wtf"
 
 expected_genesis_hash: ""
 solana_metrics_url: ""
-# Keep ledger size bounded (value is in shreds, ~2 GB target)
-limit_ledger_size: 1700000
+# Keep ledger size bounded (value is in shreds, ~62.5 GB target)
+limit_ledger_size: 50000000
 poh_pinned_cpu_core_enabled: false
 poh_pinned_cpu_core: 2
 
@@ -34,6 +34,6 @@ solana_gossip_entrypoints:
 known_validators: []
 
 jito_tip_payment_program_pubkey: "GJHtFqM9agxPmkeKjHny6qiRKrXZALvvFGiKf11QE7hy"
-jito_tip_distribution_program_pubkey: "F2Zu7QZiTYUhPd7u9ukRVwxh7B71oA3NMJcHuCHc29P2"
-jito_merkle_root_upload_authority: "GZctHpWXmsZC1YHACTGGcHhYxjdRqQvTpYkb9LMvxDib"
+jito_tip_distribution_program_pubkey: "DzvGET57TAgEDxvm3ERUM4GNcsAJdqjDLCne9sdfY4wf"
+jito_merkle_root_upload_authority: "7T4inmPmtNBX3MhLwJ9hFsSMnGJYYkKioVABSNTWVRuS"
 jito_commission_bps: 0

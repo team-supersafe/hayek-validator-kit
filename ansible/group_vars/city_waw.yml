@@ -1,4 +1,4 @@
 # Warsaw-specific, non-secret (rare) variables
-jito_mainnet_block_engine_city: "amsterdam"
-jito_testnet_block_engine_city: "newyork"
-jito_localnet_block_engine_city: "dallas"
+jito_mainnet_bam_region: "amsterdam"
+jito_testnet_bam_region: "newyork"
+jito_localnet_bam_region: "dallas"

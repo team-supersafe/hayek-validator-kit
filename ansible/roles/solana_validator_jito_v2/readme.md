@@ -129,7 +129,7 @@ CI_COMMIT=$(git rev-parse HEAD) scripts/cargo-install-all.sh --validator-only ~/
 
 4. Update active release link after install/update
 
-WARNING: 
+WARNING:
 - This will immediately affect the sol.service if running. That service will crash in a loop until the `sol.service` `systemd` unit is updated to point to the jito startup script containing the jito-specific command line arguments and then restarted with sudo systemctl daemon-reload to pick up the new startup script. You can use `sudo systemd stop sol` to stop the service before updating the link.
 
 ```sh
@@ -143,7 +143,7 @@ which solana
 # /home/sol/.local/share/solana/install/active_release/bin/solana
 
 solana --version
-# solana-cli 2.1.13 (src:1827a597; feat:1725507508, client:JitoLabs)
+# solana-cli 2.1.13 (src:1827a597; feat:1725507508, client:Bam)
 ```
 
 To add solana cli to your user's PATH, edit `~/.profile` to add the line
@@ -356,7 +356,7 @@ curl -X GET -H "Content-Type: application/json" https://kobe.mainnet.jito.networ
 
 [Direct link for Hayek Mainnet](https://www.jito.network/validator/HAYEKSWg2EY21k38St9X5yM7QMW6SunKDefs5SqYSFty/)
 
-If there is enough data, you should see detailed info about voting, stake, commission and MEVs. For example, see [this validator](https://www.jito.network/validator/BLADE1qNA1uNjRgER6DtUFf7FU3c1TWLLdpPeEcKatZ2/). 
+If there is enough data, you should see detailed info about voting, stake, commission and MEVs. For example, see [this validator](https://www.jito.network/validator/BLADE1qNA1uNjRgER6DtUFf7FU3c1TWLLdpPeEcKatZ2/).
 
 ### Method 3: Using Jito historical MEV rewards API (/api/v1/validators/<vote-account-pubkey>)
 

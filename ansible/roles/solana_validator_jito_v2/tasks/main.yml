@@ -16,12 +16,6 @@
   when: force_host_cleanup | default(false) | bool
   tags: [solana_validator_jito, cleanup]
 
-# Jito relayer installation and configuration
-- name: Co-hosted Relayer installation
-  import_tasks: jito_relayer_cohosted/main.yml
-  when: jito_relayer_type == 'co-hosted'
-  tags: [solana_validator_jito, jito_relayer]
-
 - name: Jito-Solana client configuration
   import_tasks: configure.yml
   tags: [solana_validator_jito, configure]

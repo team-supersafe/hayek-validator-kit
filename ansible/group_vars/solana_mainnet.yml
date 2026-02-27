@@ -1,40 +1,40 @@
 ---
-#Solana Mainnet-specific, non-secret (rare) variables
+# Solana Mainnet-specific, non-secret (rare) variables
 solana_rpc_url: https://api.mainnet-beta.solana.com
-jito_urls:
+jito_bam_endpoints:
   amsterdam:
-    block_engine: "https://amsterdam.mainnet.block-engine.jito.wtf"
-    relayer: "http://amsterdam.mainnet.relayer.jito.wtf:8100"
+    bam_url: "http://amsterdam.mainnet.bam.jito.wtf"
+    block_engine_url: "https://amsterdam.mainnet.block-engine.jito.wtf"
     shred_receiver_addr: "74.118.140.240:1002"
     ntp_server: "ntp.amsterdam.jito.wtf"
   frankfurt:
-    block_engine: "https://frankfurt.mainnet.block-engine.jito.wtf"
-    relayer: "http://frankfurt.mainnet.relayer.jito.wtf:8100"
+    bam_url: "http://frankfurt.mainnet.bam.jito.wtf"
+    block_engine_url: "https://frankfurt.mainnet.block-engine.jito.wtf"
     shred_receiver_addr: "64.130.50.14:1002"
     ntp_server: "ntp.frankfurt.jito.wtf"
   london:
-    block_engine: "https://london.mainnet.block-engine.jito.wtf"
-    relayer: "http://london.mainnet.relayer.jito.wtf:8100"
+    bam_url: "http://london.mainnet.bam.jito.wtf"
+    block_engine_url: "https://london.mainnet.block-engine.jito.wtf"
     shred_receiver_addr: "142.91.127.175:1002"
     ntp_server: "ntp.london.jito.wtf"
   newyork:
-    block_engine: "https://ny.mainnet.block-engine.jito.wtf"
-    relayer: "http://ny.mainnet.relayer.jito.wtf:8100"
+    bam_url: "http://ny.mainnet.bam.jito.wtf"
+    block_engine_url: "https://ny.mainnet.block-engine.jito.wtf"
     shred_receiver_addr: "141.98.216.96:1002"
     ntp_server: "ntp.dallas.jito.wtf"
   salt_lake_city:
-    block_engine: "https://slc.mainnet.block-engine.jito.wtf"
-    relayer: "http://slc.mainnet.relayer.jito.wtf:8100"
+    bam_url: "http://slc.mainnet.bam.jito.wtf"
+    block_engine_url: "https://slc.mainnet.block-engine.jito.wtf"
     shred_receiver_addr: "64.130.53.8:1002"
     ntp_server: "ntp.slc.jito.wtf"
   singapore:
-    block_engine: "https://singapore.mainnet.block-engine.jito.wtf"
-    relayer: "http://singapore.mainnet.relayer.jito.wtf:8100"
+    bam_url: "http://singapore.mainnet.bam.jito.wtf"
+    block_engine_url: "https://singapore.mainnet.block-engine.jito.wtf"
     shred_receiver_addr: "202.8.11.224:1002"
     ntp_server: "ntp.singapore.jito.wtf"
   tokyo:
-    block_engine: "https://tokyo.mainnet.block-engine.jito.wtf"
-    relayer: "http://tokyo.mainnet.relayer.jito.wtf:8100"
+    bam_url: "http://tokyo.mainnet.bam.jito.wtf"
+    block_engine_url: "https://tokyo.mainnet.block-engine.jito.wtf"
     shred_receiver_addr: "202.8.9.160:1002"
     ntp_server: "ntp.tokyo.jito.wtf"
 
@@ -69,5 +69,5 @@ known_validators:
 
 jito_tip_payment_program_pubkey: "T1pyyaTNZsKv2WcRAB8oVnk93mLJw2XzjtVYqCsaHqt"
 jito_tip_distribution_program_pubkey: "4R3gSG8BpU4t19KYj8CfnbtRpnT8gtk4dvTHxVRwc2r7"
-jito_merkle_root_upload_authority: "GZctHpWXmsZC1YHACTGGcHhYxjdRqQvTpYkb9LMvxDib"
+jito_merkle_root_upload_authority: "8F4jGUmxF36vQ6yabnsxX6AQVXdKBhs8kGSUuRKSg8Xt"
 jito_commission_bps: 0
