@@ -1,0 +1,437 @@
+name: solana-binary-pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      client:
+        description: "Client to process"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - agave
+          - jito-solana
+      version:
+        description: "Version (example: 3.0.14)"
+        required: true
+        type: string
+      arch:
+        description: "Architecture target"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - x86_64
+          - aarch64
+      dry_run:
+        description: "Plan only (skip actual build jobs)"
+        required: true
+        default: false
+        type: boolean
+      publish_staging:
+        description: "Publish build outputs to S3 staging paths"
+        required: true
+        default: false
+        type: boolean
+      s3_bucket:
+        description: "S3 bucket for staging publish"
+        required: true
+        default: "solv-store"
+        type: string
+      aws_region:
+        description: "AWS region for staging publish"
+        required: true
+        default: "us-east-1"
+        type: string
+      aws_role_to_assume:
+        description: "IAM role ARN for GitHub OIDC (required when publish_staging=true)"
+        required: false
+        default: ""
+        type: string
+      staging_prefix:
+        description: "S3 prefix for staging publish"
+        required: true
+        default: "staging"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - name: Build matrix from inputs
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          clients_json='["agave","jito-solana"]'
+          if [[ "${{ inputs.client }}" != "all" ]]; then
+            clients_json='["${{ inputs.client }}"]'
+          fi
+
+          arch_json='["x86_64","aarch64"]'
+          if [[ "${{ inputs.arch }}" != "all" ]]; then
+            arch_json='["${{ inputs.arch }}"]'
+          fi
+
+          matrix="$(jq -cn --argjson clients "$clients_json" --argjson arches "$arch_json" '
+            [ $clients[] as $c | $arches[] as $a |
+              {
+                client: $c,
+                arch: $a,
+                runner: (if $a == "aarch64" then "ubuntu-24.04-arm" else "ubuntu-latest" end)
+              }
+            ]'
+          )"
+
+          echo "matrix=$matrix" >>"$GITHUB_OUTPUT"
+          echo "$matrix" | jq '.'
+
+  binary-pipeline:
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.plan.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute release key
+        id: release-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+          client="${{ matrix.client }}"
+          arch="${{ matrix.arch }}"
+
+          if [[ "$client" == "agave" ]]; then
+            key="agave/releases/download/v${version}/solana-release-${arch}-unknown-linux-gnu.tar.bz2"
+          else
+            key="jito-solana/releases/download/v${version}-jito/solana-release-${arch}-unknown-linux-gnu.tar.bz2"
+          fi
+
+          echo "s3_key=$key" >>"$GITHUB_OUTPUT"
+          echo "release_url=https://solv-store.s3.us-east-1.amazonaws.com/${key}" >>"$GITHUB_OUTPUT"
+
+      - name: Matrix item summary
+        shell: bash
+        run: |
+          echo "client=${{ matrix.client }}"
+          echo "version=${{ inputs.version }}"
+          echo "arch=${{ matrix.arch }}"
+          echo "runner=${{ matrix.runner }}"
+          echo "s3_key=${{ steps.release-key.outputs.s3_key }}"
+          echo "release_url=${{ steps.release-key.outputs.release_url }}"
+
+      - name: Dry-run item
+        if: inputs.dry_run
+        shell: bash
+        run: |
+          echo "dry_run=true, skipping build for this matrix item."
+
+      - name: Install build dependencies
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            pkg-config \
+            libudev-dev \
+            llvm \
+            libclang-dev \
+            libssl-dev \
+            protobuf-compiler \
+            cmake \
+            git \
+            curl \
+            wget \
+            unzip \
+            ca-certificates \
+            zlib1g-dev \
+            libprotobuf-dev \
+            jq
+
+      - name: Setup Rust toolchain
+        if: ${{ !inputs.dry_run }}
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build archive
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          ./solana-localnet/build-solana-cli/build-cli-no-upload.sh \
+            "${{ matrix.client }}" \
+            "${{ inputs.version }}" \
+            "${{ matrix.arch }}" \
+            out \
+            "out/metadata-${{ matrix.client }}-${{ matrix.arch }}.json"
+
+      - name: Upload binary artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-archive-${{ matrix.client }}-${{ matrix.arch }}-v${{ inputs.version }}
+          path: out/solana-release-${{ matrix.arch }}-unknown-linux-gnu.tar.bz2
+          if-no-files-found: error
+
+      - name: Upload metadata artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-meta-${{ matrix.client }}-${{ matrix.arch }}-v${{ inputs.version }}
+          path: out/metadata-${{ matrix.client }}-${{ matrix.arch }}.json
+          if-no-files-found: error
+
+      - name: Generate checksum sidecar
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="out/solana-release-${{ matrix.arch }}-unknown-linux-gnu.tar.bz2"
+          checksum_file="${archive}.sha256"
+          sha256="$(jq -r '.sha256' "out/metadata-${{ matrix.client }}-${{ matrix.arch }}.json")"
+          filename="$(basename "$archive")"
+          printf '%s  %s\n' "$sha256" "$filename" >"$checksum_file"
+          cat "$checksum_file"
+
+      - name: Upload checksum artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-checksum-${{ matrix.client }}-${{ matrix.arch }}-v${{ inputs.version }}
+          path: out/solana-release-${{ matrix.arch }}-unknown-linux-gnu.tar.bz2.sha256
+          if-no-files-found: error
+
+  manifest:
+    if: ${{ !inputs.dry_run }}
+    needs: binary-pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download metadata artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-meta-*-v${{ inputs.version }}
+          path: metadata
+          merge-multiple: true
+
+      - name: Build combined manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          files=(metadata/metadata-*.json)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No metadata files found to build manifest."
+            exit 1
+          fi
+
+          mkdir -p out
+          jq -s \
+            --arg version "${{ inputs.version }}" \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{
+              version: $version,
+              generated_at: $generated_at,
+              entries: (sort_by(.client, .arch))
+            }' \
+            "${files[@]}" >out/manifest.json
+
+          echo "Manifest generated at out/manifest.json"
+          cat out/manifest.json
+
+      - name: Build manifest checksum sidecar
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum out/manifest.json >out/manifest.json.sha256
+          else
+            shasum -a 256 out/manifest.json >out/manifest.json.sha256
+          fi
+          cat out/manifest.json.sha256
+
+      - name: Upload combined manifest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-manifest-v${{ inputs.version }}
+          path: out/manifest.json
+          if-no-files-found: error
+
+      - name: Upload manifest checksum artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-manifest-sha256-v${{ inputs.version }}
+          path: out/manifest.json.sha256
+          if-no-files-found: error
+
+  publish-staging:
+    if: ${{ !inputs.dry_run && inputs.publish_staging }}
+    needs:
+      - binary-pipeline
+      - manifest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Validate OIDC role input
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${{ inputs.aws_role_to_assume }}" ]]; then
+            echo "publish_staging=true requires aws_role_to_assume to be set."
+            exit 1
+          fi
+
+      - name: Configure AWS credentials with GitHub OIDC (staging)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws_role_to_assume }}
+          role-session-name: gha-solanabin-stage-${{ github.run_id }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Download archive artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-archive-*-v${{ inputs.version }}
+          path: archives
+
+      - name: Download metadata artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-meta-*-v${{ inputs.version }}
+          path: metadata
+          merge-multiple: true
+
+      - name: Download checksum artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-checksum-*-v${{ inputs.version }}
+          path: checksums
+
+      - name: Download manifest artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-manifest*-v${{ inputs.version }}
+          path: manifests
+          merge-multiple: true
+
+      - name: Publish binaries and checksums to S3 staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          bucket="${{ inputs.s3_bucket }}"
+          prefix="${{ inputs.staging_prefix }}"
+
+          metadata_files=(metadata/metadata-*.json)
+          if [[ ${#metadata_files[@]} -eq 0 ]]; then
+            echo "No metadata files found for staging publish."
+            exit 1
+          fi
+
+          for meta in "${metadata_files[@]}"; do
+            client="$(jq -r '.client' "$meta")"
+            arch="$(jq -r '.arch' "$meta")"
+            archive_name="$(jq -r '.archive_name' "$meta")"
+            release_key="$(jq -r '.s3_key' "$meta")"
+            archive_path="$(find archives -type f -path "*${client}-${arch}*" -name "$archive_name" | head -n1)"
+            checksum_path="$(find checksums -type f -path "*${client}-${arch}*" -name "${archive_name}.sha256" | head -n1)"
+
+            if [[ -z "${archive_path:-}" || ! -f "$archive_path" ]]; then
+              echo "Archive file missing for client=${client} arch=${arch}"
+              exit 1
+            fi
+            if [[ -z "${checksum_path:-}" || ! -f "$checksum_path" ]]; then
+              echo "Checksum file missing for client=${client} arch=${arch}"
+              exit 1
+            fi
+
+            staging_key="${prefix}/${release_key}"
+            aws s3 cp "$archive_path" "s3://${bucket}/${staging_key}" --only-show-errors
+            aws s3 cp "$checksum_path" "s3://${bucket}/${staging_key}.sha256" --only-show-errors
+
+            echo "published_archive=s3://${bucket}/${staging_key}"
+            echo "published_checksum=s3://${bucket}/${staging_key}.sha256"
+          done
+
+      - name: Build staging manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          bucket="${{ inputs.s3_bucket }}"
+          prefix="${{ inputs.staging_prefix }}"
+          version="${{ inputs.version }}"
+          generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          files=(metadata/metadata-*.json)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No metadata files found for staging manifest."
+            exit 1
+          fi
+
+          mkdir -p out
+          jq -s \
+            --arg version "$version" \
+            --arg generated_at "$generated_at" \
+            --arg bucket "$bucket" \
+            --arg prefix "$prefix" \
+            '{
+              version: $version,
+              generated_at: $generated_at,
+              bucket: $bucket,
+              prefix: $prefix,
+              entries: (
+                sort_by(.client, .arch)
+                | map(
+                    . + {
+                      staging_key: ($prefix + "/" + .s3_key),
+                      staging_url: ("https://" + $bucket + ".s3.amazonaws.com/" + $prefix + "/" + .s3_key),
+                      staging_sha256_url: ("https://" + $bucket + ".s3.amazonaws.com/" + $prefix + "/" + .s3_key + ".sha256")
+                    }
+                  )
+              )
+            }' \
+            "${files[@]}" >out/manifest-staging.json
+
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum out/manifest-staging.json >out/manifest-staging.json.sha256
+          else
+            shasum -a 256 out/manifest-staging.json >out/manifest-staging.json.sha256
+          fi
+
+          cat out/manifest-staging.json
+          cat out/manifest-staging.json.sha256
+
+      - name: Upload staging manifest to S3
+        shell: bash
+        run: |
+          set -euo pipefail
+          bucket="${{ inputs.s3_bucket }}"
+          prefix="${{ inputs.staging_prefix }}"
+          version="${{ inputs.version }}"
+          manifest_key="${prefix}/manifests/solana-binary-manifest-v${version}.json"
+
+          aws s3 cp out/manifest-staging.json "s3://${bucket}/${manifest_key}" --only-show-errors
+          aws s3 cp out/manifest-staging.json.sha256 "s3://${bucket}/${manifest_key}.sha256" --only-show-errors
+
+          echo "published_manifest=s3://${bucket}/${manifest_key}"
+          echo "published_manifest_sha256=s3://${bucket}/${manifest_key}.sha256"

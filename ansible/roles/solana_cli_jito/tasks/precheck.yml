@@ -12,6 +12,18 @@
   ansible.builtin.debug:
     msg: "Start Jito-Solana CLI setup for version {{ jito_version }}"
 
+- name: Precheck - Enforce build_from_source=true on production clusters
+  ansible.builtin.assert:
+    that:
+      - build_from_source | default(true) | bool
+    fail_msg: >-
+      Production clusters require build_from_source=true. Received
+      build_from_source={{ build_from_source | default('undefined') }}
+      for solana_cluster={{ solana_cluster }}.
+  when:
+    - solana_cluster is defined
+    - (solana_cluster | lower) in ['mainnet', 'mainnet-beta', 'testnet']
+
 - name: Add hosts to known_hosts to comply with ansible config host_key_checking
   ansible.builtin.known_hosts:
     name: "{{ item }}"
@@ -36,8 +48,7 @@
 
     # Take into account client and version number
     # Example outputs:
-    # - agave-validator 2.2.16 (src:90240211; feat:3073396398, client:JitoLabs)
-    # - agave-validator 2.2.16 (src:90240211; feat:3073396398, client:Bam)
+    # - agave-validator 3.0.10 (src:90240211; feat:3073396398, client:Bam)
     - name: Precheck - Extract installed version number
       ansible.builtin.set_fact:
         installed_jito_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
@@ -54,7 +65,7 @@
           {{ solana_binary.stat.exists and
              installed_jito_version is defined and
              installed_jito_version == jito_version and
-             installed_jito_client is defined and (installed_jito_client == 'JitoLabs' or installed_jito_client == 'Bam') }}
+             installed_jito_client is defined and installed_jito_client == 'Bam' }}
 
 - name: Precheck - Find solana binary in PATH
   ansible.builtin.command: which solana
@@ -71,6 +82,6 @@
       - Binary in PATH: {{ (solana_which_result.stdout is defined and solana_which_result.stdout | length > 0) | ternary('True', 'False') }}
       - Installed version: "{{ installed_jito_version | default('Not found') }}"
       - Installed client: "{{ installed_jito_client | default('Not found') }}"
-      - Desired client: "JitoLabs"
+      - Desired client: "Bam"
       - Desired version: "{{ jito_version }}"
       - Already installed: {{ jito_cli_already_installed }}
