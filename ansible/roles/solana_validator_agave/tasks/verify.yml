@@ -65,6 +65,20 @@
   ansible.builtin.debug:
     msg: "{{ validator_startup_script.content | b64decode }}"
 
+- name: verify - Check XDP flags in validator startup script
+  ansible.builtin.set_fact:
+    validator_startup_has_xdp: >-
+      {{
+        (validator_startup_script.content | b64decode) is search('--xdp-mode|--xdp\\s|--enable-xdp|--xdp-enabled')
+      }}
+
+- name: verify - Print XDP startup status
+  ansible.builtin.debug:
+    msg: >-
+      XDP startup flags present={{ validator_startup_has_xdp }},
+      xdp_effective_enabled={{ xdp_effective_enabled | default(false) }},
+      xdp_skip_reason={{ xdp_skip_reason | default('') }}.
+
 - name: verify - Summary - Agave validator verification complete
   ansible.builtin.debug:
     msg: |

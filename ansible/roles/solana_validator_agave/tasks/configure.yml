@@ -14,6 +14,9 @@
   ansible.builtin.set_fact:
     validator_script_path: "{{ validator_scripts_dir }}/run-{{ validator_name }}.sh"
 
+- name: configure - Compute XDP runtime flags
+  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/configure_xdp.yml
+
 - name: configure - Configure validator startup script
   block:
     - name: configure - Get vote account pubkey

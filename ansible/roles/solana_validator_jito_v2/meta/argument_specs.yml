@@ -42,3 +42,13 @@ argument_specs:
         required: false
         default: false
         description: "Use official repository instead of forked repository when building from source"
+      xdp_enabled:
+        type: bool
+        required: false
+        default: true
+        description: "Enable XDP support for validator networking when host/client capabilities allow it"
+      xdp_mode:
+        type: str
+        required: false
+        default: "native"
+        description: "Requested XDP mode when supported by agave-validator flags"
