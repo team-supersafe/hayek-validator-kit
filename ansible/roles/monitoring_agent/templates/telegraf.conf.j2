@@ -34,6 +34,11 @@ interval = "{{ get_hardware_metrics_interval }}"
 	timeout = "10s"
 	data_format = "influx"
 [[inputs.exec]]
+	commands = ["bash /etc/telegraf/scripts/xdp_status.sh"]
+	timeout = "10s"
+	data_format = "influx"
+	interval = "{{ get_xdp_metrics_interval }}"
+[[inputs.exec]]
 	commands = ["hostname"]
 	name_override = "server_hostname"
 	data_format = "value"

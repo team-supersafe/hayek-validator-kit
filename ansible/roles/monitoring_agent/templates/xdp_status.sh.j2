@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -u
+
+HOSTNAME_VALUE="$(hostname -s 2>/dev/null || hostname || echo unknown)"
+TIMESTAMP_NS="$(date +%s%N)"
+
+STARTUP_SCRIPT="$(ls /opt/validator/scripts/run-*.sh 2>/dev/null | head -n1 || true)"
+STARTUP_SCRIPT_PRESENT=0
+STARTUP_FLAGS_PRESENT=0
+if [[ -n "${STARTUP_SCRIPT}" && -r "${STARTUP_SCRIPT}" ]]; then
+  STARTUP_SCRIPT_PRESENT=1
+  if grep -Eq -- '--xdp-mode|--xdp($|[[:space:]])|--enable-xdp|--xdp-enabled' "${STARTUP_SCRIPT}"; then
+    STARTUP_FLAGS_PRESENT=1
+  fi
+fi
+
+VALIDATOR_PID="$(pgrep -f "agave-validator.*--identity" | head -n1 || true)"
+VALIDATOR_RUNNING=0
+RUNTIME_FLAGS_PRESENT=0
+if [[ -n "${VALIDATOR_PID}" ]]; then
+  VALIDATOR_RUNNING=1
+  VALIDATOR_ARGS="$(ps -o args= -p "${VALIDATOR_PID}" 2>/dev/null || true)"
+  if [[ "${VALIDATOR_ARGS}" =~ (--xdp-mode|--xdp($|[[:space:]])|--enable-xdp|--xdp-enabled) ]]; then
+    RUNTIME_FLAGS_PRESENT=1
+  fi
+fi
+
+IFACE="$(ip -o route show default 2>/dev/null | awk '{print $5; exit}' || true)"
+[[ -n "${IFACE}" ]] || IFACE="unknown"
+ATTACH_DETECTED=0
+if [[ "${IFACE}" != "unknown" ]]; then
+  LINK_DEBUG="$(ip -d link show dev "${IFACE}" 2>/dev/null || true)"
+  if echo "${LINK_DEBUG}" | grep -Eq 'xdp|xdpgeneric|xdpdrv'; then
+    ATTACH_DETECTED=1
+  fi
+fi
+
+STATE="not_requested"
+XDP_ALERT=0
+ALERT_REASON="none"
+
+if [[ ${STARTUP_FLAGS_PRESENT} -eq 1 && ${VALIDATOR_RUNNING} -eq 1 && ${RUNTIME_FLAGS_PRESENT} -eq 1 && ${ATTACH_DETECTED} -eq 1 ]]; then
+  STATE="attached"
+elif [[ ${STARTUP_FLAGS_PRESENT} -eq 1 && ${VALIDATOR_RUNNING} -eq 1 && ${RUNTIME_FLAGS_PRESENT} -eq 1 && ${ATTACH_DETECTED} -eq 0 ]]; then
+  STATE="runtime_no_link_attach"
+  XDP_ALERT=1
+  ALERT_REASON="no_link_attach"
+elif [[ ${STARTUP_FLAGS_PRESENT} -eq 1 && ${VALIDATOR_RUNNING} -eq 1 && ${RUNTIME_FLAGS_PRESENT} -eq 0 ]]; then
+  STATE="runtime_missing_flags"
+  XDP_ALERT=1
+  ALERT_REASON="runtime_missing_flags"
+elif [[ ${STARTUP_FLAGS_PRESENT} -eq 1 && ${VALIDATOR_RUNNING} -eq 0 ]]; then
+  STATE="validator_not_running"
+  XDP_ALERT=1
+  ALERT_REASON="validator_not_running"
+fi
+
+echo "xdp_status,host=${HOSTNAME_VALUE},iface=${IFACE},state=${STATE},alert_reason=${ALERT_REASON} startup_script_present=${STARTUP_SCRIPT_PRESENT}i,startup_flags_present=${STARTUP_FLAGS_PRESENT}i,validator_running=${VALIDATOR_RUNNING}i,runtime_flags_present=${RUNTIME_FLAGS_PRESENT}i,attach_detected=${ATTACH_DETECTED}i,xdp_alert=${XDP_ALERT}i ${TIMESTAMP_NS}"
