@@ -1,0 +1,96 @@
+---
+# Validate shared XDP preflight/param logic without deploying a validator service.
+#
+# Example:
+# ansible-playbook playbooks/pb_validate_xdp_shared.yml \
+#   -i solana_setup_host.yml \
+#   --limit validator-host \
+#   -e "target_host=validator-host" \
+#   -e "ansible_user=sol" \
+#   -e "validator_name=hayek-mainnet" \
+#   -e "xdp_enabled=true" \
+#   -e "expected_xdp_effective_enabled=false" \
+#   -e "expected_xdp_skip_reason=validator_help_unavailable"
+
+- name: Validate shared XDP task only
+  hosts: "{{ target_host }}"
+  user: "{{ ansible_user }}"
+  become: false
+  gather_facts: false
+
+  vars:
+    validator_name: "{{ validator_name | default(inventory_hostname) }}"
+    system_solana_active_release_dir: "{{ system_solana_active_release_dir | default('/opt/solana/active_release/bin') }}"
+    xdp_enabled: "{{ xdp_enabled | default(true) }}"
+    xdp_mode: "{{ xdp_mode | default('native') }}"
+    xdp_min_supported_version: "{{ xdp_min_supported_version | default('3.0.0') }}"
+    xdp_min_kernel_version: "{{ xdp_min_kernel_version | default('5.10.0') }}"
+
+  pre_tasks:
+    - name: validate_xdp - Assert required playbook variables are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - ansible_user is defined
+        fail_msg: >
+          Missing required playbook variables: target_host, ansible_user
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+  tasks:
+    - name: validate_xdp - Execute shared XDP preflight and param builder
+      ansible.builtin.import_tasks: ../roles/solana_validator_shared/tasks/configure_xdp.yml
+      tags: [xdp, xdp_preflight, xdp_config, xdp_validate]
+
+    - name: validate_xdp - Assert output facts exist
+      ansible.builtin.assert:
+        that:
+          - xdp_effective_enabled is defined
+          - xdp_skip_reason is defined
+          - xdp_params is defined
+          - xdp_validator_version is defined
+          - xdp_kernel_semver is defined
+          - xdp_skip_reasons is defined
+        fail_msg: "Shared XDP task did not produce the expected output facts."
+      tags: [xdp, xdp_validate]
+
+    - name: validate_xdp - Assert explicit disabled behavior
+      ansible.builtin.assert:
+        that:
+          - not xdp_effective_enabled | bool
+          - xdp_skip_reason == 'xdp_disabled'
+        fail_msg: "xdp_enabled=false must force xdp_disabled with xdp_effective_enabled=false."
+      when: not (xdp_enabled | bool)
+      tags: [xdp, xdp_validate]
+
+    - name: validate_xdp - Assert expected effective status if provided
+      ansible.builtin.assert:
+        that:
+          - xdp_effective_enabled | bool == expected_xdp_effective_enabled | bool
+        fail_msg: >-
+          Expected xdp_effective_enabled={{ expected_xdp_effective_enabled }},
+          got {{ xdp_effective_enabled }}.
+      when: expected_xdp_effective_enabled is defined
+      tags: [xdp, xdp_validate]
+
+    - name: validate_xdp - Assert expected skip reason if provided
+      ansible.builtin.assert:
+        that:
+          - xdp_skip_reason == expected_xdp_skip_reason
+        fail_msg: >-
+          Expected xdp_skip_reason={{ expected_xdp_skip_reason }},
+          got {{ xdp_skip_reason }}.
+      when: expected_xdp_skip_reason is defined
+      tags: [xdp, xdp_validate]
+
+    - name: validate_xdp - Print summary
+      ansible.builtin.debug:
+        msg:
+          - "validator_name={{ validator_name }}"
+          - "xdp_enabled={{ xdp_enabled }}"
+          - "xdp_effective_enabled={{ xdp_effective_enabled }}"
+          - "xdp_skip_reason={{ xdp_skip_reason }}"
+          - "xdp_skip_reasons={{ xdp_skip_reasons }}"
+          - "xdp_params={{ xdp_params }}"
+          - "xdp_validator_version={{ xdp_validator_version }}"
+          - "xdp_kernel_semver={{ xdp_kernel_semver }}"
+      tags: [xdp, xdp_validate]

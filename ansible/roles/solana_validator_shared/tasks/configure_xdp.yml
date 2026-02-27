@@ -1,103 +1,106 @@
 ---
-- name: xdp - Set validator version fact
-  ansible.builtin.set_fact:
-    xdp_validator_version: >-
-      {{ jito_version
-         | default(agave_version
-         | default(installed_jito_version
-         | default(installed_solana_version
-         | default('0.0.0')))) }}
+- name: xdp - Shared preflight and runtime params
+  tags: [xdp, xdp_preflight, xdp_config]
+  block:
+    - name: xdp - Set validator version fact
+      ansible.builtin.set_fact:
+        xdp_validator_version: >-
+          {{ jito_version
+            | default(agave_version
+            | default(installed_jito_version
+            | default(installed_solana_version
+            | default('0.0.0')))) }}
 
-- name: xdp - Collect kernel version
-  ansible.builtin.command: uname -r
-  register: xdp_uname_result
-  changed_when: false
-  failed_when: false
+    - name: xdp - Collect kernel version
+      ansible.builtin.command: uname -r
+      register: xdp_uname_result
+      changed_when: false
+      failed_when: false
 
-- name: xdp - Check bpffs path
-  ansible.builtin.stat:
-    path: /sys/fs/bpf
-  register: xdp_bpffs_stat
+    - name: xdp - Check bpffs path
+      ansible.builtin.stat:
+        path: /sys/fs/bpf
+      register: xdp_bpffs_stat
 
-- name: xdp - Check required network tools
-  ansible.builtin.shell: "command -v {{ item }}"
-  loop:
-    - ip
-    - ethtool
-  register: xdp_required_tool_checks
-  changed_when: false
-  failed_when: false
+    - name: xdp - Check required network tools
+      ansible.builtin.shell: "command -v {{ item }}"
+      loop:
+        - ip
+        - ethtool
+      register: xdp_required_tool_checks
+      changed_when: false
+      failed_when: false
 
-- name: xdp - Inspect agave-validator help output for XDP flags
-  ansible.builtin.command: "{{ system_solana_active_release_dir }}/agave-validator --help"
-  register: xdp_validator_help
-  changed_when: false
-  failed_when: false
+    - name: xdp - Inspect agave-validator help output for XDP flags
+      ansible.builtin.command: "{{ system_solana_active_release_dir }}/agave-validator --help"
+      register: xdp_validator_help
+      changed_when: false
+      failed_when: false
 
-- name: xdp - Compute support and skip reasons
-  ansible.builtin.set_fact:
-    xdp_kernel_semver: "{{ xdp_uname_result.stdout | regex_search('^[0-9]+\\.[0-9]+\\.[0-9]+') | default('0.0.0') }}"
-    xdp_flag_support_mode: "{{ xdp_validator_help.stdout is search('--xdp-mode') }}"
-    xdp_flag_support_short: "{{ xdp_validator_help.stdout is search('--xdp(\\s|,|=|$)') }}"
-    xdp_flag_support_enable: "{{ xdp_validator_help.stdout is search('--enable-xdp') }}"
-    xdp_flag_support_enabled: "{{ xdp_validator_help.stdout is search('--xdp-enabled') }}"
-    xdp_missing_tools: >-
-      {{ xdp_required_tool_checks.results
-         | default([])
-         | rejectattr('rc', 'equalto', 0)
-         | map(attribute='item')
-         | list }}
-    xdp_skip_reasons: >-
-      {{
-        []
-        + (['xdp_disabled'] if not (xdp_enabled | bool) else [])
-        + (['validator_version_unsupported'] if not (xdp_validator_version is version(xdp_min_supported_version, '>=')) else [])
-        + (['validator_help_unavailable'] if xdp_validator_help.rc != 0 else [])
-        + (['xdp_flags_unavailable'] if
-            (xdp_validator_help.rc == 0 and
-            not (
-              (xdp_validator_help.stdout is search('--xdp-mode')) or
-              (xdp_validator_help.stdout is search('--xdp(\\s|,|=|$)')) or
-              (xdp_validator_help.stdout is search('--enable-xdp')) or
-              (xdp_validator_help.stdout is search('--xdp-enabled'))
-            )) else [])
-        + (['kernel_too_old'] if not (xdp_kernel_semver is version(xdp_min_kernel_version, '>=')) else [])
-        + (['bpffs_unavailable'] if not (xdp_bpffs_stat.stat.exists | default(false)) else [])
-        + (['missing_tools_' ~ (xdp_missing_tools | join('_'))] if (xdp_missing_tools | length > 0) else [])
-      }}
+    - name: xdp - Compute support and skip reasons
+      ansible.builtin.set_fact:
+        xdp_kernel_semver: "{{ xdp_uname_result.stdout | regex_search('^[0-9]+\\.[0-9]+\\.[0-9]+') | default('0.0.0') }}"
+        xdp_flag_support_mode: "{{ xdp_validator_help.stdout is search('--xdp-mode') }}"
+        xdp_flag_support_short: "{{ xdp_validator_help.stdout is search('--xdp(\\s|,|=|$)') }}"
+        xdp_flag_support_enable: "{{ xdp_validator_help.stdout is search('--enable-xdp') }}"
+        xdp_flag_support_enabled: "{{ xdp_validator_help.stdout is search('--xdp-enabled') }}"
+        xdp_missing_tools: >-
+          {{ xdp_required_tool_checks.results
+            | default([])
+            | rejectattr('rc', 'equalto', 0)
+            | map(attribute='item')
+            | list }}
+        xdp_skip_reasons: >-
+          {{
+            []
+            + (['xdp_disabled'] if not (xdp_enabled | bool) else [])
+            + (['validator_version_unsupported'] if not (xdp_validator_version is version(xdp_min_supported_version, '>=')) else [])
+            + (['validator_help_unavailable'] if xdp_validator_help.rc != 0 else [])
+            + (['xdp_flags_unavailable'] if
+                (xdp_validator_help.rc == 0 and
+                not (
+                  (xdp_validator_help.stdout is search('--xdp-mode')) or
+                  (xdp_validator_help.stdout is search('--xdp(\\s|,|=|$)')) or
+                  (xdp_validator_help.stdout is search('--enable-xdp')) or
+                  (xdp_validator_help.stdout is search('--xdp-enabled'))
+                )) else [])
+            + (['kernel_too_old'] if not (xdp_kernel_semver is version(xdp_min_kernel_version, '>=')) else [])
+            + (['bpffs_unavailable'] if not (xdp_bpffs_stat.stat.exists | default(false)) else [])
+            + (['missing_tools_' ~ (xdp_missing_tools | join('_'))] if (xdp_missing_tools | length > 0) else [])
+          }}
 
-- name: xdp - Build XDP CLI params
-  ansible.builtin.set_fact:
-    xdp_params: >-
-      {{
-        ['--xdp-mode ' ~ xdp_mode] if ((xdp_skip_reasons | length == 0) and xdp_flag_support_mode)
-        else (['--xdp'] if ((xdp_skip_reasons | length == 0) and (not xdp_flag_support_mode) and xdp_flag_support_short)
-        else (['--enable-xdp'] if ((xdp_skip_reasons | length == 0) and (not xdp_flag_support_mode) and (not xdp_flag_support_short) and xdp_flag_support_enable)
-        else (['--xdp-enabled'] if ((xdp_skip_reasons | length == 0) and (not xdp_flag_support_mode) and (not xdp_flag_support_short) and (not xdp_flag_support_enable) and xdp_flag_support_enabled)
-        else [])))
-      }}
-    xdp_effective_enabled: "{{ (xdp_skip_reasons | length == 0) and (xdp_params | length > 0) }}"
-    xdp_skip_reason: "{{ (xdp_skip_reasons | first) if (xdp_skip_reasons | length > 0) else '' }}"
+    - name: xdp - Build XDP CLI params
+      ansible.builtin.set_fact:
+        xdp_params: >-
+          {{
+            ['--xdp-mode ' ~ xdp_mode] if ((xdp_skip_reasons | length == 0) and xdp_flag_support_mode)
+            else (['--xdp'] if ((xdp_skip_reasons | length == 0) and (not xdp_flag_support_mode) and xdp_flag_support_short)
+            else (['--enable-xdp'] if ((xdp_skip_reasons | length == 0) and (not xdp_flag_support_mode) and (not xdp_flag_support_short) and xdp_flag_support_enable)
+            else (['--xdp-enabled'] if ((xdp_skip_reasons | length == 0) and (not xdp_flag_support_mode) and (not xdp_flag_support_short) and (not xdp_flag_support_enable) and xdp_flag_support_enabled)
+            else [])))
+          }}
+        xdp_effective_enabled: "{{ (xdp_skip_reasons | length == 0) and (xdp_params | length > 0) }}"
+        xdp_skip_reason: "{{ (xdp_skip_reasons | first) if (xdp_skip_reasons | length > 0) else '' }}"
 
-- name: xdp - Merge XDP params into extra_params
-  ansible.builtin.set_fact:
-    extra_params: "{{ (extra_params | default([])) + xdp_params }}"
-  when: xdp_effective_enabled | bool
+    - name: xdp - Merge XDP params into extra_params
+      ansible.builtin.set_fact:
+        extra_params: "{{ (extra_params | default([])) + xdp_params }}"
+      when: xdp_effective_enabled | bool
 
-- name: xdp - Warn when XDP is not effectively enabled
-  ansible.builtin.debug:
-    msg: >-
-      XDP was requested but is not active for {{ validator_name }}.
-      reason={{ xdp_skip_reason }},
-      validator_version={{ xdp_validator_version }},
-      kernel={{ xdp_kernel_semver }}.
-  when: not (xdp_effective_enabled | bool)
+    - name: xdp - Warn when XDP is not effectively enabled
+      ansible.builtin.debug:
+        msg: >-
+          XDP was requested but is not active for {{ validator_name }}.
+          reason={{ xdp_skip_reason }},
+          validator_version={{ xdp_validator_version }},
+          kernel={{ xdp_kernel_semver }}.
+      when: not (xdp_effective_enabled | bool)
 
-- name: xdp - Report effective XDP configuration
-  ansible.builtin.debug:
-    msg: >-
-      XDP effective={{ xdp_effective_enabled }},
-      params={{ xdp_params | default([]) }},
-      mode={{ xdp_mode }},
-      validator_version={{ xdp_validator_version }},
-      kernel={{ xdp_kernel_semver }}.
+    - name: xdp - Report effective XDP configuration
+      ansible.builtin.debug:
+        msg: >-
+          XDP effective={{ xdp_effective_enabled }},
+          params={{ xdp_params | default([]) }},
+          mode={{ xdp_mode }},
+          validator_version={{ xdp_validator_version }},
+          kernel={{ xdp_kernel_semver }}.

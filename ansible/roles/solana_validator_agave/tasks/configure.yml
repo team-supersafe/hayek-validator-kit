@@ -16,6 +16,7 @@
 
 - name: configure - Compute XDP runtime flags
   ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/configure_xdp.yml
+  tags: [xdp, xdp_preflight, xdp_config]
 
 - name: configure - Configure validator startup script
   block:
