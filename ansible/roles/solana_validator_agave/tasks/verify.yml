@@ -1,11 +1,11 @@
 - name: verify - Check if Agave binary exists
   ansible.builtin.stat:
-    path: "{{ solana_install_dir }}"
+    path: "{{ system_solana_active_release_dir }}"
   register: agave_binary
 
 - name: verify - Fail if Agave binary is missing
   ansible.builtin.fail:
-    msg: "Agave binary not found at {{ solana_install_dir }}!"
+    msg: "Agave binary not found at {{ system_solana_active_release_dir }}!"
   when: not agave_binary.stat.exists
 
 - name: verify - Get validator systemd service status

@@ -41,11 +41,11 @@
           - solana_user is defined
         fail_msg: "solana_user must be defined"
 
-    - name: install_validator_keyset - Validate solana_install_dir is defined
+    - name: install_validator_keyset - Validate system_solana_active_release_dir is defined
       ansible.builtin.assert:
         that:
-          - solana_install_dir is defined
-        fail_msg: "solana_install_dir must be defined"
+          - system_solana_active_release_dir is defined
+        fail_msg: "system_solana_active_release_dir must be defined"
 
     - name: install_validator_keyset - Validate ansible_home_dir is defined
       ansible.builtin.assert:
@@ -118,7 +118,7 @@
       when: local_hot_spare_key_exists.stat.exists | default(false)
 
     - name: install_validator_keyset - Generate hot-spare-identity.json keypair
-      ansible.builtin.shell: "{{ solana_install_dir }}/solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json -f"
+      ansible.builtin.shell: "{{ system_solana_active_release_dir }}/solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json -f"
       args:
         chdir: "{{ validator_keyset_dir }}"
       register: keygen_result

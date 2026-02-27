@@ -1,12 +1,12 @@
 ---
 - name: verify - Check if Jito-Solana binary exists
   ansible.builtin.stat:
-    path: "{{ solana_install_dir }}"
+    path: "{{ system_solana_active_release_dir }}"
   register: solana_binary
 
 - name: verify - Fail if Jito-Solana binary is missing
   ansible.builtin.fail:
-    msg: "Jito-Solana binary not found at {{ solana_install_dir }}!"
+    msg: "Jito-Solana binary not found at {{ system_solana_active_release_dir }}!"
   when: not solana_binary.stat.exists
 
 - name: verify - Get validator systemd service status
