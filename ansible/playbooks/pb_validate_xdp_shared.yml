@@ -1,0 +1,169 @@
+---
+# Validate shared XDP preflight/param logic without deploying a validator service.
+#
+# Example:
+# ansible-playbook playbooks/pb_validate_xdp_shared.yml \
+#   -i solana_setup_host.yml \
+#   --limit validator-host \
+#   -e "target_host=validator-host" \
+#   -e "ansible_user=sol" \
+#   -e "validator_name=hayek-mainnet" \
+#   -e "xdp_enabled=true" \
+#   -e "expected_xdp_effective_enabled=false" \
+#   -e "expected_xdp_skip_reason=xdp_disabled"
+
+- name: Validate shared XDP task only
+  hosts: "{{ target_host }}"
+  user: "{{ ansible_user }}"
+  become: false
+  gather_facts: false
+
+  pre_tasks:
+    - name: validate_xdp - Assert required playbook variables are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - ansible_user is defined
+        fail_msg: >
+          Missing required playbook variables: target_host, ansible_user
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Set default Solana active release dir when undefined
+      ansible.builtin.set_fact:
+        system_solana_active_release_dir: "/opt/solana/active_release/bin"
+      when: system_solana_active_release_dir is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Set default validator name when undefined
+      ansible.builtin.set_fact:
+        validator_name: "{{ inventory_hostname }}"
+      when: validator_name is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Set default xdp_enabled when undefined
+      ansible.builtin.set_fact:
+        xdp_enabled: true
+      when: xdp_enabled is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Set default xdp_mode when undefined
+      ansible.builtin.set_fact:
+        xdp_mode: "native"
+      when: xdp_mode is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Set default xdp_min_supported_version when undefined
+      ansible.builtin.set_fact:
+        xdp_min_supported_version: "3.0.9"
+      when: xdp_min_supported_version is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Set default xdp_min_kernel_version when undefined
+      ansible.builtin.set_fact:
+        xdp_min_kernel_version: "5.10.0"
+      when: xdp_min_kernel_version is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Set default xdp_experimental_retransmit_xdp_cpu_cores when undefined
+      ansible.builtin.set_fact:
+        xdp_experimental_retransmit_xdp_cpu_cores: 1
+      when: xdp_experimental_retransmit_xdp_cpu_cores is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Set default xdp_experimental_retransmit_xdp_zero_copy when undefined
+      ansible.builtin.set_fact:
+        xdp_experimental_retransmit_xdp_zero_copy: true
+      when: xdp_experimental_retransmit_xdp_zero_copy is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Set default xdp_target_interface when undefined
+      ansible.builtin.set_fact:
+        xdp_target_interface: ""
+      when: xdp_target_interface is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Set default xdp_numa_check_enabled when undefined
+      ansible.builtin.set_fact:
+        xdp_numa_check_enabled: true
+      when: xdp_numa_check_enabled is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+    - name: validate_xdp - Enable debug output by default for XDP validation runs
+      ansible.builtin.set_fact:
+        xdp_debug_enabled: true
+      when: xdp_debug_enabled is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
+  tasks:
+    - name: validate_xdp - Execute shared XDP preflight and param builder
+      ansible.builtin.import_tasks: ../roles/solana_validator_shared/tasks/configure_xdp.yml
+      tags: [xdp, xdp_preflight, xdp_config, xdp_validate]
+
+    - name: validate_xdp - Assert output facts exist
+      ansible.builtin.assert:
+        that:
+          - xdp_effective_enabled is defined
+          - xdp_skip_reason is defined
+          - xdp_params is defined
+          - xdp_validator_version is defined
+          - xdp_kernel_semver is defined
+          - xdp_skip_reasons is defined
+          - xdp_numa_check_status is defined
+          - xdp_numa_check_reason is defined
+          - xdp_primary_iface is defined
+          - xdp_interface_selection_source is defined
+          - xdp_capability_source is defined
+          - xdp_capability_confidence is defined
+        fail_msg: "Shared XDP task did not produce the expected output facts."
+      tags: [xdp, xdp_validate]
+
+    - name: validate_xdp - Assert explicit disabled behavior
+      ansible.builtin.assert:
+        that:
+          - not xdp_effective_enabled | bool
+          - xdp_skip_reason == 'xdp_disabled'
+        fail_msg: "xdp_enabled=false must force xdp_disabled with xdp_effective_enabled=false."
+      when: not (xdp_enabled | bool)
+      tags: [xdp, xdp_validate]
+
+    - name: validate_xdp - Assert expected effective status if provided
+      ansible.builtin.assert:
+        that:
+          - xdp_effective_enabled | bool == expected_xdp_effective_enabled | bool
+        fail_msg: >-
+          Expected xdp_effective_enabled={{ expected_xdp_effective_enabled }},
+          got {{ xdp_effective_enabled }}.
+      when: expected_xdp_effective_enabled is defined
+      tags: [xdp, xdp_validate]
+
+    - name: validate_xdp - Assert expected skip reason if provided
+      ansible.builtin.assert:
+        that:
+          - xdp_skip_reason == expected_xdp_skip_reason
+        fail_msg: >-
+          Expected xdp_skip_reason={{ expected_xdp_skip_reason }},
+          got {{ xdp_skip_reason }}.
+      when: expected_xdp_skip_reason is defined
+      tags: [xdp, xdp_validate]
+
+    - name: validate_xdp - Print summary
+      ansible.builtin.debug:
+        msg: |
+          XDP Validation Summary
+          - Validator: {{ validator_name }}
+          - Requested: {{ xdp_enabled | bool }}
+          - Effective: {{ xdp_effective_enabled | bool }}
+          - Primary reason: {{ xdp_skip_reason if (xdp_skip_reason | default('') | length > 0) else 'none' }}
+          - All reasons: {{ (xdp_skip_reasons | default([])) | join(', ') if (xdp_skip_reasons | default([]) | length > 0) else 'none' }}
+          - Computed params: {{ (xdp_params | default([])) | join(' ') if (xdp_params | default([]) | length > 0) else 'none' }}
+          - Validator version: {{ xdp_validator_version }}
+          - Kernel semver: {{ xdp_kernel_semver }}
+          - NUMA check: {{ xdp_numa_check_status }} ({{ xdp_numa_check_reason }})
+          - PoH core/node: {{ xdp_numa_poh_core | default('n/a') }}/{{ xdp_numa_poh_node | default('n/a') }}
+          - XDP cores/nodes: {{ xdp_numa_xdp_cores | default('n/a') }}/{{ xdp_numa_xdp_nodes | default('n/a') }}
+          - Interface: {{ xdp_primary_iface | default('n/a') }}
+          - Interface source: {{ xdp_interface_selection_source | default('n/a') }}
+          - Interface driver link present: {{ xdp_iface_driver_link_present | default(false) }}
+          - Capability source: {{ xdp_capability_source | default('n/a') }}
+          - Capability confidence: {{ xdp_capability_confidence | default('n/a') }}
+      tags: [xdp, xdp_validate]

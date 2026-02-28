@@ -3,10 +3,16 @@
 # Configuration
 # Use SOLANA_USER from argument, environment, or default to 'sol'
 SOLANA_USER="${1:-${SOLANA_USER:-sol}}"
+TARGET_CORE="${2:-${POH_TARGET_CORE:-2}}"
 MAX_WAIT=3600  # 1 hour
 SLEEP_INTERVAL=10
 POH_THREAD_NAME="solPohTickProd"
-TARGET_CORE=2
+
+if ! [[ "$TARGET_CORE" =~ ^[0-9]+$ ]]; then
+    echo "Error: TARGET_CORE must be numeric. Received: '$TARGET_CORE'"
+    logger "set_affinity: invalid_target_core"
+    exit 4
+fi
 
 echo "--- PoH CPU Affinity Management ---"
 

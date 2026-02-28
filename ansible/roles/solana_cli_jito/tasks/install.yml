@@ -14,6 +14,7 @@
       - build-essential
       - clang
       - cmake
+      - ethtool
       - libclang-dev
       - libprotobuf-dev
       - libssl-dev

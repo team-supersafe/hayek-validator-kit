@@ -35,6 +35,7 @@
 - name: Install essential packages
   ansible.builtin.apt:
     name:
+      - ethtool
       - htop
       - fail2ban
       - hwloc

@@ -65,6 +65,27 @@
   ansible.builtin.debug:
     msg: "{{ validator_startup_script.content | b64decode }}"
 
+- name: verify - Check XDP flags in validator startup script
+  ansible.builtin.set_fact:
+    validator_startup_has_xdp: >-
+      {{
+        (validator_startup_script.content | b64decode) is search('--xdp-mode|--xdp\\s|--enable-xdp|--xdp-enabled|--experimental-retransmit-xdp-cpu-cores|--experimental-retransmit-xdp-zero-copy')
+      }}
+
+- name: verify - Print XDP startup status
+  ansible.builtin.debug:
+    msg: >-
+      XDP startup flags present={{ validator_startup_has_xdp }},
+      xdp_effective_enabled={{ xdp_effective_enabled | default(false) }},
+      xdp_skip_reason={{ xdp_skip_reason | default('') }},
+      xdp_capability_source={{ xdp_capability_source | default('') }},
+      xdp_capability_confidence={{ xdp_capability_confidence | default('') }},
+      xdp_primary_iface={{ xdp_primary_iface | default('') }},
+      xdp_interface_selection_source={{ xdp_interface_selection_source | default('') }},
+      xdp_iface_driver_link_present={{ xdp_iface_driver_link_present | default(false) }},
+      xdp_numa_check_status={{ xdp_numa_check_status | default('unknown') }},
+      xdp_numa_check_reason={{ xdp_numa_check_reason | default('unknown') }}.
+
 - name: verify - Summary - Agave validator verification complete
   ansible.builtin.debug:
     msg: |
