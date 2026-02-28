@@ -13,6 +13,8 @@ UMask=0002
 Environment=RUST_LOG=info
 LimitNOFILE=1000000
 LimitMEMLOCK=2000000000
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_BPF CAP_PERFMON
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_BPF CAP_PERFMON
 LogRateLimitIntervalSec=0
 ExecStart={{ validator_script_path }}
 

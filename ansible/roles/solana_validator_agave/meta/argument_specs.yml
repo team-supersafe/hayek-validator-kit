@@ -51,3 +51,8 @@ argument_specs:
         required: false
         default: "native"
         description: "Requested XDP mode when supported by agave-validator flags"
+      xdp_numa_check_enabled:
+        type: bool
+        required: false
+        default: true
+        description: "Run shared NUMA placement assessment between XDP retransmit cores and PoH pinned core"

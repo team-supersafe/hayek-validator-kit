@@ -10,13 +10,13 @@
 
     - name: xdp - Extract installed version number
       ansible.builtin.set_fact:
-        xdp_validator_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
+        xdp_validator_version: "{{ (installed_version.stdout | default('') | regex_findall('solana-cli ([0-9.]+)') | first) | default('') }}"
       when: installed_version.stdout is defined
 
     - name: xdp - Set fallback version when detection is unavailable
       ansible.builtin.set_fact:
         xdp_validator_version: "0.0.0"
-      when: xdp_validator_version is not defined
+      when: xdp_validator_version is not defined or (xdp_validator_version | length == 0)
 
     - name: xdp - Debug version detection
       ansible.builtin.debug:
@@ -39,6 +39,48 @@
         path: /sys/fs/bpf
       register: xdp_bpffs_stat
 
+    - name: xdp - Read capability bounding set
+      ansible.builtin.shell: "awk '/^CapBnd:/ {print $2}' /proc/self/status"
+      register: xdp_capbnd_cmd
+      changed_when: false
+      failed_when: false
+
+    - name: xdp - Probe required capabilities from capability bounding set
+      ansible.builtin.shell: |
+        cap_bnd_hex="$(awk '/^CapBnd:/ {print $2}' /proc/self/status)"
+        if [[ -z "${cap_bnd_hex}" ]]; then
+          echo "cap_net_admin=false"
+          echo "cap_net_raw=false"
+          echo "cap_bpf=false"
+          echo "cap_perfmon=false"
+          exit 0
+        fi
+
+        if (( (16#${cap_bnd_hex} & (1<<12)) != 0 )); then echo "cap_net_admin=true"; else echo "cap_net_admin=false"; fi
+        if (( (16#${cap_bnd_hex} & (1<<13)) != 0 )); then echo "cap_net_raw=true"; else echo "cap_net_raw=false"; fi
+        if (( (16#${cap_bnd_hex} & (1<<39)) != 0 )); then echo "cap_bpf=true"; else echo "cap_bpf=false"; fi
+        if (( (16#${cap_bnd_hex} & (1<<38)) != 0 )); then echo "cap_perfmon=true"; else echo "cap_perfmon=false"; fi
+      register: xdp_required_caps_probe
+      changed_when: false
+      failed_when: false
+      args:
+        executable: /bin/bash
+
+    - name: xdp - Compute capability availability
+      ansible.builtin.set_fact:
+        xdp_cap_net_admin_available: "{{ ((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_net_admin=(.+)$') | first | default('false')) | lower) == 'true' }}"
+        xdp_cap_net_raw_available: "{{ ((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_net_raw=(.+)$') | first | default('false')) | lower) == 'true' }}"
+        xdp_cap_bpf_available: "{{ ((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_bpf=(.+)$') | first | default('false')) | lower) == 'true' }}"
+        xdp_cap_perfmon_available: "{{ ((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_perfmon=(.+)$') | first | default('false')) | lower) == 'true' }}"
+        xdp_missing_caps: >-
+          {{
+            []
+            + (['net_admin'] if not (((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_net_admin=(.+)$') | first | default('false')) | lower) == 'true') else [])
+            + (['net_raw'] if not (((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_net_raw=(.+)$') | first | default('false')) | lower) == 'true') else [])
+            + (['bpf'] if not (((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_bpf=(.+)$') | first | default('false')) | lower) == 'true') else [])
+            + (['perfmon'] if not (((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_perfmon=(.+)$') | first | default('false')) | lower) == 'true') else [])
+          }}
+
     - name: xdp - Check required network tools
       ansible.builtin.shell: "command -v {{ item }}"
       loop:
@@ -47,6 +89,35 @@
       register: xdp_required_tool_checks
       changed_when: false
       failed_when: false
+
+    - name: xdp - Detect primary network interface
+      ansible.builtin.shell: |
+        iface="$(ip -o route get 1.1.1.1 2>/dev/null | awk '{for (i=1; i<=NF; i++) if ($i=="dev") {print $(i+1); exit}}')"
+        if [[ -z "${iface}" ]]; then
+          iface="$(ip route show default 2>/dev/null | awk '{for (i=1; i<=NF; i++) if ($i=="dev") {print $(i+1); exit}}')"
+        fi
+        echo "${iface}"
+      register: xdp_primary_iface_cmd
+      changed_when: false
+      failed_when: false
+      args:
+        executable: /bin/bash
+
+    - name: xdp - Set detected interface fact
+      ansible.builtin.set_fact:
+        xdp_primary_iface: "{{ xdp_primary_iface_cmd.stdout | default('') | trim }}"
+
+    - name: xdp - Check detected network interface path
+      ansible.builtin.stat:
+        path: "/sys/class/net/{{ xdp_primary_iface }}"
+      register: xdp_iface_stat
+      when: xdp_primary_iface | length > 0
+
+    - name: xdp - Check detected network interface driver link
+      ansible.builtin.stat:
+        path: "/sys/class/net/{{ xdp_primary_iface }}/device/driver"
+      register: xdp_iface_driver_stat
+      when: xdp_primary_iface | length > 0
 
     - name: xdp - Probe XDP flags through agave-validator parser
       ansible.builtin.shell: "{{ system_solana_active_release_dir }}/agave-validator --version {{ item.arg }}"
@@ -159,6 +230,264 @@
             | rejectattr('rc', 'equalto', 0)
             | map(attribute='item')
             | list }}
+        xdp_iface_present: "{{ xdp_iface_stat.stat.exists | default(false) }}"
+        xdp_iface_driver_link_present: "{{ xdp_iface_driver_stat.stat.exists | default(false) }}"
+
+    - name: xdp - Initialize NUMA placement assessment facts
+      ansible.builtin.set_fact:
+        xdp_numa_check_status: "skip"
+        xdp_numa_check_reason: "numa_check_disabled"
+        xdp_numa_poh_core: "{{ (poh_pinned_cpu_core | string) if (poh_pinned_cpu_core is defined) else '' }}"
+        xdp_numa_poh_node: ""
+        xdp_numa_xdp_cores: "{{ (xdp_experimental_retransmit_xdp_cpu_cores | default(1)) | string }}"
+        xdp_numa_xdp_nodes: ""
+        xdp_numa_same_cpu: false
+        xdp_numa_same_smt: false
+        xdp_numa_same_node: false
+
+    - name: xdp - Evaluate NUMA separation between PoH and XDP cores
+      ansible.builtin.shell: |
+        set -u
+
+        expand_cpu_list() {
+          local raw="$1"
+          local out="" part start end i
+          IFS=',' read -r -a parts <<< "${raw}"
+          for part in "${parts[@]}"; do
+            if [[ "${part}" =~ ^[0-9]+$ ]]; then
+              out="${out} ${part}"
+            elif [[ "${part}" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+              start="${BASH_REMATCH[1]}"
+              end="${BASH_REMATCH[2]}"
+              if (( start > end )); then
+                return 1
+              fi
+              for ((i=start; i<=end; i++)); do
+                out="${out} ${i}"
+              done
+            else
+              return 1
+            fi
+          done
+          echo "${out}" | xargs
+        }
+
+        get_cpu_node() {
+          local cpu="$1"
+          awk -F, -v c="${cpu}" 'BEGIN { found=0 } /^[^#]/ && $1 == c { print $2; found=1; exit } END { if (!found) print "NA" }' <<< "${LSCPU_MAP}"
+        }
+
+        normalize_csv() {
+          local value="$1"
+          if [[ -z "${value}" ]]; then
+            echo ""
+            return
+          fi
+          echo "${value}" | tr ' ' '\n' | sed '/^$/d' | awk '!seen[$0]++' | paste -sd, -
+        }
+
+        XDP_CORES_RAW="{{ (xdp_experimental_retransmit_xdp_cpu_cores | default(1)) | string }}"
+        POH_CORE_RAW="{{ (poh_pinned_cpu_core | string) if (poh_pinned_cpu_core is defined and (poh_pinned_cpu_core_enabled | default(false) | bool)) else '' }}"
+
+        if [[ -z "${POH_CORE_RAW}" ]]; then
+          echo "status=skip"
+          echo "reason=poh_core_unset_or_disabled"
+          echo "poh_core="
+          echo "poh_node="
+          echo "xdp_cores=${XDP_CORES_RAW}"
+          echo "xdp_nodes="
+          echo "same_cpu=false"
+          echo "same_smt=false"
+          echo "same_node=false"
+          exit 0
+        fi
+
+        if ! [[ "${POH_CORE_RAW}" =~ ^[0-9]+$ ]]; then
+          echo "status=skip"
+          echo "reason=poh_core_invalid"
+          echo "poh_core=${POH_CORE_RAW}"
+          echo "poh_node="
+          echo "xdp_cores=${XDP_CORES_RAW}"
+          echo "xdp_nodes="
+          echo "same_cpu=false"
+          echo "same_smt=false"
+          echo "same_node=false"
+          exit 0
+        fi
+
+        if ! command -v lscpu >/dev/null 2>&1; then
+          echo "status=skip"
+          echo "reason=lscpu_missing"
+          echo "poh_core=${POH_CORE_RAW}"
+          echo "poh_node="
+          echo "xdp_cores=${XDP_CORES_RAW}"
+          echo "xdp_nodes="
+          echo "same_cpu=false"
+          echo "same_smt=false"
+          echo "same_node=false"
+          exit 0
+        fi
+
+        LSCPU_MAP="$(lscpu -p=CPU,NODE 2>/dev/null || true)"
+        if [[ -z "${LSCPU_MAP}" ]]; then
+          echo "status=skip"
+          echo "reason=lscpu_topology_unavailable"
+          echo "poh_core=${POH_CORE_RAW}"
+          echo "poh_node="
+          echo "xdp_cores=${XDP_CORES_RAW}"
+          echo "xdp_nodes="
+          echo "same_cpu=false"
+          echo "same_smt=false"
+          echo "same_node=false"
+          exit 0
+        fi
+
+        UNIQUE_NODE_COUNT="$(awk -F, '/^[^#]/ && $2 != "" && $2 != "-" {print $2}' <<< "${LSCPU_MAP}" | sort -u | wc -l | tr -d ' ')"
+        if [[ -z "${UNIQUE_NODE_COUNT}" ]]; then
+          UNIQUE_NODE_COUNT=0
+        fi
+        SINGLE_NUMA=false
+        if (( UNIQUE_NODE_COUNT <= 1 )); then
+          SINGLE_NUMA=true
+        fi
+
+        XDP_CORES_SPACE="$(expand_cpu_list "${XDP_CORES_RAW}" || true)"
+        if [[ -z "${XDP_CORES_SPACE}" ]]; then
+          echo "status=skip"
+          echo "reason=xdp_cpu_list_invalid"
+          echo "poh_core=${POH_CORE_RAW}"
+          echo "poh_node="
+          echo "xdp_cores=${XDP_CORES_RAW}"
+          echo "xdp_nodes="
+          echo "same_cpu=false"
+          echo "same_smt=false"
+          echo "same_node=false"
+          exit 0
+        fi
+
+        POH_NODE="$(get_cpu_node "${POH_CORE_RAW}")"
+        if [[ -z "${POH_NODE}" || "${POH_NODE}" == "NA" || "${POH_NODE}" == "-" ]]; then
+          echo "status=skip"
+          echo "reason=poh_node_unknown"
+          echo "poh_core=${POH_CORE_RAW}"
+          echo "poh_node=${POH_NODE}"
+          echo "xdp_cores=$(normalize_csv "${XDP_CORES_SPACE}")"
+          echo "xdp_nodes="
+          echo "same_cpu=false"
+          echo "same_smt=false"
+          echo "same_node=false"
+          exit 0
+        fi
+
+        XDP_NODES_SPACE=""
+        for cpu in ${XDP_CORES_SPACE}; do
+          node="$(get_cpu_node "${cpu}")"
+          if [[ -z "${node}" || "${node}" == "NA" || "${node}" == "-" ]]; then
+            echo "status=skip"
+            echo "reason=xdp_node_unknown"
+            echo "poh_core=${POH_CORE_RAW}"
+            echo "poh_node=${POH_NODE}"
+            echo "xdp_cores=$(normalize_csv "${XDP_CORES_SPACE}")"
+            echo "xdp_nodes="
+            echo "same_cpu=false"
+            echo "same_smt=false"
+            echo "same_node=false"
+            exit 0
+          fi
+          XDP_NODES_SPACE="${XDP_NODES_SPACE} ${node}"
+        done
+
+        XDP_CORES_CSV="$(normalize_csv "${XDP_CORES_SPACE}")"
+        XDP_NODES_CSV="$(normalize_csv "${XDP_NODES_SPACE}")"
+
+        SAME_CPU=false
+        SAME_NODE=false
+        SAME_SMT=false
+        WARN_REASONS=""
+
+        for cpu in ${XDP_CORES_SPACE}; do
+          if [[ "${cpu}" == "${POH_CORE_RAW}" ]]; then
+            SAME_CPU=true
+          fi
+        done
+
+        for node in ${XDP_NODES_SPACE}; do
+          if [[ "${node}" == "${POH_NODE}" ]]; then
+            SAME_NODE=true
+          fi
+        done
+
+        POH_SIBLINGS_RAW="$(cat "/sys/devices/system/cpu/cpu${POH_CORE_RAW}/topology/thread_siblings_list" 2>/dev/null || true)"
+        if [[ -n "${POH_SIBLINGS_RAW}" ]]; then
+          POH_SIBLINGS_SPACE="$(expand_cpu_list "${POH_SIBLINGS_RAW}" || true)"
+          if [[ -n "${POH_SIBLINGS_SPACE}" ]]; then
+            for cpu in ${XDP_CORES_SPACE}; do
+              for sibling in ${POH_SIBLINGS_SPACE}; do
+                if [[ "${cpu}" == "${sibling}" && "${cpu}" != "${POH_CORE_RAW}" ]]; then
+                  SAME_SMT=true
+                fi
+              done
+            done
+          fi
+        fi
+
+        if [[ "${SAME_CPU}" == "true" ]]; then
+          WARN_REASONS="same_cpu"
+        fi
+        if [[ "${SAME_SMT}" == "true" ]]; then
+          WARN_REASONS="${WARN_REASONS:+${WARN_REASONS},}shared_physical_core"
+        fi
+        if [[ "${SAME_NODE}" == "true" && "${SINGLE_NUMA}" != "true" ]]; then
+          WARN_REASONS="${WARN_REASONS:+${WARN_REASONS},}same_numa_node"
+        fi
+
+        if [[ -n "${WARN_REASONS}" ]]; then
+          echo "status=warn"
+          echo "reason=${WARN_REASONS}"
+        elif [[ "${SINGLE_NUMA}" == "true" ]]; then
+          echo "status=skip"
+          echo "reason=single_numa_host"
+        else
+          echo "status=ok"
+          echo "reason=none"
+        fi
+        echo "poh_core=${POH_CORE_RAW}"
+        echo "poh_node=${POH_NODE}"
+        echo "xdp_cores=${XDP_CORES_CSV}"
+        echo "xdp_nodes=${XDP_NODES_CSV}"
+        echo "same_cpu=${SAME_CPU}"
+        echo "same_smt=${SAME_SMT}"
+        echo "same_node=${SAME_NODE}"
+      register: xdp_numa_probe
+      changed_when: false
+      failed_when: false
+      args:
+        executable: /bin/bash
+      when: xdp_numa_check_enabled | default(true) | bool
+
+    - name: xdp - Parse NUMA placement assessment
+      ansible.builtin.set_fact:
+        xdp_numa_check_status: "{{ (xdp_numa_probe.stdout | default('') | regex_findall('(?m)^status=(.+)$') | first | default('skip')) }}"
+        xdp_numa_check_reason: "{{ (xdp_numa_probe.stdout | default('') | regex_findall('(?m)^reason=(.+)$') | first | default('numa_probe_unavailable')) }}"
+        xdp_numa_poh_core: "{{ (xdp_numa_probe.stdout | default('') | regex_findall('(?m)^poh_core=(.*)$') | first | default('')) }}"
+        xdp_numa_poh_node: "{{ (xdp_numa_probe.stdout | default('') | regex_findall('(?m)^poh_node=(.*)$') | first | default('')) }}"
+        xdp_numa_xdp_cores: "{{ (xdp_numa_probe.stdout | default('') | regex_findall('(?m)^xdp_cores=(.*)$') | first | default((xdp_experimental_retransmit_xdp_cpu_cores | default(1)) | string)) }}"
+        xdp_numa_xdp_nodes: "{{ (xdp_numa_probe.stdout | default('') | regex_findall('(?m)^xdp_nodes=(.*)$') | first | default('')) }}"
+        xdp_numa_same_cpu: "{{ ((xdp_numa_probe.stdout | default('') | regex_findall('(?m)^same_cpu=(.+)$') | first | default('false')) | lower) == 'true' }}"
+        xdp_numa_same_smt: "{{ ((xdp_numa_probe.stdout | default('') | regex_findall('(?m)^same_smt=(.+)$') | first | default('false')) | lower) == 'true' }}"
+        xdp_numa_same_node: "{{ ((xdp_numa_probe.stdout | default('') | regex_findall('(?m)^same_node=(.+)$') | first | default('false')) | lower) == 'true' }}"
+      when: xdp_numa_check_enabled | default(true) | bool
+
+    - name: xdp - Debug NUMA placement assessment
+      ansible.builtin.debug:
+        msg:
+          - "xdp_numa_check_status={{ xdp_numa_check_status }}"
+          - "xdp_numa_check_reason={{ xdp_numa_check_reason }}"
+          - "xdp_numa_poh_core={{ xdp_numa_poh_core }}"
+          - "xdp_numa_poh_node={{ xdp_numa_poh_node }}"
+          - "xdp_numa_xdp_cores={{ xdp_numa_xdp_cores }}"
+          - "xdp_numa_xdp_nodes={{ xdp_numa_xdp_nodes }}"
+      when: xdp_debug_enabled | default(false) | bool
 
     - name: xdp - Compute aggregate flag support
       ansible.builtin.set_fact:
@@ -179,6 +508,10 @@
             []
             + (['xdp_disabled'] if not (xdp_enabled | bool) else [])
             + (['validator_version_unsupported'] if not (xdp_validator_version is version(xdp_min_supported_version, '>=')) else [])
+            + (['missing_caps_' ~ (xdp_missing_caps | join('_'))] if (xdp_missing_caps | length > 0) else [])
+            + (['xdp_interface_unresolved'] if (xdp_primary_iface | default('') | length == 0) else [])
+            + (['xdp_interface_missing_' ~ xdp_primary_iface] if ((xdp_primary_iface | default('') | length > 0) and not (xdp_iface_present | bool)) else [])
+            + (['xdp_interface_driver_unavailable_' ~ xdp_primary_iface] if ((xdp_primary_iface | default('') | length > 0) and (xdp_iface_present | bool) and not (xdp_iface_driver_link_present | bool)) else [])
             + (['xdp_flags_unavailable'] if not (xdp_any_flag_supported | bool) else [])
             + (['kernel_too_old'] if not (xdp_kernel_semver is version(xdp_min_kernel_version, '>=')) else [])
             + (['bpffs_unavailable'] if not (xdp_bpffs_stat.stat.exists | default(false)) else [])
@@ -220,7 +553,35 @@
           reason={{ xdp_skip_reason }},
           validator_version={{ xdp_validator_version }},
           kernel={{ xdp_kernel_semver }}.
-      when: not (xdp_effective_enabled | bool)
+      when:
+        - xdp_enabled | bool
+        - not (xdp_effective_enabled | bool)
+
+    - name: xdp - Warn when XDP and PoH core placement is likely contended
+      ansible.builtin.debug:
+        msg: >-
+          XDP/PoH placement warning for {{ validator_name }}:
+          status={{ xdp_numa_check_status }},
+          reason={{ xdp_numa_check_reason }},
+          poh_core={{ xdp_numa_poh_core }},
+          poh_node={{ xdp_numa_poh_node }},
+          xdp_cores={{ xdp_numa_xdp_cores }},
+          xdp_nodes={{ xdp_numa_xdp_nodes }}.
+      when:
+        - xdp_effective_enabled | bool
+        - xdp_numa_check_status == 'warn'
+
+    - name: xdp - Warn when NUMA placement could not be verified
+      ansible.builtin.debug:
+        msg: >-
+          XDP is active but NUMA placement confidence is low for {{ validator_name }}:
+          status={{ xdp_numa_check_status }},
+          reason={{ xdp_numa_check_reason }},
+          poh_core={{ xdp_numa_poh_core }},
+          xdp_cores={{ xdp_numa_xdp_cores }}.
+      when:
+        - xdp_effective_enabled | bool
+        - xdp_numa_check_status == 'skip'
 
     - name: xdp - Report effective XDP configuration
       ansible.builtin.debug:
@@ -229,4 +590,10 @@
           params={{ xdp_params | default([]) }},
           mode={{ xdp_mode }},
           validator_version={{ xdp_validator_version }},
-          kernel={{ xdp_kernel_semver }}.
+          kernel={{ xdp_kernel_semver }},
+          numa_status={{ xdp_numa_check_status }},
+          numa_reason={{ xdp_numa_check_reason }},
+          poh_core={{ xdp_numa_poh_core }},
+          xdp_cores={{ xdp_numa_xdp_cores }},
+          iface={{ xdp_primary_iface | default('') }},
+          iface_driver_link={{ xdp_iface_driver_link_present | default(false) }}.

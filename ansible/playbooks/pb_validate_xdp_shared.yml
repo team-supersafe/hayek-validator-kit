@@ -76,6 +76,12 @@
       when: xdp_experimental_retransmit_xdp_zero_copy is not defined
       tags: [xdp, xdp_preflight, xdp_validate]
 
+    - name: validate_xdp - Set default xdp_numa_check_enabled when undefined
+      ansible.builtin.set_fact:
+        xdp_numa_check_enabled: true
+      when: xdp_numa_check_enabled is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
     - name: validate_xdp - Enable debug output by default for XDP validation runs
       ansible.builtin.set_fact:
         xdp_debug_enabled: true
@@ -96,6 +102,9 @@
           - xdp_validator_version is defined
           - xdp_kernel_semver is defined
           - xdp_skip_reasons is defined
+          - xdp_numa_check_status is defined
+          - xdp_numa_check_reason is defined
+          - xdp_primary_iface is defined
         fail_msg: "Shared XDP task did not produce the expected output facts."
       tags: [xdp, xdp_validate]
 
@@ -135,9 +144,14 @@
           - Validator: {{ validator_name }}
           - Requested: {{ xdp_enabled | bool }}
           - Effective: {{ xdp_effective_enabled | bool }}
-          - Primary reason: {{ xdp_skip_reason | default('none') }}
+          - Primary reason: {{ xdp_skip_reason if (xdp_skip_reason | default('') | length > 0) else 'none' }}
           - All reasons: {{ (xdp_skip_reasons | default([])) | join(', ') if (xdp_skip_reasons | default([]) | length > 0) else 'none' }}
           - Computed params: {{ (xdp_params | default([])) | join(' ') if (xdp_params | default([]) | length > 0) else 'none' }}
           - Validator version: {{ xdp_validator_version }}
           - Kernel semver: {{ xdp_kernel_semver }}
+          - NUMA check: {{ xdp_numa_check_status }} ({{ xdp_numa_check_reason }})
+          - PoH core/node: {{ xdp_numa_poh_core | default('n/a') }}/{{ xdp_numa_poh_node | default('n/a') }}
+          - XDP cores/nodes: {{ xdp_numa_xdp_cores | default('n/a') }}/{{ xdp_numa_xdp_nodes | default('n/a') }}
+          - Interface: {{ xdp_primary_iface | default('n/a') }}
+          - Interface driver link present: {{ xdp_iface_driver_link_present | default(false) }}
       tags: [xdp, xdp_validate]
