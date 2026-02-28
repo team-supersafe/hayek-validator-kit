@@ -49,14 +49,16 @@
         path: "{{ xdp_service_unit_path }}"
       register: xdp_service_unit_stat
 
-    - name: xdp - Probe required capabilities from validator systemd unit
+    - name: xdp - Probe required capabilities from effective validator systemd unit
       ansible.builtin.shell: |
-        unit_path="{{ xdp_service_unit_path }}"
-        cap_bnd="$(awk -F= '/^CapabilityBoundingSet=/{print $2; exit}' "${unit_path}")"
-        cap_amb="$(awk -F= '/^AmbientCapabilities=/{print $2; exit}' "${unit_path}")"
+        unit_name="{{ xdp_service_unit_name }}"
+        cap_bnd_raw="$(systemctl show "${unit_name}" -p CapabilityBoundingSet --value 2>/dev/null | head -n1)"
+        cap_amb_raw="$(systemctl show "${unit_name}" -p AmbientCapabilities --value 2>/dev/null | head -n1)"
+        cap_bnd="$(echo "${cap_bnd_raw}" | tr '[:lower:]' '[:upper:]')"
+        cap_amb="$(echo "${cap_amb_raw}" | tr '[:lower:]' '[:upper:]')"
 
         unit_source_ready=false
-        if [[ -n "${cap_bnd}" && -n "${cap_amb}" ]]; then
+        if [[ -n "${cap_bnd}" && -n "${cap_amb}" && "${cap_bnd}" == *CAP_* && "${cap_amb}" == *CAP_* ]]; then
           unit_source_ready=true
         fi
 
@@ -82,7 +84,48 @@
         echo "cap_net_raw=$(has_cap_pair CAP_NET_RAW)"
         echo "cap_bpf=$(has_cap_pair CAP_BPF)"
         echo "cap_perfmon=$(has_cap_pair CAP_PERFMON)"
-      register: xdp_unit_required_caps_probe
+      register: xdp_unit_effective_caps_probe
+      changed_when: false
+      failed_when: false
+      args:
+        executable: /bin/bash
+
+    - name: xdp - Probe required capabilities from validator systemd unit file
+      ansible.builtin.shell: |
+        unit_path="{{ xdp_service_unit_path }}"
+        cap_bnd_raw="$(awk -F= '/^CapabilityBoundingSet=/{print $2; exit}' "${unit_path}")"
+        cap_amb_raw="$(awk -F= '/^AmbientCapabilities=/{print $2; exit}' "${unit_path}")"
+        cap_bnd="$(echo "${cap_bnd_raw}" | tr '[:lower:]' '[:upper:]')"
+        cap_amb="$(echo "${cap_amb_raw}" | tr '[:lower:]' '[:upper:]')"
+
+        unit_source_ready=false
+        if [[ -n "${cap_bnd}" && -n "${cap_amb}" && "${cap_bnd}" == *CAP_* && "${cap_amb}" == *CAP_* ]]; then
+          unit_source_ready=true
+        fi
+
+        has_cap() {
+          local cap="$1"
+          local list="$2"
+          [[ " ${list} " == *" ${cap} "* ]]
+        }
+
+        has_cap_pair() {
+          local cap="$1"
+          if has_cap "${cap}" "${cap_bnd}" && has_cap "${cap}" "${cap_amb}"; then
+            echo true
+          else
+            echo false
+          fi
+        }
+
+        echo "unit_source_ready=${unit_source_ready}"
+        echo "unit_capability_bounding_set=${cap_bnd}"
+        echo "unit_ambient_capabilities=${cap_amb}"
+        echo "cap_net_admin=$(has_cap_pair CAP_NET_ADMIN)"
+        echo "cap_net_raw=$(has_cap_pair CAP_NET_RAW)"
+        echo "cap_bpf=$(has_cap_pair CAP_BPF)"
+        echo "cap_perfmon=$(has_cap_pair CAP_PERFMON)"
+      register: xdp_unit_file_required_caps_probe
       changed_when: false
       failed_when: false
       args:
@@ -116,9 +159,13 @@
           {{
             'systemd_unit'
             if (
-              (xdp_service_unit_stat.stat.exists | default(false))
-              and
-              ((((xdp_unit_required_caps_probe | default({})).stdout | default('') | regex_findall('(?m)^unit_source_ready=(.+)$') | first | default('false')) | lower) == 'true')
+              ((((xdp_unit_effective_caps_probe | default({})).stdout | default('') | regex_findall('(?m)^unit_source_ready=(.+)$') | first | default('false')) | lower) == 'true')
+              or
+              (
+                (xdp_service_unit_stat.stat.exists | default(false))
+                and
+                ((((xdp_unit_file_required_caps_probe | default({})).stdout | default('') | regex_findall('(?m)^unit_source_ready=(.+)$') | first | default('false')) | lower) == 'true')
+              )
             )
             else 'proc_self_fallback'
           }}
@@ -126,20 +173,49 @@
           {{
             'high'
             if (
-              (xdp_service_unit_stat.stat.exists | default(false))
-              and
-              ((((xdp_unit_required_caps_probe | default({})).stdout | default('') | regex_findall('(?m)^unit_source_ready=(.+)$') | first | default('false')) | lower) == 'true')
+              ((((xdp_unit_effective_caps_probe | default({})).stdout | default('') | regex_findall('(?m)^unit_source_ready=(.+)$') | first | default('false')) | lower) == 'true')
+              or
+              (
+                (xdp_service_unit_stat.stat.exists | default(false))
+                and
+                ((((xdp_unit_file_required_caps_probe | default({})).stdout | default('') | regex_findall('(?m)^unit_source_ready=(.+)$') | first | default('false')) | lower) == 'true')
+              )
             )
             else 'low'
           }}
+
+    - name: xdp - Set capability probe strategy fact
+      ansible.builtin.set_fact:
+        xdp_capability_probe_strategy: >-
+          {{
+            'systemd_show'
+            if ((((xdp_unit_effective_caps_probe | default({})).stdout | default('') | regex_findall('(?m)^unit_source_ready=(.+)$') | first | default('false')) | lower) == 'true')
+            else (
+              'unit_file_parse'
+              if xdp_capability_source == 'systemd_unit'
+              else 'proc_self_capbnd'
+            )
+          }}
+
+    - name: xdp - Debug capability probe source
+      ansible.builtin.debug:
+        msg:
+          - "xdp_capability_source={{ xdp_capability_source }}"
+          - "xdp_capability_confidence={{ xdp_capability_confidence }}"
+          - "xdp_capability_probe_strategy={{ xdp_capability_probe_strategy }}"
+      when: xdp_debug_enabled | default(false) | bool
 
     - name: xdp - Select capability probe output
       ansible.builtin.set_fact:
         xdp_caps_probe_stdout: >-
           {{
-            ((xdp_unit_required_caps_probe | default({})).stdout | default(''))
-            if xdp_capability_source == 'systemd_unit'
-            else ((xdp_proc_required_caps_probe | default({})).stdout | default(''))
+            ((xdp_unit_effective_caps_probe | default({})).stdout | default(''))
+            if xdp_capability_probe_strategy == 'systemd_show'
+            else (
+              ((xdp_unit_file_required_caps_probe | default({})).stdout | default(''))
+              if xdp_capability_probe_strategy == 'unit_file_parse'
+              else ((xdp_proc_required_caps_probe | default({})).stdout | default(''))
+            )
           }}
 
     - name: xdp - Compute capability availability
@@ -714,21 +790,3 @@
       when:
         - xdp_effective_enabled | bool
         - xdp_numa_check_status == 'skip'
-
-    - name: xdp - Report effective XDP configuration
-      ansible.builtin.debug:
-        msg: >-
-          XDP effective={{ xdp_effective_enabled }},
-          params={{ xdp_params | default([]) }},
-          mode={{ xdp_mode }},
-          validator_version={{ xdp_validator_version }},
-          kernel={{ xdp_kernel_semver }},
-          capability_source={{ xdp_capability_source }},
-          capability_confidence={{ xdp_capability_confidence }},
-          numa_status={{ xdp_numa_check_status }},
-          numa_reason={{ xdp_numa_check_reason }},
-          poh_core={{ xdp_numa_poh_core }},
-          xdp_cores={{ xdp_numa_xdp_cores }},
-          iface={{ xdp_primary_iface | default('') }},
-          iface_source={{ xdp_interface_selection_source | default('') }},
-          iface_driver_link={{ xdp_iface_driver_link_present | default(false) }}.
