@@ -51,6 +51,11 @@ argument_specs:
         required: false
         default: "native"
         description: "Requested XDP mode when supported by agave-validator flags"
+      xdp_target_interface:
+        type: str
+        required: false
+        default: ""
+        description: "Optional network interface override for XDP preflight checks (auto-detect when empty)"
       xdp_numa_check_enabled:
         type: bool
         required: false

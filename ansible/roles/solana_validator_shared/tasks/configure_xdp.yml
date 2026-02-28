@@ -39,13 +39,57 @@
         path: /sys/fs/bpf
       register: xdp_bpffs_stat
 
-    - name: xdp - Read capability bounding set
-      ansible.builtin.shell: "awk '/^CapBnd:/ {print $2}' /proc/self/status"
-      register: xdp_capbnd_cmd
+    - name: xdp - Set validator systemd unit path
+      ansible.builtin.set_fact:
+        xdp_service_unit_name: "{{ validator_service_name | default('sol') }}"
+        xdp_service_unit_path: "/etc/systemd/system/{{ validator_service_name | default('sol') }}.service"
+
+    - name: xdp - Check validator systemd unit path
+      ansible.builtin.stat:
+        path: "{{ xdp_service_unit_path }}"
+      register: xdp_service_unit_stat
+
+    - name: xdp - Probe required capabilities from validator systemd unit
+      ansible.builtin.shell: |
+        unit_path="{{ xdp_service_unit_path }}"
+        cap_bnd="$(awk -F= '/^CapabilityBoundingSet=/{print $2; exit}' "${unit_path}")"
+        cap_amb="$(awk -F= '/^AmbientCapabilities=/{print $2; exit}' "${unit_path}")"
+
+        unit_source_ready=false
+        if [[ -n "${cap_bnd}" && -n "${cap_amb}" ]]; then
+          unit_source_ready=true
+        fi
+
+        has_cap() {
+          local cap="$1"
+          local list="$2"
+          [[ " ${list} " == *" ${cap} "* ]]
+        }
+
+        has_cap_pair() {
+          local cap="$1"
+          if has_cap "${cap}" "${cap_bnd}" && has_cap "${cap}" "${cap_amb}"; then
+            echo true
+          else
+            echo false
+          fi
+        }
+
+        echo "unit_source_ready=${unit_source_ready}"
+        echo "unit_capability_bounding_set=${cap_bnd}"
+        echo "unit_ambient_capabilities=${cap_amb}"
+        echo "cap_net_admin=$(has_cap_pair CAP_NET_ADMIN)"
+        echo "cap_net_raw=$(has_cap_pair CAP_NET_RAW)"
+        echo "cap_bpf=$(has_cap_pair CAP_BPF)"
+        echo "cap_perfmon=$(has_cap_pair CAP_PERFMON)"
+      register: xdp_unit_required_caps_probe
       changed_when: false
       failed_when: false
+      args:
+        executable: /bin/bash
+      when: xdp_service_unit_stat.stat.exists | default(false)
 
-    - name: xdp - Probe required capabilities from capability bounding set
+    - name: xdp - Probe required capabilities from current process as fallback
       ansible.builtin.shell: |
         cap_bnd_hex="$(awk '/^CapBnd:/ {print $2}' /proc/self/status)"
         if [[ -z "${cap_bnd_hex}" ]]; then
@@ -60,25 +104,92 @@
         if (( (16#${cap_bnd_hex} & (1<<13)) != 0 )); then echo "cap_net_raw=true"; else echo "cap_net_raw=false"; fi
         if (( (16#${cap_bnd_hex} & (1<<39)) != 0 )); then echo "cap_bpf=true"; else echo "cap_bpf=false"; fi
         if (( (16#${cap_bnd_hex} & (1<<38)) != 0 )); then echo "cap_perfmon=true"; else echo "cap_perfmon=false"; fi
-      register: xdp_required_caps_probe
+      register: xdp_proc_required_caps_probe
       changed_when: false
       failed_when: false
       args:
         executable: /bin/bash
 
+    - name: xdp - Compute capability source and confidence
+      ansible.builtin.set_fact:
+        xdp_capability_source: >-
+          {{
+            'systemd_unit'
+            if (
+              (xdp_service_unit_stat.stat.exists | default(false))
+              and
+              ((((xdp_unit_required_caps_probe | default({})).stdout | default('') | regex_findall('(?m)^unit_source_ready=(.+)$') | first | default('false')) | lower) == 'true')
+            )
+            else 'proc_self_fallback'
+          }}
+        xdp_capability_confidence: >-
+          {{
+            'high'
+            if (
+              (xdp_service_unit_stat.stat.exists | default(false))
+              and
+              ((((xdp_unit_required_caps_probe | default({})).stdout | default('') | regex_findall('(?m)^unit_source_ready=(.+)$') | first | default('false')) | lower) == 'true')
+            )
+            else 'low'
+          }}
+
+    - name: xdp - Select capability probe output
+      ansible.builtin.set_fact:
+        xdp_caps_probe_stdout: >-
+          {{
+            ((xdp_unit_required_caps_probe | default({})).stdout | default(''))
+            if xdp_capability_source == 'systemd_unit'
+            else ((xdp_proc_required_caps_probe | default({})).stdout | default(''))
+          }}
+
     - name: xdp - Compute capability availability
       ansible.builtin.set_fact:
-        xdp_cap_net_admin_available: "{{ ((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_net_admin=(.+)$') | first | default('false')) | lower) == 'true' }}"
-        xdp_cap_net_raw_available: "{{ ((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_net_raw=(.+)$') | first | default('false')) | lower) == 'true' }}"
-        xdp_cap_bpf_available: "{{ ((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_bpf=(.+)$') | first | default('false')) | lower) == 'true' }}"
-        xdp_cap_perfmon_available: "{{ ((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_perfmon=(.+)$') | first | default('false')) | lower) == 'true' }}"
+        xdp_cap_net_admin_available: >-
+          {{
+            (((
+              xdp_caps_probe_stdout
+              | regex_findall('(?m)^cap_net_admin=(.+)$')
+              | first
+              | default('false')
+            ) | lower) == 'true')
+          }}
+        xdp_cap_net_raw_available: >-
+          {{
+            (((
+              xdp_caps_probe_stdout
+              | regex_findall('(?m)^cap_net_raw=(.+)$')
+              | first
+              | default('false')
+            ) | lower) == 'true')
+          }}
+        xdp_cap_bpf_available: >-
+          {{
+            (((
+              xdp_caps_probe_stdout
+              | regex_findall('(?m)^cap_bpf=(.+)$')
+              | first
+              | default('false')
+            ) | lower) == 'true')
+          }}
+        xdp_cap_perfmon_available: >-
+          {{
+            (((
+              xdp_caps_probe_stdout
+              | regex_findall('(?m)^cap_perfmon=(.+)$')
+              | first
+              | default('false')
+            ) | lower) == 'true')
+          }}
+
+    - name: xdp - Compute missing capabilities list
+      ansible.builtin.set_fact:
         xdp_missing_caps: >-
           {{
             []
-            + (['net_admin'] if not (((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_net_admin=(.+)$') | first | default('false')) | lower) == 'true') else [])
-            + (['net_raw'] if not (((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_net_raw=(.+)$') | first | default('false')) | lower) == 'true') else [])
-            + (['bpf'] if not (((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_bpf=(.+)$') | first | default('false')) | lower) == 'true') else [])
-            + (['perfmon'] if not (((xdp_required_caps_probe.stdout | default('') | regex_findall('(?m)^cap_perfmon=(.+)$') | first | default('false')) | lower) == 'true') else [])
+            + (['net_admin'] if not (xdp_cap_net_admin_available | bool) else [])
+            + (['net_raw'] if not (xdp_cap_net_raw_available | bool) else [])
+            + (['bpf'] if not (xdp_cap_bpf_available | bool) else [])
+            + (['perfmon'] if not (xdp_cap_perfmon_available | bool) else [])
           }}
 
     - name: xdp - Check required network tools
@@ -102,10 +213,22 @@
       failed_when: false
       args:
         executable: /bin/bash
+      when: (xdp_target_interface | default('') | trim | length) == 0
 
     - name: xdp - Set detected interface fact
       ansible.builtin.set_fact:
-        xdp_primary_iface: "{{ xdp_primary_iface_cmd.stdout | default('') | trim }}"
+        xdp_primary_iface: >-
+          {{
+            (xdp_target_interface | default('') | trim)
+            if ((xdp_target_interface | default('') | trim | length) > 0)
+            else (xdp_primary_iface_cmd.stdout | default('') | trim)
+          }}
+        xdp_interface_selection_source: >-
+          {{
+            'override'
+            if ((xdp_target_interface | default('') | trim | length) > 0)
+            else 'auto'
+          }}
 
     - name: xdp - Check detected network interface path
       ansible.builtin.stat:
@@ -136,6 +259,15 @@
       ansible.builtin.debug:
         var: xdp_flag_probe_results.results
       when: xdp_debug_enabled | default(false) | bool
+
+    - name: xdp - Warn when capability check falls back to process context
+      ansible.builtin.debug:
+        msg: >-
+          XDP capability check uses Ansible process context (/proc/self/status);
+          runtime may differ from validator systemd unit context.
+      when:
+        - xdp_enabled | bool
+        - xdp_capability_source == 'proc_self_fallback'
 
     - name: xdp - Compute support primitives
       ansible.builtin.set_fact:
@@ -591,9 +723,12 @@
           mode={{ xdp_mode }},
           validator_version={{ xdp_validator_version }},
           kernel={{ xdp_kernel_semver }},
+          capability_source={{ xdp_capability_source }},
+          capability_confidence={{ xdp_capability_confidence }},
           numa_status={{ xdp_numa_check_status }},
           numa_reason={{ xdp_numa_check_reason }},
           poh_core={{ xdp_numa_poh_core }},
           xdp_cores={{ xdp_numa_xdp_cores }},
           iface={{ xdp_primary_iface | default('') }},
+          iface_source={{ xdp_interface_selection_source | default('') }},
           iface_driver_link={{ xdp_iface_driver_link_present | default(false) }}.

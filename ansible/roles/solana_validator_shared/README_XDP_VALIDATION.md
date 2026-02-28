@@ -70,6 +70,8 @@ Optional override variables:
   - `-e "xdp_experimental_retransmit_xdp_cpu_cores=1"`
 - Toggle experimental zero-copy:
   - `-e "xdp_experimental_retransmit_xdp_zero_copy=true"`
+- Force interface selection for XDP preflight checks:
+  - `-e "xdp_target_interface=eno1"`
 - Toggle NUMA placement assessment:
   - `-e "xdp_numa_check_enabled=true"`
 
@@ -82,7 +84,7 @@ XDP Validation Summary
 - Validator: validator-host
 - Requested: True
 - Effective: True
-- Primary reason:
+- Primary reason: none
 - All reasons: none
 - Computed params: --experimental-retransmit-xdp-cpu-cores 1 --experimental-retransmit-xdp-zero-copy
 - Validator version: 3.1.8
@@ -90,6 +92,11 @@ XDP Validation Summary
 - NUMA check: ok (none)
 - PoH core/node: 10/1
 - XDP cores/nodes: 1/0
+- Interface: eno1
+- Interface source: auto
+- Interface driver link present: True
+- Capability source: systemd_unit
+- Capability confidence: high
 ```
 
 Interpretation:
@@ -99,6 +106,8 @@ Interpretation:
 - `Computed params`: flags that will be appended to validator startup args
 - `Validator version` and `Kernel semver`: key compatibility checks used by preflight
 - `NUMA check`: `ok|warn|skip` for PoH/XDP placement confidence
+- `Interface source`: `override|auto` to clarify whether operator override was used
+- `Capability source`: `systemd_unit|proc_self_fallback` to clarify confidence in capability gating
 
 Example preflight-only non-effective summary:
 
@@ -133,6 +142,8 @@ Interpretation:
   - Required Linux capabilities for XDP retransmit are not available in capability bounding set
 - `xdp_interface_unresolved`
   - No primary interface could be resolved from host routing
+- `xdp_interface_missing_<iface>`
+  - Operator-specified interface or auto-selected interface was not found on host
 - `xdp_interface_driver_unavailable_<iface>`
   - Interface exists but driver link is not available (common in some container/veth environments)
 - `same_numa_node` / `same_cpu` / `shared_physical_core`

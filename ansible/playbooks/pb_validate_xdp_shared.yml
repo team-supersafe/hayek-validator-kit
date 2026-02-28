@@ -10,7 +10,7 @@
 #   -e "validator_name=hayek-mainnet" \
 #   -e "xdp_enabled=true" \
 #   -e "expected_xdp_effective_enabled=false" \
-#   -e "expected_xdp_skip_reason=validator_help_unavailable"
+#   -e "expected_xdp_skip_reason=xdp_disabled"
 
 - name: Validate shared XDP task only
   hosts: "{{ target_host }}"
@@ -76,6 +76,12 @@
       when: xdp_experimental_retransmit_xdp_zero_copy is not defined
       tags: [xdp, xdp_preflight, xdp_validate]
 
+    - name: validate_xdp - Set default xdp_target_interface when undefined
+      ansible.builtin.set_fact:
+        xdp_target_interface: ""
+      when: xdp_target_interface is not defined
+      tags: [xdp, xdp_preflight, xdp_validate]
+
     - name: validate_xdp - Set default xdp_numa_check_enabled when undefined
       ansible.builtin.set_fact:
         xdp_numa_check_enabled: true
@@ -105,6 +111,9 @@
           - xdp_numa_check_status is defined
           - xdp_numa_check_reason is defined
           - xdp_primary_iface is defined
+          - xdp_interface_selection_source is defined
+          - xdp_capability_source is defined
+          - xdp_capability_confidence is defined
         fail_msg: "Shared XDP task did not produce the expected output facts."
       tags: [xdp, xdp_validate]
 
@@ -153,5 +162,8 @@
           - PoH core/node: {{ xdp_numa_poh_core | default('n/a') }}/{{ xdp_numa_poh_node | default('n/a') }}
           - XDP cores/nodes: {{ xdp_numa_xdp_cores | default('n/a') }}/{{ xdp_numa_xdp_nodes | default('n/a') }}
           - Interface: {{ xdp_primary_iface | default('n/a') }}
+          - Interface source: {{ xdp_interface_selection_source | default('n/a') }}
           - Interface driver link present: {{ xdp_iface_driver_link_present | default(false) }}
+          - Capability source: {{ xdp_capability_source | default('n/a') }}
+          - Capability confidence: {{ xdp_capability_confidence | default('n/a') }}
       tags: [xdp, xdp_validate]

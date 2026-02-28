@@ -79,7 +79,10 @@
       XDP startup flags present={{ validator_startup_has_xdp }},
       xdp_effective_enabled={{ xdp_effective_enabled | default(false) }},
       xdp_skip_reason={{ xdp_skip_reason | default('') }},
+      xdp_capability_source={{ xdp_capability_source | default('') }},
+      xdp_capability_confidence={{ xdp_capability_confidence | default('') }},
       xdp_primary_iface={{ xdp_primary_iface | default('') }},
+      xdp_interface_selection_source={{ xdp_interface_selection_source | default('') }},
       xdp_iface_driver_link_present={{ xdp_iface_driver_link_present | default(false) }},
       xdp_numa_check_status={{ xdp_numa_check_status | default('unknown') }},
       xdp_numa_check_reason={{ xdp_numa_check_reason | default('unknown') }}.
