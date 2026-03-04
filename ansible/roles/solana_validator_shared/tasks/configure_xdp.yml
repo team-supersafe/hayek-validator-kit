@@ -318,6 +318,21 @@
       register: xdp_iface_driver_stat
       when: xdp_primary_iface | length > 0
 
+    - name: xdp - Detect network interface driver name
+      ansible.builtin.shell: |
+        driver_link="$(readlink -f "/sys/class/net/{{ xdp_primary_iface }}/device/driver" 2>/dev/null || true)"
+        if [[ -n "${driver_link}" ]]; then
+          basename "${driver_link}"
+        fi
+      register: xdp_iface_driver_name_cmd
+      changed_when: false
+      failed_when: false
+      args:
+        executable: /bin/bash
+      when:
+        - xdp_primary_iface | length > 0
+        - xdp_iface_driver_stat.stat.exists | default(false)
+
     - name: xdp - Probe XDP flags through agave-validator parser
       ansible.builtin.shell: "{{ system_solana_active_release_dir }}/agave-validator --version {{ item.arg }}"
       loop:
@@ -440,6 +455,7 @@
             | list }}
         xdp_iface_present: "{{ xdp_iface_stat.stat.exists | default(false) }}"
         xdp_iface_driver_link_present: "{{ xdp_iface_driver_stat.stat.exists | default(false) }}"
+        xdp_iface_driver_name: "{{ xdp_iface_driver_name_cmd.stdout | default('') | trim }}"
 
     - name: xdp - Initialize NUMA placement assessment facts
       ansible.builtin.set_fact:
@@ -720,6 +736,7 @@
             + (['xdp_interface_unresolved'] if (xdp_primary_iface | default('') | length == 0) else [])
             + (['xdp_interface_missing_' ~ xdp_primary_iface] if ((xdp_primary_iface | default('') | length > 0) and not (xdp_iface_present | bool)) else [])
             + (['xdp_interface_driver_unavailable_' ~ xdp_primary_iface] if ((xdp_primary_iface | default('') | length > 0) and (xdp_iface_present | bool) and not (xdp_iface_driver_link_present | bool)) else [])
+            + (['xdp_driver_unsupported_' ~ xdp_iface_driver_name] if ((xdp_iface_driver_name | default('') | length > 0) and ((xdp_iface_driver_name | lower) in ((xdp_unsupported_iface_drivers | default(['virtio_net'])) | map('lower') | list))) else [])
             + (['xdp_flags_unavailable'] if not (xdp_any_flag_supported | bool) else [])
             + (['kernel_too_old'] if not (xdp_kernel_semver is version(xdp_min_kernel_version, '>=')) else [])
             + (['bpffs_unavailable'] if not (xdp_bpffs_stat.stat.exists | default(false)) else [])

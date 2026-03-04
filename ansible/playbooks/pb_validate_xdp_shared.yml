@@ -164,6 +164,7 @@
           - Interface: {{ xdp_primary_iface | default('n/a') }}
           - Interface source: {{ xdp_interface_selection_source | default('n/a') }}
           - Interface driver link present: {{ xdp_iface_driver_link_present | default(false) }}
+          - Interface driver name: {{ xdp_iface_driver_name | default('n/a') }}
           - Capability source: {{ xdp_capability_source | default('n/a') }}
           - Capability confidence: {{ xdp_capability_confidence | default('n/a') }}
       tags: [xdp, xdp_validate]

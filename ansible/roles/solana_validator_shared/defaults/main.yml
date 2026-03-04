@@ -8,3 +8,5 @@ xdp_target_interface: ""
 xdp_min_supported_version: "3.0.9"
 xdp_min_kernel_version: "5.10.0"
 xdp_numa_check_enabled: true
+xdp_unsupported_iface_drivers:
+  - "virtio_net"
