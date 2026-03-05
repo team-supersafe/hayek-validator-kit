@@ -14,6 +14,17 @@
   ansible.builtin.set_fact:
     validator_script_path: "{{ validator_scripts_dir }}/run-{{ validator_name }}.sh"
 
+- name: configure - Render validator systemd unit before XDP capability probe
+  ansible.builtin.template:
+    src: validator.service.j2
+    dest: "/etc/systemd/system/{{ validator_service_name }}.service"
+    mode: "0644"
+  become: true
+
+- name: configure - Compute XDP runtime flags
+  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/configure_xdp.yml
+  tags: [xdp, xdp_preflight, xdp_config]
+
 - name: configure - Configure validator startup script
   block:
     - name: configure - Get vote account pubkey
@@ -140,6 +151,10 @@
       notify:
         - handlers - Reload systemd
         - handlers - Restart validator service
+
+    - name: configure - Reload systemd manager configuration
+      ansible.builtin.systemd:
+        daemon_reload: true
 
     - name: configure - Enable validator service
       ansible.builtin.systemd:

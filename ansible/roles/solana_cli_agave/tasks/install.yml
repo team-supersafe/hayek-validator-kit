@@ -11,6 +11,7 @@
     name:
       - at
       - build-essential
+      - ethtool
       - pkg-config
       - libssl-dev
       - libudev-dev
