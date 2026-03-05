@@ -1,5 +1,6 @@
 ---
 - name: swap - Get pre-swap vote account stats
+  any_errors_fatal: true
   block:
     - name: summary - Debug var source_primary_pubkey
       ansible.builtin.debug:
@@ -96,6 +97,7 @@
 
 # Pre-swap facts gathering
 - name: Pre-swap facts gathering
+  any_errors_fatal: true
   block:
     - name: swap - Get tower filename
       check_mode: false
@@ -193,6 +195,18 @@
       when: inventory_hostname == source_host
       register: wait_and_unstake_result
 
+- name: swap - Assert source demotion completed before transfer
+  ansible.builtin.assert:
+    that:
+      - hostvars[source_host].wait_and_unstake_result is defined
+      - not (hostvars[source_host].wait_and_unstake_result.failed | default(false))
+      - not (hostvars[source_host].wait_and_unstake_result.skipped | default(false))
+    fail_msg: >-
+      Source validator demotion did not complete successfully; refusing to transfer tower or
+      promote destination to primary identity.
+  run_once: true
+  delegate_to: localhost
+
 - name: swap - Transfer Tower File from Source to Destination
   any_errors_fatal: true
   block:
@@ -219,8 +233,9 @@
         - transfer_tower_result is failed
         - not ansible_check_mode
   when:
-    - hostvars[source_host].get('wait_and_unstake_result', {}) is defined
-    - hostvars[source_host].get('wait_and_unstake_result', {}).get('failed', false) == false
+    - hostvars[source_host].wait_and_unstake_result is defined
+    - not (hostvars[source_host].wait_and_unstake_result.failed | default(false))
+    - not (hostvars[source_host].wait_and_unstake_result.skipped | default(false))
 
 - name: swap - Promote Destination to Primary Target Validator
   any_errors_fatal: true
@@ -258,6 +273,9 @@
         swap_duration_seconds: "{{ elapsed_time.stdout | trim | int }}"
       delegate_to: localhost
       run_once: true
+  when:
+    - hostvars[destination_host].transfer_tower_result is defined
+    - (hostvars[destination_host].transfer_tower_result.rc | default(1)) == 0
 
 # Step 6: Cleanup firewall rules
 - name: swap - Remove ufw allow rule for source host IP on destination
