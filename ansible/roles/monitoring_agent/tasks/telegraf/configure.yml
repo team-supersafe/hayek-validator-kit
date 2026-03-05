@@ -22,3 +22,11 @@
     mode: '0755'
     owner: telegraf
     group: telegraf
+
+- name: Create XDP status script
+  ansible.builtin.template:
+    src: templates/xdp_status.sh.j2
+    dest: /etc/telegraf/scripts/xdp_status.sh
+    mode: '0755'
+    owner: telegraf
+    group: telegraf
