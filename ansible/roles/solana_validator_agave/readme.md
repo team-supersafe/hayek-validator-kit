@@ -1,5 +1,10 @@
 # Running a Validator with the Agave-Solana Client (Anza)
 
+## Shared XDP Validation (No Full Setup)
+
+For validating shared XDP logic only (without running full validator setup), see:
+- `ansible/roles/solana_validator_shared/README_XDP_VALIDATION.md`
+
 ssh into your validator machine
 ```sh
 ssh -F /dev/null -i ~/.ssh/id_ed25519 sol@$VALIDATOR_HOSTNAME -p $VALIDATOR_SSH_PORT

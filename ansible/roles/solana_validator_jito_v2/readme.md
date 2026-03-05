@@ -2,6 +2,11 @@
 
 > Note: This role is BAM-only. Relayer-based setup (`--relayer-url`, co-hosted/shared relayer) has been removed.
 
+## Shared XDP Validation (No Full Setup)
+
+For validating shared XDP logic only (without running full validator setup), see:
+- `ansible/roles/solana_validator_shared/README_XDP_VALIDATION.md`
+
 ## Table of Contents
 - [JITO-SOLANA CLIENT (MEVs)](#jito-solana-client-mevs)
 - [SETUP JITO-SOLANA VALIDATOR CLIENT](#setup-jito-solana-validator-client)

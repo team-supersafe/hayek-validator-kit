@@ -42,6 +42,7 @@
 #   -e "use_official_repo=true" \
 #   -e "force_host_cleanup=true" \
 #   -e "run_poh_cpu_affinity_fix=true" \
+#   -e "xdp_enabled=false" \
 #   -K
 #
 # Extended vars:
@@ -49,6 +50,7 @@
 # - use_official_repo (OPTIONAL): Use official repository instead of forked repository.
 # - force_host_cleanup (OPTIONAL): Cleanup target host if it has validator data from a different cluster.
 # - run_poh_cpu_affinity_fix (OPTIONAL): Pin validator process to specific CPU core to improve PoH stability.
+# - xdp_enabled (OPTIONAL): Enable or disable XDP flag injection in validator startup script (default is enabled).
 
 - name: Install Jito Client with BAM
   hosts: "{{ target_host }}"
