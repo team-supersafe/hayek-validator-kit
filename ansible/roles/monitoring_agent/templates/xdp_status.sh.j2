@@ -3,7 +3,7 @@ set -u
 
 HOSTNAME_VALUE="$(hostname -s 2>/dev/null || hostname || echo unknown)"
 TIMESTAMP_NS="$(date +%s%N)"
-XDP_STATE_FILE="{{ validator_root_dir }}/xdp_status.env"
+XDP_STATE_FILE="{{ monitor_xdp_state_file_path }}"
 VALIDATOR_SCRIPTS_DIR="{{ validator_scripts_dir }}"
 
 escape_tag() {

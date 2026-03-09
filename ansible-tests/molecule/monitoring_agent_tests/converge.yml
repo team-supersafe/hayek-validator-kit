@@ -17,6 +17,7 @@
       ansible.builtin.set_fact:
         validator_root_dir: "/opt/validator"
         validator_scripts_dir: "/opt/validator/scripts"
+        xdp_runtime_state_file_path: "/var/lib/solana/xdp/custom-xdp-status.env"
       when: inventory_hostname == 'monitoring-agent-validator'
 
   roles:
