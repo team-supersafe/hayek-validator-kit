@@ -8,9 +8,12 @@ The playbook `playbooks/pb_validate_xdp_shared.yml` validates:
 
 - XDP request toggles and version gating
 - kernel/tool/bpffs preflight checks
+- capability gating from validator systemd context when available
+- primary interface selection and driver eligibility
 - XDP flag support probing in the installed validator binary
 - computed XDP params that would be merged into validator startup args
 - NUMA placement assessment between PoH core and XDP retransmit core list
+- exported XDP state facts that can be consumed by monitoring
 
 Important:
 
@@ -58,7 +61,12 @@ Default behavior:
 - No extra XDP variables are required.
 - XDP is default-on (`xdp_enabled=true`).
 - If supported on host/binary, XDP params are injected into validator startup.
+- Current preference order is:
+  - `--experimental-retransmit-xdp-cpu-cores`
+  - `--experimental-retransmit-xdp-zero-copy` when enabled and accepted
+  - fallback to older `--xdp-mode` / `--xdp` / `--enable-xdp` / `--xdp-enabled` flags only when needed
 - If unsupported, behavior is fail-open: validator setup/startup continues with explicit warnings and no XDP params injected.
+- When validator directory vars are available, the role also exports an XDP state snapshot to `{{ xdp_runtime_state_file_path }}` for monitoring.
 
 Optional override variables:
 
@@ -108,6 +116,7 @@ Interpretation:
 - `NUMA check`: `ok|warn|skip` for PoH/XDP placement confidence
 - `Interface source`: `override|auto` to clarify whether operator override was used
 - `Capability source`: `systemd_unit|proc_self_fallback` to clarify confidence in capability gating
+- `Capability confidence`: `high|low` depending on whether capability checks came from validator unit context or fallback process context
 
 Example preflight-only non-effective summary:
 
@@ -146,6 +155,8 @@ Interpretation:
   - Operator-specified interface or auto-selected interface was not found on host
 - `xdp_interface_driver_unavailable_<iface>`
   - Interface exists but driver link is not available (common in some container/veth environments)
+- `xdp_driver_unsupported_<driver>`
+  - Interface driver was resolved, but the driver is in the unsupported-driver deny list
 - `same_numa_node` / `same_cpu` / `shared_physical_core`
   - XDP and PoH core choices may contend; setup continues (warn-only) but placement should be corrected
 - `poh_core_unset_or_disabled`
@@ -172,3 +183,49 @@ After this playbook passes, validate runtime behavior in staged rollout:
 - canary node startup with real service
 - observe validator logs and host metrics
 - confirm no regressions during sustained operation window
+
+## Monitoring Notes
+
+The monitoring layer is designed to report what the shared XDP logic actually computed, not to independently re-decide whether XDP should have been enabled.
+
+- The shared XDP role exports a state snapshot to `{{ xdp_runtime_state_file_path }}`.
+- That snapshot contains the configuration/preflight truth:
+  - requested/effective state
+  - primary skip reason and all skip reasons
+  - computed XDP params
+  - selected interface and interface source
+  - driver availability and driver name
+  - capability source and confidence
+  - NUMA assessment status and reason
+- Runtime monitoring adds supplemental checks on top of that snapshot:
+  - validator process running
+  - XDP flags present in startup/runtime args
+  - interface-level attach signal from `ip -d link`
+
+This separation is intentional:
+
+- preflight/configuration facts explain whether XDP was supposed to be active
+- runtime observations explain whether the node still appears healthy after startup
+- runtime attach checks are useful, but they are not the source of truth for requested/effective state
+
+## Metrics Goals, Reach, and Fundamentals
+
+Goals:
+
+- report the same XDP intent and effective state that validator setup computed
+- distinguish operator-disabled XDP from preflight-blocked XDP
+- surface runtime degradations separately from configuration/preflight outcomes
+- make NUMA/capability/interface context visible enough to support alert triage
+
+Reach:
+
+- metrics are emitted only on hosts where validator directory vars are present, keeping `monitoring_agent` generic
+- metrics cover validator startup/runtime visibility and exported XDP state
+- metrics do not prove sustained packet-path performance or throughput correctness under load
+
+Fundamentals:
+
+- configuration truth comes from `configure_xdp.yml`
+- monitoring consumes exported state instead of reconstructing XDP logic from scratch
+- runtime checks are additive signals, not replacements for preflight facts
+- fail-open behavior remains unchanged: unsupported XDP does not block validator setup, but metrics should make that state observable

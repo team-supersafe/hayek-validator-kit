@@ -3,31 +3,86 @@ set -u
 
 HOSTNAME_VALUE="$(hostname -s 2>/dev/null || hostname || echo unknown)"
 TIMESTAMP_NS="$(date +%s%N)"
+XDP_STATE_FILE="{{ validator_root_dir }}/xdp_status.env"
+VALIDATOR_SCRIPTS_DIR="{{ validator_scripts_dir }}"
 
-STARTUP_SCRIPT="$(ls /opt/validator/scripts/run-*.sh 2>/dev/null | head -n1 || true)"
+escape_tag() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/,/\\,/g; s/ /\\ /g; s/=/\\=/g'
+}
+
+escape_field() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
 STARTUP_SCRIPT_PRESENT=0
 STARTUP_FLAGS_PRESENT=0
+VALIDATOR_RUNNING=0
+RUNTIME_FLAGS_PRESENT=0
+ATTACH_DETECTED=0
+IFACE="unknown"
+
+XDP_REQUESTED=0
+XDP_EFFECTIVE_ENABLED=0
+XDP_SKIP_REASON="state_file_missing"
+XDP_SKIP_REASONS="state_file_missing"
+XDP_PARAMS="none"
+XDP_PRIMARY_IFACE="unknown"
+XDP_INTERFACE_SELECTION_SOURCE="unknown"
+XDP_IFACE_PRESENT=0
+XDP_IFACE_DRIVER_LINK_PRESENT=0
+XDP_IFACE_DRIVER_NAME="unknown"
+XDP_CAPABILITY_SOURCE="unknown"
+XDP_CAPABILITY_CONFIDENCE="unknown"
+XDP_NUMA_CHECK_STATUS="unknown"
+XDP_NUMA_CHECK_REASON="unknown"
+XDP_NUMA_POH_CORE=""
+XDP_NUMA_POH_NODE=""
+XDP_NUMA_XDP_CORES=""
+XDP_NUMA_XDP_NODES=""
+XDP_NUMA_SAME_CPU=0
+XDP_NUMA_SAME_SMT=0
+XDP_NUMA_SAME_NODE=0
+XDP_VALIDATOR_VERSION="unknown"
+XDP_KERNEL_SEMVER="unknown"
+STATE_FILE_PRESENT=0
+
+if [[ -r "${XDP_STATE_FILE}" ]]; then
+  # This file is rendered by the shared XDP role and only contains quoted shell assignments.
+  # shellcheck disable=SC1090
+  source "${XDP_STATE_FILE}"
+  STATE_FILE_PRESENT=1
+fi
+
+STARTUP_SCRIPT="$(ls "${VALIDATOR_SCRIPTS_DIR}"/run-*.sh 2>/dev/null | head -n1 || true)"
 if [[ -n "${STARTUP_SCRIPT}" && -r "${STARTUP_SCRIPT}" ]]; then
   STARTUP_SCRIPT_PRESENT=1
-  if grep -Eq -- '--xdp-mode|--xdp($|[[:space:]])|--enable-xdp|--xdp-enabled' "${STARTUP_SCRIPT}"; then
+  if grep -Eq -- '--xdp-mode|--xdp($|[[:space:]])|--enable-xdp|--xdp-enabled|--experimental-retransmit-xdp-cpu-cores|--experimental-retransmit-xdp-zero-copy' "${STARTUP_SCRIPT}"; then
     STARTUP_FLAGS_PRESENT=1
   fi
 fi
 
 VALIDATOR_PID="$(pgrep -f "agave-validator.*--identity" | head -n1 || true)"
-VALIDATOR_RUNNING=0
-RUNTIME_FLAGS_PRESENT=0
 if [[ -n "${VALIDATOR_PID}" ]]; then
   VALIDATOR_RUNNING=1
   VALIDATOR_ARGS="$(ps -o args= -p "${VALIDATOR_PID}" 2>/dev/null || true)"
-  if [[ "${VALIDATOR_ARGS}" =~ (--xdp-mode|--xdp($|[[:space:]])|--enable-xdp|--xdp-enabled) ]]; then
+  if [[ "${VALIDATOR_ARGS}" =~ (--xdp-mode|--xdp($|[[:space:]])|--enable-xdp|--xdp-enabled|--experimental-retransmit-xdp-cpu-cores|--experimental-retransmit-xdp-zero-copy) ]]; then
     RUNTIME_FLAGS_PRESENT=1
   fi
 fi
 
-IFACE="$(ip -o route show default 2>/dev/null | awk '{print $5; exit}' || true)"
+if [[ ${STATE_FILE_PRESENT} -eq 0 ]]; then
+  if [[ ${STARTUP_FLAGS_PRESENT} -eq 1 ]]; then
+    XDP_REQUESTED=1
+    XDP_EFFECTIVE_ENABLED=1
+    XDP_SKIP_REASON="none"
+    XDP_SKIP_REASONS="none"
+  fi
+  IFACE="$(ip -o route show default 2>/dev/null | awk '{print $5; exit}' || true)"
+else
+  IFACE="${XDP_PRIMARY_IFACE}"
+fi
+
 [[ -n "${IFACE}" ]] || IFACE="unknown"
-ATTACH_DETECTED=0
 if [[ "${IFACE}" != "unknown" ]]; then
   LINK_DEBUG="$(ip -d link show dev "${IFACE}" 2>/dev/null || true)"
   if echo "${LINK_DEBUG}" | grep -Eq 'xdp|xdpgeneric|xdpdrv'; then
@@ -35,24 +90,40 @@ if [[ "${IFACE}" != "unknown" ]]; then
   fi
 fi
 
-STATE="not_requested"
+STATE="state_unknown"
 XDP_ALERT=0
 ALERT_REASON="none"
 
-if [[ ${STARTUP_FLAGS_PRESENT} -eq 1 && ${VALIDATOR_RUNNING} -eq 1 && ${RUNTIME_FLAGS_PRESENT} -eq 1 && ${ATTACH_DETECTED} -eq 1 ]]; then
-  STATE="attached"
-elif [[ ${STARTUP_FLAGS_PRESENT} -eq 1 && ${VALIDATOR_RUNNING} -eq 1 && ${RUNTIME_FLAGS_PRESENT} -eq 1 && ${ATTACH_DETECTED} -eq 0 ]]; then
-  STATE="runtime_no_link_attach"
-  XDP_ALERT=1
-  ALERT_REASON="no_link_attach"
-elif [[ ${STARTUP_FLAGS_PRESENT} -eq 1 && ${VALIDATOR_RUNNING} -eq 1 && ${RUNTIME_FLAGS_PRESENT} -eq 0 ]]; then
-  STATE="runtime_missing_flags"
-  XDP_ALERT=1
-  ALERT_REASON="runtime_missing_flags"
-elif [[ ${STARTUP_FLAGS_PRESENT} -eq 1 && ${VALIDATOR_RUNNING} -eq 0 ]]; then
+if [[ ${STATE_FILE_PRESENT} -eq 0 && ${STARTUP_FLAGS_PRESENT} -eq 0 ]]; then
+  STATE="state_file_missing"
+  ALERT_REASON="state_file_missing"
+elif [[ ${XDP_REQUESTED} -eq 0 ]]; then
+  STATE="disabled"
+  ALERT_REASON="xdp_disabled"
+elif [[ ${XDP_EFFECTIVE_ENABLED} -eq 0 ]]; then
+  STATE="preflight_blocked"
+  ALERT_REASON="${XDP_SKIP_REASON}"
+elif [[ ${VALIDATOR_RUNNING} -eq 0 ]]; then
   STATE="validator_not_running"
   XDP_ALERT=1
   ALERT_REASON="validator_not_running"
+elif [[ ${RUNTIME_FLAGS_PRESENT} -eq 0 ]]; then
+  STATE="runtime_missing_flags"
+  XDP_ALERT=1
+  ALERT_REASON="runtime_missing_flags"
+elif [[ ${ATTACH_DETECTED} -eq 0 ]]; then
+  STATE="runtime_no_link_attach"
+  XDP_ALERT=1
+  ALERT_REASON="no_link_attach"
+elif [[ "${XDP_NUMA_CHECK_STATUS}" == "warn" ]]; then
+  STATE="active_numa_warn"
+  XDP_ALERT=1
+  ALERT_REASON="${XDP_NUMA_CHECK_REASON}"
+elif [[ "${XDP_NUMA_CHECK_STATUS}" == "skip" ]]; then
+  STATE="active_numa_unverified"
+  ALERT_REASON="${XDP_NUMA_CHECK_REASON}"
+else
+  STATE="active"
 fi
 
-echo "xdp_status,host=${HOSTNAME_VALUE},iface=${IFACE},state=${STATE},alert_reason=${ALERT_REASON} startup_script_present=${STARTUP_SCRIPT_PRESENT}i,startup_flags_present=${STARTUP_FLAGS_PRESENT}i,validator_running=${VALIDATOR_RUNNING}i,runtime_flags_present=${RUNTIME_FLAGS_PRESENT}i,attach_detected=${ATTACH_DETECTED}i,xdp_alert=${XDP_ALERT}i ${TIMESTAMP_NS}"
+echo "xdp_status,host=$(escape_tag "${HOSTNAME_VALUE}"),iface=$(escape_tag "${IFACE}"),state=$(escape_tag "${STATE}") startup_script_present=${STARTUP_SCRIPT_PRESENT}i,startup_flags_present=${STARTUP_FLAGS_PRESENT}i,validator_running=${VALIDATOR_RUNNING}i,runtime_flags_present=${RUNTIME_FLAGS_PRESENT}i,attach_detected=${ATTACH_DETECTED}i,xdp_alert=${XDP_ALERT}i,state_file_present=${STATE_FILE_PRESENT}i,requested=${XDP_REQUESTED}i,effective_enabled=${XDP_EFFECTIVE_ENABLED}i,iface_present=${XDP_IFACE_PRESENT}i,iface_driver_link_present=${XDP_IFACE_DRIVER_LINK_PRESENT}i,numa_same_cpu=${XDP_NUMA_SAME_CPU}i,numa_same_smt=${XDP_NUMA_SAME_SMT}i,numa_same_node=${XDP_NUMA_SAME_NODE}i,alert_reason=\"$(escape_field "${ALERT_REASON}")\",skip_reason=\"$(escape_field "${XDP_SKIP_REASON}")\",skip_reasons=\"$(escape_field "${XDP_SKIP_REASONS}")\",params=\"$(escape_field "${XDP_PARAMS}")\",interface_selection_source=\"$(escape_field "${XDP_INTERFACE_SELECTION_SOURCE}")\",iface_driver_name=\"$(escape_field "${XDP_IFACE_DRIVER_NAME}")\",capability_source=\"$(escape_field "${XDP_CAPABILITY_SOURCE}")\",capability_confidence=\"$(escape_field "${XDP_CAPABILITY_CONFIDENCE}")\",numa_check_status=\"$(escape_field "${XDP_NUMA_CHECK_STATUS}")\",numa_check_reason=\"$(escape_field "${XDP_NUMA_CHECK_REASON}")\",numa_poh_core=\"$(escape_field "${XDP_NUMA_POH_CORE}")\",numa_poh_node=\"$(escape_field "${XDP_NUMA_POH_NODE}")\",numa_xdp_cores=\"$(escape_field "${XDP_NUMA_XDP_CORES}")\",numa_xdp_nodes=\"$(escape_field "${XDP_NUMA_XDP_NODES}")\",validator_version=\"$(escape_field "${XDP_VALIDATOR_VERSION}")\",kernel_semver=\"$(escape_field "${XDP_KERNEL_SEMVER}")\" ${TIMESTAMP_NS}"

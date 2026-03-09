@@ -3,3 +3,4 @@
 get_hardware_metrics_interval: 30s  # in seconds
 get_solana_metrics_interval: 30s   # in seconds
 get_xdp_metrics_interval: 30s      # in seconds
+monitor_xdp_enabled: "{{ (validator_root_dir is defined) and (validator_scripts_dir is defined) }}"

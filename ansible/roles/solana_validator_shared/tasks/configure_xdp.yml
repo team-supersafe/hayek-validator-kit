@@ -807,3 +807,15 @@
       when:
         - xdp_effective_enabled | bool
         - xdp_numa_check_status == 'skip'
+
+    - name: xdp - Persist telemetry state snapshot
+      ansible.builtin.template:
+        src: xdp_status.env.j2
+        dest: "{{ xdp_runtime_state_file_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+      become: true
+      when:
+        - xdp_runtime_state_file_path is defined
+        - validator_root_dir is defined

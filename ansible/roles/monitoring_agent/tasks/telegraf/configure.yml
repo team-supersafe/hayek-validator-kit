@@ -30,3 +30,4 @@
     mode: '0755'
     owner: telegraf
     group: telegraf
+  when: monitor_xdp_enabled | bool
