@@ -1,0 +1,53 @@
+---
+- name: Verify monitoring_agent role behavior
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Set expected XDP monitoring state
+      ansible.builtin.set_fact:
+        molecule_expect_xdp: "{{ inventory_hostname == 'monitoring-agent-validator' }}"
+        molecule_expected_ping_host: "api.testnet.solana.com"
+
+    - name: Stat telegraf configuration file
+      ansible.builtin.stat:
+        path: /etc/telegraf/telegraf.conf
+      register: telegraf_conf_stat
+
+    - name: Read telegraf configuration file
+      ansible.builtin.slurp:
+        src: /etc/telegraf/telegraf.conf
+      register: telegraf_conf_raw
+
+    - name: Stat XDP status script
+      ansible.builtin.stat:
+        path: /etc/telegraf/scripts/xdp_status.sh
+      register: xdp_status_script_stat
+
+    - name: Assert telegraf configuration exists
+      ansible.builtin.assert:
+        that:
+          - telegraf_conf_stat.stat.exists
+        fail_msg: "Expected /etc/telegraf/telegraf.conf to exist."
+
+    - name: Assert telegraf configuration uses the expected Solana ping host
+      ansible.builtin.assert:
+        that:
+          - (telegraf_conf_raw.content | b64decode) is search('urls = \\["' ~ molecule_expected_ping_host ~ '"\\]')
+        fail_msg: "Expected telegraf ping input to target {{ molecule_expected_ping_host }}."
+
+    - name: Assert generic host does not install XDP monitoring artifacts
+      ansible.builtin.assert:
+        that:
+          - not xdp_status_script_stat.stat.exists
+          - (telegraf_conf_raw.content | b64decode) is not search('/etc/telegraf/scripts/xdp_status.sh')
+        fail_msg: "Generic monitoring host should not render XDP monitoring artifacts."
+      when: not (molecule_expect_xdp | bool)
+
+    - name: Assert validator host installs XDP monitoring artifacts
+      ansible.builtin.assert:
+        that:
+          - xdp_status_script_stat.stat.exists
+          - (telegraf_conf_raw.content | b64decode) is search('/etc/telegraf/scripts/xdp_status.sh')
+        fail_msg: "Validator monitoring host should render XDP monitoring artifacts."
+      when: molecule_expect_xdp | bool

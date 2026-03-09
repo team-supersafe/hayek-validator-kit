@@ -1,0 +1,9 @@
+---
+# Monitoring Agent defaults
+monitoring_agent_ping_host: >-
+  {{
+    (solana_rpc_url | default('https://api.mainnet-beta.solana.com'))
+    | regex_replace('^[A-Za-z]+://', '')
+    | regex_replace('/.*$', '')
+    | regex_replace(':.*$', '')
+  }}

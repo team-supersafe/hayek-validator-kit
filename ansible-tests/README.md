@@ -86,6 +86,7 @@ docker compose down -v
 
 - **iam_manager_tests** - IAM Manager Testing with CSV configuration
 - **common_tests** - Common system and architecture compatibility testing
+- **monitoring_agent_tests** - Monitoring agent installation and idempotency testing
 - **rust_env_v2_tests** - Rust Environment v2 (RBAC-enabled) role testing
 
 ## Common Commands
@@ -169,6 +170,9 @@ molecule test -s common_tests
 
 # Common tests
 ./scripts/run-common-tests.sh
+
+# Monitoring agent tests
+./scripts/run-monitoring-agent-tests.sh
 
 # Rust Environment v2 tests
 ./scripts/run-rust-env-v2-tests.sh

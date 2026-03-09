@@ -28,7 +28,7 @@ interval = "{{ get_hardware_metrics_interval }}"
 [[inputs.processes]]
 [[inputs.kernel]]
 [[inputs.ping]]
-	urls = ["api.mainnet-beta.solana.com"]
+	urls = ["{{ monitoring_agent_ping_host }}"]
 [[inputs.exec]]
 	commands = ["bash /etc/telegraf/scripts/nvme_health.sh"]
 	timeout = "10s"
