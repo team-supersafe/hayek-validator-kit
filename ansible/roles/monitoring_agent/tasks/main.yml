@@ -8,6 +8,7 @@
   delegate_to: localhost
   become: false
   run_once: true
+  when: monitoring_hub is not defined
 
 - name: Assert monitoring agent secrets file is present
   ansible.builtin.assert:
@@ -21,11 +22,13 @@
   delegate_to: localhost
   become: false
   run_once: true
+  when: monitoring_hub is not defined
 
 - name: Include secrets variables
   ansible.builtin.include_vars:
     file: "{{ role_path }}/vars/secrets.yml"
   no_log: true
+  when: monitoring_hub is not defined
 
 - name: Include Telegraf tasks
   import_tasks: telegraf/main.yml

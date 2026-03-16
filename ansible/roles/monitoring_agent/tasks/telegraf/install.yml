@@ -17,7 +17,7 @@
 - name: Remove any InfluxData repo with old signed-by path
   ansible.builtin.lineinfile:
     path: /etc/apt/sources.list.d/influxdb.list
-    regexp: '^deb \[signed-by=/etc/apt/(trusted\.gpg\.d|keyrings)/influxdata(-archive)?\.gpg\] https://repos\.influxdata\.com/ubuntu jammy stable'
+    regexp: '^deb \[signed-by=/etc/apt/(trusted\.gpg\.d/influxdata(-archive)?\.gpg|keyrings/influxdata\.gpg)\] https://repos\.influxdata\.com/ubuntu jammy stable$'
     state: absent
     backup: yes
   ignore_errors: yes

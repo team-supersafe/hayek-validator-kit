@@ -1,0 +1,33 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    molecule_monitoring_hub:
+      host: "monitoring.test.local"
+      port: 8086
+      org: "molecule"
+      hardware_bucket: "hardware"
+      hardware_bucket_token: "molecule-token"
+    molecule_solana_rpc_url: "https://api.testnet.solana.com"
+
+  pre_tasks:
+    - name: Set validator directory vars for validator scenario
+      ansible.builtin.set_fact:
+        validator_root_dir: "/opt/validator"
+        validator_scripts_dir: "/opt/validator/scripts"
+        xdp_runtime_state_file_path: "/var/lib/solana/xdp/custom-xdp-status.env"
+      when: inventory_hostname == 'monitoring-agent-validator'
+
+  roles:
+    - role: monitoring_agent
+      vars:
+        target_host: "{{ inventory_hostname }}"
+        ansible_user: "{{ hostvars[inventory_hostname].ansible_user | default('root') }}"
+        monitoring_hub_host: "{{ molecule_monitoring_hub.host }}"
+        influxdb_init_org: "{{ molecule_monitoring_hub.org }}"
+        hardware_bucket_name: "{{ molecule_monitoring_hub.hardware_bucket }}"
+        influxdb_hardware_bucket_token: "{{ molecule_monitoring_hub.hardware_bucket_token }}"
+        monitoring_hub: "{{ molecule_monitoring_hub }}"
+        solana_rpc_url: "{{ molecule_solana_rpc_url }}"

@@ -8,5 +8,6 @@ xdp_target_interface: ""
 xdp_min_supported_version: "3.0.9"
 xdp_min_kernel_version: "5.10.0"
 xdp_numa_check_enabled: true
+xdp_runtime_state_file_path: "{{ validator_root_dir }}/xdp_status.env"
 xdp_unsupported_iface_drivers:
   - "virtio_net"

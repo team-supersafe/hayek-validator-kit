@@ -28,11 +28,18 @@ interval = "{{ get_hardware_metrics_interval }}"
 [[inputs.processes]]
 [[inputs.kernel]]
 [[inputs.ping]]
-	urls = ["api.mainnet-beta.solana.com"]
+	urls = ["{{ monitoring_agent_ping_host }}"]
 [[inputs.exec]]
 	commands = ["bash /etc/telegraf/scripts/nvme_health.sh"]
 	timeout = "10s"
 	data_format = "influx"
+{% if monitor_xdp_enabled | bool %}
+[[inputs.exec]]
+	commands = ["bash /etc/telegraf/scripts/xdp_status.sh"]
+	timeout = "10s"
+	data_format = "influx"
+	interval = "{{ get_xdp_metrics_interval }}"
+{% endif %}
 [[inputs.exec]]
 	commands = ["hostname"]
 	name_override = "server_hostname"

@@ -2,3 +2,6 @@
 # Monitoring Agent Variables
 get_hardware_metrics_interval: 30s  # in seconds
 get_solana_metrics_interval: 30s   # in seconds
+get_xdp_metrics_interval: 30s      # in seconds
+monitor_xdp_enabled: "{{ (validator_root_dir is defined) and (validator_scripts_dir is defined) }}"
+monitor_xdp_state_file_path: "{{ xdp_runtime_state_file_path | default(validator_root_dir ~ '/xdp_status.env') }}"
