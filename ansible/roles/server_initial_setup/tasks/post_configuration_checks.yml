@@ -119,10 +119,12 @@
 
     - name: Verify authorized IPs are in fail2ban ignoreip
       ansible.builtin.shell: |
-        sed -n 's/^ignoreip = //p' /etc/fail2ban/jail.d/defaults-debian.conf | tr ' ' '\n' | grep -Fx "{{ item.value.ip }}" || echo "IP not found in fail2ban ignoreip: {{ item.value.ip }}"
+        sed -n 's/^ignoreip = //p' /etc/fail2ban/jail.d/defaults-debian.conf | tr ' ' '\n' | grep -Fx "{{ item.value.ip }}"
       register: ip_fail2ban_check
       changed_when: false
       loop: "{{ authorized_ips_csv.dict | dict2items }}"
+      loop_control:
+        label: "{{ item.value.ip }} ({{ item.value.comment }})"
       when: authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0
 
     - name: Display fail2ban ignoreip check results
