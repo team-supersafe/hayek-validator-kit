@@ -1,45 +1,5 @@
 ---
-# This role performs CPU configuration checks and stops the playbook if any check fails
-
-# Precheck: Read and validate authorized IPs CSV file
-- name: Read authorized IPs from CSV
-  community.general.read_csv:
-    path: "{{ authorized_access_csv }}"
-    key: ip
-  register: authorized_ips_csv
-  delegate_to: localhost
-  become: false
-  run_once: true
-  tags: [precheck]
-
-- name: Debug authorized IPs CSV content
-  ansible.builtin.debug:
-    var: authorized_ips_csv
-  delegate_to: localhost
-  become: false
-  no_log: true
-  run_once: true
-  tags: [precheck]
-
-- name: Fail if authorized IPs CSV is missing or empty
-  ansible.builtin.fail:
-    msg: "Authorized IPs CSV file is missing or empty. Please provide a valid CSV with at least one IP."
-  when: >
-    not (authorized_ips_csv is defined and
-    authorized_ips_csv | length > 0)
-  delegate_to: localhost
-  become: false
-  run_once: true
-  tags: [precheck]
-
-- name: Fail if authorized IPs CSV missing required field 'ip'
-  ansible.builtin.fail:
-    msg: "Authorized IPs CSV missing required field: ip"
-  when: (authorized_ips_csv.dict.values() | selectattr('ip', 'defined') | list | length) == 0
-  delegate_to: localhost
-  become: false
-  run_once: true
-  tags: [precheck]
+# Hardware-oriented prechecks for Solana validator hosts.
 
 # Precheck: Allow RAID if used only for root/OS, fail if RAID is present elsewhere
 - name: Get RAID devices and their mountpoints
@@ -126,7 +86,7 @@
         that: smt_check.stdout == "on"
         fail_msg: "ERROR! AMD SMT/Hyperthreading is not enabled. Current status: {{ smt_check.stdout }}"
         success_msg: "AMD SMT/Hyperthreading correctly enabled"
-  tags: [precheck]
+  tags: [precheck, hardware-precheck]
 
   # Disk configuration checks for Solana servers
 - name: Check disk configuration for Solana servers
@@ -251,4 +211,4 @@
         that: mount_points_check.stdout_lines | length == 0
         fail_msg: "ERROR! Found existing mounts for {{ mount_points.ledger }} or {{ mount_points.accounts }}. Please unmount these directories before proceeding."
         success_msg: "No existing mounts found for required directories (snapshots on root is allowed)"
-  tags: [precheck, disk-setup]
+  tags: [precheck, hardware-precheck, disk-setup]

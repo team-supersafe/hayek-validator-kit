@@ -1,0 +1,3 @@
+---
+- name: Reset SSH control connection after port change
+  ansible.builtin.meta: reset_connection

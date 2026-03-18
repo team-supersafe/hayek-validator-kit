@@ -42,6 +42,13 @@
   delegate_to: localhost
   run_once: true
 
+- name: Capture current SSH connection port
+  ansible.builtin.set_fact:
+    server_initial_setup_active_ssh_port: "{{ ansible_port | default(ansible_ssh_port | default(22)) | int }}"
+
+- name: Apply pending SSH and firewall handler changes before reboot
+  ansible.builtin.meta: flush_handlers
+
 - name: Display reconnection instructions
   ansible.builtin.debug:
     msg: |
@@ -49,12 +56,26 @@
       THE SERVER IS NOW RESTARTING
 
       To reconnect, please use:
-      ssh {{ ansible_user }}@{{ ansible_facts['default_ipv4']['address'] }} -p {{ firewall.ssh_port }}
+      ssh {{ ansible_user }}@{{ ansible_host | default(ansible_facts['default_ipv4']['address']) }} -p {{ firewall.ssh_port }}
 
       Please allow a few minutes for the server to complete the restart.
       -------------------------------------------------
   run_once: true
   delegate_to: localhost
+
+- name: Wait for configured SSH port to accept connections before reconnecting
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host | default(ansible_facts['default_ipv4']['address']) }}"
+    port: "{{ firewall.ssh_port | int }}"
+    state: started
+    delay: 0
+    sleep: 2
+    timeout: 120
+  delegate_to: localhost
+  when:
+    - firewall.ssh_port is defined
+    - server_initial_setup_security_tasks_ran | default(false)
+    - server_initial_setup_active_ssh_port != (firewall.ssh_port | int)
 
 - name: Update SSH connection port for reboot wait
   ansible.builtin.set_fact:
@@ -62,7 +83,30 @@
     ansible_ssh_port: "{{ firewall.ssh_port }}"
   when:
     - firewall.ssh_port is defined
-    - (ansible_port | default(ansible_ssh_port | default(22)) | int) != (firewall.ssh_port | int)
+    - server_initial_setup_security_tasks_ran | default(false)
+    - server_initial_setup_active_ssh_port != (firewall.ssh_port | int)
+
+- name: Reset SSH control connection after port change
+  ansible.builtin.include_tasks:
+    file: reset_connection_after_port_change.yml
+    apply:
+      tags:
+        - restart
+        - access-validation
+  tags:
+    - restart
+    - access-validation
+  when:
+    - firewall.ssh_port is defined
+    - server_initial_setup_security_tasks_ran | default(false)
+    - server_initial_setup_active_ssh_port != (firewall.ssh_port | int)
+
+- name: Verify Ansible can reconnect on the configured SSH port before rebooting
+  ansible.builtin.wait_for_connection:
+    connect_timeout: 5
+    delay: 0
+    sleep: 2
+    timeout: 120
 
 - name: Initiate server reboot
   ansible.builtin.reboot:

@@ -2,9 +2,17 @@
 # Main task file for server initial setup
 # This file includes all other task files in the correct order
 
+# Validates access prerequisites shared by full runs and VM-safe validation runs
+- name: Include access precheck tasks
+  ansible.builtin.import_tasks: precheck_access.yml
+  tags:
+    - precheck
+    - access-validation
+
 # Validates system requirements and prerequisites
 - name: Include precheck tasks
   ansible.builtin.import_tasks: precheck.yml
+  tags: precheck
 
 # Sets up basic system configuration and timezone
 - name: Include initial setup tasks
@@ -37,7 +45,9 @@
 # Configures SSH, firewall and security settings
 - name: Include security tasks
   ansible.builtin.import_tasks: setup_ssh_and_firewall.yml
-  tags: security
+  tags:
+    - security
+    - access-validation
 
 # Validates that all configurations were applied correctly before restart
 - name: Include post-configuration validation tasks
@@ -47,4 +57,6 @@
 # Prompts for server restart and handles reconnection
 - name: Include restart server tasks
   ansible.builtin.import_tasks: restart_server.yml
-  tags: restart
+  tags:
+    - restart
+    - access-validation

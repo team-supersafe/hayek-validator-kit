@@ -1,18 +1,9 @@
 ---
 - name: Restart ssh
-  ansible.builtin.service.service:
-    name: ssh
+  ansible.builtin.systemd:
+    name: ssh.service
     state: restarted
 
-- name: Reload systemd
-  ansible.builtin.service.systemd:
-    daemon_reload: true
-
-- name: Restart ssh socket
-  ansible.builtin.service.systemd:
-    name: ssh.socket
-    state: restarted
-  
 - name: Restart fail2ban
   ansible.builtin.service:
     name: fail2ban

@@ -1,0 +1,40 @@
+---
+# Access-path prechecks used by VM-safe validation runs.
+- name: Read authorized IPs from CSV
+  community.general.read_csv:
+    path: "{{ authorized_access_csv }}"
+    key: ip
+  register: authorized_ips_csv
+  delegate_to: localhost
+  become: false
+  run_once: true
+  tags: [precheck, access-validation]
+
+- name: Debug authorized IPs CSV content
+  ansible.builtin.debug:
+    var: authorized_ips_csv
+  delegate_to: localhost
+  become: false
+  no_log: true
+  run_once: true
+  tags: [precheck, access-validation]
+
+- name: Fail if authorized IPs CSV is missing or empty
+  ansible.builtin.fail:
+    msg: "Authorized IPs CSV file is missing or empty. Please provide a valid CSV with at least one IP."
+  when: >
+    not (authorized_ips_csv is defined and
+    authorized_ips_csv | length > 0)
+  delegate_to: localhost
+  become: false
+  run_once: true
+  tags: [precheck, access-validation]
+
+- name: Fail if authorized IPs CSV missing required field 'ip'
+  ansible.builtin.fail:
+    msg: "Authorized IPs CSV missing required field: ip"
+  when: (authorized_ips_csv.dict.values() | selectattr('ip', 'defined') | list | length) == 0
+  delegate_to: localhost
+  become: false
+  run_once: true
+  tags: [precheck, access-validation]

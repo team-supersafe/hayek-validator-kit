@@ -80,6 +80,8 @@ This role automates the initial configuration and hardening of a Solana validato
 - Fail2ban setup
 - Pre- and post-configuration checks
 
+For SSH, the role standardizes on `ssh.service` and disables `ssh.socket` if present, so port changes are controlled only through `/etc/ssh/sshd_config`. On Ubuntu-style socket-activated hosts, it also removes the socket-activation generator/drop-in state before starting `ssh.service`.
+
 ## Running the Playbook
 
 1. **Prepare the authorized IPs CSV:**
@@ -164,6 +166,7 @@ You can validate reboot-path changes on disposable VMs without running the full 
 - `host_name` remains optional and is now applied in the pre-reboot stage.
 - New tag: `pre-reboot-hostname`
 - Hostname pre-reboot tasks also carry `restart`, so `--tags restart` is enough.
+- This restart-only path validates reboot/hostname behavior and does not apply SSH/firewall changes.
 
 ### Test Matrix (Runbook)
 
@@ -212,6 +215,71 @@ ansible-playbook playbooks/pb_setup_metal_box.yml \
 ```
 
 Expected: hostname assertion fails and reboot is not triggered.
+
+## VM Access-Path Validation for SSH / Firewall Changes
+
+Use the dedicated `access-validation` tag to exercise the SSH/firewall/reboot flow on a disposable VM without pulling in the Solana hardware prechecks.
+
+- This path includes the CSV access precheck, security tasks, and restart tasks.
+- It intentionally skips the CPU and disk validation blocks that are meant for production-grade validator hosts.
+- It is the recommended way to validate the `flush_handlers` plus `ssh.socket` fix on VirtualBox-style test machines.
+
+### Before You Run
+
+- Take a VM snapshot first.
+- Ensure `authorized_ips.csv` contains the IP you are connecting from.
+- Keep your inventory on the VM's current SSH port before the first run so Ansible has to perform the real port switch.
+- If the VM has `ssh.socket`, leave it enabled before the first run so the fix is exercised.
+
+### SSH / Firewall Changes Commands
+
+1. Validate task selection:
+
+```sh
+cd ansible
+ansible-playbook playbooks/pb_setup_metal_box.yml \
+  -i <inventory> \
+  -e "target_host=<vm_host> ansible_user=<user> csv_file=<any>.csv host_name=validator-test-01" \
+  --list-tasks --tags access-validation
+```
+
+Expected: CSV access precheck tasks, SSH/firewall tasks, and restart tasks only.
+
+1. Functional access-path run:
+
+```sh
+ansible-playbook playbooks/pb_setup_metal_box.yml \
+  -i <inventory> \
+  -e "target_host=<vm_host> ansible_user=<user> csv_file=<any>.csv host_name=validator-test-01" \
+  -K --tags access-validation
+```
+
+1. Post-run verification:
+
+```sh
+ansible <vm_host> -i <inventory_after_port_change> -b -m command -a "systemctl is-enabled ssh.service"
+ansible <vm_host> -i <inventory_after_port_change> -b -m command -a "systemctl is-active ssh.service"
+ansible <vm_host> -i <inventory_after_port_change> -b -m command -a "systemctl is-enabled ssh.socket"
+ansible <vm_host> -i <inventory_after_port_change> -b -m command -a "systemctl is-active ssh.socket"
+ansible <vm_host> -i <inventory_after_port_change> -b -m command -a "ss -ltnp | grep ':2522 '"
+```
+
+Expected:
+
+- `ssh.service` is enabled and active.
+- `ssh.socket` is disabled and not active.
+- SSH is listening on the configured nonstandard port.
+
+1. Idempotency spot-check:
+
+```sh
+ansible-playbook playbooks/pb_setup_metal_box.yml \
+  -i <inventory_after_port_change> \
+  -e "target_host=<vm_host> ansible_user=<user> csv_file=<any>.csv host_name=validator-test-01" \
+  -K --tags access-validation
+```
+
+Expected: the second run completes cleanly with no reconnect drama even though the host is already on the target SSH port.
 
 ## After Playbook Completion
 
