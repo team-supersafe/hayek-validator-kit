@@ -132,9 +132,3 @@
     owner: "{{ health_check.owner }}"
     group: "{{ health_check.group }}"
     mode: "{{ health_check.mode }}"
-
-- name: Remove legacy health_check.sh from validator scripts directory
-  ansible.builtin.file:
-    path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
-    state: absent
-  when: health_check.dest_path != (validator_directory.path ~ '/' ~ validator_directory.scripts_subdir ~ '/' ~ health_check.script_name)

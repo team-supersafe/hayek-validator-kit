@@ -256,6 +256,12 @@
     group: root
     mode: '0644'
 
+- name: Remove legacy health_check.sh from validator scripts directory after SSH permissions are normalized
+  ansible.builtin.file:
+    path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
+    state: absent
+  when: health_check.dest_path != (validator_directory.path ~ '/' ~ validator_directory.scripts_subdir ~ '/' ~ health_check.script_name)
+
 # Find and update all files in sshd_config.d directory
 - name: Find all files in sshd_config.d directory
   ansible.builtin.find:
