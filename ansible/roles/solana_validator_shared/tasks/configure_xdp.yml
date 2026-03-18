@@ -810,7 +810,7 @@
 
     - name: xdp - Persist telemetry state snapshot
       ansible.builtin.template:
-        src: xdp_status.env.j2
+        src: ../templates/xdp_status.env.j2
         dest: "{{ xdp_runtime_state_file_path }}"
         owner: root
         group: root
