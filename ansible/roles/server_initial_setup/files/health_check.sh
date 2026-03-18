@@ -675,9 +675,10 @@ check_ssh_config() {
   fi
 
   if [ ! -r "$ssh_config" ]; then
-    echo -e "  ${YELLOW}NOTE: SSH configuration file is not readable by $(id -un); skipping content checks${NC}"
+    echo -e "  ${RED}FAIL: SSH configuration file is not readable by $(id -un)${NC}"
+    echo -e "  ${YELLOW}Unable to validate PermitRootLogin and PasswordAuthentication settings${NC}"
     echo -e "  ${YELLOW}Expected provisioning state: root:root with mode 0644${NC}"
-    return 0
+    return 1
   fi
 
   # Check for PermitRootLogin
