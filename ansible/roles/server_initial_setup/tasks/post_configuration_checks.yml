@@ -1,5 +1,8 @@
 ---
 # Post-configuration checks to verify that all system tuning was applied correctly
+- name: Apply pending handlers before post-configuration validation
+  ansible.builtin.meta: flush_handlers
+
 - name: Wait for system configuration to settle
   ansible.builtin.pause:
     seconds: 3
@@ -119,7 +122,7 @@
 
     - name: Verify authorized IPs are in fail2ban ignoreip
       ansible.builtin.shell: |
-        sed -n 's/^ignoreip = //p' /etc/fail2ban/jail.d/defaults-debian.conf | tr ' ' '\n' | grep -Fx "{{ item.value.ip }}"
+        fail2ban-client get sshd ignoreip | awk '/^[|`]- / {print $2}' | grep -Fx "{{ item.value.ip }}"
       register: ip_fail2ban_check
       changed_when: false
       loop: "{{ authorized_ips_csv.dict | dict2items }}"
