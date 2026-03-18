@@ -74,6 +74,7 @@
   delegate_to: localhost
   when:
     - firewall.ssh_port is defined
+    - server_initial_setup_security_tasks_ran | default(false)
     - server_initial_setup_active_ssh_port != (firewall.ssh_port | int)
 
 - name: Update SSH connection port for reboot wait
@@ -82,12 +83,22 @@
     ansible_ssh_port: "{{ firewall.ssh_port }}"
   when:
     - firewall.ssh_port is defined
+    - server_initial_setup_security_tasks_ran | default(false)
     - server_initial_setup_active_ssh_port != (firewall.ssh_port | int)
 
 - name: Reset SSH control connection after port change
-  ansible.builtin.include_tasks: reset_connection_after_port_change.yml
+  ansible.builtin.include_tasks:
+    file: reset_connection_after_port_change.yml
+    apply:
+      tags:
+        - restart
+        - access-validation
+  tags:
+    - restart
+    - access-validation
   when:
     - firewall.ssh_port is defined
+    - server_initial_setup_security_tasks_ran | default(false)
     - server_initial_setup_active_ssh_port != (firewall.ssh_port | int)
 
 - name: Verify Ansible can reconnect on the configured SSH port before rebooting

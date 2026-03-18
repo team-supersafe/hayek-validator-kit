@@ -166,6 +166,7 @@ You can validate reboot-path changes on disposable VMs without running the full 
 - `host_name` remains optional and is now applied in the pre-reboot stage.
 - New tag: `pre-reboot-hostname`
 - Hostname pre-reboot tasks also carry `restart`, so `--tags restart` is enough.
+- This restart-only path validates reboot/hostname behavior and does not apply SSH/firewall changes.
 
 ### Test Matrix (Runbook)
 

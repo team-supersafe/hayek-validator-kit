@@ -1,4 +1,8 @@
 ---
+- name: Mark SSH/firewall tasks as executed
+  ansible.builtin.set_fact:
+    server_initial_setup_security_tasks_ran: true
+
 # Detect whether the host ships with socket-activated SSH.
 - name: Find ssh.socket unit file
   ansible.builtin.find:
