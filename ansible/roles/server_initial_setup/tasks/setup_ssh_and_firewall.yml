@@ -183,6 +183,7 @@
   ansible.builtin.file:
     path: /etc/fail2ban/jail.d/defaults-debian.conf
     state: absent
+  register: fail2ban_defaults_removed
 
 # Ensure fail2ban config for Debian defaults
 - name: Ensure fail2ban config for Debian defaults
@@ -204,7 +205,14 @@
       ignoreip = {{ server_initial_setup_trusted_source_ips | join(' ') }}
     create: yes
     marker: "# {mark} ANSIBLE MANAGED BLOCK"
-  notify: Restart fail2ban
+  register: fail2ban_defaults_configured
+
+- name: Restart fail2ban immediately when trusted IP config changes
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted
+  when:
+    - fail2ban_defaults_removed.changed or fail2ban_defaults_configured.changed
 
 # Configure specific SSH security settings only
 - name: Remove all PermitRootLogin lines
@@ -255,19 +263,6 @@
     owner: root
     group: root
     mode: '0644'
-
-- name: Check whether the new health_check.sh install path exists
-  ansible.builtin.stat:
-    path: "{{ health_check.dest_path }}"
-  register: health_check_installed_path
-
-- name: Remove legacy health_check.sh from validator scripts directory after SSH permissions are normalized
-  ansible.builtin.file:
-    path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
-    state: absent
-  when:
-    - health_check.dest_path != (validator_directory.path ~ '/' ~ validator_directory.scripts_subdir ~ '/' ~ health_check.script_name)
-    - health_check_installed_path.stat.exists | default(false)
 
 # Find and update all files in sshd_config.d directory
 - name: Find all files in sshd_config.d directory

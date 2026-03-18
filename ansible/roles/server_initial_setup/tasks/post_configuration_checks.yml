@@ -1,8 +1,5 @@
 ---
 # Post-configuration checks to verify that all system tuning was applied correctly
-- name: Apply pending handlers before post-configuration validation
-  ansible.builtin.meta: flush_handlers
-
 - name: Wait for system configuration to settle
   ansible.builtin.pause:
     seconds: 3
