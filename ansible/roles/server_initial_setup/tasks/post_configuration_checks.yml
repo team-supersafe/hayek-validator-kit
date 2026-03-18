@@ -117,6 +117,19 @@
         msg: "{{ ip_firewall_check.results | map(attribute='stdout') | list }}"
       when: authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0
 
+    - name: Verify authorized IPs are in fail2ban ignoreip
+      ansible.builtin.shell: |
+        sed -n 's/^ignoreip = //p' /etc/fail2ban/jail.d/defaults-debian.conf | tr ' ' '\n' | grep -Fx "{{ item.value.ip }}" || echo "IP not found in fail2ban ignoreip: {{ item.value.ip }}"
+      register: ip_fail2ban_check
+      changed_when: false
+      loop: "{{ authorized_ips_csv.dict | dict2items }}"
+      when: authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0
+
+    - name: Display fail2ban ignoreip check results
+      ansible.builtin.debug:
+        msg: "{{ ip_fail2ban_check.results | map(attribute='stdout') | list }}"
+      when: authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0
+
 - name: Final configuration summary
   ansible.builtin.debug:
     msg: |
@@ -127,6 +140,7 @@
       ✓ CPU Performance Configuration Verified
       ✓ System Tuning Parameters Applied
       ✓ Firewall Rules for Authorized IPs Active
+      ✓ Fail2ban Trusted IP Exceptions Active
       ✓ All Services Running Correctly
       
       System is ready for Solana validator deployment.

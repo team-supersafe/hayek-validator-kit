@@ -89,7 +89,7 @@ filesystem_formats:
 # Script to monitor validator health
 health_check:
   script_name: "health_check.sh"
-  dest_path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
+  dest_path: "/usr/local/bin/{{ health_check.script_name }}"
   owner: "root"
-  group: "{{ validator_group }}"
-  mode: "0775"
+  group: "root"
+  mode: "0755"
