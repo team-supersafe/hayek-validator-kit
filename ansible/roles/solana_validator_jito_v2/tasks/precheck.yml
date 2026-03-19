@@ -70,6 +70,21 @@
         msg: "vote-account.json not found in {{ ansible_keys_dir }}"
       when: not vote_account_file.stat.exists
 
+    - name: Check if hot-spare-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/hot-spare-identity.json"
+      register: hot_spare_identity_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail if hot-spare-identity.json is missing
+      ansible.builtin.fail:
+        msg: >-
+          hot-spare-identity.json not found in {{ ansible_keys_dir }}.
+          Download the host-matched hot-spare identity from 1Password, rename it to hot-spare-identity.json,
+          place it in {{ ansible_keys_dir }}, and rerun the setup playbook.
+      when: not hot_spare_identity_file.stat.exists
+
 - name: Precheck duplicate identity usage
   ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/precheck_duplicate_identity.yml
 
