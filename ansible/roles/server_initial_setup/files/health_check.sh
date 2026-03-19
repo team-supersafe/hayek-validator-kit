@@ -665,10 +665,19 @@ check_ssh_config() {
   # Define the configuration file location
   local ssh_config="/etc/ssh/sshd_config"
   local issues=0
+  local root_login
+  local password_auth
 
   # Check if the file exists
   if [ ! -f "$ssh_config" ]; then
     echo -e "  ${RED}FAIL: SSH configuration file not found at $ssh_config${NC}"
+    return 1
+  fi
+
+  if [ ! -r "$ssh_config" ]; then
+    echo -e "  ${RED}FAIL: SSH configuration file is not readable by $(id -un)${NC}"
+    echo -e "  ${YELLOW}Unable to validate PermitRootLogin and PasswordAuthentication settings${NC}"
+    echo -e "  ${YELLOW}Expected provisioning state: root:root with mode 0644${NC}"
     return 1
   fi
 

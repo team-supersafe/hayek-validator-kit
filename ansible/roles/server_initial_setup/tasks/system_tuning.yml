@@ -125,10 +125,25 @@
   when: check_westwood.rc != 0
 
 # Health Check Script
-- name: Copy health_check.sh to sol's home directory
+- name: Install health_check.sh in /usr/local/bin
   ansible.builtin.copy:
     src: "{{ health_check.script_name }}"
     dest: "{{ health_check.dest_path }}"
     owner: "{{ health_check.owner }}"
     group: "{{ health_check.group }}"
     mode: "{{ health_check.mode }}"
+
+- name: Check whether the legacy validator scripts directory exists
+  ansible.builtin.stat:
+    path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}"
+  register: legacy_health_check_dir
+
+- name: Preserve legacy health_check.sh path as a symlink to the new install location
+  ansible.builtin.file:
+    src: "{{ health_check.dest_path }}"
+    dest: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
+    state: link
+    force: true
+  when:
+    - health_check.dest_path != (validator_directory.path ~ '/' ~ validator_directory.scripts_subdir ~ '/' ~ health_check.script_name)
+    - legacy_health_check_dir.stat.isdir | default(false)
