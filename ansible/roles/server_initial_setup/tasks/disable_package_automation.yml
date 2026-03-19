@@ -10,7 +10,7 @@
   loop: >-
     {{
       [
-        'unattended-upgrades',
+        'unattended-upgrades.service',
         'apt-daily.service',
         'apt-daily.timer',
         'apt-daily-upgrade.service',
