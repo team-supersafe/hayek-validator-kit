@@ -1,6 +1,6 @@
 ---
 # Solana Mainnet-specific, non-secret (rare) variables
-solana_rpc_url: https://api.mainnet-beta.solana.com
+solana_rpc_url: "{{ solana_cluster_rpc_urls['mainnet-beta'] }}"
 jito_bam_endpoints:
   amsterdam:
     bam_url: "http://amsterdam.mainnet.bam.jito.wtf"

@@ -1,6 +1,6 @@
 ---
 # Solana Testnet-specific, non-secret (rare) variables
-solana_rpc_url: https://api.testnet.solana.com
+solana_rpc_url: "{{ solana_cluster_rpc_urls['testnet'] }}"
 jito_bam_endpoints:
   dallas:
     bam_url: "http://dallas.testnet.bam.jito.wtf"

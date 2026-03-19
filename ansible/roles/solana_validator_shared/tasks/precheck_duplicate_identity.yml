@@ -40,10 +40,11 @@
           )
         )
       }}
-    identity_duplicate_check_cli_targets:
-      mainnet-beta: "mainnet-beta"
-      testnet: "testnet"
-      localnet: "localhost"
+    identity_duplicate_check_rpc_urls_effective: >-
+      {{
+        solana_cluster_rpc_urls
+        | combine({identity_duplicate_check_target_cluster: solana_rpc_url | default(solana_cluster_rpc_urls[identity_duplicate_check_target_cluster])})
+      }}
     duplicate_identity_gossip_matches: []
   run_once: true
 
@@ -96,7 +97,7 @@
     rc=0
 
     while [ "$attempt" -le "{{ identity_duplicate_check_retry_attempts | int }}" ]; do
-      if solana -u {{ identity_duplicate_check_cli_targets[item] }} gossip --output json-compact --no-address-labels; then
+      if solana -u {{ identity_duplicate_check_rpc_urls_effective[item] | quote }} gossip --output json-compact --no-address-labels; then
         exit 0
       fi
 
