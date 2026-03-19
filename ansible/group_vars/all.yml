@@ -1,8 +1,8 @@
 ---
 # Global trivial stuff (non-secret) that apply to all hosts
 
-# Ansible home directory
-ansible_home_dir: "{{ ansible_facts['env']['HOME'] }}"
+# Ansible control host home directory
+ansible_home_dir: "{{ lookup('env', 'HOME') }}"
 
 # Disk mount points configuration
 mount_base_path: '/mnt'

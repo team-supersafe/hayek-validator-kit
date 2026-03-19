@@ -1,0 +1,56 @@
+---
+# Debug ansible_home_dir resolution
+# --------------------------------
+# Purpose:
+# Show the difference between:
+# - ansible_home_dir from group_vars/all.yml
+# - ansible_facts['env']['HOME'] for the target host
+# - localhost facts gathered via delegation
+# - lookup('env', 'HOME') on the Ansible control machine
+#
+# Usage from /ansible:
+#
+# ansible-playbook tests/playbooks/pb_debug_ansible_home_dir.yml \
+#   -i solana_setup_host.yml \
+#   --limit validator-host \
+#   -e "target_host=validator-host ansible_user=<user>"
+
+- name: Debug ansible_home_dir in target-host context
+  hosts: "{{ target_host }}"
+  user: "{{ ansible_user }}"
+  become: false
+  gather_facts: true
+
+  pre_tasks:
+    - name: Assert required parameters are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - ansible_user is defined
+        fail_msg: "Missing required playbook variables: target_host, ansible_user"
+
+    - name: Gather facts for localhost explicitly
+      ansible.builtin.setup:
+      delegate_to: localhost
+      delegate_facts: true
+      run_once: true
+
+  tasks:
+    - name: Show target-host and control-host HOME resolution
+      ansible.builtin.debug:
+        msg: |
+          inventory_hostname: {{ inventory_hostname }}
+          ansible_home_dir (from group_vars/all.yml): {{ ansible_home_dir | default('UNDEFINED') }}
+          target ansible_facts['env']['HOME']: {{ ansible_facts['env']['HOME'] | default('UNDEFINED') }}
+          target ansible_facts['user_dir']: {{ ansible_facts['user_dir'] | default('UNDEFINED') }}
+          localhost ansible_facts['env']['HOME']: {{ hostvars['localhost']['ansible_facts']['env']['HOME'] | default('UNDEFINED') }}
+          lookup('env', 'HOME') on controller: {{ lookup('env', 'HOME') }}
+
+    - name: Explain the result in one place
+      ansible.builtin.debug:
+        msg: |
+          Interpretation guide:
+          - ansible_home_dir comes from group_vars/all.yml and currently resolves from lookup('env', 'HOME') on the machine running Ansible.
+          - target ansible_facts['env']['HOME'] is the HOME reported by the managed host {{ inventory_hostname }}.
+          - localhost ansible_facts['env']['HOME'] is the HOME reported by the machine running Ansible.
+          - lookup('env', 'HOME') is also evaluated on the machine running Ansible.
