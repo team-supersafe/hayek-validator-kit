@@ -27,7 +27,7 @@ ip,comment
 203.0.113.1,Admin Office
 198.51.100.2,VPN Gateway
 192.0.2.10,Bastion Host
-44.209.145.165,AWS Salvage Host
+203.0.113.25,Emergency Access Host
 203.0.113.5,Home Office
 ```
 
@@ -87,7 +87,7 @@ For SSH, the role standardizes on `ssh.service` and disables `ssh.socket` if pre
 
 1. **Prepare the authorized IPs CSV:**
    - Ensure you have the authorized IPs CSV as described in the [Requirements](#requirements-csv-files-for-usersroles-and-authorized-ips) section at the top of this documentation.
-   - Include every SSH source that must never be banned during setup: bastion hosts, operator public IPs, and the AWS salvage IP `44.209.145.165`.
+   - Include every SSH source that must never be banned during setup: bastion hosts, operator public IPs, and your own emergency or salvage access host IP.
    - The same CSV is used for both the SSH firewall allowlist and fail2ban `ignoreip`.
    - Do **not** use real IPs or sensitive names in your public documentation.
 
@@ -244,7 +244,7 @@ Use the dedicated `access-validation` tag to exercise the SSH/firewall/reboot fl
 ### Before You Run
 
 - Take a VM snapshot first.
-- Ensure `authorized_ips.csv` contains the IP you are connecting from, any bastion IPs, and the AWS salvage IP `44.209.145.165`.
+- Ensure `authorized_ips.csv` contains the IP you are connecting from, any bastion IPs, and your own emergency or salvage access host IP.
 - Keep your inventory on the VM's current SSH port before the first run so Ansible has to perform the real port switch.
 - If the VM has `ssh.socket`, leave it enabled before the first run so the fix is exercised.
 - Add a host entry in your local `~/.ssh/config` with `IdentityFile` and `IdentitiesOnly yes` so your SSH client does not burn retries by offering unrelated keys.
