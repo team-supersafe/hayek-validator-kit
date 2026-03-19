@@ -72,6 +72,17 @@
     name: ufw
     state: present
 
+- name: Ensure authorized IP CSV data is loaded before changing SSH access controls
+  ansible.builtin.assert:
+    that:
+      - authorized_ips_csv is defined
+      - authorized_ips_csv.dict is defined
+      - authorized_ips_csv.dict | length > 0
+    fail_msg: >
+      authorized_ips_csv must be loaded before running SSH/firewall security tasks.
+      Run the role through main.yml with csv_file set so the access precheck can
+      load the trusted IP list.
+
 # Remove all existing allow rules for SSH port before applying new ones
 - name: Remove all existing allow rules for SSH port {{ firewall.ssh_port }}
   ansible.builtin.shell: |
@@ -81,6 +92,25 @@
   changed_when: false
   failed_when: false
   become: true
+
+- name: Build trusted source IP list for SSH access controls
+  ansible.builtin.set_fact:
+    server_initial_setup_trusted_source_ips: >-
+      {{
+        (
+          (fail2ban.sshd.ignoreip | default('127.0.0.1') | replace(',', ' ') | split())
+          +
+          (
+            (authorized_ips_csv.dict.values() | map(attribute='ip') | list)
+            if authorized_ips_csv is defined
+            else []
+          )
+        )
+        | map('trim')
+        | reject('equalto', '')
+        | unique
+        | list
+      }}
 
 - name: "Allow authorized IPs from CSV on port {{ firewall.ssh_port }}"
   community.general.ufw:
@@ -182,7 +212,7 @@
       maxretry = {{ fail2ban.sshd.maxretry }}
       findtime = {{ fail2ban.sshd.findtime }}
       bantime = {{ fail2ban.sshd.bantime }}
-      ignoreip = {{ fail2ban.sshd.ignoreip }}
+      ignoreip = {{ server_initial_setup_trusted_source_ips | join(' ') }}
     create: yes
     marker: "# {mark} ANSIBLE MANAGED BLOCK"
   notify: Restart fail2ban
@@ -229,6 +259,13 @@
     regexp: '^#?ChallengeResponseAuthentication'
     line: 'ChallengeResponseAuthentication {{ ssh_config.challenge_response_authentication }}'
   notify: Restart ssh
+
+- name: Ensure sshd_config has standard readable permissions
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: '0644'
 
 # Find and update all files in sshd_config.d directory
 - name: Find all files in sshd_config.d directory

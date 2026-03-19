@@ -8,7 +8,7 @@
   delegate_to: localhost
   become: false
   run_once: true
-  tags: [precheck, access-validation]
+  tags: [precheck, security, access-validation]
 
 - name: Debug authorized IPs CSV content
   ansible.builtin.debug:
@@ -17,7 +17,7 @@
   become: false
   no_log: true
   run_once: true
-  tags: [precheck, access-validation]
+  tags: [precheck, security, access-validation]
 
 - name: Fail if authorized IPs CSV is missing or empty
   ansible.builtin.fail:
@@ -28,7 +28,7 @@
   delegate_to: localhost
   become: false
   run_once: true
-  tags: [precheck, access-validation]
+  tags: [precheck, security, access-validation]
 
 - name: Fail if authorized IPs CSV missing required field 'ip'
   ansible.builtin.fail:
@@ -37,4 +37,4 @@
   delegate_to: localhost
   become: false
   run_once: true
-  tags: [precheck, access-validation]
+  tags: [precheck, security, access-validation]

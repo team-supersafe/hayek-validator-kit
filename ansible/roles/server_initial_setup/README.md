@@ -27,6 +27,7 @@ ip,comment
 203.0.113.1,Admin Office
 198.51.100.2,VPN Gateway
 192.0.2.10,Bastion Host
+203.0.113.25,Emergency Access Host
 203.0.113.5,Home Office
 ```
 
@@ -86,6 +87,8 @@ For SSH, the role standardizes on `ssh.service` and disables `ssh.socket` if pre
 
 1. **Prepare the authorized IPs CSV:**
    - Ensure you have the authorized IPs CSV as described in the [Requirements](#requirements-csv-files-for-usersroles-and-authorized-ips) section at the top of this documentation.
+   - Include every SSH source that must never be banned during setup: bastion hosts, operator public IPs, and the real source or egress IP of any fallback access client you may need to use.
+   - The same CSV is used for both the SSH firewall allowlist and fail2ban `ignoreip`.
    - Do **not** use real IPs or sensitive names in your public documentation.
 
 2. **Run the playbook:**
@@ -102,6 +105,20 @@ ansible-playbook playbooks/pb_setup_metal_box.yml \
 
 > **Note:** Before running the playbook, users with the `sysadmin` role must have previously logged in and provisioned a password using the Password Self-Service system. This is required for privilege escalation (`-K` flag).
 > **Note:** `host_name` is optional. If omitted, the existing hostname is kept.
+
+## Local SSH Client Safety
+
+Before connecting to a hardened host, pin the correct key in your local `~/.ssh/config` entry for that server:
+
+```sshconfig
+Host your-target-server
+    HostName <server-ip>
+    User <username>
+    IdentityFile ~/.ssh/the_specific_correct_key
+    IdentitiesOnly yes
+```
+
+`IdentitiesOnly yes` is important because it stops SSH, 1Password, and other agent-managed keys from being tried automatically. Repeated wrong-key attempts can hit the fail2ban retry limit and temporarily lock out your source IP.
 
 ## Special Testnet Two-Disk Mode (Opt-In)
 
@@ -227,9 +244,10 @@ Use the dedicated `access-validation` tag to exercise the SSH/firewall/reboot fl
 ### Before You Run
 
 - Take a VM snapshot first.
-- Ensure `authorized_ips.csv` contains the IP you are connecting from.
+- Ensure `authorized_ips.csv` contains the IP you are connecting from, any bastion IPs, and the real source or egress IP of any fallback access client, such as a bastion, VPN, or Instance Connect path.
 - Keep your inventory on the VM's current SSH port before the first run so Ansible has to perform the real port switch.
 - If the VM has `ssh.socket`, leave it enabled before the first run so the fix is exercised.
+- Add a host entry in your local `~/.ssh/config` with `IdentityFile` and `IdentitiesOnly yes` so your SSH client does not burn retries by offering unrelated keys.
 
 ### SSH / Firewall Changes Commands
 
@@ -262,6 +280,7 @@ ansible <vm_host> -i <inventory_after_port_change> -b -m command -a "systemctl i
 ansible <vm_host> -i <inventory_after_port_change> -b -m command -a "systemctl is-enabled ssh.socket"
 ansible <vm_host> -i <inventory_after_port_change> -b -m command -a "systemctl is-active ssh.socket"
 ansible <vm_host> -i <inventory_after_port_change> -b -m command -a "ss -ltnp | grep ':2522 '"
+ansible <vm_host> -i <inventory_after_port_change> -b -m command -a "grep '^ignoreip =' /etc/fail2ban/jail.d/defaults-debian.conf"
 ```
 
 Expected:
@@ -269,6 +288,7 @@ Expected:
 - `ssh.service` is enabled and active.
 - `ssh.socket` is disabled and not active.
 - SSH is listening on the configured nonstandard port.
+- `ignoreip` contains localhost plus every IP from `authorized_ips.csv`.
 
 1. Idempotency spot-check:
 
@@ -296,5 +316,5 @@ Note: If your user belongs to the `validator_operators` or `sysadmin` group, you
 To verify that the server has the optimal configuration for a Solana validator, you can use the health_check script:
 
 ```sh
-   bash /opt/validator/scripts/health_check.sh
+health_check.sh
 ```

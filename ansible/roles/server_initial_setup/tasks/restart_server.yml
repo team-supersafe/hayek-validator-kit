@@ -108,6 +108,27 @@
     sleep: 2
     timeout: 120
 
+- name: Verify live fail2ban ignoreip after handlers apply
+  ansible.builtin.shell: |
+    fail2ban-client get sshd ignoreip | awk '/^[|`]- / {print $2}' | grep -Fx "{{ item.value.ip }}"
+  register: live_ip_fail2ban_check
+  changed_when: false
+  loop: "{{ authorized_ips_csv.dict | dict2items }}"
+  loop_control:
+    label: "{{ item.value.ip }} ({{ item.value.comment }})"
+  when:
+    - server_initial_setup_security_tasks_ran | default(false)
+    - authorized_ips_csv is defined
+    - authorized_ips_csv.dict | length > 0
+
+- name: Display live fail2ban ignoreip check results
+  ansible.builtin.debug:
+    msg: "{{ live_ip_fail2ban_check.results | map(attribute='stdout') | list }}"
+  when:
+    - server_initial_setup_security_tasks_ran | default(false)
+    - authorized_ips_csv is defined
+    - authorized_ips_csv.dict | length > 0
+
 - name: Initiate server reboot
   ansible.builtin.reboot:
     reboot_timeout: 900
