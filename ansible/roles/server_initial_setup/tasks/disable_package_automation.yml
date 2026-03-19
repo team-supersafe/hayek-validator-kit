@@ -1,0 +1,20 @@
+---
+- name: Disable automatic update services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop:
+    - unattended-upgrades
+    - apt-daily.service
+    - apt-daily.timer
+    - apt-daily-upgrade.service
+    - apt-daily-upgrade.timer
+
+- name: Configure auto-upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "0";
+      APT::Periodic::Unattended-Upgrade "0";
+    mode: '0644'

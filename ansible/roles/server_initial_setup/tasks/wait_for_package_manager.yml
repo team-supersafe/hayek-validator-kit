@@ -1,0 +1,27 @@
+---
+- name: Wait for unattended upgrades and apt/dpkg locks to clear
+  become: true
+  ansible.builtin.shell: |
+    if systemctl is-active --quiet unattended-upgrades; then
+      echo "unattended-upgrades is still active"
+      exit 1
+    fi
+
+    for lock_file in \
+      /var/lib/dpkg/lock-frontend \
+      /var/lib/dpkg/lock \
+      /var/lib/apt/lists/lock \
+      /var/cache/apt/archives/lock
+    do
+      if fuser "${lock_file}" >/dev/null 2>&1; then
+        echo "package manager lock is still held: ${lock_file}"
+        exit 1
+      fi
+    done
+  args:
+    executable: /bin/bash
+  register: server_initial_setup_package_manager_ready
+  changed_when: false
+  retries: 60
+  delay: 10
+  until: server_initial_setup_package_manager_ready.rc == 0
