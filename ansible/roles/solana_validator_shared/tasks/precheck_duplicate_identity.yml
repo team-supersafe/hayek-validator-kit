@@ -49,20 +49,33 @@
   run_once: true
   when: identity_duplicate_check_networks | length > 0
 
-- name: precheck_duplicate_identity - Fail if selected identity file is missing
-  ansible.builtin.fail:
+- name: precheck_duplicate_identity - Decide whether duplicate identity check can run
+  ansible.builtin.set_fact:
+    identity_duplicate_check_enabled: "{{ selected_identity_file_stat.stat.exists | default(false) }}"
+  when: identity_duplicate_check_networks | length > 0
+  run_once: true
+
+- name: precheck_duplicate_identity - Skip hot-spare duplicate check when no local identity file was selected
+  ansible.builtin.debug:
     msg: >-
-      {% if validator_type_effective == 'hot-spare' %}
-      hot-spare-identity.json not found in {{ ansible_keys_dir }}.
-      Download the host-matched hot-spare identity from 1Password, rename it to hot-spare-identity.json,
-      place it in {{ ansible_keys_dir }}, and rerun the setup playbook.
-      {% else %}
-      primary-target-identity.json not found in {{ ansible_keys_dir }}.
-      Ensure the primary identity keypair is present on the operator machine before rerunning the setup playbook.
-      {% endif %}
+      No controller-side hot-spare-identity.json was found in {{ ansible_keys_dir }}.
+      Duplicate identity precheck is skipped for this run and setup will continue with the
+      existing target-host hot-spare key generation fallback.
   when:
     - identity_duplicate_check_networks | length > 0
-    - not selected_identity_file_stat.stat.exists | default(false)
+    - validator_type_effective == 'hot-spare'
+    - not identity_duplicate_check_enabled | default(false)
+  run_once: true
+
+- name: precheck_duplicate_identity - Fail if selected primary identity file is missing
+  ansible.builtin.fail:
+    msg: >-
+      primary-target-identity.json not found in {{ ansible_keys_dir }}.
+      Ensure the primary identity keypair is present on the operator machine before rerunning the setup playbook.
+  when:
+    - identity_duplicate_check_networks | length > 0
+    - validator_type_effective == 'primary'
+    - not identity_duplicate_check_enabled | default(false)
   run_once: true
 
 - name: precheck_duplicate_identity - Get selected identity pubkey
@@ -71,7 +84,9 @@
   delegate_to: localhost
   run_once: true
   changed_when: false
-  when: identity_duplicate_check_networks | length > 0
+  when:
+    - identity_duplicate_check_networks | length > 0
+    - identity_duplicate_check_enabled | default(false)
 
 - name: precheck_duplicate_identity - Fail if selected identity pubkey could not be resolved
   ansible.builtin.fail:
@@ -81,6 +96,7 @@
       stderr={{ selected_identity_pubkey_cmd.stderr | default('') | trim }}
   when:
     - identity_duplicate_check_networks | length > 0
+    - identity_duplicate_check_enabled | default(false)
     - selected_identity_pubkey_cmd.rc != 0 or (selected_identity_pubkey_cmd.stdout | default('') | trim) == ''
   run_once: true
 
@@ -88,7 +104,9 @@
   ansible.builtin.set_fact:
     selected_identity_pubkey: "{{ selected_identity_pubkey_cmd.stdout | trim }}"
   run_once: true
-  when: identity_duplicate_check_networks | length > 0
+  when:
+    - identity_duplicate_check_networks | length > 0
+    - identity_duplicate_check_enabled | default(false)
 
 - name: precheck_duplicate_identity - Query Solana gossip in required network scope
   ansible.builtin.shell: |
@@ -119,7 +137,9 @@
   async: "{{ identity_duplicate_check_timeout_seconds | int }}"
   poll: 1
   loop: "{{ identity_duplicate_check_networks }}"
-  when: identity_duplicate_check_networks | length > 0
+  when:
+    - identity_duplicate_check_networks | length > 0
+    - identity_duplicate_check_enabled | default(false)
 
 - name: precheck_duplicate_identity - Fail if any gossip query failed
   ansible.builtin.assert:
@@ -133,7 +153,9 @@
       stdout={{ item.stdout | default('') | trim }}
       stderr={{ item.stderr | default('') | trim }}
   loop: "{{ identity_duplicate_gossip_query_results.results | default([]) }}"
-  when: identity_duplicate_check_networks | length > 0
+  when:
+    - identity_duplicate_check_networks | length > 0
+    - identity_duplicate_check_enabled | default(false)
   run_once: true
 
 - name: precheck_duplicate_identity - Collect matching gossip entries
@@ -166,7 +188,9 @@
         msg: >-
           Failed to parse Solana gossip JSON for {{ ansible_failed_result.item.item | default('unknown-network') }}
           while checking identity duplication for {{ selected_identity_pubkey | default('unknown-pubkey') }}.
-  when: identity_duplicate_check_networks | length > 0
+  when:
+    - identity_duplicate_check_networks | length > 0
+    - identity_duplicate_check_enabled | default(false)
 
 - name: precheck_duplicate_identity - Fail if the selected identity is already running
   ansible.builtin.fail:
@@ -181,5 +205,6 @@
       {% endfor %}
   when:
     - identity_duplicate_check_networks | length > 0
+    - identity_duplicate_check_enabled | default(false)
     - duplicate_identity_gossip_matches | length > 0
   run_once: true
