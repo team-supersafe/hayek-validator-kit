@@ -43,7 +43,7 @@
     identity_duplicate_check_cli_targets:
       mainnet-beta: "mainnet-beta"
       testnet: "testnet"
-      localnet: "localnet"
+      localnet: "localhost"
     duplicate_identity_gossip_matches: []
   run_once: true
 
