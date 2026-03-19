@@ -126,6 +126,7 @@
     that:
       - item.rc == 0
       - (item.stdout | default('') | trim) != ''
+    quiet: true
     fail_msg: >-
       Failed to query Solana gossip for {{ item.item }} while checking identity duplication for
       {{ selected_identity_pubkey | default('unknown-pubkey') }}.
@@ -133,6 +134,8 @@
       stdout={{ item.stdout | default('') | trim }}
       stderr={{ item.stderr | default('') | trim }}
   loop: "{{ identity_duplicate_gossip_query_results.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item | default('unknown-network') }}"
   when: identity_duplicate_check_networks | length > 0
   run_once: true
 
@@ -159,6 +162,8 @@
           }}
         parsed_gossip_output: "{{ item.stdout | from_json }}"
       loop: "{{ identity_duplicate_gossip_query_results.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item | default('unknown-network') }}"
       run_once: true
   rescue:
     - name: precheck_duplicate_identity - Fail on invalid gossip JSON
