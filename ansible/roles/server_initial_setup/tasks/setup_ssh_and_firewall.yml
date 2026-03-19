@@ -194,7 +194,6 @@
   ansible.builtin.file:
     path: /etc/fail2ban/jail.d/defaults-debian.conf
     state: absent
-  register: fail2ban_defaults_removed
 
 # Ensure fail2ban config for Debian defaults
 - name: Ensure fail2ban config for Debian defaults
@@ -216,14 +215,7 @@
       ignoreip = {{ server_initial_setup_trusted_source_ips | join(' ') }}
     create: yes
     marker: "# {mark} ANSIBLE MANAGED BLOCK"
-  register: fail2ban_defaults_configured
-
-- name: Restart fail2ban immediately when trusted IP config changes
-  ansible.builtin.service:
-    name: fail2ban
-    state: restarted
-  when:
-    - fail2ban_defaults_removed.changed or fail2ban_defaults_configured.changed
+  notify: Restart fail2ban
 
 # Configure specific SSH security settings only
 - name: Remove all PermitRootLogin lines
