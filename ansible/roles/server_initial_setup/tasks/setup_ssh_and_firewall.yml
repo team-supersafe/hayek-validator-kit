@@ -72,6 +72,17 @@
     name: ufw
     state: present
 
+- name: Ensure authorized IP CSV data is loaded before changing SSH access controls
+  ansible.builtin.assert:
+    that:
+      - authorized_ips_csv is defined
+      - authorized_ips_csv.dict is defined
+      - authorized_ips_csv.dict | length > 0
+    fail_msg: >
+      authorized_ips_csv must be loaded before running SSH/firewall security tasks.
+      Run the role through main.yml with csv_file set so the access precheck can
+      load the trusted IP list.
+
 # Remove all existing allow rules for SSH port before applying new ones
 - name: Remove all existing allow rules for SSH port {{ firewall.ssh_port }}
   ansible.builtin.shell: |
