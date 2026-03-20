@@ -1,0 +1,33 @@
+---
+- name: Wait for unattended upgrades and apt/dpkg locks to clear
+  become: true
+  ansible.builtin.shell: |
+    if ! command -v fuser >/dev/null 2>&1; then
+      echo "fuser is required to detect apt/dpkg lock holders; install psmisc first" >&2
+      exit 2
+    fi
+
+    if systemctl is-active --quiet unattended-upgrades; then
+      echo "unattended-upgrades is still active"
+      exit 1
+    fi
+
+    for lock_file in \
+      /var/lib/dpkg/lock-frontend \
+      /var/lib/dpkg/lock \
+      /var/lib/apt/lists/lock \
+      /var/cache/apt/archives/lock
+    do
+      if fuser "${lock_file}" >/dev/null 2>&1; then
+        echo "package manager lock is still held: ${lock_file}"
+        exit 1
+      fi
+    done
+  args:
+    executable: /bin/bash
+  register: server_initial_setup_package_manager_ready
+  changed_when: false
+  failed_when: server_initial_setup_package_manager_ready.rc not in [0, 1]
+  retries: 60
+  delay: 10
+  until: server_initial_setup_package_manager_ready.rc == 0

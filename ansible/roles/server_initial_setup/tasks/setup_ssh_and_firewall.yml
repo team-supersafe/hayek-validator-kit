@@ -67,10 +67,17 @@
 
 
 # Configure firewall
+- name: Disable package automation before package installs
+  ansible.builtin.import_tasks: disable_package_automation.yml
+
+- name: Wait for package manager readiness before package installs
+  ansible.builtin.import_tasks: wait_for_package_manager.yml
+
 - name: Ensure UFW is installed
   ansible.builtin.apt:
     name: ufw
     state: present
+    lock_timeout: 300
 
 - name: Ensure authorized IP CSV data is loaded before changing SSH access controls
   ansible.builtin.assert:
@@ -188,6 +195,7 @@
   ansible.builtin.apt:
     name: fail2ban
     state: present
+    lock_timeout: 300
 
 # Clean existing fail2ban config before setting up new one
 - name: Remove existing fail2ban defaults config

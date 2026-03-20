@@ -1,6 +1,12 @@
 ---
 # This role performs initial system setup including package installation and basic configuration
 
+- name: Disable package automation before package operations
+  ansible.builtin.import_tasks: disable_package_automation.yml
+
+- name: Wait for package manager readiness before package operations
+  ansible.builtin.import_tasks: wait_for_package_manager.yml
+
 # Update and upgrade packages
 - name: Update apt cache
   ansible.builtin.apt:
@@ -12,25 +18,6 @@
     upgrade: true
     autoclean: true
     autoremove: true
-
-# Disable unattended upgrades
-- name: Disable automatic update services
-  ansible.builtin.systemd:
-    name: "{{ item }}"
-    state: stopped
-    enabled: false
-  loop:
-    - unattended-upgrades
-    - apt-daily.timer
-    - apt-daily-upgrade.timer
-
-- name: Configure auto-upgrades
-  ansible.builtin.copy:
-    dest: /etc/apt/apt.conf.d/20auto-upgrades
-    content: |
-      APT::Periodic::Update-Package-Lists "0";
-      APT::Periodic::Unattended-Upgrade "0";
-    mode: '0644'
 
 - name: Install essential packages
   ansible.builtin.apt:
