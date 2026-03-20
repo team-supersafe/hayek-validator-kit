@@ -60,13 +60,6 @@
       ansible.builtin.set_fact:
         validator_keyset_dir: "{{ keys_dir }}/{{ validator_name }}"
         ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_keyset_name }}"
-
-    - name: install_validator_keyset - Check if hot-spare-identity.json exists in ansible_keys_dir
-      ansible.builtin.stat:
-        path: "{{ ansible_keys_dir }}/hot-spare-identity.json"
-      register: local_hot_spare_key_exists
-      delegate_to: localhost
-      run_once: true
   when: not (validator_rbac_enabled | default(false))
 
 - name: install_validator_keyset - Reset LEGACY validator keys directory
@@ -107,7 +100,7 @@
         group: "{{ default_group }}"
       become: true
 
-    - name: install_validator_keyset - Copy hot-spare-identity.json to target host if it exists on ansible_keys_dir
+    - name: install_validator_keyset - Copy hot-spare-identity.json to target host
       ansible.builtin.copy:
         src: "{{ ansible_keys_dir }}/hot-spare-identity.json"
         dest: "{{ validator_keyset_dir }}/hot-spare-identity.json"
@@ -115,22 +108,6 @@
         owner: "{{ solana_user }}"
         group: "{{ default_group }}"
       become: true
-      when: local_hot_spare_key_exists.stat.exists | default(false)
-
-    - name: install_validator_keyset - Generate hot-spare-identity.json keypair
-      ansible.builtin.shell: "{{ system_solana_active_release_dir }}/solana-keygen new -s --no-bip39-passphrase -o hot-spare-identity.json -f"
-      args:
-        chdir: "{{ validator_keyset_dir }}"
-      register: keygen_result
-      when: not local_hot_spare_key_exists.stat.exists | default(false)
-
-    - name: install_validator_keyset - Fail with error message (hot-spare-identity.json)
-      ansible.builtin.fail:
-        msg: "Could not generate hot-spare-identity.json keypair. Error: {{ keygen_result }}"
-      when:
-        - not local_hot_spare_key_exists.stat.exists | default(false)
-        - keygen_result is defined
-        - keygen_result.rc != 0
 
     - name: install_validator_keyset - Create identity.json symlink
       ansible.builtin.file:

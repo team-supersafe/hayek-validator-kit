@@ -1,0 +1,205 @@
+---
+- name: precheck_duplicate_identity - Set keys dir for local ansible control host
+  ansible.builtin.set_fact:
+    ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_keyset_name | default(validator_name) }}"
+  run_once: true
+
+- name: precheck_duplicate_identity - Validate cluster and retry configuration
+  ansible.builtin.assert:
+    that:
+      - solana_cluster is defined
+      - solana_cluster in ['mainnet', 'mainnet-beta', 'testnet', 'localnet']
+      - identity_duplicate_check_retry_attempts | int > 0
+    fail_msg: >-
+      Duplicate identity precheck requires a valid solana_cluster and retry configuration.
+      solana_cluster must be one of mainnet, mainnet-beta, testnet, or localnet, and
+      identity_duplicate_check_retry_attempts must be greater than 0.
+  run_once: true
+
+- name: precheck_duplicate_identity - Map duplicate check cluster scope
+  ansible.builtin.set_fact:
+    validator_type_effective: "{{ validator_type | default('primary') }}"
+    identity_duplicate_check_target_cluster: >-
+      {{
+        'mainnet-beta'
+        if solana_cluster in ['mainnet', 'mainnet-beta']
+        else 'testnet'
+        if solana_cluster == 'testnet'
+        else 'localnet'
+      }}
+  run_once: true
+
+- name: precheck_duplicate_identity - Set selected identity scope
+  ansible.builtin.set_fact:
+    selected_identity_file: >-
+      {{
+        ansible_keys_dir + '/' +
+        (
+          'primary-target-identity.json'
+          if validator_type_effective == 'primary'
+          else 'hot-spare-identity.json'
+        )
+      }}
+    identity_duplicate_check_networks: >-
+      {{
+        (
+          ['mainnet-beta', 'testnet', 'localnet']
+          if validator_type_effective == 'hot-spare' and identity_duplicate_check_target_cluster == 'localnet'
+          else (
+            ['mainnet-beta', 'testnet']
+            if validator_type_effective == 'hot-spare'
+            else [identity_duplicate_check_target_cluster]
+          )
+        )
+      }}
+    identity_duplicate_check_rpc_urls_effective: >-
+      {{
+        solana_cluster_rpc_urls
+        | combine({identity_duplicate_check_target_cluster: solana_rpc_url | default(solana_cluster_rpc_urls[identity_duplicate_check_target_cluster])})
+      }}
+    duplicate_identity_gossip_matches: []
+  run_once: true
+
+- name: precheck_duplicate_identity - Check selected identity file exists locally
+  ansible.builtin.stat:
+    path: "{{ selected_identity_file }}"
+  register: selected_identity_file_stat
+  delegate_to: localhost
+  run_once: true
+  when: identity_duplicate_check_networks | length > 0
+
+- name: precheck_duplicate_identity - Fail if selected identity file is missing
+  ansible.builtin.fail:
+    msg: >-
+      {{ selected_identity_file | basename }} not found in {{ ansible_keys_dir }}.
+      Ensure the selected identity keypair is present on the operator machine before rerunning the setup playbook.
+  when:
+    - identity_duplicate_check_networks | length > 0
+    - not selected_identity_file_stat.stat.exists | default(false)
+  run_once: true
+
+- name: precheck_duplicate_identity - Get selected identity pubkey
+  ansible.builtin.command: solana-keygen pubkey {{ selected_identity_file }}
+  register: selected_identity_pubkey_cmd
+  delegate_to: localhost
+  run_once: true
+  changed_when: false
+  when: identity_duplicate_check_networks | length > 0
+
+- name: precheck_duplicate_identity - Fail if selected identity pubkey could not be resolved
+  ansible.builtin.fail:
+    msg: >-
+      Failed to derive the pubkey from {{ selected_identity_file }}.
+      rc={{ selected_identity_pubkey_cmd.rc | default('N/A') }}
+      stderr={{ selected_identity_pubkey_cmd.stderr | default('') | trim }}
+  when:
+    - identity_duplicate_check_networks | length > 0
+    - selected_identity_pubkey_cmd.rc != 0 or (selected_identity_pubkey_cmd.stdout | default('') | trim) == ''
+  run_once: true
+
+- name: precheck_duplicate_identity - Store selected identity pubkey
+  ansible.builtin.set_fact:
+    selected_identity_pubkey: "{{ selected_identity_pubkey_cmd.stdout | trim }}"
+  run_once: true
+  when: identity_duplicate_check_networks | length > 0
+
+- name: precheck_duplicate_identity - Query Solana gossip in required network scope
+  ansible.builtin.shell: |
+    attempt=1
+    rc=0
+
+    while [ "$attempt" -le "{{ identity_duplicate_check_retry_attempts | int }}" ]; do
+      solana -u {{ identity_duplicate_check_rpc_urls_effective[item] | quote }} gossip --output json-compact --no-address-labels
+      rc=$?
+
+      if [ "$rc" -eq 0 ]; then
+        exit 0
+      fi
+
+      if [ "$attempt" -lt "{{ identity_duplicate_check_retry_attempts | int }}" ]; then
+        sleep {{ identity_duplicate_check_retry_delay_seconds | int }}
+      fi
+
+      attempt=$((attempt + 1))
+    done
+
+    exit "$rc"
+  args:
+    executable: /bin/sh
+  register: identity_duplicate_gossip_query_results
+  delegate_to: localhost
+  run_once: true
+  changed_when: false
+  # async applies to each network query because this task loops over the cluster scope
+  async: "{{ identity_duplicate_check_timeout_seconds | int }}"
+  poll: 1
+  loop: "{{ identity_duplicate_check_networks }}"
+  when: identity_duplicate_check_networks | length > 0
+
+- name: precheck_duplicate_identity - Fail if any gossip query failed
+  ansible.builtin.assert:
+    that:
+      - item.rc == 0
+      - (item.stdout | default('') | trim) != ''
+    quiet: true
+    fail_msg: >-
+      Failed to query Solana gossip for {{ item.item }} while checking identity duplication for
+      {{ selected_identity_pubkey | default('unknown-pubkey') }}.
+      rc={{ item.rc | default('N/A') }}
+      stdout={{ item.stdout | default('') | trim }}
+      stderr={{ item.stderr | default('') | trim }}
+  loop: "{{ identity_duplicate_gossip_query_results.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item | default('unknown-network') }}"
+  when: identity_duplicate_check_networks | length > 0
+  run_once: true
+
+- name: precheck_duplicate_identity - Collect matching gossip entries
+  block:
+    - name: precheck_duplicate_identity - Normalize duplicate identity gossip matches
+      ansible.builtin.set_fact:
+        duplicate_identity_gossip_matches: >-
+          {{
+            duplicate_identity_gossip_matches +
+            (
+              parsed_gossip_entries
+              | selectattr('identityPubkey', 'equalto', selected_identity_pubkey)
+              | map('combine', {'network': item.item})
+              | list
+            )
+          }}
+      vars:
+        parsed_gossip_entries: >-
+          {{
+            parsed_gossip_output
+            if parsed_gossip_output is sequence and parsed_gossip_output is not mapping
+            else [parsed_gossip_output]
+          }}
+        parsed_gossip_output: "{{ item.stdout | from_json }}"
+      loop: "{{ identity_duplicate_gossip_query_results.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item | default('unknown-network') }}"
+      run_once: true
+  rescue:
+    - name: precheck_duplicate_identity - Fail on invalid gossip JSON
+      ansible.builtin.fail:
+        msg: >-
+          Failed to parse Solana gossip JSON for {{ ansible_failed_result.item.item | default('unknown-network') }}
+          while checking identity duplication for {{ selected_identity_pubkey | default('unknown-pubkey') }}.
+  when: identity_duplicate_check_networks | length > 0
+
+- name: precheck_duplicate_identity - Fail if the selected identity is already running
+  ansible.builtin.fail:
+    msg: |
+      Duplicate validator identity detected before setup.
+      Validator type: {{ validator_type_effective }}
+      Identity file: {{ selected_identity_file }}
+      Identity pubkey: {{ selected_identity_pubkey }}
+      The selected identity is already visible in Solana gossip for the required scope:
+      {% for match in duplicate_identity_gossip_matches %}
+      - network={{ match.network }}, ip={{ match.ipAddress | default('unknown') }}, gossip_port={{ match.gossipPort | default('unknown') }}, identity={{ match.identityPubkey | default(selected_identity_pubkey) }}
+      {% endfor %}
+  when:
+    - identity_duplicate_check_networks | length > 0
+    - duplicate_identity_gossip_matches | length > 0
+  run_once: true

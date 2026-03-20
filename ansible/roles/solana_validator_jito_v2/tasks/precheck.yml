@@ -32,49 +32,62 @@
   delegate_to: localhost
   run_once: true
 
-- name: Set ansible_home_dir for ansible-control host
-  ansible.builtin.set_fact:
-    ansible_home_dir: "{{ lookup('env', 'HOME') }}"
-  delegate_to: localhost
-  run_once: true
-
 - name: Set keys dir for local ansible control host and target host
   ansible.builtin.set_fact:
-    ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+    ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_keyset_name | default(validator_name) }}"
     validator_keyset_dir: "{{ keys_dir }}/{{ validator_name }}"
 
 - name: Check required validator keypairs
   block:
     - name: Check if primary-target-identity.json exists in ansible_keys_dir
       ansible.builtin.stat:
-        path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/primary-target-identity.json"
+        path: "{{ ansible_keys_dir }}/primary-target-identity.json"
       register: primary_target_identity_file
       delegate_to: localhost
       run_once: true
 
     - name: Fail if primary-target-identity.json is missing
       ansible.builtin.fail:
-        msg: "primary-target-identity.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+        msg: "primary-target-identity.json not found in {{ ansible_keys_dir }}"
       when: not primary_target_identity_file.stat.exists
 
     - name: Get primary target identity pubkey
-      ansible.builtin.command: solana-keygen pubkey {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/primary-target-identity.json
+      ansible.builtin.command: solana-keygen pubkey {{ ansible_keys_dir }}/primary-target-identity.json
       register: primary_target_pubkey
       delegate_to: localhost
       run_once: true
+      changed_when: false
       when: validator_type == 'primary'
 
     - name: Check if vote-account.json exists in ansible_keys_dir
       ansible.builtin.stat:
-        path: "{{ ansible_home_dir }}/.validator-keys/{{ validator_name }}/vote-account.json"
+        path: "{{ ansible_keys_dir }}/vote-account.json"
       register: vote_account_file
       delegate_to: localhost
       run_once: true
 
     - name: Fail if vote-account.json is missing
       ansible.builtin.fail:
-        msg: "vote-account.json not found in {{ ansible_home_dir }}/.validator-keys/{{ validator_name }}"
+        msg: "vote-account.json not found in {{ ansible_keys_dir }}"
       when: not vote_account_file.stat.exists
+
+    - name: Check if hot-spare-identity.json exists in ansible_keys_dir
+      ansible.builtin.stat:
+        path: "{{ ansible_keys_dir }}/hot-spare-identity.json"
+      register: hot_spare_identity_file
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail if hot-spare-identity.json is missing
+      ansible.builtin.fail:
+        msg: >-
+          hot-spare-identity.json not found in {{ ansible_keys_dir }}.
+          Download the host-matched hot-spare identity from 1Password, rename it to hot-spare-identity.json,
+          place it in {{ ansible_keys_dir }}, and rerun the setup playbook.
+      when: not hot_spare_identity_file.stat.exists
+
+- name: Precheck duplicate identity usage
+  ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/precheck_duplicate_identity.yml
 
 - name: Get host architecture
   ansible.builtin.import_tasks: ../../common/tasks/set_host_architecture.yml
