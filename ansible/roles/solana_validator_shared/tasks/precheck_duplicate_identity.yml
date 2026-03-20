@@ -4,6 +4,18 @@
     ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_keyset_name | default(validator_name) }}"
   run_once: true
 
+- name: precheck_duplicate_identity - Validate cluster and retry configuration
+  ansible.builtin.assert:
+    that:
+      - solana_cluster is defined
+      - solana_cluster in ['mainnet', 'mainnet-beta', 'testnet', 'localnet']
+      - identity_duplicate_check_retry_attempts | int > 0
+    fail_msg: >-
+      Duplicate identity precheck requires a valid solana_cluster and retry configuration.
+      solana_cluster must be one of mainnet, mainnet-beta, testnet, or localnet, and
+      identity_duplicate_check_retry_attempts must be greater than 0.
+  run_once: true
+
 - name: precheck_duplicate_identity - Map duplicate check cluster scope
   ansible.builtin.set_fact:
     validator_type_effective: "{{ validator_type | default('primary') }}"
@@ -97,11 +109,12 @@
     rc=0
 
     while [ "$attempt" -le "{{ identity_duplicate_check_retry_attempts | int }}" ]; do
-      if solana -u {{ identity_duplicate_check_rpc_urls_effective[item] | quote }} gossip --output json-compact --no-address-labels; then
+      solana -u {{ identity_duplicate_check_rpc_urls_effective[item] | quote }} gossip --output json-compact --no-address-labels
+      rc=$?
+
+      if [ "$rc" -eq 0 ]; then
         exit 0
       fi
-
-      rc=$?
 
       if [ "$attempt" -lt "{{ identity_duplicate_check_retry_attempts | int }}" ]; then
         sleep {{ identity_duplicate_check_retry_delay_seconds | int }}
@@ -117,6 +130,7 @@
   delegate_to: localhost
   run_once: true
   changed_when: false
+  # async applies to each network query because this task loops over the cluster scope
   async: "{{ identity_duplicate_check_timeout_seconds | int }}"
   poll: 1
   loop: "{{ identity_duplicate_check_networks }}"

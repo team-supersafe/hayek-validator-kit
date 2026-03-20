@@ -56,6 +56,7 @@
       register: primary_target_pubkey
       delegate_to: localhost
       run_once: true
+      changed_when: false
       when: validator_type == 'primary'
 
     - name: Check if vote-account.json exists in ansible_keys_dir
