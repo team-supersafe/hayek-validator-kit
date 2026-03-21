@@ -74,7 +74,7 @@
 
 - name: verify - Print XDP startup status
   ansible.builtin.debug:
-    msg: >-
+    msg: |
       XDP startup flags present={{ validator_startup_has_xdp }},
       xdp_effective_enabled={{ xdp_effective_enabled | default(false) }},
       xdp_skip_reason={{ xdp_skip_reason | default('') }},
