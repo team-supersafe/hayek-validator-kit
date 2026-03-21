@@ -18,7 +18,7 @@
 
 - name: precheck_duplicate_identity - Map duplicate check cluster scope
   ansible.builtin.set_fact:
-    validator_type_effective: "{{ validator_type | default('primary') }}"
+    validator_type_effective: "{{ validator_type | default('hot-spare') }}"
     identity_duplicate_check_target_cluster: >-
       {{
         'mainnet-beta'

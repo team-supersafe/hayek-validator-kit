@@ -75,7 +75,7 @@ The Hayek Validator Kit is an infrastructure automation toolkit for deploying an
    - Uses containerized build environment
    - Includes S3 upload functionality for pre-built binaries
    - See docs.hayek.fi for detailed build instructions
-   
+
    **Option B: Manual build (if needed):**
    ```bash
    export SOLANA_RELEASE=2.1.13
@@ -121,18 +121,57 @@ The Hayek Validator Kit is an infrastructure automation toolkit for deploying an
    docker compose logs -f [service-name]
    ```
    - Available services: gossip-entrypoint, host-alpha, host-bravo, host-charlie, ansible-control
-   
+
 5. **Use convenient startup scripts:**
    ```bash
    # Start localnet from outside IDE
    ./start-localnet-from-outside-ide.sh
-   
+
    # Standard localnet startup from ansible-control container
    ./container-setup/scripts/initialize-localnet-and-demo-validators.sh
-   
+
    # Add penetration testing tools
    ./add-pentest-to-localnet.sh
    ```
+
+### Pull Request Creation Rules
+
+When contributing from a feature or fix branch, always create PRs with the repository template and target the upstream main branch.
+
+1. **Base and head must be correct:**
+   ```bash
+   gh pr create \
+     --repo team-supersafe/hayek-validator-kit \
+     --base main \
+     --head <your-fork-owner>:<branch>
+   ```
+   - Open PRs against `team-supersafe/hayek-validator-kit:main`
+   - Push the branch to your fork first and use the fork branch as `--head`
+
+2. **Always use `.github/pull_request_template.md`:**
+   - Do not write an ad hoc PR body when the repository has a PR template
+   - Preserve the template sections and fill them with the actual change details
+   - Keep the `Review Notes` section concise and actionable for reviewers
+
+3. **What to include in the PR body:**
+   - A 1-2 sentence summary
+   - The primary type of change
+   - Honest scope/complexity checkboxes
+   - A concrete list of changes made
+   - Testing performed
+   - Documentation impact
+   - Reviewer notes with focus areas or important rollout/context details
+
+4. **Reviewer notes for configuration/default changes:**
+   - Include a short attack-plan summary
+   - Include the public interface changes or operator-visible behavior changes
+   - Call out defaults, opt-in overrides, and any backward-compatibility expectations
+
+5. **PR hygiene before opening or updating the PR:**
+   - Run the relevant validation commands for the touched files
+   - Prefer `pre-commit run --files <changed-files>` if `pre-commit run --all-files` rewrites unrelated tracked files
+   - If a repo-wide hook modifies unrelated files, restore those unrelated changes before committing
+   - If you opened a PR without using the template, immediately update the PR body to match the template
 
 ## Validation
 
@@ -167,6 +206,7 @@ After making any changes to Ansible roles or Docker configurations:
 - **ALWAYS run pre-commit hooks before committing**: `pre-commit run --all-files`
 - **Address shellcheck warnings**: The codebase has existing shellcheck issues that should be fixed when working on shell scripts
 - **Ansible syntax**: Use `ansible-playbook --syntax-check` for all modified playbooks
+- **PR body discipline**: Use `.github/pull_request_template.md` when opening or editing PRs to upstream
 
 ## Common Tasks
 

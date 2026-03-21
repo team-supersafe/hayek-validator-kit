@@ -6,4 +6,7 @@ dependencies:
   - role: solana_validator_shared
     vars:
       validator_name: "{{ validator_name }}"
-      validator_type: "{{ validator_type }}"
+      # validator_type is intentionally not forwarded here — it is resolved via
+      # Ansible variable precedence (extra vars > role defaults). Operators pass
+      # -e "validator_type=primary" at the CLI; the default "hot-spare" is
+      # provided by solana_validator_shared/defaults/main.yml.

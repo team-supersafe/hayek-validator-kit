@@ -58,12 +58,12 @@
         state: absent
   become: true
 
-- name: prepare - Clear logs and key store
+- name: prepare - Clear logs and scripts
   ansible.builtin.shell: |
     #!/bin/bash
     set -e
 
     rm -rf "{{ validator_logs_dir }}"/*
     rm -rf "{{ validator_scripts_dir }}"/*
-    rm -rf "{{ validator_keys_dir }}"/*
   become: true
+

@@ -32,7 +32,7 @@
   import_tasks: "{{ playbook_dir }}/../roles/solana_validator_shared/tasks/pin_validator_core.yml"
   when:
     - run_poh_cpu_affinity_fix | default(false) | bool
-    - validator_type | default('primary') == 'primary'
+    - validator_type | default('hot-spare') == 'primary'
   tags: [solana_validator_agave, pin_validator_core]
 
 - name: Print summary

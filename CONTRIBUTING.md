@@ -38,11 +38,13 @@ We provide a helpful script to check if your PR is appropriately sized before su
 ```
 
 This script will:
+
 - Analyze the number of lines and files changed
 - Provide recommendations for breaking down large PRs
 - Suggest best practices for submission
 
 **Usage examples:**
+
 ```sh
 # Check against main branch (default)
 ./scripts/check-pr-size.sh
@@ -61,17 +63,20 @@ This script will:
 To ensure fast and effective reviews, please follow these guidelines:
 
 **Recommended PR Size:**
+
 - **Fewer than 400 lines changed** (excluding generated files, documentation)
 - **Single logical change** per PR
 - **Reviewable in under 30 minutes**
 
 **Breaking Down Large Changes:**
+
 - Split new features into multiple PRs (setup → core logic → tests → documentation)
 - Separate refactoring from functional changes
 - Create preparatory PRs for large features (dependencies, utilities, etc.)
 - Use feature flags for incremental rollouts
 
 **Examples of Well-Sized PRs:**
+
 - ✅ Add new Ansible role for specific service
 - ✅ Fix bug in existing playbook
 - ✅ Update documentation for specific feature
@@ -85,11 +90,19 @@ To ensure fast and effective reviews, please follow these guidelines:
    - Run `pre-commit run --all-files` to catch issues early
    - Test your changes in isolation
    - Ensure your PR follows the size guidelines above
+   - Since this repo has a "Claude Code" code-reviewer subagent already configured, you can ask:
+
+     ```text
+     Use the code-reviewer to check the changes in this branch
+     ```
+
+     This agent is read-only so it will not make changes, its function is to discover chances for improvement and fixes.
 
 2. **Opening the PR:**
    - Push your branch to your fork
-   - Open a pull request (PR) to the main repository
+   - Open a pull request (PR) to `team-supersafe/hayek-validator-kit:main`
    - Use the provided PR template to describe your changes
+   - If creating the PR via GitHub CLI or automation, start from `.github/pull_request_template.md` instead of writing an ad hoc body
    - Include a clear description and reference any related issues
    - Add appropriate labels (if you have permission)
 
@@ -98,10 +111,18 @@ To ensure fast and effective reviews, please follow these guidelines:
    - Update the README or documentation if your changes affect usage or setup
    - Respond promptly to reviewer feedback
    - Keep the PR up to date with the main branch if needed
+   - Need progressive code reviews? Ask Claude:
+
+     ```text
+     Use the code-reviewer to check the changes in this PR
+     ```
+
+     This agent is read-only so it will not make changes, its function is to discover chances for improvement and fixes.
 
 ### PR Title Convention
 
 Use clear, descriptive titles:
+
 - `Add monitoring role for Solana validators`
 - `Fix SSH key validation in server setup`
 - `Update Jito installation documentation`

@@ -14,9 +14,10 @@ argument_specs:
         description: "Name of the validator instance"
       validator_type:
         type: str
-        required: true
+        required: false
+        default: "hot-spare"
         choices: ["primary", "hot-spare"]
-        description: "Type of validator (primary or hot-spare)"
+        description: "Validator identity mode (primary or hot-spare, defaults to hot-spare)"
       agave_version:
         type: str
         required: true
@@ -44,7 +45,7 @@ argument_specs:
       xdp_enabled:
         type: bool
         required: false
-        default: true
+        default: false
         description: "Enable XDP support for validator networking when host/client capabilities allow it"
       xdp_mode:
         type: str

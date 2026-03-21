@@ -5,7 +5,6 @@ solana_user_dir: "/home/{{ solana_user }}"
 validator_service_name: "sol"
 
 # User variables
-keys_dir: "{{ solana_user_dir }}/keys"
 build_dir: "{{ solana_user_dir }}/build"
 scripts_dir: "{{ solana_user_dir }}/bin"
 logs_dir: "{{ solana_user_dir }}/logs"
