@@ -18,7 +18,7 @@
 
 - name: precheck_duplicate_identity - Map duplicate check cluster scope
   ansible.builtin.set_fact:
-    validator_type_effective: "{{ validator_type | default('primary') }}"
+    validator_type_effective: "{{ validator_type | default('hot-spare') }}"
     identity_duplicate_check_target_cluster: >-
       {{
         'mainnet-beta'
@@ -188,6 +188,17 @@
           while checking identity duplication for {{ selected_identity_pubkey | default('unknown-pubkey') }}.
   when: identity_duplicate_check_networks | length > 0
 
+- name: precheck_duplicate_identity - Filter out self (target host) from gossip matches
+  ansible.builtin.set_fact:
+    duplicate_identity_gossip_matches_external: >-
+      {{
+        duplicate_identity_gossip_matches
+        | rejectattr('ipAddress', 'equalto', ansible_host)
+        | list
+      }}
+  when: identity_duplicate_check_networks | length > 0
+  run_once: true
+
 - name: precheck_duplicate_identity - Fail if the selected identity is already running
   ansible.builtin.fail:
     msg: |
@@ -196,10 +207,10 @@
       Identity file: {{ selected_identity_file }}
       Identity pubkey: {{ selected_identity_pubkey }}
       The selected identity is already visible in Solana gossip for the required scope:
-      {% for match in duplicate_identity_gossip_matches %}
+      {% for match in duplicate_identity_gossip_matches_external %}
       - network={{ match.network }}, ip={{ match.ipAddress | default('unknown') }}, gossip_port={{ match.gossipPort | default('unknown') }}, identity={{ match.identityPubkey | default(selected_identity_pubkey) }}
       {% endfor %}
   when:
     - identity_duplicate_check_networks | length > 0
-    - duplicate_identity_gossip_matches | length > 0
+    - duplicate_identity_gossip_matches_external | length > 0
   run_once: true

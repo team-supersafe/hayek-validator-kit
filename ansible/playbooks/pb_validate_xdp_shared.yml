@@ -1,16 +1,29 @@
 ---
 # Validate shared XDP preflight/param logic without deploying a validator service.
 #
-# Example:
+# Example (default-off, explicit assertion run):
+# Pass xdp_enabled=false explicitly to exercise the xdp_enabled_explicitly_set
+# gate. Without it the gate skips and only the expected_xdp_* checks run.
+# NOTE: xdp_enabled_explicitly_set relies on this playbook not loading
+# solana_validator_shared role defaults — never add roles: or import_role here.
 # ansible-playbook playbooks/pb_validate_xdp_shared.yml \
 #   -i solana_setup_host.yml \
 #   --limit validator-host \
 #   -e "target_host=validator-host" \
 #   -e "ansible_user=sol" \
 #   -e "validator_name=hayek-mainnet" \
-#   -e "xdp_enabled=true" \
+#   -e "xdp_enabled=false" \
 #   -e "expected_xdp_effective_enabled=false" \
 #   -e "expected_xdp_skip_reason=xdp_disabled"
+#
+# Explicit XDP opt-in example:
+# ansible-playbook playbooks/pb_validate_xdp_shared.yml \
+#   -i solana_setup_host.yml \
+#   --limit validator-host \
+#   -e "target_host=validator-host" \
+#   -e "ansible_user=sol" \
+#   -e "validator_name=hayek-mainnet" \
+#   -e "xdp_enabled=true"
 
 - name: Validate shared XDP task only
   hosts: "{{ target_host }}"
@@ -28,6 +41,14 @@
           Missing required playbook variables: target_host, ansible_user
       tags: [xdp, xdp_preflight, xdp_validate]
 
+    # This playbook sets xdp_enabled locally below, so we must capture explicit user input
+    # before applying the default. This works because the playbook does not load
+    # solana_validator_shared role defaults into the play context.
+    - name: validate_xdp - Record whether xdp_enabled was explicitly provided
+      ansible.builtin.set_fact:
+        xdp_enabled_explicitly_set: "{{ xdp_enabled is defined }}"
+      tags: [xdp, xdp_preflight, xdp_validate]
+
     - name: validate_xdp - Set default Solana active release dir when undefined
       ansible.builtin.set_fact:
         system_solana_active_release_dir: "/opt/solana/active_release/bin"
@@ -42,7 +63,7 @@
 
     - name: validate_xdp - Set default xdp_enabled when undefined
       ansible.builtin.set_fact:
-        xdp_enabled: true
+        xdp_enabled: false
       when: xdp_enabled is not defined
       tags: [xdp, xdp_preflight, xdp_validate]
 
@@ -117,13 +138,15 @@
         fail_msg: "Shared XDP task did not produce the expected output facts."
       tags: [xdp, xdp_validate]
 
-    - name: validate_xdp - Assert explicit disabled behavior
+    - name: validate_xdp - Assert explicit disabled behavior when requested
       ansible.builtin.assert:
         that:
           - not xdp_effective_enabled | bool
           - xdp_skip_reason == 'xdp_disabled'
-        fail_msg: "xdp_enabled=false must force xdp_disabled with xdp_effective_enabled=false."
-      when: not (xdp_enabled | bool)
+        fail_msg: "When xdp_enabled=false is set explicitly, xdp_disabled must be the primary reason and xdp_effective_enabled must be false."
+      when:
+        - xdp_enabled_explicitly_set | bool
+        - not (xdp_enabled | bool)
       tags: [xdp, xdp_validate]
 
     - name: validate_xdp - Assert expected effective status if provided

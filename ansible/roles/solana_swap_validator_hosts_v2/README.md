@@ -86,15 +86,13 @@
   - The rsync command uses the operator's SSH key with options to bypass host key verification, since operators may not have previously connected between these hosts
   - Known_hosts entries are cleaned up before transfer to prevent conflicts
 
-### 6. Detection mechanism
+### 6. RBAC deployment assumptions
 
-RBAC detection checks for:
+All deployments managed by this role are RBAC-enabled. The following directories are expected to exist on the destination host:
 
-- `validator_root_dir` exists (`/opt/validator`)
-- `cargo_home` exists (system-wide cargo)
-- `rustup_home` exists (system-wide rustup)
-
-All three must exist for `validator_rbac_enabled` to be `true`.
+- `validator_root_dir` (`/opt/validator`)
+- `cargo_home` (system-wide cargo)
+- `rustup_home` (system-wide rustup)
 
 ### 7. Variable mapping summary
 

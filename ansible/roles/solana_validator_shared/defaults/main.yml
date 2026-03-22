@@ -1,6 +1,7 @@
 ---
-# XDP defaults (default-on, fail-open)
-xdp_enabled: true
+validator_type: "hot-spare"
+# XDP defaults (default-off, fail-open when explicitly requested)
+xdp_enabled: false
 xdp_mode: "native"
 xdp_experimental_retransmit_xdp_cpu_cores: 1
 xdp_experimental_retransmit_xdp_zero_copy: true

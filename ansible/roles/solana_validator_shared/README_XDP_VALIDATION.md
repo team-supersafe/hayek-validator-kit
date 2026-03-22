@@ -34,7 +34,11 @@ ansible-playbook playbooks/pb_validate_xdp_shared.yml \
   -K
 ```
 
-Optional deterministic assertion run:
+Optional deterministic assertion run (explicit disable):
+
+Pass `xdp_enabled=false` explicitly to exercise the `xdp_enabled_explicitly_set`
+gate. Without it only the `expected_xdp_*` checks run; the explicit-disable
+assertion path is silently skipped.
 
 ```bash
 ANSIBLE_LOCAL_TEMP=/tmp/.ansible-local \
@@ -49,6 +53,19 @@ ansible-playbook playbooks/pb_validate_xdp_shared.yml \
   -K
 ```
 
+Explicit XDP opt-in run:
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/.ansible-local \
+ansible-playbook playbooks/pb_validate_xdp_shared.yml \
+  -i solana_setup_host.yml \
+  --limit validator-host \
+  -e "target_host=validator-host" \
+  -e "ansible_user=<sysadmin_user>" \
+  -e "xdp_enabled=true" \
+  -K
+```
+
 ## How This Connects to Validator Setup Playbooks
 
 XDP shared logic is already wired into both setup roles:
@@ -59,8 +76,8 @@ XDP shared logic is already wired into both setup roles:
 Default behavior:
 
 - No extra XDP variables are required.
-- XDP is default-on (`xdp_enabled=true`).
-- If supported on host/binary, XDP params are injected into validator startup.
+- XDP is default-off (`xdp_enabled=false`).
+- If `xdp_enabled=true` is requested explicitly and the host/binary support it, XDP params are injected into validator startup.
 - Current preference order is:
   - `--experimental-retransmit-xdp-cpu-cores`
   - `--experimental-retransmit-xdp-zero-copy` when enabled and accepted
@@ -70,8 +87,8 @@ Default behavior:
 
 Optional override variables:
 
-- Disable explicitly:
-  - `-e "xdp_enabled=false"`
+- Enable explicitly:
+  - `-e "xdp_enabled=true"`
 - Set mode (when relevant to supported flags):
   - `-e "xdp_mode=native"`
 - Tune experimental retransmit cores:
@@ -109,7 +126,7 @@ XDP Validation Summary
 
 Interpretation:
 
-- `Requested=True`: XDP was requested (`xdp_enabled=true`)
+- `Requested=True`: XDP was requested explicitly (`xdp_enabled=true`)
 - `Effective=True`: shared logic produced supported XDP args
 - `Computed params`: flags that will be appended to validator startup args
 - `Validator version` and `Kernel semver`: key compatibility checks used by preflight
@@ -136,7 +153,7 @@ Interpretation:
 ## Common Reasons
 
 - `xdp_disabled`
-  - Explicitly disabled by input (`xdp_enabled=false`)
+  - XDP was not requested (`xdp_enabled` omitted or set to `false`)
 - `validator_version_unsupported`
   - Installed validator version is below minimum supported version (`>= 3.0.9`)
 - `xdp_flags_unavailable`

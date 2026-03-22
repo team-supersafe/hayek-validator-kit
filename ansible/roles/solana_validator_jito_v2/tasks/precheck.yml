@@ -35,7 +35,7 @@
 - name: Set keys dir for local ansible control host and target host
   ansible.builtin.set_fact:
     ansible_keys_dir: "{{ ansible_home_dir }}/.validator-keys/{{ validator_keyset_name | default(validator_name) }}"
-    validator_keyset_dir: "{{ keys_dir }}/{{ validator_name }}"
+    validator_keyset_dir: "{{ validator_keys_dir }}/{{ validator_name }}"
 
 - name: Check required validator keypairs
   block:
@@ -57,7 +57,7 @@
       delegate_to: localhost
       run_once: true
       changed_when: false
-      when: validator_type == 'primary'
+      when: (validator_type | default('hot-spare')) == 'primary'
 
     - name: Check if vote-account.json exists in ansible_keys_dir
       ansible.builtin.stat:
