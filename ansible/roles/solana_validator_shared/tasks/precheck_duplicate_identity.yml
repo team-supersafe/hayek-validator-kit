@@ -56,7 +56,16 @@
       }}
     identity_duplicate_check_networks: >-
       {{
-        identity_duplicate_check_required_networks + identity_duplicate_check_best_effort_networks
+        [identity_duplicate_check_target_cluster] +
+        (
+          []
+          if validator_type_effective != 'hot-spare' or identity_duplicate_check_target_cluster == 'localnet'
+          else (
+            ['testnet']
+            if identity_duplicate_check_target_cluster == 'mainnet-beta'
+            else ['mainnet-beta']
+          )
+        )
       }}
     identity_duplicate_check_rpc_urls_effective: >-
       {{
