@@ -40,17 +40,23 @@
           else 'hot-spare-identity.json'
         )
       }}
-    identity_duplicate_check_networks: >-
+    identity_duplicate_check_required_networks:
+      - "{{ identity_duplicate_check_target_cluster }}"
+    identity_duplicate_check_best_effort_networks: >-
       {{
         (
-          ['mainnet-beta', 'testnet', 'localnet']
-          if validator_type_effective == 'hot-spare' and identity_duplicate_check_target_cluster == 'localnet'
+          []
+          if validator_type_effective != 'hot-spare' or identity_duplicate_check_target_cluster == 'localnet'
           else (
-            ['mainnet-beta', 'testnet']
-            if validator_type_effective == 'hot-spare'
-            else [identity_duplicate_check_target_cluster]
+            ['testnet']
+            if identity_duplicate_check_target_cluster == 'mainnet-beta'
+            else ['mainnet-beta']
           )
         )
+      }}
+    identity_duplicate_check_networks: >-
+      {{
+        identity_duplicate_check_required_networks + identity_duplicate_check_best_effort_networks
       }}
     identity_duplicate_check_rpc_urls_effective: >-
       {{
@@ -58,6 +64,7 @@
         | combine({identity_duplicate_check_target_cluster: solana_rpc_url | default(solana_cluster_rpc_urls[identity_duplicate_check_target_cluster])})
       }}
     duplicate_identity_gossip_matches: []
+    identity_duplicate_check_failed_best_effort_networks: []
   run_once: true
 
 - name: precheck_duplicate_identity - Check selected identity file exists locally
@@ -136,7 +143,7 @@
   loop: "{{ identity_duplicate_check_networks }}"
   when: identity_duplicate_check_networks | length > 0
 
-- name: precheck_duplicate_identity - Fail if any gossip query failed
+- name: precheck_duplicate_identity - Fail if any required gossip query failed
   ansible.builtin.assert:
     that:
       - item.rc == 0
@@ -151,7 +158,34 @@
   loop: "{{ identity_duplicate_gossip_query_results.results | default([]) }}"
   loop_control:
     label: "{{ item.item | default('unknown-network') }}"
+  when:
+    - identity_duplicate_check_networks | length > 0
+    - item.item in identity_duplicate_check_required_networks
+  run_once: true
+
+- name: precheck_duplicate_identity - Record unreachable best-effort networks
+  ansible.builtin.set_fact:
+    identity_duplicate_check_failed_best_effort_networks: >-
+      {{
+        identity_duplicate_gossip_query_results.results
+        | default([])
+        | rejectattr('item', 'in', identity_duplicate_check_required_networks)
+        | rejectattr('rc', 'equalto', 0)
+        | map(attribute='item')
+        | list
+      }}
   when: identity_duplicate_check_networks | length > 0
+  run_once: true
+
+- name: precheck_duplicate_identity - Warn when best-effort cross-cluster gossip checks are skipped
+  ansible.builtin.debug:
+    msg: >-
+      Best-effort cross-cluster duplicate identity checks could not query
+      {{ identity_duplicate_check_failed_best_effort_networks | join(', ') }} while checking
+      {{ selected_identity_pubkey | default('unknown-pubkey') }}. Setup will continue because
+      same-cluster duplicate protection remains enforced.
+  when:
+    - identity_duplicate_check_failed_best_effort_networks | default([]) | length > 0
   run_once: true
 
 - name: precheck_duplicate_identity - Collect matching gossip entries
@@ -176,7 +210,15 @@
             else [parsed_gossip_output]
           }}
         parsed_gossip_output: "{{ item.stdout | from_json }}"
-      loop: "{{ identity_duplicate_gossip_query_results.results | default([]) }}"
+      loop: >-
+        {{
+          identity_duplicate_gossip_query_results.results
+          | default([])
+          | selectattr('rc', 'equalto', 0)
+          | selectattr('stdout', 'defined')
+          | rejectattr('stdout', 'equalto', '')
+          | list
+        }}
       loop_control:
         label: "{{ item.item | default('unknown-network') }}"
       run_once: true
