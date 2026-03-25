@@ -46,4 +46,4 @@ argument_specs:
         type: str
         required: true
         choices: ["localnet", "testnet", "mainnet"]
-        description: "Target Solana cluster. Pre-release versions (alpha/beta) are only permitted on testnet."
+        description: "Target Solana cluster. Used to configure the default RPC endpoint after installation."
