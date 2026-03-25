@@ -15,10 +15,11 @@
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
 #   -e "operator_user=bob" \
-#   -e "jito_version=2.3.11" \
-#   -e "jito_version_patch=1" # Optional: Patch version to append to jito tag (e.g. 2.2.15-jito.1)
-#   -e "build_from_source=true" # Optional: Build from source instead of using precompiled binaries
-#   -e "use_official_repo=true" # Optional: Use official repository instead of forked repository
+#   -e "jito_version=3.1.10" \        # Use X.Y.Z-beta.N for testnet pre-releases (e.g. 4.0.0-beta.2)
+#   -e "solana_cluster=mainnet" \     # Required: one of localnet | testnet | mainnet
+#   -e "jito_version_patch=1" \       # Optional: Patch version to append to jito tag (e.g. 3.1.10-jito.1)
+#   -e "build_from_source=true" \     # Optional: Build from source instead of using precompiled binaries
+#   -e "use_official_repo=true" \     # Optional: Use official repository instead of forked repository
 
 - name: Install Jito-Solana CLI
   hosts: "{{ target_host }}"
@@ -32,14 +33,17 @@
           - target_host is defined
           - jito_version is defined
           - operator_user is defined
+          - solana_cluster is defined
+          - solana_cluster in ['localnet', 'testnet', 'mainnet']
         fail_msg: >
           Missing required variables.
           Must provide:
             - target_host
             - jito_version
             - operator_user
+            - solana_cluster (one of: localnet, testnet, mainnet)
           Optional:
-            - jito_version_patch (set to append a patch version to jito tag, e.g. 1 for 2.2.15-jito.1)
+            - jito_version_patch (set to append a patch version to jito tag, e.g. 1 for 3.1.10-jito.1)
 
   roles:
     - role: solana_cli_jito

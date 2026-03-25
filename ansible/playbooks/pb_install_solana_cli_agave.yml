@@ -15,9 +15,10 @@
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
 #   -e "operator_user=bob" \
-#   -e "agave_version=2.3.11" \
-#   -e "build_from_source=true" \ # Optional: Build from source instead of using precompiled binaries
-#   -e "use_official_repo=true" \ # Optional: Use official repository instead of forked repository
+#   -e "agave_version=3.1.11" \       # Use X.Y.Z-beta.N for testnet pre-releases (e.g. 4.0.0-beta.4)
+#   -e "solana_cluster=mainnet" \     # Required: one of localnet | testnet | mainnet
+#   -e "build_from_source=true" \     # Optional: Build from source instead of using precompiled binaries
+#   -e "use_official_repo=true" \     # Optional: Use official repository instead of forked repository
 
 - name: Install Solana CLI
   hosts: "{{ target_host }}"
@@ -31,12 +32,15 @@
           - target_host is defined
           - agave_version is defined
           - operator_user is defined
+          - solana_cluster is defined
+          - solana_cluster in ['localnet', 'testnet', 'mainnet']
         fail_msg: >
           Missing required variables.
           Must provide:
             - target_host
             - agave_version
             - operator_user
+            - solana_cluster (one of: localnet, testnet, mainnet)
 
   roles:
     - role: solana_cli_agave

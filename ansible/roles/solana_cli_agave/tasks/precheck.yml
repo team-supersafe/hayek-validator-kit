@@ -6,8 +6,18 @@
 
 - name: Precheck - Validate agave_version format
   ansible.builtin.fail:
-    msg: "agave_version must follow semantic versioning pattern (e.g. 1.2.3)"
-  when: not agave_version | regex_search('^[0-9]+\.[0-9]+\.[0-9]+$')
+    msg: "agave_version must follow semantic versioning pattern (e.g. 3.1.11 for mainnet, 4.0.0-beta.4 for testnet)"
+  when: not agave_version | regex_search('^[0-9]+\.[0-9]+\.[0-9]+(-(?:alpha|beta)\.[0-9]+)?$')
+
+- name: Precheck - Block pre-release versions on mainnet clusters
+  ansible.builtin.fail:
+    msg: >-
+      Pre-release versions (alpha/beta) are only supported on testnet.
+      agave_version={{ agave_version }} is a pre-release and cannot be used
+      with solana_cluster={{ solana_cluster }}.
+  when:
+    - solana_cluster == 'mainnet'
+    - agave_version is regex('-(?:alpha|beta)\.')
 
 - name: Precheck - Display version message
   ansible.builtin.debug:
@@ -22,8 +32,7 @@
       build_from_source={{ build_from_source | default('undefined') }}
       for solana_cluster={{ solana_cluster }}.
   when:
-    - solana_cluster is defined
-    - (solana_cluster | lower) in ['mainnet', 'mainnet-beta', 'testnet']
+    - solana_cluster in ['mainnet', 'testnet']
 
 - name: Add hosts to known_hosts to comply with ansible config host_key_checking
   ansible.builtin.known_hosts:
@@ -51,7 +60,7 @@
     # solana-cli 2.3.11 (src:e2b57760; feat:798020478, client:Solana)
     - name: Precheck - Extract installed version number
       ansible.builtin.set_fact:
-        installed_solana_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9.]+)', '\\1') | first }}"
+        installed_solana_version: "{{ installed_version.stdout | regex_search('solana-cli ([0-9]+\\.[0-9]+\\.[0-9]+(?:-(?:alpha|beta)\\.[0-9]+)?)', '\\1') | first }}"
       when: solana_binary.stat.exists and installed_version.stdout is defined
 
     - name: Precheck - Extract installed client identifier
