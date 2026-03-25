@@ -44,7 +44,6 @@ argument_specs:
         description: "Optional explicit manifest URL for Jito-Solana binary metadata"
       solana_cluster:
         type: str
-        required: false
-        description: >-
-          Target Solana cluster (e.g. 'mainnet-beta', 'testnet', 'localnet').
-          Pre-release versions (alpha/beta) are blocked when this is 'mainnet' or 'mainnet-beta'.
+        required: true
+        choices: ["localnet", "testnet", "mainnet"]
+        description: "Target Solana cluster. Pre-release versions (alpha/beta) are only permitted on testnet."
