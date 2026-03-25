@@ -36,3 +36,9 @@ argument_specs:
         type: str
         required: false
         description: "Optional explicit manifest URL for Agave binary metadata"
+      solana_cluster:
+        type: str
+        required: false
+        description: >-
+          Target Solana cluster (e.g. 'mainnet-beta', 'testnet', 'localnet').
+          Pre-release versions (alpha/beta) are blocked when this is 'mainnet' or 'mainnet-beta'.

@@ -14,11 +14,10 @@
     msg: >-
       Pre-release versions (alpha/beta) are only supported on testnet.
       agave_version={{ agave_version }} is a pre-release and cannot be used
-      with solana_cluster={{ solana_cluster }}.
+      with solana_cluster={{ solana_cluster | default('undefined') }}.
   when:
-    - solana_cluster is defined
-    - (solana_cluster | lower) in ['mainnet', 'mainnet-beta']
-    - agave_version | regex_search('-(?:alpha|beta)\.')
+    - (solana_cluster | default('') | lower) in ['mainnet', 'mainnet-beta']
+    - agave_version is regex('-(?:alpha|beta)\.')
 
 - name: Precheck - Display version message
   ansible.builtin.debug:

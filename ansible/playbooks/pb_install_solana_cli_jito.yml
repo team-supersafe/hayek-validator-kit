@@ -15,10 +15,11 @@
 #   --limit host-charlie \
 #   -e "target_host=host-charlie" \
 #   -e "operator_user=bob" \
-#   -e "jito_version=2.3.11" \
-#   -e "jito_version_patch=1" # Optional: Patch version to append to jito tag (e.g. 2.2.15-jito.1)
-#   -e "build_from_source=true" # Optional: Build from source instead of using precompiled binaries
-#   -e "use_official_repo=true" # Optional: Use official repository instead of forked repository
+#   -e "jito_version=3.1.10" \              # Use X.Y.Z-beta.N for testnet pre-releases (e.g. 4.0.0-beta.2)
+#   -e "solana_cluster=mainnet-beta" \      # Required when using mainnet; pre-release versions are blocked on mainnet/mainnet-beta
+#   -e "jito_version_patch=1" \             # Optional: Patch version to append to jito tag (e.g. 3.1.10-jito.1)
+#   -e "build_from_source=true" \           # Optional: Build from source instead of using precompiled binaries
+#   -e "use_official_repo=true" \           # Optional: Use official repository instead of forked repository
 
 - name: Install Jito-Solana CLI
   hosts: "{{ target_host }}"
