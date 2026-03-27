@@ -111,6 +111,15 @@
         group: "root"
         recurse: true
 
+    - name: Remove previous Agave build artifacts from source tree for same-version rebuilds
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/.crates.toml"
+        - "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/.crates2.json"
+        - "{{ agave_build_dir }}/{{ agave_extracted_dir_name }}-{{ agave_version }}/bin"
+
     - name: Run cargo-install-all.sh
       ansible.builtin.shell: |
         set -e
@@ -135,6 +144,15 @@
         owner: "root"
         group: "root"
       register: release_dir_result
+
+    - name: Remove previously installed Agave assets for same-version rebuilds
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ solana_installed_release_dir }}/.crates.toml"
+        - "{{ solana_installed_release_dir }}/.crates2.json"
+        - "{{ solana_installed_release_dir }}/bin"
 
     - name: Move agave we just built into the releases directory
       ansible.builtin.shell: |

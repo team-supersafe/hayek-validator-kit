@@ -46,6 +46,7 @@
   ansible.builtin.set_fact:
     agave_manifest_entry_s3_key: "{{ agave_manifest_entry.s3_key | default(agave_manifest_entry.destination_key | default(agave_manifest_entry.staging_key | default(''))) }}"
     agave_download_url_manifest: "{{ agave_manifest_entry.release_url | default(agave_manifest_entry.destination_url | default(agave_manifest_entry.staging_url | default(''))) }}"
+    agave_download_checksum_manifest: "{{ agave_manifest_entry.sha256 | default(agave_manifest_entry.checksum_sha256 | default('')) }}"
   when:
     - agave_manifest_entry is defined
     - agave_manifest_entry | length > 0
@@ -60,6 +61,7 @@
 - name: Set final Agave download URL (manifest first, fallback second)
   ansible.builtin.set_fact:
     agave_download_url: "{{ (agave_download_url_manifest | default('')) if (agave_download_url_manifest | default('')) != '' else agave_download_url_fallback }}"
+    agave_download_checksum: "{{ ('sha256:' ~ agave_download_checksum_manifest) if (agave_download_checksum_manifest | default('')) != '' else '' }}"
 
 - name: Print the Agave download URL
   ansible.builtin.debug:
@@ -79,6 +81,8 @@
 - name: Set local variable for solana_installed_release_dir
   ansible.builtin.set_fact:
     solana_installed_release_dir: "{{ system_solana_installed_releases_dir }}/v{{ agave_version }}"
+    agave_staging_release_root: "{{ system_solana_installed_releases_dir }}/v{{ agave_version }}/.solana-release-staging"
+    agave_backup_release_dir: "{{ system_solana_installed_releases_dir }}/v{{ agave_version }}/.solana-release-backup"
 
 - name: Ensure Solana CLI releases directory exists
   ansible.builtin.file:
@@ -93,14 +97,127 @@
   ansible.builtin.debug:
     msg: "Unarchive release directory: {{ solana_installed_release_dir }}"
 
+- name: Download solana binaries archive
+  ansible.builtin.get_url:
+    url: "{{ agave_download_url }}"
+    dest: "/tmp/v{{ agave_version }}-{{ host_arch }}.tar.bz2"
+    mode: "0644"
+    force: true
+    checksum: "{{ agave_download_checksum if (agave_download_checksum | default('')) != '' else omit }}"
+    timeout: 60
+  failed_when: false
+  register: agave_archive_download
+  become: true
+
+- name: Remove previous Agave staging and backup directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ agave_staging_release_root }}"
+    - "{{ agave_backup_release_dir }}"
+  become: true
+
+- name: Fail when solana archive download is unavailable
+  ansible.builtin.fail:
+    msg: >-
+      Failed to download Solana archive from {{ agave_download_url }}.
+      This usually means the binary was not published for version {{ agave_version }}
+      and architecture {{ host_arch }}, or the object is not publicly readable.
+      If you expected a prebuilt binary, publish/promote it first or use a version
+      present in the binary manifest. Otherwise set build_from_source=true.
+  when:
+    - not ansible_check_mode
+    - agave_archive_download is failed
+
+- name: Create Agave staging directory
+  ansible.builtin.file:
+    path: "{{ agave_staging_release_root }}"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+    state: directory
+  become: true
+  when:
+    - not ansible_check_mode
+    - agave_archive_download is succeeded
+
 - name: Unarchive solana binaries
   ansible.builtin.unarchive:
-    src: "{{ agave_download_url }}"
-    dest: "{{ solana_installed_release_dir }}"
+    src: "{{ agave_archive_download.dest }}"
+    dest: "{{ agave_staging_release_root }}"
     remote_src: true
-    creates: "{{ solana_installed_release_dir }}/solana-release/bin/agave-validator"
-  ignore_errors: "{{ ansible_check_mode }}" # can be also: when: not ansible_check_mode
   become: true
+  when:
+    - not ansible_check_mode
+    - agave_archive_download is succeeded
+
+- name: Check staged Agave validator binary
+  ansible.builtin.stat:
+    path: "{{ agave_staging_release_root }}/solana-release/bin/agave-validator"
+  register: agave_staged_validator_binary
+  become: true
+  when:
+    - not ansible_check_mode
+    - agave_archive_download is succeeded
+
+- name: Fail when staged Agave archive payload is incomplete
+  ansible.builtin.fail:
+    msg: >-
+      Downloaded Agave archive from {{ agave_download_url }}, but the extracted
+      payload is missing solana-release/bin/agave-validator.
+  when:
+    - not ansible_check_mode
+    - agave_archive_download is succeeded
+    - not agave_staged_validator_binary.stat.exists
+
+- name: Check whether an existing Agave release payload is present
+  ansible.builtin.stat:
+    path: "{{ solana_installed_release_dir }}/solana-release"
+  register: agave_existing_release_payload
+  become: true
+  when:
+    - not ansible_check_mode
+    - agave_archive_download is succeeded
+    - agave_staged_validator_binary.stat.exists
+
+- name: Move existing Agave release payload aside before swap
+  ansible.builtin.command:
+    argv:
+      - mv
+      - "{{ solana_installed_release_dir }}/solana-release"
+      - "{{ agave_backup_release_dir }}"
+  become: true
+  when:
+    - not ansible_check_mode
+    - agave_archive_download is succeeded
+    - agave_staged_validator_binary.stat.exists
+    - agave_existing_release_payload.stat.exists
+
+- name: Move staged Agave release payload into place
+  ansible.builtin.command:
+    argv:
+      - mv
+      - "{{ agave_staging_release_root }}/solana-release"
+      - "{{ solana_installed_release_dir }}/solana-release"
+  become: true
+  when:
+    - not ansible_check_mode
+    - agave_archive_download is succeeded
+    - agave_staged_validator_binary.stat.exists
+
+- name: Remove Agave backup and staging directories after successful swap
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ agave_staging_release_root }}"
+    - "{{ agave_backup_release_dir }}"
+  become: true
+  when:
+    - not ansible_check_mode
+    - agave_archive_download is succeeded
+    - agave_staged_validator_binary.stat.exists
 
 - name: Fix ownership of release directory and contents
   ansible.builtin.file:
