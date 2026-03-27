@@ -9,6 +9,7 @@
     owner: root
     group: root
     mode: '0644'
+  when: manage_cpu_governor_service | default(true) | bool
 
 - name: Enable and start CPU governor service
   ansible.builtin.systemd:
@@ -16,6 +17,7 @@
     state: started
     enabled: true
     daemon_reload: true
+  when: manage_cpu_governor_service | default(true) | bool
 
 # File limits configuration
 - name: Upload sysctl file limits configuration
@@ -65,6 +67,11 @@
   changed_when: false
 
 # System Tuning Parameters
+- name: Set VM-aware min_free_kbytes tuning
+  ansible.builtin.set_fact:
+    system_tuning_min_free_kbytes: >-
+      {{ '262144' if not (manage_cpu_governor_service | default(true) | bool) else '3000000' }}
+
 - name: Update sysctl parameters
   ansible.posix.sysctl:
     name: "{{ item.name }}"
@@ -85,7 +92,7 @@
     - { name: 'vm.max_map_count', value: '2000000' }
     - { name: 'vm.stat_interval', value: '10' }
     - { name: 'vm.dirty_ratio', value: '40' }
-    - { name: 'vm.min_free_kbytes', value: '3000000' }
+    - { name: 'vm.min_free_kbytes', value: "{{ system_tuning_min_free_kbytes }}" }
     - { name: 'vm.dirty_expire_centisecs', value: '36000' }
     - { name: 'vm.dirty_writeback_centisecs', value: '3000' }
     # TCP Optimization
