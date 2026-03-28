@@ -3,8 +3,6 @@ dependencies:
   - role: solana_cli_agave
     vars:
       agave_version: "{{ agave_version }}"
-      build_from_source: "{{ build_from_source }}"
-      use_official_repo: "{{ use_official_repo }}"
       solana_cluster: "{{ solana_cluster }}"
   - role: solana_validator_shared
     vars:
