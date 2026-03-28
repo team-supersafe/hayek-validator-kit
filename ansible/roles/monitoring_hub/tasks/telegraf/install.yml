@@ -29,6 +29,28 @@
     filename: influxdb
     update_cache: true
 
+- name: Pin telegraf package version
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/telegraf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      Package: telegraf
+      Pin: version 1.38.1-1
+      Pin-Priority: 1001
+
+- name: Preserve existing config files during package upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/99-protect-configs
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      Dpkg::Options {
+         "--force-confold";
+      }
+
 - name: Install telegraf
   ansible.builtin.apt:
     name: telegraf

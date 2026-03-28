@@ -14,6 +14,52 @@
   ansible.builtin.debug:
     msg: "Environment detected: {{ 'Docker Container' if is_docker_container else 'Host System' }}"
 
+- name: Check Solana CLI binary on bastion host
+  ansible.builtin.stat:
+    path: "{{ solana_cli_bin }}"
+  register: monitoring_hub_solana_cli_binary
+
+- name: Fail if Solana CLI binary is missing
+  ansible.builtin.fail:
+    msg: >-
+      Solana CLI binary not found at {{ solana_cli_bin }}. monitoring_hub
+      requires Solana CLI v3.1.11 or newer to deserialize VoteStateV4 introduced
+      by SIMD-0185.
+  when: not monitoring_hub_solana_cli_binary.stat.exists
+
+- name: Read Solana CLI version
+  ansible.builtin.command: "{{ solana_cli_bin }} --version"
+  register: monitoring_hub_solana_cli_version_cmd
+  changed_when: false
+
+- name: Parse installed Solana CLI version
+  ansible.builtin.set_fact:
+    monitoring_hub_solana_cli_version: >-
+      {{
+        (
+          (monitoring_hub_solana_cli_version_cmd.stdout | trim).split()[1]
+          if ((monitoring_hub_solana_cli_version_cmd.stdout | trim).split() | length) > 1
+          else ''
+        )
+      }}
+
+- name: Fail if Solana CLI version could not be parsed
+  ansible.builtin.fail:
+    msg: >-
+      Unable to parse Solana CLI version from '{{ monitoring_hub_solana_cli_version_cmd.stdout }}'.
+      monitoring_hub requires Solana CLI v3.1.11 or newer for VoteStateV4 /
+      SIMD-0185 compatibility.
+  when: monitoring_hub_solana_cli_version | length == 0
+
+- name: Enforce minimum Solana CLI version for monitoring hub
+  ansible.builtin.assert:
+    that:
+      - monitoring_hub_solana_cli_version is version('3.1.11', '>=', version_type='semver')
+    fail_msg: >-
+      Solana CLI {{ monitoring_hub_solana_cli_version }} at {{ solana_cli_bin }}
+      is too old. monitoring_hub requires v3.1.11 or newer to deserialize
+      VoteStateV4 introduced by SIMD-0185.
+
 - name: Resolve SSL Domain to verify it exists
   ansible.builtin.command: "getent hosts {{ ssl_domain }}"
   register: domain_resolution
