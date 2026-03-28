@@ -1,6 +1,7 @@
 ---
 - name: Config - Determine Solana cluster parameter
   ansible.builtin.import_tasks: ../../solana_validator_shared/tasks/determine_solana_cluster_param.yml
+  when: solana_cluster is defined
 
 - name: Config - Refresh shell environment
   ansible.builtin.shell: |
@@ -22,6 +23,12 @@
     PATH: "{{ cli_shell_env_path.stdout }}"
   register: solana_config_set
   changed_when: "'Config File' in solana_config_set.stdout"
+  when: solana_cluster is defined
+
+- name: Config - Skip Solana CLI cluster configuration when no cluster is supplied
+  ansible.builtin.debug:
+    msg: "solana_cluster not provided; leaving the Solana CLI default RPC configuration unchanged."
+  when: solana_cluster is not defined
 
 - name: Config - Show current Solana CLI config
   ansible.builtin.command: solana config get

@@ -38,6 +38,6 @@ argument_specs:
         description: "Optional explicit manifest URL for Agave binary metadata"
       solana_cluster:
         type: str
-        required: true
+        required: false
         choices: ["localnet", "testnet", "mainnet"]
-        description: "Target Solana cluster. Used to configure the default RPC endpoint after installation."
+        description: "Optional target Solana cluster. When provided, used to configure the default RPC endpoint after installation."
