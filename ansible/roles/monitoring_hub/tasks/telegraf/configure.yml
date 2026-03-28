@@ -68,9 +68,7 @@
     owner: root
     group: root
     mode: '0644'
-  notify:
-    - Reload Systemd Daemon
-    - Restart Monitoring Hub Telegraf Services
+  notify: Restart Monitoring Hub Telegraf Services
   loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
   loop_control:
     label: "telegraf-{{ item.value.network_name }}.service"
@@ -78,6 +76,7 @@
 - name: Enable and start per-network Telegraf services
   ansible.builtin.systemd:
     name: "telegraf-{{ item.value.network_name }}.service"
+    daemon_reload: true
     enabled: true
     state: started
   loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"

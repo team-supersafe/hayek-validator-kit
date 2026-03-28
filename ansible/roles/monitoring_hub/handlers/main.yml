@@ -1,10 +1,6 @@
 ---
 # Handlers for monitoring_hub role
 
-- name: Reload Systemd Daemon
-  ansible.builtin.systemd:
-    daemon_reload: true
-
 - name: Restart Monitoring Hub Telegraf Services
   ansible.builtin.systemd:
     name: "telegraf-{{ item.value.network_name }}.service"
