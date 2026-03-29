@@ -16,6 +16,7 @@
       agave_version={{ agave_version }} is a pre-release and cannot be used
       with solana_cluster={{ solana_cluster }}.
   when:
+    - solana_cluster is defined
     - solana_cluster == 'mainnet'
     - agave_version is regex('-(?:alpha|beta)\.')
 
@@ -32,6 +33,7 @@
       build_from_source={{ build_from_source | default('undefined') }}
       for solana_cluster={{ solana_cluster }}.
   when:
+    - solana_cluster is defined
     - solana_cluster in ['mainnet', 'testnet']
 
 - name: Add hosts to known_hosts to comply with ansible config host_key_checking

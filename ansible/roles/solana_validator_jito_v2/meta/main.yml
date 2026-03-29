@@ -3,7 +3,8 @@ dependencies:
   - role: rust_env_v2
   - role: solana_cli_jito
     vars:
-      agave_version: "{{ jito_version }}"
+      jito_version: "{{ jito_version }}"
+      solana_cluster: "{{ solana_cluster }}"
   - role: solana_validator_shared
     vars:
       validator_name: "{{ validator_name }}"

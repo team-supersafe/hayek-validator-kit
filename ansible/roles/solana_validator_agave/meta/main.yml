@@ -3,6 +3,7 @@ dependencies:
   - role: solana_cli_agave
     vars:
       agave_version: "{{ agave_version }}"
+      solana_cluster: "{{ solana_cluster }}"
   - role: solana_validator_shared
     vars:
       validator_name: "{{ validator_name }}"

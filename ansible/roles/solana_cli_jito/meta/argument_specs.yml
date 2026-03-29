@@ -44,6 +44,6 @@ argument_specs:
         description: "Optional explicit manifest URL for Jito-Solana binary metadata"
       solana_cluster:
         type: str
-        required: true
+        required: false
         choices: ["localnet", "testnet", "mainnet"]
-        description: "Target Solana cluster. Pre-release versions (alpha/beta) are only permitted on testnet."
+        description: "Optional target Solana cluster. When provided, used to configure the default RPC endpoint after installation."
