@@ -1,6 +1,17 @@
 ---
 # Handlers for monitoring_hub role
 
+- name: Restart Monitoring Hub Telegraf Services
+  ansible.builtin.systemd:
+    name: "telegraf-{{ item.value.network_name }}.service"
+    state: restarted
+  loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
+  loop_control:
+    label: "restart telegraf-{{ item.value.network_name }}"
+  failed_when: false
+  async: 10
+  poll: 2
+
 - name: restart grafana
   ansible.builtin.systemd:
     name: "{{ monitoring_services[0] }}"

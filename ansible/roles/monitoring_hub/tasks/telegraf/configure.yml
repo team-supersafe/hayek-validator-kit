@@ -1,12 +1,41 @@
 ---
 # Telegraf configuration management tasks
-- name: Ensure scripts directory exists
+- name: Ensure Telegraf configuration directories exist
   ansible.builtin.file:
-    path: /etc/telegraf/scripts
+    path: "{{ item.path }}"
     state: directory
-    mode: '0755'
-    owner: telegraf
+    mode: "{{ item.mode }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  loop:
+    - path: /etc/telegraf/scripts
+      owner: telegraf
+      group: telegraf
+      mode: '0755'
+    - path: /etc/telegraf/telegraf.d
+      owner: root
+      group: telegraf
+      mode: '0750'
+
+- name: Assert vault-backed hardware metrics token is provided for Telegraf outputs
+  ansible.builtin.assert:
+    that:
+      - telegraf_hardware_metrics_token is defined
+      - (telegraf_hardware_metrics_token | string | trim | length) > 0
+    fail_msg: >-
+      Define telegraf_hardware_metrics_token in monitoring_hub vault vars to
+      manage /etc/telegraf/telegraf.d/outputs.conf.
+  no_log: true
+
+- name: Render shared Telegraf outputs config
+  ansible.builtin.template:
+    src: telegraf/outputs.conf.j2
+    dest: /etc/telegraf/telegraf.d/outputs.conf
+    owner: root
     group: telegraf
+    mode: '0640'
+  notify: Restart Monitoring Hub Telegraf Services
+  no_log: true
 
 - name: Render per-network Telegraf configs
   ansible.builtin.template:
@@ -15,6 +44,7 @@
     owner: telegraf
     group: telegraf
     mode: '0644'
+  notify: Restart Monitoring Hub Telegraf Services
   loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
   loop_control:
     label: "telegraf-{{ item.value.network_name }}.conf"
@@ -26,6 +56,7 @@
     owner: telegraf
     group: telegraf
     mode: '0755'
+  notify: Restart Monitoring Hub Telegraf Services
   loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
   loop_control:
     label: "monitor-{{ item.value.network_name }}.sh"
@@ -37,24 +68,17 @@
     owner: root
     group: root
     mode: '0644'
+  notify: Restart Monitoring Hub Telegraf Services
   loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
   loop_control:
     label: "telegraf-{{ item.value.network_name }}.service"
 
-- name: Reload systemd daemon
-  ansible.builtin.systemd:
-    daemon_reload: true
-
 - name: Enable and start per-network Telegraf services
   ansible.builtin.systemd:
     name: "telegraf-{{ item.value.network_name }}.service"
+    daemon_reload: true
     enabled: true
     state: started
   loop: "{{ solana.network | dict2items | selectattr('value.enabled','equalto',True) | list }}"
   loop_control:
     label: "start telegraf-{{ item.value.network_name }}"
-
-- name: Remove generic telegraf.conf if present
-  ansible.builtin.file:
-    path: /etc/telegraf/telegraf.conf
-    state: absent

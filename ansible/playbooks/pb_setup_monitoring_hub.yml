@@ -18,6 +18,9 @@
 #   -e "tmp_influxdb_default_org=HayekOrg" \
 #   -e "tmp_influxdb_default_bucket=HayekBucket" \
 #   -K
+#
+# Requires Solana CLI v3.1.11+ at /opt/solana/active_release/bin/solana on the
+# bastion host for VoteStateV4 / SIMD-0185 compatibility checks.
 
 - name: Setup monitoring hub server
   hosts: "{{ target_host }}"

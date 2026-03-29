@@ -1,0 +1,5 @@
+[[outputs.influxdb_v2]]
+  urls = ["http://localhost:{{ influxdb_port | default(8086) }}"]
+  token = "{{ telegraf_hardware_metrics_token }}"
+  organization = "{{ influxdb_init_org }}"
+  bucket = "{{ hardware_metrics_bucket_name | default(influxdb_additional_buckets[0].name) }}"
