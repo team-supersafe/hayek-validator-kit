@@ -140,13 +140,6 @@
         - source_host_keys_dir is defined
         - source_host_keys_dir != ''
 
-    - name: Step 3 - Directories - Remove validator identity symlink
-      ansible.builtin.file:
-        path: "{{ source_host_identity_link_path }}"
-        state: absent
-      become: true
-      delegate_to: "{{ source_host }}"
-
     - name: Step 3 - Directories - Remove validator keys directory
       ansible.builtin.file:
         path: "{{ source_host_keys_dir }}"

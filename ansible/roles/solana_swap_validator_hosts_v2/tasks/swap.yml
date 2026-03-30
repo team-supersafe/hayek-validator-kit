@@ -179,18 +179,6 @@
       become: true
       become_user: "{{ solana_user }}"
       when: inventory_hostname == source_host
-
-    # Step 2: Update symlink to unstaked identity
-    - name: swap - Update symlink to unstaked identity
-      ansible.builtin.file:
-        src: "{{ source_host_hot_spare_identity_path }}"
-        dest: "{{ source_host_identity_link_path }}"
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
-        state: link
-        force: true
-      become: true
-      when: inventory_hostname == source_host
       register: wait_and_unstake_result
 
 - name: swap - Transfer Tower File from Source to Destination
@@ -232,18 +220,6 @@
         PATH: "{{ system_solana_active_release_dir }}"
       become: true
       become_user: "{{ solana_user }}"
-      when: inventory_hostname == destination_host
-
-    # Step 5: Update symlink to staked identity on destination
-    - name: swap - Update symlink to staked identity
-      ansible.builtin.file:
-        src: "{{ destination_host_primary_target_identity_path }}"
-        dest: "{{ destination_host_identity_link_path }}"
-        state: link
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
-        force: true
-      become: true
       when: inventory_hostname == destination_host
 
     - name: Calculate elapsed time since current_timestamp

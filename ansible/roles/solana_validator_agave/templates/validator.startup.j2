@@ -5,7 +5,7 @@ PATH="/bin:/usr/bin:{{ system_solana_active_release_dir }}"
 export SOLANA_METRICS_CONFIG="host={{ solana_metrics_url }}"
 {% endif %}
 exec agave-validator \
---identity "{{ validator_keyset_dir }}/identity.json" \
+--identity "{{ validator_keyset_dir }}/hot-spare-identity.json" \
 --vote-account {{ vote_account_pubkey }} \
 --authorized-voter {{ validator_keyset_dir }}/primary-target-identity.json \
 {% for known_validator in known_validators %}

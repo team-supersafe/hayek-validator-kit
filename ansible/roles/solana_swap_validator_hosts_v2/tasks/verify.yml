@@ -1,12 +1,6 @@
 ---
 - name: verify - Verify source validator identity files
   block:
-    - name: verify - Check source running identity file
-      ansible.builtin.stat:
-        path: "{{ source_host_identity_link_path }}"
-      register: source_running_identity
-      when: inventory_hostname == source_host
-
     - name: verify - Check source hot-spare identity file
       ansible.builtin.stat:
         path: "{{ source_host_keys_dir }}/hot-spare-identity.json"
@@ -20,13 +14,12 @@
       when: inventory_hostname == source_host
 
     - name: verify - Get source validator running identity pubkey
-      ansible.builtin.command: solana-keygen pubkey {{ source_host_identity_link_path }}
+      ansible.builtin.shell: "{{ system_solana_active_release_dir }}/agave-validator -l {{ ledger_path }} contact-info | head -1 | sed 's/Identity: //'"
       register: source_running_pubkey
-      environment:
-        PATH: "{{ system_solana_active_release_dir }}"
-      when:
-        - inventory_hostname == source_host
-        - source_running_identity.stat.exists
+      changed_when: false
+      become: true
+      become_user: "{{ solana_user }}"
+      when: inventory_hostname == source_host
 
     - name: verify - Get source hot-spare identity pubkey
       ansible.builtin.command: solana-keygen pubkey {{ source_host_keys_dir }}/hot-spare-identity.json
@@ -48,27 +41,36 @@
 
 - name: verify - Verify destination validator identity files
   block:
-    - name: verify - Check destination running identity file
+    - name: verify - Check destination primary target identity file
       ansible.builtin.stat:
-        path: "{{ destination_host_identity_link_path }}"
-      register: destination_running_identity
+        path: "{{ destination_host_primary_target_identity_path }}"
+      register: destination_primary_identity
       when: inventory_hostname == destination_host
 
     - name: verify - Get destination validator running identity pubkey
-      ansible.builtin.command: solana-keygen pubkey {{ destination_host_identity_link_path }}
+      ansible.builtin.shell: "{{ system_solana_active_release_dir }}/agave-validator -l {{ ledger_path }} contact-info | head -1 | sed 's/Identity: //'"
       register: destination_running_pubkey
+      changed_when: false
+      become: true
+      become_user: "{{ solana_user }}"
+      when: inventory_hostname == destination_host
+
+    - name: verify - Get destination primary target identity pubkey
+      ansible.builtin.command: solana-keygen pubkey {{ destination_host_primary_target_identity_path }}
+      register: destination_primary_pubkey
       environment:
         PATH: "{{ system_solana_active_release_dir }}"
       when:
         - inventory_hostname == destination_host
-        - destination_running_identity.stat.exists
+        - destination_primary_identity.stat.exists
 
 - name: verify - Make identity pubkeys available globally
   ansible.builtin.set_fact:
-    source_running_pubkey: "{{ hostvars[source_host]['source_running_pubkey'].stdout_lines[0] | default('') }}"
-    destination_running_pubkey: "{{ hostvars[destination_host]['destination_running_pubkey'].stdout_lines[0] | default('') }}"
+    source_running_pubkey: "{{ hostvars[source_host]['source_running_pubkey'].stdout | default('') | trim }}"
+    destination_running_pubkey: "{{ hostvars[destination_host]['destination_running_pubkey'].stdout | default('') | trim }}"
     source_hotspare_pubkey: "{{ hostvars[source_host]['source_hotspare_pubkey'].stdout_lines[0] | default('') }}"
     source_primary_pubkey: "{{ hostvars[source_host]['source_primary_pubkey'].stdout_lines[0] | default('') }}"
+    destination_primary_pubkey: "{{ hostvars[destination_host]['destination_primary_pubkey'].stdout_lines[0] | default('') }}"
   run_once: true
 
 - name: verify - Verify source validator is using hot-spare identity
@@ -88,13 +90,13 @@
   ansible.builtin.fail:
     msg: |
       Destination validator is not using the primary target identity!
-      Expected: {{ source_primary_pubkey | default('Not found') }}
+      Expected: {{ destination_primary_pubkey | default('Not found') }}
       Actual: {{ destination_running_pubkey | default('Not found') }}
   when:
     - inventory_hostname == destination_host
-    - destination_running_pubkey != source_primary_pubkey
+    - destination_running_pubkey != destination_primary_pubkey
     - destination_running_pubkey != ''
-    - source_primary_pubkey != ''
+    - destination_primary_pubkey != ''
   run_once: true
 
 - name: verify - Get vote account data after swap

@@ -9,12 +9,6 @@
       - ansible_home_dir is defined
     fail_msg: "One or more required variables for validator keyset installation are missing or invalid."
 
-- name: install_validator_keyset - Validate validator_type value
-  ansible.builtin.assert:
-    that:
-      - (validator_type | default('hot-spare')) in ['primary', 'hot-spare']
-    fail_msg: "validator_type must be set to 'primary' or 'hot-spare', got: {{ validator_type | default('hot-spare') }}"
-
 - name: install_validator_keyset - Set validator keys directory
   ansible.builtin.set_fact:
     validator_keyset_dir: "{{ validator_keys_dir }}/{{ validator_name }}"
@@ -63,20 +57,6 @@
         mode: "{{ validator_key_file_mode }}"
         owner: "{{ solana_user }}"
         group: "{{ validator_operators_group }}"
-
-    - name: install_validator_keyset - Create identity.json symlink
-      ansible.builtin.file:
-        src: "{{ validator_keyset_dir }}/{{ 'primary-target-identity.json' if (validator_type | default('hot-spare')) == 'primary' else 'hot-spare-identity.json' }}"
-        dest: "{{ validator_keyset_dir }}/identity.json"
-        state: link
-        force: true
-
-    - name: install_validator_keyset - Fix ownership of identity.json symlink
-      ansible.builtin.file:
-        path: "{{ validator_keyset_dir }}/identity.json"
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
-        follow: false
 
     - name: install_validator_keyset - Fix ownership of hot-spare-identity.json
       ansible.builtin.file:
