@@ -33,6 +33,7 @@ exec agave-validator \
 --experimental-poh-pinned-cpu-core {{ poh_pinned_cpu_core }} \
 {% endif %}
 {% if solana_cluster == "localnet" %}
+--no-snapshots \
 --no-os-network-limits-test \
 --allow-private-addr \
 {% endif %}
