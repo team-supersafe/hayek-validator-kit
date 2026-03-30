@@ -127,14 +127,14 @@
 
     - name: Step 3 - Directories - Securely overwrite primary identity file
       ansible.builtin.command: >
-        solana-keygen new --no-bip39-passphrase --force -o {{ source_host_keys_dir }}/primary-target-identity.json
-      environment:
-        PATH: "{{ system_solana_active_release_dir }}"
+        {{ system_solana_active_release_dir }}/solana-keygen new
+        --no-bip39-passphrase --force -o {{ source_host_keys_dir }}/primary-target-identity.json
       register: overwrite_result
       loop: "{{ range(10) | list }}"
       loop_control:
         label: "Overwrite pass {{ item }}/10"
       become: true
+      become_user: "{{ solana_user }}"
       delegate_to: "{{ source_host }}"
       when:
         - source_host_keys_dir is defined

@@ -185,6 +185,12 @@ All deployments managed by this role are RBAC-enabled. The following directories
    - This effectively makes the destination validator the new primary validator
    - **RBAC Note**: The `agave-validator set-identity` command is executed with `become: true` and `become_user: "{{ solana_user }}"`
 
+### Operational Note: Service Restarts After Swap
+
+- The validator startup templates intentionally boot with `hot-spare-identity.json`.
+- After a successful swap, if the destination validator service is restarted, it will come back using the hot-spare identity from the startup script until `agave-validator set-identity --require-tower {{ destination_host_primary_target_identity_path }}` is run again.
+- Operators should treat service restarts on the promoted destination validator as requiring a follow-up `set-identity` step when the validator is expected to remain the active primary.
+
 ### Fast Rollback
 
 If the swap fails after the source validator is demoted, follow the documented procedure in `FAST_ROLLBACK.md` to restore the primary identity and validator service on the source host.
