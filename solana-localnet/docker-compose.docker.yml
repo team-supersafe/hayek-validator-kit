@@ -1,24 +1,29 @@
 services:
   gossip-entrypoint:
+    cgroup: host
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
 
   host-alpha:
     privileged: true
+    cgroup: host
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
 
   host-bravo:
     privileged: true
+    cgroup: host
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
 
   host-charlie:
     privileged: true
+    cgroup: host
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
 
   host-monitoring:
     privileged: true
+    cgroup: host
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
