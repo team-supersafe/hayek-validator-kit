@@ -47,6 +47,32 @@
       ansible.builtin.debug:
         msg: "Using CSV file: {{ molecule_csv_file }} from {{ molecule_csv_source_dir }}"
 
+    # Mirror production prechecks from pb_setup_users_validator.yml so role conditionals
+    # (sol_user_in_csv / has_validator_operators / has_validator_viewers) are set.
+    - name: Read CSV to derive RBAC precheck facts
+      become: false
+      delegate_to: localhost
+      community.general.read_csv:
+        path: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
+        key: user
+      register: users_csv_precheck
+
+    - name: Set RBAC role presence facts from CSV
+      ansible.builtin.set_fact:
+        sol_user_in_csv: "{{ solana_user in users_csv_precheck.dict.keys() }}"
+        has_validator_operators: >-
+          {{
+            users_csv_precheck.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', rbac_roles.operators) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', rbac_roles.operators) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', rbac_roles.operators) | list | length > 0
+          }}
+        has_validator_viewers: >-
+          {{
+            users_csv_precheck.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', rbac_roles.viewers) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', rbac_roles.viewers) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', rbac_roles.viewers) | list | length > 0
+          }}
+
   roles:
     # STEP 1: First, set up RBAC-enabled host by running iam_manager role
     # This creates users, groups, and sudoers.d rules for least privilege
@@ -56,11 +82,13 @@
         users_file: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
         # Allow re-running tests without failing on existing users
         molecule_testing: true
-        target_host: rust-env-v2-tests
+        # Satisfy role argument spec requirements in Molecule context
+        target_host: "{{ inventory_hostname }}"
+        ansible_user: "{{ hostvars[inventory_hostname].ansible_user | default('root') }}"
+        csv_file: "{{ molecule_csv_file }}"
 
     # STEP 2: Now that the host is RBAC-enabled, install Rust environment
     # This role installs Rust system-wide under /usr/local/cargo and /usr/local/rustup
     - role: "rust_env_v2"
       vars:
         molecule_testing: true
-

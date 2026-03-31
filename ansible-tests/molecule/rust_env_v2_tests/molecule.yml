@@ -59,6 +59,14 @@ provisioner:
       # Temporary workaround for ansible-core 2.19 strict conditionals breaking molecule-docker playbooks
       allow_broken_conditionals: true
   inventory:
+    hosts:
+      all:
+        hosts:
+          rust-env-v2-tests:
+        children:
+          solana:
+            hosts:
+              rust-env-v2-tests:
     group_vars:
       all:
         ansible_python_interpreter: /usr/bin/python3
@@ -67,9 +75,22 @@ provisioner:
         ansible_remote_tmp: /tmp/.ansible/tmp
         # Skip interactive pauses in testing
         skip_confirmation_pauses: true
+        # Baseline Solana paths expected by iam_manager precheck
+        mount_base_path: "/mnt"
+        system_solana_install_dir: "/opt/solana"
+        system_solana_active_release_dir: "{{ system_solana_install_dir }}/active_release/bin"
+        system_solana_installed_releases_dir: "{{ system_solana_install_dir }}/releases"
+        system_shared_build_dir: "/opt/build"
         # Rust environment variables (system-wide installation)
         cargo_home: "/usr/local/cargo"
         rustup_home: "/usr/local/rustup"
+      solana:
+        # Variables normally sourced from ansible/group_vars/solana.yml
+        validator_root_dir: "/opt/validator"
+        validator_scripts_dir: "{{ validator_root_dir }}/scripts"
+        validator_logs_dir: "{{ validator_root_dir }}/logs"
+        validator_keys_dir: "{{ validator_root_dir }}/keys"
+        validator_operators_group: "validator_operators"
 
 verifier:
   name: ansible

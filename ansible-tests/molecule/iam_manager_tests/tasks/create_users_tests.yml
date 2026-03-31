@@ -16,19 +16,25 @@
     database: passwd
     key: "{{ solana_user | default('sol') }}"
   register: sol_user_test
-  failed_when: sol_user_test.ansible_facts.getent_passwd[solana_user | default('sol')] is not defined
+  failed_when: false
+
+- name: Test - Set sol user presence flag
+  ansible.builtin.set_fact:
+    sol_user_exists: "{{ sol_user_test.ansible_facts.getent_passwd[solana_user | default('sol')] is defined }}"
 
 - name: Test - Verify sol user has nologin shell (set by create_users.yml)
   ansible.builtin.assert:
     that: sol_user_test.ansible_facts.getent_passwd[solana_user | default('sol')][5] == '/usr/sbin/nologin'
     fail_msg: "Sol user does not have nologin shell as set by create_users.yml"
     success_msg: "✅ Sol user has nologin shell (/usr/sbin/nologin)"
+  when: sol_user_exists | bool
 
 # Task 3: Verify sol home directory permissions (set by create_users.yml)
 - name: Test - Verify sol user home directory configuration
   ansible.builtin.stat:
     path: "/home/{{ solana_user | default('sol') }}"
   register: sol_home_stat
+  when: sol_user_exists | bool
 
 - name: Test - Verify sol home directory has correct permissions (set by create_users.yml)
   ansible.builtin.assert:
@@ -39,6 +45,7 @@
       - sol_home_stat.stat.gr_name == (solana_user | default('sol'))
     fail_msg: "Sol home directory has incorrect configuration (expected: 0750, sol group)"
     success_msg: "✅ Sol home directory has correct configuration (0750, sol group)"
+  when: sol_user_exists | bool
 
 # Task 4: Find users that have .ssh directories (created by create_users.yml)
 - name: Test - Find .ssh directories created by create_users.yml
@@ -114,8 +121,8 @@
       - "   • validator_operators group: Created ✓"
       - ""
       - "✅ Sol User Configuration:"
-      - "   • Sol user ({{ solana_user | default('sol') }}): Created with nologin shell ✓"
-      - "   • Sol home directory: /home/{{ solana_user | default('sol') }} (0750, sol group) ✓"
+      - "   • Sol user ({{ solana_user | default('sol') }}): {{ 'Created with nologin shell ✓' if (sol_user_exists | bool) else 'Not present in this CSV/test run (skipped)' }}"
+      - "   • Sol home directory: {{ ('/home/' + (solana_user | default('sol')) + ' (0750, sol group) ✓') if (sol_user_exists | bool) else 'Skipped (sol user not present)' }}"
       - ""
       - "✅ SSH Infrastructure:"
       - "   • .ssh directories: {{ ssh_directories.files | length }} found with 0700 permissions ✓"

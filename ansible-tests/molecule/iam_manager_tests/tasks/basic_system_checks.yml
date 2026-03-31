@@ -24,7 +24,15 @@
 
 - name: Fail if any sudoers file missing
   ansible.builtin.fail:
-    msg: "Missing sudoers file(s) in {{ sudoers_dir }}"
+    msg: >-
+      Missing sudoers file(s) in {{ sudoers_dir }}:
+      {{
+        sudoers_stats.results
+        | selectattr('stat.exists', 'equalto', false)
+        | map(attribute='item')
+        | list
+        | join(', ')
+      }}
   when: "sudoers_stats.results | selectattr('stat.exists', 'equalto', false) | list | length > 0"
 
 - name: Validate visudo syntax of all sudoers
