@@ -47,6 +47,32 @@
       ansible.builtin.debug:
         msg: "Using CSV file: {{ molecule_csv_file }} from {{ molecule_csv_source_dir }}"
 
+    # Mirror production prechecks from pb_setup_users_validator.yml so role conditionals
+    # (sol_user_in_csv / has_validator_operators / has_validator_viewers) are set.
+    - name: Read CSV to derive RBAC precheck facts
+      become: false
+      delegate_to: localhost
+      community.general.read_csv:
+        path: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
+        key: user
+      register: users_csv_precheck
+
+    - name: Set RBAC role presence facts from CSV
+      ansible.builtin.set_fact:
+        sol_user_in_csv: "{{ solana_user in users_csv_precheck.dict.keys() }}"
+        has_validator_operators: >-
+          {{
+            users_csv_precheck.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', rbac_roles.operators) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', rbac_roles.operators) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', rbac_roles.operators) | list | length > 0
+          }}
+        has_validator_viewers: >-
+          {{
+            users_csv_precheck.dict.values() | selectattr('group_a', 'defined') | selectattr('group_a', 'equalto', rbac_roles.viewers) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_b', 'defined') | selectattr('group_b', 'equalto', rbac_roles.viewers) | list | length > 0 or
+            users_csv_precheck.dict.values() | selectattr('group_c', 'defined') | selectattr('group_c', 'equalto', rbac_roles.viewers) | list | length > 0
+          }}
+
 
 
   roles:
@@ -61,6 +87,10 @@
         users_file: "{{ molecule_csv_dir }}/{{ molecule_csv_file }}"
         # Allow re-running tests without failing on existing users
         molecule_testing: true
+        # Satisfy role argument spec requirements in Molecule context
+        target_host: "{{ inventory_hostname }}"
+        ansible_user: "{{ hostvars[inventory_hostname].ansible_user | default('root') }}"
+        csv_file: "{{ molecule_csv_file }}"
   post_tasks:
     - name: Check if {{ solana_user }} user exists
       ansible.builtin.getent:
@@ -97,6 +127,7 @@
         mode: '0775'
         owner: "{{ solana_user }}"
         group: validator_operators
+      when: sol_user_check.ansible_facts.getent_passwd[solana_user] is defined
 
     - name: Create and configure validator log directory (after iam_manager role)
       ansible.builtin.file:

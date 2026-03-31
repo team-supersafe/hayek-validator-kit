@@ -58,6 +58,9 @@ get_scenario_params() {
         "iam_manager_tests")
             echo "-- -e csv_file=iam_setup.csv"
             ;;
+        "rust_env_v2_tests")
+            echo "-- -e csv_file=iam_setup.csv"
+            ;;
         *)
             echo ""
             ;;
