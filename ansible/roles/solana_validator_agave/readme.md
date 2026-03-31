@@ -192,7 +192,7 @@ nano /home/sol/bin/validator-mainnet.sh
 #!/bin/bash
 export SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=tds,u=testnet_write,p=c4fa841aa918bf8274e3e2a44d77568d9861b3ea"
 exec agave-validator \
-    --identity /home/sol/keys-testnet/primary-target-identity.json \
+    --identity /home/sol/keys-testnet/hot-spare-identity.json \
     --vote-account <vote-account-pubkey> \
     --known-validator 5D1fNXzvv5NjV1ysLjirC4WY92RNsVH18vjmcszZd8on \
     --known-validator dDzy5SR3AXdYWVqbDEkVFdvSPCtS9ihF5kJkHCtXoFs \

@@ -150,7 +150,7 @@ generate_tmp_validator_startup_script() {
     cat > "$output_file" << EOF
 #!/bin/bash
 agave-validator \\
-    --identity ${ALPHA_DEMO_KEYS_DIR}/identity.json \\
+    --identity ${ALPHA_DEMO_KEYS_DIR}/hot-spare-identity.json \\
     --vote-account ${VOTE_ACCOUNT_PUBKEY} \\
     --authorized-voter ${ALPHA_DEMO_KEYS_DIR}/primary-target-identity.json \\
     --known-validator ${ENTRYPOINT_IDENTITY_PUBKEY} \\
@@ -225,7 +225,10 @@ configure-demo-in-host() {
   scp -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" -P "$SSH_PORT" "$ANSIBLE_DEMO_STARTUP_SCRIPT" "$USER@$HOST:~/bin/run-validator-demo.sh"
   rm -rf $ANSIBLE_DEMO_STARTUP_SCRIPT
 
-  # Transfer the validator keys from Ansible to the Host's sol user's keys directory and create symlinks for identity.json
+  # Transfer the validator keys from Ansible to the Host's sol user's keys directory.
+  # The startup script always points at hot-spare-identity.json. We then promote the
+  # demo validator to the primary identity explicitly with set-identity so localnet
+  # behavior stays aligned with the production validator model from PR 228.
   ssh -i "$VALIDATOR_SERVICE_USER_SSH_KEY_PATH" "$USER@$HOST" -p "$SSH_PORT" "
     set -e
     # source ~/.profile
@@ -233,7 +236,6 @@ configure-demo-in-host() {
     mkdir -p $ALPHA_DEMO_KEYS_DIR && chmod 755 $ALPHA_DEMO_KEYS_DIR
     mkdir -p ~/logs && chmod 755 ~/logs
     mv ~/primary-target-identity.json $ALPHA_DEMO_KEYS_DIR/primary-target-identity.json
-    ln -sf "$ALPHA_DEMO_KEYS_DIR/primary-target-identity.json" "$ALPHA_DEMO_KEYS_DIR/identity.json"
 
     if [ ! -f "$ALPHA_DEMO_KEYS_DIR/hot-spare-identity.json" ]; then
       echo "Generating hot-spare-identity.json..."
@@ -267,6 +269,20 @@ EOF
     sudo chown -R $VALIDATOR_SERVICE_USER:$VALIDATOR_SERVICE_USER /mnt/snapshots
 
     sudo systemctl enable --now sol
+
+    promoted=false
+    for attempt in \$(seq 1 30); do
+      if sudo -u $VALIDATOR_SERVICE_USER $HOST_SOLANA_BIN/agave-validator -l $LEDGER_DIR set-identity $ALPHA_DEMO_KEYS_DIR/primary-target-identity.json; then
+        promoted=true
+        break
+      fi
+      sleep 2
+    done
+
+    if [ \"\$promoted\" != \"true\" ]; then
+      echo 'Failed to promote the demo validator to primary-target-identity.json after startup.' >&2
+      exit 1
+    fi
   "
 }
 

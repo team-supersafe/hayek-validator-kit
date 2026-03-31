@@ -99,10 +99,12 @@
   block:
     - name: swap - Get tower filename
       check_mode: false
-      ansible.builtin.command: solana-keygen pubkey {{ source_host_primary_target_identity_path }}
+      ansible.builtin.command: >
+        {{ system_solana_active_release_dir }}/solana-keygen pubkey
+        {{ source_host_primary_target_identity_path }}
       register: staked_identity_pubkey_stdout
-      environment:
-        PATH: "{{ system_solana_active_release_dir }}"
+      become: true
+      become_user: "{{ solana_user }}"
       delegate_to: "{{ source_host }}"
       when: inventory_hostname == destination_host
 
@@ -179,18 +181,6 @@
       become: true
       become_user: "{{ solana_user }}"
       when: inventory_hostname == source_host
-
-    # Step 2: Update symlink to unstaked identity
-    - name: swap - Update symlink to unstaked identity
-      ansible.builtin.file:
-        src: "{{ source_host_hot_spare_identity_path }}"
-        dest: "{{ source_host_identity_link_path }}"
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
-        state: link
-        force: true
-      become: true
-      when: inventory_hostname == source_host
       register: wait_and_unstake_result
 
 - name: swap - Transfer Tower File from Source to Destination
@@ -200,6 +190,7 @@
     - name: swap - Rsync tower file from source to destination
       ansible.builtin.shell: |
         rsync --delay-updates -F --archive --delete \
+          --rsync-path="sudo -u sol rsync" \
           -e "ssh -i {{ source_ssh_key_path }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o LogLevel=ERROR -o BatchMode=yes -p {{ destination_host_port }}" \
           "{{ tower_file_src }}" "{{ ansible_user }}@{{ destination_host_address }}:{{ tower_file_dest }}"
       delegate_to: "{{ source_host }}"
@@ -218,9 +209,6 @@
       when:
         - transfer_tower_result is failed
         - not ansible_check_mode
-  when:
-    - hostvars[source_host].get('wait_and_unstake_result', {}) is defined
-    - hostvars[source_host].get('wait_and_unstake_result', {}).get('failed', false) == false
 
 - name: swap - Promote Destination to Primary Target Validator
   any_errors_fatal: true
@@ -232,18 +220,6 @@
         PATH: "{{ system_solana_active_release_dir }}"
       become: true
       become_user: "{{ solana_user }}"
-      when: inventory_hostname == destination_host
-
-    # Step 5: Update symlink to staked identity on destination
-    - name: swap - Update symlink to staked identity
-      ansible.builtin.file:
-        src: "{{ destination_host_primary_target_identity_path }}"
-        dest: "{{ destination_host_identity_link_path }}"
-        state: link
-        owner: "{{ solana_user }}"
-        group: "{{ validator_operators_group }}"
-        force: true
-      become: true
       when: inventory_hostname == destination_host
 
     - name: Calculate elapsed time since current_timestamp
@@ -264,7 +240,7 @@
   community.general.ufw:
     rule: allow
     proto: tcp
-    port: "{{ destination_host_port | default(22) }}"
+    port: "{{ destination_host_port }}"
     from_ip: "{{ source_host_address }}"
     comment: "validator-swap {{ source_host }}"
     delete: true

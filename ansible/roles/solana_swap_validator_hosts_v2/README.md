@@ -108,7 +108,6 @@ All deployments managed by this role are RBAC-enabled. The following directories
 | `default_file_mode` | `validator_key_file_mode` |
 | `default_directory_mode` | `validator_data_mode_owner_readonly` |
 
-
 ## Firewall and SSH Automation Notes
 
 - This role uses the Ansible `ufw` module for idempotent firewall rule management. UFW rules are added for the source host's IP and the correct SSH port, and UFW is restarted and enabled as part of the process.
@@ -125,9 +124,9 @@ All deployments managed by this role are RBAC-enabled. The following directories
 ### Troubleshooting
 
 - If SSH connectivity fails:
-   - Ensure the operator's public key is present in the destination user's `authorized_keys` file.
-   - Verify the UFW rule for the source host's IP and SSH port is present and active on the destination host.
-   - Confirm that UFW is enabled and running.
+  - Ensure the operator's public key is present in the destination user's `authorized_keys` file.
+  - Verify the UFW rule for the source host's IP and SSH port is present and active on the destination host.
+  - Confirm that UFW is enabled and running.
 
 ## Order of operations to perform a validator Identity swap
 
@@ -170,8 +169,6 @@ All deployments managed by this role are RBAC-enabled. The following directories
 1. **Wait for Restart Window and Unstake Source Validator**
    - Waits for a safe restart window on the source validator using `agave-validator wait-for-restart-window`
    - Switches the source validator to use its hot-spare identity
-   - Updates the identity symlink to point to the hot-spare identity
-   - The symlink ownership is set to `sol:validator_operators` with appropriate permissions
    - This effectively takes the source validator out of active voting
    - **RBAC Note**: All `agave-validator` commands are executed with `become: true` and `become_user: "{{ solana_user }}"`
 
@@ -185,10 +182,14 @@ All deployments managed by this role are RBAC-enabled. The following directories
 
 3. **Promote Destination to Primary Target Validator**
    - Switches the destination validator to use the primary target identity
-   - Updates the identity symlink on the destination to point to the primary target identity
-   - The symlink ownership is set to `sol:validator_operators` with appropriate permissions
    - This effectively makes the destination validator the new primary validator
    - **RBAC Note**: The `agave-validator set-identity` command is executed with `become: true` and `become_user: "{{ solana_user }}"`
+
+### Operational Note: Service Restarts After Swap
+
+- The validator startup templates intentionally boot with `hot-spare-identity.json`.
+- After a successful swap, if the destination validator service is restarted, it will come back using the hot-spare identity from the startup script until `agave-validator set-identity --require-tower {{ destination_host_primary_target_identity_path }}` is run again.
+- Operators should treat service restarts on the promoted destination validator as requiring a follow-up `set-identity` step when the validator is expected to remain the active primary.
 
 ### Fast Rollback
 
