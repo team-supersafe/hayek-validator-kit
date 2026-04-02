@@ -159,6 +159,20 @@
         - running_pubkey.stdout_lines is defined
         - running_pubkey.stdout_lines | length > 0
 
+    - name: precheck - Warn if validator uses legacy identity symlink startup
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: {{ inventory_hostname }} is running the validator with legacy
+          identity path '{{ running_identity_file.stdout | trim }}'.
+          This host still uses the pre-d35baa9 symlink-based startup flow
+          (`--identity .../identity.json`), but the current hot-swap role no longer
+          manages `identity.json`. Re-running the validator setup role is recommended
+          before attempting a hot swap.
+      when:
+        - not ansible_check_mode
+        - running_identity_file.stdout | default('') | trim != ''
+        - (running_identity_file.stdout | trim | basename) == 'identity.json'
+
     - name: precheck - Fail if identity mismatch
       ansible.builtin.fail:
         msg: >
