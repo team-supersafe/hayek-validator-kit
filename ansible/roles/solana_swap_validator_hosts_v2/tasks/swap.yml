@@ -39,7 +39,6 @@
       ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ source_vote_pubkey }} --output json
       register: source_vote_account_before
       when: inventory_hostname == source_host
-      delegate_to: localhost
       changed_when: false
       failed_when: false
 
