@@ -1,4 +1,19 @@
 ---
+- name: summary - Display Dry-Run Summary
+  ansible.builtin.debug:
+    msg: |
+      ===============================================
+      VALIDATOR SWAP DRY-RUN SUMMARY
+      ===============================================
+      Read-only preflight validation completed.
+      - Existing host, validator, cluster, and vote-account checks were executed.
+      - Swap execution steps were intentionally skipped because --check was used.
+      - Post-swap verification and impact reporting were intentionally skipped because no swap was performed.
+      ===============================================
+  delegate_to: localhost
+  run_once: true
+  when: ansible_check_mode
+
 - name: verify - Display Final State Summary
   ansible.builtin.debug:
     msg: |
@@ -25,6 +40,7 @@
       ===============================================
   delegate_to: localhost
   run_once: true
+  when: not ansible_check_mode
 
 - name: summary - Display Impact Report
   ansible.builtin.debug:
@@ -58,3 +74,4 @@
       ===============================================
   delegate_to: localhost
   run_once: true
+  when: not ansible_check_mode

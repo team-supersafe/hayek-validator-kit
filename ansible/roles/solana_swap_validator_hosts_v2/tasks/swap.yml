@@ -36,11 +36,16 @@
       run_once: true
 
     - name: swap - Get vote account data from source validator
-      ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ source_vote_pubkey }} --output json
+      ansible.builtin.command: >
+        {{ system_solana_active_release_dir }}/solana vote-account
+        {{ solana_cluster_param }} {{ source_vote_pubkey }} --output json
       register: source_vote_account_before
+      environment:
+        PATH: "{{ system_solana_active_release_dir }}"
       when: inventory_hostname == source_host
       changed_when: false
       failed_when: false
+      check_mode: false
 
     - name: swap - Fail if source vote account data lookup failed
       ansible.builtin.fail:
@@ -50,10 +55,10 @@
           destination promotion after incomplete pre-swap validation.
           source_vote_pubkey={{ source_vote_pubkey | default('') }}
           rc={{ hostvars[source_host].get('source_vote_account_before', {}).get('rc', 'N/A') }}
+          stdout={{ hostvars[source_host].get('source_vote_account_before', {}).get('stdout', '') | trim }}
           stderr={{ hostvars[source_host].get('source_vote_account_before', {}).get('stderr', '') | trim }}
       run_once: true
       when:
-        - not ansible_check_mode
         - hostvars[source_host].get('source_vote_account_before', {}).get('rc', 1) != 0
 
     - name: swap - Parse vote account data before swap
@@ -163,6 +168,7 @@
       become: false
       when: inventory_hostname == destination_host
       changed_when: false
+  when: not ansible_check_mode
 
 - name: swap - Wait for Restart Window and Unstake Source Validator
   any_errors_fatal: true
@@ -196,6 +202,7 @@
       become_user: "{{ solana_user }}"
       when: inventory_hostname == source_host
       register: wait_and_unstake_result
+  when: not ansible_check_mode
 
 - name: swap - Assert source validator demotion completed before promotion
   ansible.builtin.assert:
@@ -234,7 +241,7 @@
           Error: {{ transfer_tower_result.msg | default('Unknown error') }}
       when:
         - transfer_tower_result is failed
-        - not ansible_check_mode
+  when: not ansible_check_mode
 
 - name: swap - Promote Destination to Primary Target Validator
   any_errors_fatal: true
@@ -260,6 +267,7 @@
         swap_duration_seconds: "{{ elapsed_time.stdout | trim | int }}"
       delegate_to: localhost
       run_once: true
+  when: not ansible_check_mode
 
 # Step 6: Cleanup firewall rules
 - name: swap - Remove ufw allow rule for source host IP on destination
@@ -272,6 +280,7 @@
     delete: true
   become: true
   when:
+    - not ansible_check_mode
     - not solana_cluster == "localnet"
     - inventory_hostname == destination_host
     - ansible_facts['os_family'] == 'Debian'
