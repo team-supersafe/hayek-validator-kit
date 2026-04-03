@@ -161,7 +161,7 @@ This may require two steps:
    3. If `amd_pstate=active` is missing, add it to the `GRUB_CMDLINE_LINUX_DEFAULT` line.&#x20;
    4. ```bash
       # make sure grub is updated
-      run sudo update-grub
+      sudo update-grub
 
       # reboot is required
       sudo reboot
