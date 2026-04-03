@@ -14,10 +14,13 @@
 
 - name: Import verify tasks
   ansible.builtin.import_tasks: verify.yml
+  when: not ansible_check_mode
 
 - name: Import deprovision tasks if requested
   ansible.builtin.import_tasks: deprovision_source_host.yml
-  when: deprovision_source_host | default(false) | bool
+  when:
+    - deprovision_source_host | default(false) | bool
+    - not ansible_check_mode
 
 - name: Import summary tasks
   ansible.builtin.import_tasks: summary.yml

@@ -188,19 +188,28 @@
 
       Source Validator:
       - Host: {{ source_host }} ({{ source_validator_name }})
-      - Primary Target Identity: {{ source_host_primary_target_identity_path }}
+      - Current Running Identity:
+      {% if source_ledger_identity is defined and source_ledger_identity != '' %}
+        Pubkey: {{ source_ledger_identity }}
+      {% else %}
+        Pubkey: NOT SET
+      {% endif %}
+      - Primary Target Identity:
+        Path: {{ source_host_primary_target_identity_path | default('NOT SET') }}
       {% if source_primary_pubkey is defined and source_primary_pubkey != '' %}
         Pubkey: {{ source_primary_pubkey }}
       {% else %}
         Pubkey: NOT SET
       {% endif %}
-      - Hot-spare Identity: {{ source_host_hot_spare_identity_path }}
+      - Hot-spare Identity:
+        Path: {{ source_host_hot_spare_identity_path | default('NOT SET') }}
       {% if source_hotspare_pubkey is defined and source_hotspare_pubkey != '' %}
         Pubkey: {{ source_hotspare_pubkey }}
       {% else %}
         Pubkey: NOT SET
       {% endif %}
-      - Vote Account: {{ source_vote_account_path }}
+      - Vote Account:
+        Path: {{ source_vote_account_path | default('NOT SET') }}
       {% if source_vote_account_file is defined and source_vote_account_file.stat is defined and source_vote_account_file.stat.exists %}
       {% if source_vote_pubkey is defined and source_vote_pubkey != '' %}
         Pubkey: {{ source_vote_pubkey }}
@@ -213,19 +222,28 @@
 
       Destination Validator:
       - Host: {{ destination_host }} ({{ destination_validator_name }})
-      - Primary Target Identity: {{ destination_host_primary_target_identity_path | default('NOT SET') }}
+      - Current Running Identity:
+      {% if destination_ledger_identity is defined and destination_ledger_identity != '' %}
+        Pubkey: {{ destination_ledger_identity }}
+      {% else %}
+        Pubkey: NOT SET
+      {% endif %}
+      - Primary Target Identity:
+        Path: {{ destination_host_primary_target_identity_path | default('NOT SET') }}
       {% if destination_primary_pubkey is defined and destination_primary_pubkey != '' %}
         Pubkey: {{ destination_primary_pubkey }}
       {% else %}
         Pubkey: NOT SET
       {% endif %}
-      - Hot-spare Identity: {{ destination_host_keys_dir }}/hot-spare-identity.json
+      - Hot-spare Identity:
+        Path: {{ destination_host_hot_spare_identity_path | default(destination_host_keys_dir ~ '/hot-spare-identity.json') }}
       {% if destination_hotspare_pubkey is defined and destination_hotspare_pubkey != '' %}
         Pubkey: {{ destination_hotspare_pubkey }}
       {% else %}
         Pubkey: NOT SET
       {% endif %}
-      - Vote Account: {{ destination_host_keys_dir }}/vote-account.json
+      - Vote Account:
+        Path: {{ destination_host_keys_dir }}/vote-account.json
       {% if destination_vote_account_file is defined and destination_vote_account_file.stat is defined and destination_vote_account_file.stat.exists %}
       {% if destination_vote_pubkey is defined and destination_vote_pubkey != '' %}
         Pubkey: {{ destination_vote_pubkey }}

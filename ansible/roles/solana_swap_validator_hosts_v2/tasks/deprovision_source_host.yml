@@ -1,7 +1,7 @@
 ---
 - name: Determine value of should_deprovision_host from deprovision_source_host
   ansible.builtin.set_fact:
-    should_deprovision_host: "{{ deprovision_source_host | default(false) }}"
+    should_deprovision_host: "{{ deprovision_source_host | default(false) | bool }}"
   delegate_to: localhost
   run_once: true
 
@@ -38,12 +38,13 @@
     - name: Prompt for confirmation
       ansible.builtin.pause:
         prompt: "Type 'yes' to proceed with deprovisioning or 'no' to abort"
+      register: confirm_deprovision
       delegate_to: localhost
 
     - name: Check confirmation response
       ansible.builtin.fail:
         msg: "Deprovisioning aborted by user due to high credits loss"
-      when: confirm_deprovision != "yes"
+      when: confirm_deprovision.user_input | lower != "yes"
       delegate_to: localhost
 
     - name: Debug message for manual deprovisioning

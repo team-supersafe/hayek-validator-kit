@@ -14,13 +14,14 @@
       ansible.builtin.command: "id -nG {{ operator_user }}"
       register: operator_user_groups
       changed_when: false
+      check_mode: false
 
     - name: precheck - Fail if operator user is not in validator_operators group
       ansible.builtin.fail:
         msg: >-
           operator_user '{{ operator_user }}' is not a member of '{{ validator_operators_group }}'
           on destination host {{ destination_host }}. Run the playbook as a user in the operator group.
-      when: validator_operators_group not in operator_user_groups.stdout.split()
+      when: validator_operators_group not in (operator_user_groups.stdout | default('') | split)
   delegate_to: "{{ destination_host }}"
   run_once: true
 
@@ -130,6 +131,7 @@
       ansible.builtin.shell: "{{ system_solana_active_release_dir }}/agave-validator -l {{ ledger_path }} contact-info | head -1 | sed 's/Identity: //'"
       register: ledger_identity
       changed_when: false
+      check_mode: false
       become: true
       become_user: "{{ solana_user }}"
 
@@ -142,6 +144,7 @@
       ansible.builtin.shell: "ps aux | grep agave-validator | grep -v grep | grep -o '--identity [^ ]*' | cut -d' ' -f2"
       register: running_identity_file
       changed_when: false
+      check_mode: false
 
     - name: precheck - Get pubkey from running identity file
       ansible.builtin.command: solana-keygen pubkey {{ running_identity_file.stdout }}
@@ -149,6 +152,7 @@
       environment:
         PATH: "{{ system_solana_active_release_dir }}"
       changed_when: false
+      check_mode: false
       when: running_identity_file.stdout != ''
 
     - name: precheck - Set running pubkey fact for host
@@ -159,6 +163,19 @@
         - running_pubkey.stdout_lines is defined
         - running_pubkey.stdout_lines | length > 0
 
+    - name: precheck - Warn if validator uses legacy identity symlink startup
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: {{ inventory_hostname }} is running the validator with legacy
+          identity path '{{ running_identity_file.stdout | trim }}'.
+          This host still uses the pre-d35baa9 symlink-based startup flow
+          (`--identity .../identity.json`), but the current hot-swap role no longer
+          manages `identity.json`. Re-running the validator setup role is recommended
+          before attempting a hot swap.
+      when:
+        - running_identity_file.stdout | default('') | trim != ''
+        - (running_identity_file.stdout | trim | basename) == 'identity.json'
+
     - name: precheck - Fail if identity mismatch
       ansible.builtin.fail:
         msg: >
@@ -167,7 +184,6 @@
           Running identity pubkey: {{ running_pubkey.stdout | default('N/A') }}
           The validator service is not using the expected identity file.
       when:
-        - not ansible_check_mode
         - (ledger_identity.stdout | default('')) != (running_pubkey.stdout | default(''))
         - (ledger_identity.stdout | default('')) != ''
         - (running_pubkey.stdout | default('')) != ''
@@ -177,11 +193,4 @@
     # Use ledger_identity_pubkey as primary (from contact-info), fallback to running_identity_pubkey (from process)
     source_ledger_identity: "{{ hostvars[source_host]['ledger_identity_pubkey'] | default(hostvars[source_host]['running_identity_pubkey'] | default('')) }}"
     destination_ledger_identity: "{{ hostvars[destination_host]['ledger_identity_pubkey'] | default(hostvars[destination_host]['running_identity_pubkey'] | default('')) }}"
-  run_once: true
-
-- name: precheck - Debug ledger identities
-  ansible.builtin.debug:
-    msg: |
-      Source host ({{ source_host }}) ledger identity: {{ source_ledger_identity }}
-      Destination host ({{ destination_host }}) ledger identity: {{ destination_ledger_identity }}
   run_once: true
