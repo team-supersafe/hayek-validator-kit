@@ -103,7 +103,11 @@ Most metal providers (e.g. Vultr, Edgevana, Latitude, etc.) force the provisioni
 
 Once the server is provisioned, you must add your public SSH key to the `ubuntu` user so you can SSH into the server for further setup.
 
-General recommendations:
+### General recommendations
+
+Before you provision your metal box, make sure to follow the guides at [Solana Hardware Compatibility List](https://solanahcl.org/), which is a Community Maintained open source site focused on the best hardware setup to run Solana validators.&#x20;
+
+After you have selected your ASN, data center, and hardware configuration, make sure you follow this light guide when provisioning your baby monster:
 
 1. Choose Ubuntu 24.04 LTS as the metal OS
 2. When available, configure SSH for the ubuntu user, instead of a password
