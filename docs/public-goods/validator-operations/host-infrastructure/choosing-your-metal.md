@@ -134,9 +134,9 @@ unused devices: <none>
 Make sure the server doesn't have any RAID configuration. We have encountered cases where you request the server with NO RAID and the provider provisions it with RAID 1, especially in locations like MIA.
 {% endhint %}
 
-### **Verify Simultaneous Multithreading**
+### **Verify Multithreading**
 
-You must also ensure that the server has SMT (Simultaneous Multithreading) active. By running htop you will see the number of cores - on this server you should see 48 instead of 24.
+You must also ensure that the server has SMT (Simultaneous Multithreading) active. By running `htop` you will see the number of threads (vs cores). Most Solana Validator CPUs run either 24/48 or 32/64 cores/threads.&#x20;
 
 ```bash
 # Check available threads
