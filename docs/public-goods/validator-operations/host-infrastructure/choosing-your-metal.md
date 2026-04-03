@@ -97,7 +97,7 @@ A common setup is to have:
 
 The key is to maintain enough variance across ASNs, DCs and Cities, such that, in the event of disaster, you can recover quickly by switching to your hot-spare, or in the worst-case scenario, repurposing the Testnet host.
 
-## Provisioning The Metal Server
+## Provisioning The Server
 
 Most metal providers (e.g. Vultr, Edgevana, Latitude, etc.) force the provisioning of the server with the `ubuntu` user by default, as the SUDO user for sys-admins.
 
@@ -109,7 +109,7 @@ General recommendations:
 2. When available, configure SSH for the ubuntu user, instead of a password
 3. You can skip any disk redundancy completely. RAID-0 is more ok. Some providers will force RAID-1 on the OS disk, when you have 4+ disks. Disaster recovery for your validator is a completely separate topic.
 
-## Post-Provisioning Verifications
+## Post-Provisioning Tasks
 
 It's recommended before starting to configure the server, users, hardware and system tuning, to review some configurations.
 
