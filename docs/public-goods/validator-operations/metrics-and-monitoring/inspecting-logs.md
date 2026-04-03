@@ -1,7 +1,6 @@
 # Inspecting Logs
 
-Log analysis is essential to understanding how a server is performing. In any infrastructure, reviewing logs from both the operating system and services is critical for detecting issues, verifying process health, and ensuring operational stability.\
-
+Log analysis is essential to understanding how a server is performing. In any infrastructure, reviewing logs from both the operating system and services is critical for detecting issues, verifying process health, and ensuring operational stability.<br>
 
 ## Audit Auth Logs
 
@@ -108,8 +107,7 @@ Jun 18 00:00:00 node-01-nyc systemd[1]: Failed to start logrotate.service - Rota
 
 ## Solana Audit Logs
 
-Solana validators generate comprehensive audit logs that are crucial for monitoring validator performance, detecting anomalies, and maintaining operational security. These logs provide detailed insights into validator operations, consensus participation, and network interactions.\
-
+Solana validators generate comprehensive audit logs that are crucial for monitoring validator performance, detecting anomalies, and maintaining operational security. These logs provide detailed insights into validator operations, consensus participation, and network interactions.<br>
 
 ### Initial Startup Monitoring
 

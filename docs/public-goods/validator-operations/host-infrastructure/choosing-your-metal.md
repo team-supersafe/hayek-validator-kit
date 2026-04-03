@@ -193,10 +193,27 @@ htop
 
 #### **Verify CPU Governor**
 
-To maximize the bare metal, we want to make sure the CPU governor for the performance mode of the CPU is running with the best driver. This may require two steps:
+To maximize the bare metal, we want to make sure the CPU governor for the performance mode of the CPU is running with the best driver.&#x20;
+
+This may require two steps:
 
 1. Need to activate CPPC (Collaborative Processor Performance Control) to function. Some systems may need this feature to be enabled in BIOS/UEFI.
-2. In the server, edit the /etc/default/grub file followed by adding "amd\_pstate=active" in the GRUB\_CMDLINE\_LINUX line. It should look something like this: `GRUB_CMDLINE_LINUX="amd_pstate=active"`. Once this is done, `run sudo update-grub` and then `sudo reboot`
+2. After CPPC is active, you need to activate the `amd_pstate` driver:
+   1. ```bash
+      # open the default grub file
+      sudo nano /etc/default/grub
+      ```
+   2.  It should look like this:&#x20;
+
+       <figure><img src="../../.gitbook/assets/image (10).png" alt=""><figcaption></figcaption></figure>
+   3. If `amd_pstate=active` is missing, add it to the `GRUB_CMDLINE_LINUX_DEFAULT` line.&#x20;
+   4. ```bash
+      # make sure grub is updated
+      run sudo update-grub
+
+      # reboot is required
+      sudo reboot
+      ```
 
 Validate the driver was configured correctly:
 

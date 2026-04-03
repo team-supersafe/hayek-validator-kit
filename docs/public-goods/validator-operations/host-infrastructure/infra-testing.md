@@ -44,8 +44,7 @@ These tests are designed for development and testing environments, staging serve
 
 #### pb\_test\_rbac.yml
 
-This playbook performs comprehensive Role-Based Access Control (RBAC) testing to validate user permissions and group access rights. It tests various system commands including logrotate management, cron operations, package management with apt-get, and system monitoring capabilities. The playbook verifies that users have the correct permissions based on their assigned groups (sysadmin, validator\_admins, validator\_operators) and provides detailed output showing which operations succeed or fail for each user type. The tasks were conceived based on the permissions that were predefined as examples in the [User Access](user-access.md#best-practices) documentation table.\
-
+This playbook performs comprehensive Role-Based Access Control (RBAC) testing to validate user permissions and group access rights. It tests various system commands including logrotate management, cron operations, package management with apt-get, and system monitoring capabilities. The playbook verifies that users have the correct permissions based on their assigned groups (sysadmin, validator\_admins, validator\_operators) and provides detailed output showing which operations succeed or fail for each user type. The tasks were conceived based on the permissions that were predefined as examples in the [User Access](user-access.md#best-practices) documentation table.<br>
 
 **Example**: If a user belonging to the **validator\_operator** role executes `sudo apt-get update` and this task succeeds, the RBAC is expected to fail since this role is defined to not have access to execute this command within the server.
 

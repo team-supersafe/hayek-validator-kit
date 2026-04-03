@@ -33,8 +33,7 @@ The following are the transactions from blocks `349075076` and `349075077` where
 
 As you can see, leaser slot rewards or block rewards are credited to the validator identity account at block level and not as part of a transaction.
 
-You can use this command to get the block data including transactions and block rewards:\
-
+You can use this command to get the block data including transactions and block rewards:<br>
 
 ```
 curl --location 'https://api.mainnet-beta.solana.com' \
