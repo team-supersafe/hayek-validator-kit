@@ -1,5 +1,5 @@
 ---
-# Install Telegraf on Ubuntu
+# Install Telegraf on Debian/Ubuntu
 - name: Ensure keyrings directory exists
   ansible.builtin.file:
     path: /etc/apt/keyrings
@@ -14,19 +14,30 @@
   args:
     creates: /etc/apt/keyrings/influxdata-archive.gpg
 
-- name: Remove any InfluxData repo with old signed-by path
+- name: Remove legacy InfluxData repository entry with old keyring
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/influxdata.gpg] https://repos.influxdata.com/debian stable main"
+    state: absent
+    filename: influxdata
+
+- name: Remove legacy InfluxData Ubuntu repository entry
   ansible.builtin.lineinfile:
     path: /etc/apt/sources.list.d/influxdb.list
-    regexp: '^deb \[signed-by=/etc/apt/(trusted\.gpg\.d/influxdata(-archive)?\.gpg|keyrings/influxdata\.gpg)\] https://repos\.influxdata\.com/ubuntu jammy stable$'
+    regexp: '^deb \[signed-by=/etc/apt/(trusted\.gpg\.d/influxdata(-archive)?\.gpg|keyrings/influxdata(-archive)?\.gpg)\] https://repos\.influxdata\.com/ubuntu jammy stable$'
     state: absent
     backup: yes
   ignore_errors: yes
 
-- name: Add InfluxData repository (jammy fallback, correct keyring)
+- name: Remove legacy InfluxData keyring if present
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/influxdata.gpg
+    state: absent
+
+- name: Add InfluxData repository
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/ubuntu jammy stable"
+    repo: "deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/debian stable main"
     state: present
-    filename: influxdb
+    filename: influxdata
     update_cache: true
 
 - name: Pin telegraf package version
@@ -55,6 +66,7 @@
   ansible.builtin.apt:
     name: telegraf
     state: present
+    update_cache: true
 
 # Install necessary dependencies
 - name: Ensure required packages are installed
