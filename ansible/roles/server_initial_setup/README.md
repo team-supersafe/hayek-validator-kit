@@ -219,8 +219,8 @@ ansible-playbook playbooks/pb_setup_metal_box.yml \
 
 ```sh
 ansible <vm_host> -i <inventory> -b -m command -a "hostnamectl --static"
-ansible <vm_host> -i <inventory> -b -m shell -a "grep -E '^127\\.0\\.1\\.1[[:space:]]+validator-test-01$' /etc/hosts"
-ansible <vm_host> -i <inventory> -b -m shell -a "test \"$(grep -Ec '^127\\.0\\.1\\.1[[:space:]]+' /etc/hosts)\" -eq 1"
+ansible <vm_host> -i <inventory> -b -m shell -a "grep -E '^127\.0\.1\.1[[:space:]]+validator-test-01$' /etc/hosts"
+ansible <vm_host> -i <inventory> -b -m shell -a "test \"$(grep -Ec '^127\.0\.1\.1[[:space:]]+' /etc/hosts)\" -eq 1"
 ```
 
 Expected: `hostnamectl --static` returns the requested hostname and `/etc/hosts` contains exactly one `127.0.1.1` entry with no stale aliases.
