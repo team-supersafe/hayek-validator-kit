@@ -10,7 +10,7 @@
       changed_when: false
 
     - name: Read configured 127.0.1.1 hostname mappings
-      ansible.builtin.shell: grep -E '^127\\.0\\.1\\.1\\s+' /etc/hosts || true
+      ansible.builtin.shell: grep -E '^127\\.0\\.1\\.1[[:space:]]+' /etc/hosts || true
       register: server_initial_setup_hosts_mapping_check
       changed_when: false
 
