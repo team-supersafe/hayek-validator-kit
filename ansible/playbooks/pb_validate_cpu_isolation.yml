@@ -1,0 +1,66 @@
+---
+# Validate CPU isolation GRUB rendering without modifying the host.
+#
+# Syntax check:
+# ansible-playbook playbooks/pb_validate_cpu_isolation.yml \
+#   --syntax-check \
+#   -e "target_host=localhost" \
+#   -e "ansible_user=tester"
+#
+# Functional validation example:
+# ansible-playbook playbooks/pb_validate_cpu_isolation.yml \
+#   -i solana_new_metal_box.yml \
+#   --limit new-metal-box \
+#   -e "target_host=new-metal-box" \
+#   -e "ansible_user=alice"
+#
+# Expected AMD EPYC 9374F example output for cpu_config.poh_core=2:
+# - PoH core: 2
+# - HT sibling: 34
+# - Total logical CPUs: 64
+# - IRQ affinity: 0-1,3-33,35-63
+# - Final line:
+#   GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_pstate=active nohz_full=2,34 isolcpus=domain,managed_irq,2,34 irqaffinity=0-1,3-33,35-63"
+
+- name: Validate CPU isolation task only
+  hosts: "{{ target_host }}"
+  user: "{{ ansible_user }}"
+  become: false
+  gather_facts: true
+  vars:
+    cpu_isolation_validation_only: true
+
+  pre_tasks:
+    - name: validate_cpu_isolation - Assert required playbook variables are defined
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - ansible_user is defined
+        fail_msg: >
+          Missing required playbook variables: target_host, ansible_user
+      tags: [cpu-isolation, cpu-isolation-validate]
+
+    - name: validate_cpu_isolation - Assert host architecture is supported
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['architecture'] == "x86_64"
+        fail_msg: >-
+          CPU isolation validation currently supports only x86_64 hosts.
+          Detected architecture: {{ ansible_facts['architecture'] | default('unknown') }}
+      tags: [cpu-isolation, cpu-isolation-validate]
+
+    - name: validate_cpu_isolation - Assert host OS exposes Linux CPU topology sysfs
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['system'] == "Linux"
+        fail_msg: >-
+          CPU isolation validation requires a Linux host with /sys CPU topology data.
+          Detected system: {{ ansible_facts['system'] | default('unknown') }}
+      tags: [cpu-isolation, cpu-isolation-validate]
+
+  tasks:
+    - name: validate_cpu_isolation - Reuse server_initial_setup CPU isolation task file
+      ansible.builtin.import_role:
+        name: server_initial_setup
+        tasks_from: set_cpu_isolation.yml
+      tags: [cpu-isolation, cpu-isolation-validate]

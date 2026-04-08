@@ -304,6 +304,70 @@ ansible-playbook playbooks/pb_setup_metal_box.yml \
 
 Expected: the second run completes cleanly with no reconnect drama even though the host is already on the target SSH port.
 
+## CPU Isolation Validation
+
+Use the dedicated validation playbook to compute and display the CPU-isolation
+GRUB line without modifying the host.
+
+- Playbook: `playbooks/pb_validate_cpu_isolation.yml`
+- This path reuses `tasks/set_cpu_isolation.yml` from the `server_initial_setup`
+  role.
+- It gathers the live CPU topology from the target host, computes the PoH SMT
+  sibling and `irqaffinity`, and prints the exact
+  `GRUB_CMDLINE_LINUX_DEFAULT="..."` line that a real run would write.
+- It does not install packages, edit `/etc/default/grub`, or run `update-grub`.
+- It supports `--check` because the topology-gathering tasks are explicitly
+  allowed to run in check mode.
+
+### CPU Isolation Commands
+
+1. Validate task selection:
+
+```sh
+cd ansible
+ansible-playbook playbooks/pb_validate_cpu_isolation.yml \
+  -i <inventory> \
+  -e "target_host=<host> ansible_user=<user>" \
+  --list-tasks
+```
+
+Expected: preflight assertions plus CPU-isolation tasks only.
+
+1. Functional validation run:
+
+```sh
+ansible-playbook playbooks/pb_validate_cpu_isolation.yml \
+  -i <inventory> \
+  -e "target_host=<host> ansible_user=<user>" \
+  -K
+```
+
+1. Validation run in check mode:
+
+```sh
+ansible-playbook playbooks/pb_validate_cpu_isolation.yml \
+  -i <inventory> \
+  -e "target_host=<host> ansible_user=<user>" \
+  -K --check
+```
+
+Expected output includes:
+
+- PoH core
+- HT sibling
+- Total logical CPUs
+- Computed `irqaffinity`
+- Final rendered `GRUB_CMDLINE_LINUX_DEFAULT="..."`
+
+Example expected output on the AMD EPYC 9374F case with `cpu_config.poh_core=2`:
+
+- PoH core: `2`
+- HT sibling: `34`
+- Total logical CPUs: `64`
+- IRQ affinity: `0-1,3-33,35-63`
+- Final line:
+  `GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_pstate=active nohz_full=2,34 isolcpus=domain,managed_irq,2,34 irqaffinity=0-1,3-33,35-63"`
+
 ## After Playbook Completion
 
 At the end of the playbook, the server will be rebooted automatically. You must reconnect using:
