@@ -667,6 +667,7 @@ check_ssh_config() {
   local issues=0
   local root_login
   local password_auth
+  local -a ssh_read_prefix=()
 
   # Check if the file exists
   if [ ! -f "$ssh_config" ]; then
@@ -675,18 +676,23 @@ check_ssh_config() {
   fi
 
   if [ ! -r "$ssh_config" ]; then
-    echo -e "  ${RED}FAIL: SSH configuration file is not readable by $(id -un)${NC}"
-    echo -e "  ${YELLOW}Unable to validate PermitRootLogin and PasswordAuthentication settings${NC}"
-    echo -e "  ${YELLOW}Expected provisioning state: root:root with mode 0644${NC}"
-    return 1
+    if command -v sudo &> /dev/null && sudo -n test -r "$ssh_config" 2>/dev/null; then
+      ssh_read_prefix=(sudo -n)
+      echo -e "  ${YELLOW}NOTE: SSH configuration file is not directly readable by $(id -un); using sudo for validation${NC}"
+    else
+      echo -e "  ${RED}FAIL: SSH configuration file is not readable by $(id -un) and sudo is unavailable for validation${NC}"
+      echo -e "  ${YELLOW}Unable to validate PermitRootLogin and PasswordAuthentication settings${NC}"
+      echo -e "  ${YELLOW}Expected provisioning state: readable directly or via sudo${NC}"
+      return 1
+    fi
   fi
 
   # Check for PermitRootLogin
-  root_login=$(grep -i "^PermitRootLogin" "$ssh_config" | awk '{print $2}')
+  root_login=$("${ssh_read_prefix[@]}" grep -i "^PermitRootLogin" "$ssh_config" | awk '{print $2}')
 
   if [ -z "$root_login" ]; then
     # Check for commented lines or if there's no setting at all
-    if grep -i "^#.*PermitRootLogin" "$ssh_config" > /dev/null; then
+    if "${ssh_read_prefix[@]}" grep -i "^#.*PermitRootLogin" "$ssh_config" > /dev/null; then
       echo -e "  ${YELLOW}WARNING: PermitRootLogin is commented out, may be using default (permitted)${NC}"
       ((issues++))
     else
@@ -704,11 +710,11 @@ check_ssh_config() {
   fi
 
   # Check for PasswordAuthentication
-  password_auth=$(grep -i "^PasswordAuthentication" "$ssh_config" | awk '{print $2}')
+  password_auth=$("${ssh_read_prefix[@]}" grep -i "^PasswordAuthentication" "$ssh_config" | awk '{print $2}')
 
   if [ -z "$password_auth" ]; then
     # Check for commented lines or if there's no setting at all
-    if grep -i "^#.*PasswordAuthentication" "$ssh_config" > /dev/null; then
+    if "${ssh_read_prefix[@]}" grep -i "^#.*PasswordAuthentication" "$ssh_config" > /dev/null; then
       echo -e "  ${YELLOW}WARNING: PasswordAuthentication is commented out, may be using default (permitted)${NC}"
       ((issues++))
     else
@@ -840,12 +846,21 @@ check_unattended_upgrades_disabled() {
   fi
 
   local enabled=false
-  local issues=0
+  local warning=false
   local apt_based=false
+  local apt_periodic_update=""
+  local apt_periodic_unattended=""
 
   # For Ubuntu/Debian systems
   if command -v dpkg &> /dev/null; then
     apt_based=true
+
+    # Read the effective apt periodic settings instead of only inspecting one file.
+    if command -v apt-config &> /dev/null; then
+      eval "$(apt-config shell \
+        apt_periodic_update APT::Periodic::Update-Package-Lists \
+        apt_periodic_unattended APT::Periodic::Unattended-Upgrade 2>/dev/null)"
+    fi
 
     # Check if the unattended-upgrades package is installed
     if dpkg -l | grep -q unattended-upgrades; then
@@ -859,18 +874,38 @@ check_unattended_upgrades_disabled() {
         echo -e "  ${GREEN}PASS: unattended-upgrades service is not active${NC}"
       fi
 
-      # Secondary check: verify the timers are disabled
+      # Secondary check: distinguish enabled timers from effective auto-update policy.
       if systemctl is-enabled --quiet apt-daily.timer; then
-        enabled=true
-        echo -e "  ${RED}FAIL: apt-daily timer is enabled${NC}"
+        if [ "${apt_periodic_update:-}" = "0" ] && [ "${apt_periodic_unattended:-}" = "0" ]; then
+          warning=true
+          echo -e "  ${YELLOW}WARNING: apt-daily timer is enabled, but apt periodic actions are disabled${NC}"
+        else
+          enabled=true
+          echo -e "  ${RED}FAIL: apt-daily timer is enabled${NC}"
+        fi
       fi
 
       if systemctl is-enabled --quiet apt-daily-upgrade.timer; then
-        enabled=true
-        echo -e "  ${RED}FAIL: apt-daily-upgrade timer is enabled${NC}"
+        if [ "${apt_periodic_update:-}" = "0" ] && [ "${apt_periodic_unattended:-}" = "0" ]; then
+          warning=true
+          echo -e "  ${YELLOW}WARNING: apt-daily-upgrade timer is enabled, but apt periodic actions are disabled${NC}"
+        else
+          enabled=true
+          echo -e "  ${RED}FAIL: apt-daily-upgrade timer is enabled${NC}"
+        fi
       fi
 
-      # Configuration files are only checked for information, not for pass/fail
+      if [ "${apt_periodic_update:-}" = "0" ] && [ "${apt_periodic_unattended:-}" = "0" ]; then
+        echo -e "  ${GREEN}PASS: apt periodic update policy is disabled${NC}"
+      elif [ -n "${apt_periodic_update:-}" ] || [ -n "${apt_periodic_unattended:-}" ]; then
+        enabled=true
+        echo -e "  ${RED}FAIL: apt periodic update policy is enabled (Update-Package-Lists=${apt_periodic_update:-unset}, Unattended-Upgrade=${apt_periodic_unattended:-unset})${NC}"
+      elif [ -f "/etc/apt/apt.conf.d/20auto-upgrades" ]; then
+        echo -e "  ${YELLOW}NOTE: Could not read effective apt periodic settings via apt-config; review /etc/apt/apt.conf.d/20auto-upgrades manually${NC}"
+      else
+        echo -e "  ${YELLOW}NOTE: Could not determine effective apt periodic settings via apt-config${NC}"
+      fi
+
       if [ -f "/etc/apt/apt.conf.d/20auto-upgrades" ]; then
         if grep -q "APT::Periodic::Update-Package-Lists \"1\"" "/etc/apt/apt.conf.d/20auto-upgrades" ||
            grep -q "APT::Periodic::Unattended-Upgrade \"1\"" "/etc/apt/apt.conf.d/20auto-upgrades"; then
@@ -909,7 +944,14 @@ check_unattended_upgrades_disabled() {
   # Display results
   if [ "$enabled" = false ]; then
     if [ "$apt_based" = true ]; then
-      echo -e "  ${GREEN}PASS: Automatic update services are disabled${NC}"
+      if [ "$warning" = true ]; then
+        echo -e "  ${YELLOW}WARNING: Package automation timers are enabled, but automatic apt actions are disabled${NC}"
+        echo -e "  ${YELLOW}Recommended actions:${NC}"
+        echo -e "  - For Ubuntu/Debian: 'systemctl disable --now unattended-upgrades'"
+        echo -e "  - For Ubuntu/Debian: 'systemctl disable --now apt-daily.timer apt-daily-upgrade.timer'"
+      else
+        echo -e "  ${GREEN}PASS: Automatic update services are disabled${NC}"
+      fi
     fi
     return 0
   else
