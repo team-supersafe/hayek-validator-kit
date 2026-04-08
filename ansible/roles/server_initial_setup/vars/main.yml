@@ -19,9 +19,10 @@ sol_owner: "sol"
 validator_group: "validator_operators"
 
 # CPU configuration
+# Only poh_core needs to be set — the HT sibling and irq_cores are derived
+# automatically at provisioning time from the actual hardware topology.
 cpu_config:
-  isolated_cores: "2,26"
-  irq_cores: "0-1,3-25,27-47"
+  poh_core: 2
   pstate: "active"
 manage_cpu_governor_service: true
 

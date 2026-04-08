@@ -4,15 +4,88 @@
   ansible.builtin.apt:
     name: hwloc
     state: present
-  when: (ansible_facts.architecture | default(ansible_architecture | default(''))) == "x86_64"
+  when:
+    - ansible_facts['architecture'] == "x86_64"
+    - not (cpu_isolation_validation_only | default(false) | bool)
+
+- name: Get HT sibling of PoH core
+  ansible.builtin.command: "cat /sys/devices/system/cpu/cpu{{ cpu_config.poh_core }}/topology/thread_siblings_list"
+  register: _thread_siblings
+  changed_when: false
+  check_mode: false
+  when: ansible_facts['architecture'] == "x86_64"
+
+- name: Get total logical CPU count
+  ansible.builtin.command: nproc --all
+  register: _nproc
+  changed_when: false
+  check_mode: false
+  when: ansible_facts['architecture'] == "x86_64"
+
+- name: Derive PoH core and HT sibling
+  ansible.builtin.set_fact:
+    _cpu_poh: "{{ cpu_config.poh_core | int }}"
+    _cpu_sibling: "{{ _thread_siblings.stdout.split(',') | map('trim') | reject('equalto', cpu_config.poh_core | string) | first | int }}"
+    _cpu_total: "{{ _nproc.stdout | trim | int }}"
+  when: ansible_facts['architecture'] == "x86_64"
+
+- name: Compute irq_cores string (all cores except PoH core and its HT sibling)
+  ansible.builtin.shell: |
+    python3 -c "
+    total = {{ _cpu_total | int }}
+    excluded = { {{ _cpu_poh | int }}, {{ _cpu_sibling | int }} }
+    cores = [i for i in range(total) if i not in excluded]
+    ranges, start, prev = [], cores[0], cores[0]
+    for c in cores[1:]:
+        if c != prev + 1:
+            ranges.append(str(start) if start == prev else f'{start}-{prev}')
+            start = c
+        prev = c
+    ranges.append(str(start) if start == prev else f'{start}-{prev}')
+    print(','.join(ranges))
+    "
+  register: _irq_cores
+  changed_when: false
+  check_mode: false
+  when: ansible_facts['architecture'] == "x86_64"
+
+- name: Build rendered GRUB line for CPU isolation
+  ansible.builtin.set_fact:
+    _grub_cmdline_linux_default: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_pstate={{ cpu_config.pstate }} nohz_full={{ _cpu_poh }},{{ _cpu_sibling }} isolcpus=domain,managed_irq,{{ _cpu_poh }},{{ _cpu_sibling }} irqaffinity={{ _irq_cores.stdout | trim }}"'
+  when: ansible_facts['architecture'] == "x86_64"
 
 - name: Configure GRUB for CPU isolation
   ansible.builtin.lineinfile:
     path: /etc/default/grub
     regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
-    line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_pstate={{ cpu_config.pstate }} nohz_full={{ cpu_config.isolated_cores }} isolcpus=domain,managed_irq,{{ cpu_config.isolated_cores }} irqaffinity={{ cpu_config.irq_cores }}"'
-  when: (ansible_facts.architecture | default(ansible_architecture | default(''))) == "x86_64"
+    line: "{{ _grub_cmdline_linux_default }}"
+  when:
+    - ansible_facts['architecture'] == "x86_64"
+    - not (cpu_isolation_validation_only | default(false) | bool)
 
 - name: Update GRUB
   ansible.builtin.command: update-grub
-  when: (ansible_facts.architecture | default(ansible_architecture | default(''))) == "x86_64"
+  when:
+    - ansible_facts['architecture'] == "x86_64"
+    - not (cpu_isolation_validation_only | default(false) | bool)
+
+- name: Print CPU isolation validation summary
+  ansible.builtin.debug:
+    msg: |
+      CPU Isolation Validation Summary
+      - PoH core: {{ _cpu_poh }}
+      - HT sibling: {{ _cpu_sibling }}
+      - Total logical CPUs: {{ _cpu_total }}
+      - Thread siblings list: {{ _thread_siblings.stdout | trim }}
+      - IRQ affinity: {{ _irq_cores.stdout | trim }}
+  when:
+    - ansible_facts['architecture'] == "x86_64"
+    - cpu_isolation_validation_only | default(false) | bool
+
+- name: Print rendered GRUB line for CPU isolation validation
+  ansible.builtin.debug:
+    msg: |
+      {{ _grub_cmdline_linux_default }}
+  when:
+    - ansible_facts['architecture'] == "x86_64"
+    - cpu_isolation_validation_only | default(false) | bool
