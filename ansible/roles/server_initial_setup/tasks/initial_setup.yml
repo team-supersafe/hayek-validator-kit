@@ -29,6 +29,9 @@
       - xfsprogs  # For XFS filesystem operations
     state: present
 
+- name: Re-disable package automation after package operations
+  ansible.builtin.import_tasks: disable_package_automation.yml
+
 - name: Set timezone
   community.general.timezone:
     name: "{{ timezone }}"

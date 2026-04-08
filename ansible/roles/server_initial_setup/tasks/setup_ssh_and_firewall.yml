@@ -197,6 +197,9 @@
     state: present
     lock_timeout: 300
 
+- name: Re-disable package automation after security package installs
+  ansible.builtin.import_tasks: disable_package_automation.yml
+
 # Clean existing fail2ban config before setting up new one
 - name: Remove existing fail2ban defaults config
   ansible.builtin.file:
