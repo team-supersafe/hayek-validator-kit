@@ -1,10 +1,58 @@
 ---
+- name: Verify hostname configuration
+  when:
+    - host_name is defined
+    - server_initial_setup_hostname_applied | default(false)
+  block:
+    - name: Check configured static hostname
+      ansible.builtin.command: hostnamectl --static
+      register: server_initial_setup_hostnamectl_check
+      changed_when: false
+
+    - name: Read configured 127.0.1.1 hostname mappings
+      ansible.builtin.shell: grep -E '^127\.0\.1\.1[[:space:]]+' /etc/hosts || true
+      register: server_initial_setup_hosts_mapping_check
+      changed_when: false
+
+    - name: Assert static hostname matches requested hostname
+      ansible.builtin.assert:
+        that:
+          - server_initial_setup_hostnamectl_check.stdout == host_name
+        fail_msg: >
+          ERROR! Static hostname does not match requested hostname.
+          Current value: {{ server_initial_setup_hostnamectl_check.stdout | default('') }}
+        success_msg: "✓ Static hostname matches requested hostname"
+
+    - name: Assert /etc/hosts has exactly one 127.0.1.1 mapping
+      ansible.builtin.assert:
+        that:
+          - server_initial_setup_hosts_mapping_check.stdout_lines | length == 1
+        fail_msg: >
+          ERROR! /etc/hosts must contain exactly one 127.0.1.1 mapping.
+          Current entries: {{ server_initial_setup_hosts_mapping_check.stdout_lines | default([]) }}
+        success_msg: "✓ /etc/hosts contains a single 127.0.1.1 mapping"
+
+    - name: Assert /etc/hosts mapping matches requested hostname
+      ansible.builtin.assert:
+        that:
+          - server_initial_setup_hosts_mapping_check.stdout_lines[0] == "127.0.1.1 {{ host_name }}"
+        fail_msg: >
+          ERROR! /etc/hosts 127.0.1.1 mapping does not match requested hostname.
+          Current entry: {{ (server_initial_setup_hosts_mapping_check.stdout_lines | first) | default('missing') }}
+        success_msg: "✓ /etc/hosts 127.0.1.1 mapping matches requested hostname"
+
+    - name: Mark hostname verification as successful
+      ansible.builtin.set_fact:
+        server_initial_setup_hostname_verified: true
+
 # Post-configuration checks to verify that all system tuning was applied correctly
 - name: Wait for system configuration to settle
   ansible.builtin.pause:
     seconds: 3
+  when: not (server_initial_setup_hostname_only_checks | default(false) | bool)
 
 - name: Post-configuration CPU checks
+  when: not (server_initial_setup_hostname_only_checks | default(false) | bool)
   block:
     # Check CPU governor setting after configuration
     - name: Verify CPU governor is set to performance mode (post-config)
@@ -64,6 +112,7 @@
       ignore_errors: true
 
 - name: Post-configuration system checks
+  when: not (server_initial_setup_hostname_only_checks | default(false) | bool)
   block:
     # Verify CPU governor service is active
     - name: Check CPU governor service status
@@ -141,11 +190,12 @@
       POST-CONFIGURATION VERIFICATION COMPLETE
       ========================================
       
-      ✓ CPU Performance Configuration Verified
-      ✓ System Tuning Parameters Applied
-      {{ '✓ Firewall Rules for Authorized IPs Active' if (authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0) else '- Firewall Rules for Authorized IPs Check Skipped (authorized_ips_csv not loaded in this tag scope)' }}
-      {{ '✓ Fail2ban Trusted IP Config Rendered' if (authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0) else '- Fail2ban Trusted IP Config Check Skipped (authorized_ips_csv not loaded in this tag scope)' }}
-      ✓ All Services Running Correctly
+      {{ '✓ Hostname configuration verified' if (server_initial_setup_hostname_verified | default(false)) else ('- Hostname configuration check skipped' if not (server_initial_setup_hostname_applied | default(false)) else 'ERROR! Hostname configuration verification did not complete') }}
+      {{ '✓ CPU Performance Configuration Verified' if not (server_initial_setup_hostname_only_checks | default(false) | bool) else '- CPU Performance Configuration Check Skipped (hostname-only validation mode)' }}
+      {{ '✓ System Tuning Parameters Applied' if not (server_initial_setup_hostname_only_checks | default(false) | bool) else '- System Tuning Checks Skipped (hostname-only validation mode)' }}
+      {{ '✓ Firewall Rules for Authorized IPs Active' if (not (server_initial_setup_hostname_only_checks | default(false) | bool) and authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0) else ('- Firewall Rules for Authorized IPs Check Skipped (authorized_ips_csv not loaded in this tag scope)' if not (server_initial_setup_hostname_only_checks | default(false) | bool) else '- Firewall Rules Check Skipped (hostname-only validation mode)') }}
+      {{ '✓ Fail2ban Trusted IP Config Rendered' if (not (server_initial_setup_hostname_only_checks | default(false) | bool) and authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0) else ('- Fail2ban Trusted IP Config Check Skipped (authorized_ips_csv not loaded in this tag scope)' if not (server_initial_setup_hostname_only_checks | default(false) | bool) else '- Fail2ban Checks Skipped (hostname-only validation mode)') }}
+      {{ '✓ All Services Running Correctly' if not (server_initial_setup_hostname_only_checks | default(false) | bool) else '- Service Checks Skipped (hostname-only validation mode)' }}
       
       System is ready for Solana validator deployment.
       ========================================
