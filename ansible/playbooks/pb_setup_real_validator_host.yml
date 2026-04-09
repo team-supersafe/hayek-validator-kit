@@ -1,0 +1,32 @@
+---
+# Real validator host bootstrap
+# -----------------------------
+# Thin wrapper around the shared single-host bootstrap flow for real
+# testnet/mainnet hosts. This wrapper keeps the password handoff manual and
+# defaults to production-safe build/install behavior.
+
+- name: Preflight real validator host bootstrap inputs
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Assert required real-host parameters are provided
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - target_host | string | trim | length > 0
+          - validator_flavor is defined
+          - validator_flavor | string | trim | length > 0
+        fail_msg: >-
+          Missing required real-host bootstrap variables: target_host,
+          validator_flavor.
+
+    - name: Reject localnet for real validator host bootstrap
+      ansible.builtin.assert:
+        that:
+          - (solana_cluster | default('')) != 'localnet'
+        fail_msg: >-
+          pb_setup_real_validator_host.yml does not support solana_cluster=localnet.
+          Use the harness/localnet workflows instead.
+
+- import_playbook: pb_setup_validator_host_common.yml
