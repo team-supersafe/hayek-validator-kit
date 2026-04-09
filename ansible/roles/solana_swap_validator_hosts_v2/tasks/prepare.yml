@@ -47,7 +47,7 @@
   run_once: true
   when:
     - seconds_remaining is defined
-    - seconds_remaining | float < swap_epoch_end_threshold_sec
+    - seconds_remaining | float < (swap_epoch_end_threshold_sec | float)
 
 - name: prepare - Check if SSH key already exists
   ansible.builtin.stat:
@@ -128,13 +128,22 @@
     - hostvars[source_host]['pubkey'].content != ''
   ignore_errors: "{{ ansible_check_mode }}"
 
-- name: prepare - Install prerequisites
+- name: prepare - Check whether rsync is already installed
+  ansible.builtin.command: dpkg-query -W -f='${Status}' rsync
+  register: rsync_package
+  changed_when: false
+  failed_when: false
+
+- name: prepare - Install prerequisites when rsync is missing
   become: true
   ansible.builtin.apt:
     name: rsync
     state: present
     update_cache: true
-  when: not ansible_check_mode
+    lock_timeout: 120
+  when:
+    - not ansible_check_mode
+    - rsync_package.rc != 0 or 'install ok installed' not in (rsync_package.stdout | default(''))
 
 - name: prepare - Check for identity keypair files on source host
   block:
@@ -414,7 +423,9 @@
     destination_host_address: "{{ hostvars[destination_host]['ansible_host'] | default(hostvars[destination_host]['inventory_hostname'] | default(destination_host)) }}"
   run_once: true
 
-# Guarantee SSH access by adding ufw rule on destination_host only if not localnet
+# Optionally guarantee SSH access by adding a destination-side UFW rule for the
+# source host before the inter-host SSH probe. VM shared-bridge runs need this,
+# while compose/localnet flows can leave it disabled.
 - name: Ensure SSH access to destination_host by adding ufw rule on destination_host
   block:
     - name: prepare - Allow source_host SSH access to destination_host
@@ -436,7 +447,7 @@
   become: true
   when:
     - not ansible_check_mode
-    - not solana_cluster == "localnet"
+    - manage_destination_ufw_peer_ssh_rule | default(false) | bool
     - inventory_hostname == destination_host
     - ansible_facts['os_family'] == 'Debian'
 
@@ -471,9 +482,8 @@
             'No route to host' in ssh_test_result.stderr)))
   when:
     - inventory_hostname == source_host
-    - ssh_key_exists is defined
-    - ssh_key_exists.stat is defined
-    - ssh_key_exists.stat.exists | default(false)
+    - source_host_ssh_key_path is defined
+    - source_host_ssh_key_path | length > 0
 
 - name: prepare - Verify Destination Validator Health
   block:
