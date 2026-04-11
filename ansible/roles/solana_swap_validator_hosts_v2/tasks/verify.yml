@@ -267,8 +267,14 @@
         - post_swap_vote_account_address is not defined or post_swap_vote_account_address == ''
 
     - name: verify - Get vote account data from destination validator
-      ansible.builtin.command: solana vote-account {{ solana_cluster_param }} {{ post_swap_vote_account_address }} --output json
+      ansible.builtin.command: >
+        {{ system_solana_active_release_dir }}/solana vote-account
+        {{ solana_cluster_param }} {{ post_swap_vote_account_address }} --output json
       register: source_vote_account_after
+      environment:
+        PATH: "{{ system_solana_active_release_dir }}"
+      become: true
+      become_user: "{{ solana_user }}"
       when:
         - inventory_hostname == destination_host
         - post_swap_vote_account_address | default('') | trim != ''
@@ -287,6 +293,7 @@
         msg: |
           Failed to read post-swap vote account {{ post_swap_vote_account_address | default('unknown') }}.
           RC: {{ source_vote_account_after.rc | default('unknown') }}
+          Msg: {{ source_vote_account_after.msg | default('') }}
           Stdout: {{ source_vote_account_after.stdout | default('') }}
           Stderr: {{ source_vote_account_after.stderr | default('') }}
       when:
