@@ -130,7 +130,7 @@ EOF
 
 run_contract_checks() {
   log_step "Harness contract checks"
-  if [[ ! -x "$REPO_ROOT/test-harness/bin/hvk-test" ]]; then
+  if [[ ! -e "$REPO_ROOT/test-harness/bin/hvk-test" ]]; then
     note "Skipping harness contract checks: test-harness/bin/hvk-test is not present in this checkout."
     return 0
   fi

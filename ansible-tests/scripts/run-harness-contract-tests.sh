@@ -1,11 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-if [ -d "/hayek-validator-kit" ]; then
-  REPO_ROOT="/hayek-validator-kit"
-else
-  REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-fi
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 HVK_TEST="$REPO_ROOT/test-harness/bin/hvk-test"
 

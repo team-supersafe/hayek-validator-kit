@@ -9,6 +9,7 @@ on:
       - "solana-localnet/**"
       - "ansible/**"
       - "bare-metal/latitudesh/**"
+      - "ansible-tests/scripts/run-all-tests.sh"
       - "ansible-tests/scripts/run-harness-contract-tests.sh"
       - "ansible-tests/scripts/run-pr-228-regression-smoke.sh"
       - ".github/workflows/test-harness.yml"

@@ -151,6 +151,7 @@ if [[ "${INCLUDE_HARNESS_CONTRACT_TESTS:-false}" == "true" ]]; then
         echo -e "${GREEN}✅ harness-contract: PASSED${NC}"
     else
         echo -e "${RED}❌ harness-contract: FAILED${NC}"
+        FAILED_SCENARIOS+=("harness-contract")
         if [ "$CONTINUE_ON_ERROR" = false ]; then
             exit 1
         fi
