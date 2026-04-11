@@ -207,6 +207,10 @@ validate_provisioning() {
   [[ -r "$VM_BASE_IMAGE" ]] || hvk_emit_err_and_exit "$ADAPTER" "$ACTION" "$RUN_ID" "missing_file" "VM base image is not readable: $VM_BASE_IMAGE" 3
   [[ -r "$VM_SSH_PUBLIC_KEY_FILE" ]] || hvk_emit_err_and_exit "$ADAPTER" "$ACTION" "$RUN_ID" "missing_file" "VM SSH public key file is not readable: $VM_SSH_PUBLIC_KEY_FILE" 3
   [[ -r "$VM_SSH_PRIVATE_KEY_FILE" ]] || hvk_emit_err_and_exit "$ADAPTER" "$ACTION" "$RUN_ID" "missing_file" "VM SSH private key file is not readable: $VM_SSH_PRIVATE_KEY_FILE" 3
+}
+
+validate() {
+  validate_provisioning
 
   hvk_json_ok "$ADAPTER" "$ACTION" "$RUN_ID" "VM adapter validation passed" \
     "$(jq -cn --arg arch "$VM_ARCH" --arg profile "$VM_PROFILE" --arg base_image "$VM_BASE_IMAGE" '{arch: $arch, profile: $profile, base_image: $base_image}')"
@@ -355,7 +359,7 @@ describe() {
 }
 
 case "$ACTION" in
-  validate) validate_provisioning ;;
+  validate) validate ;;
   up) up ;;
   inventory) inventory ;;
   wait) wait_ready ;;
