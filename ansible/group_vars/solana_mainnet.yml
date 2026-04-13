@@ -22,6 +22,11 @@ jito_bam_endpoints:
     block_engine_url: "https://ny.mainnet.block-engine.jito.wtf"
     shred_receiver_addr: "141.98.216.96:1002"
     ntp_server: "ntp.dallas.jito.wtf"
+  los_angeles:
+    bam_url: "http://lax.mainnet.bam.jito.wtf"
+    block_engine_url: "https://slc.mainnet.block-engine.jito.wtf"
+    shred_receiver_addr: "64.130.53.8:1002"
+    ntp_server: "ntp.slc.jito.wtf"
   salt_lake_city:
     bam_url: "http://slc.mainnet.bam.jito.wtf"
     block_engine_url: "https://slc.mainnet.block-engine.jito.wtf"
