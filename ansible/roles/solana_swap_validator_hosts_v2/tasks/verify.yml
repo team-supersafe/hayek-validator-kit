@@ -330,7 +330,6 @@
         - vote_account_after is defined
         - vote_account_after.epochVotingHistory is defined
         - vote_account_after.epochVotingHistory | length > 0
-  when: solana_cluster != 'localnet'
 
 - name: verify - Calculate TVC impact
   block:
