@@ -51,7 +51,7 @@ on:
         default: "us-east-1"
         type: string
       aws_role_to_assume:
-        description: "IAM role ARN for GitHub OIDC"
+        description: "IAM role ARN for GitHub OIDC (overrides AWS_ROLE_ARN variable when set)"
         required: false
         default: ""
         type: string
@@ -60,6 +60,51 @@ on:
         required: true
         default: true
         type: boolean
+
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      client:
+        required: false
+        default: "all"
+        type: string
+      arch:
+        required: false
+        default: "all"
+        type: string
+      source_bucket:
+        required: false
+        default: "solv-store"
+        type: string
+      source_prefix:
+        required: false
+        default: "staging"
+        type: string
+      destination_bucket:
+        required: false
+        default: "solv-store"
+        type: string
+      destination_prefix:
+        required: false
+        default: ""
+        type: string
+      aws_region:
+        required: false
+        default: "us-east-1"
+        type: string
+      aws_role_to_assume:
+        required: false
+        default: ""
+        type: string
+      dry_run:
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      AWS_ROLE_ARN:
+        required: false
 
 permissions:
   contents: read
@@ -113,15 +158,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "${{ inputs.aws_role_to_assume }}" ]]; then
-            echo "aws_role_to_assume is required for promotion."
+          role="${{ inputs.aws_role_to_assume || secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN }}"
+          if [[ -z "$role" ]]; then
+            echo "No IAM role available: set aws_role_to_assume input or AWS_ROLE_ARN repository variable."
             exit 1
           fi
 
       - name: Configure AWS credentials with GitHub OIDC (promotion)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ inputs.aws_role_to_assume }}
+          role-to-assume: ${{ inputs.aws_role_to_assume || secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN }}
           role-session-name: gha-solanabin-promote-${{ github.run_id }}-${{ matrix.client }}-${{ matrix.arch }}
           aws-region: ${{ inputs.aws_region }}
 
@@ -183,6 +229,25 @@ jobs:
               --only-show-errors
           fi
 
+          # Promote help dump (non-fatal if absent — supports pre-feature versions)
+          release_dir="$(dirname "$release_key")"
+          source_help_key="$(join_key "$source_prefix" "${release_dir}/cli-help-dump-${arch}.txt")"
+          destination_help_key="$(join_key "$destination_prefix" "${release_dir}/cli-help-dump-${arch}.txt")"
+          echo "help_source=s3://${source_bucket}/${source_help_key}"
+          echo "help_destination=s3://${destination_bucket}/${destination_help_key}"
+          if aws s3api head-object --bucket "$source_bucket" --key "$source_help_key" >/dev/null 2>&1; then
+            if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+              echo "dry_run=true, skipping help dump copy."
+            else
+              aws s3 cp \
+                "s3://${source_bucket}/${source_help_key}" \
+                "s3://${destination_bucket}/${destination_help_key}" \
+                --only-show-errors
+            fi
+          else
+            echo "Warning: help dump not found at staging — skipping (pre-feature version?)."
+          fi
+
           mkdir -p out
           jq -n \
             --arg version "$version" \
@@ -195,6 +260,8 @@ jobs:
             --arg destination_key "$destination_key" \
             --arg destination_url "https://${destination_bucket}.s3.amazonaws.com/${destination_key}" \
             --arg destination_sha256_url "https://${destination_bucket}.s3.amazonaws.com/${destination_sha256_key}" \
+            --arg destination_help_key "$destination_help_key" \
+            --arg destination_help_url "https://${destination_bucket}.s3.amazonaws.com/${destination_help_key}" \
             --arg dry_run "${{ inputs.dry_run }}" \
             --arg promoted_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             '{
@@ -208,6 +275,8 @@ jobs:
               destination_key: $destination_key,
               destination_url: $destination_url,
               destination_sha256_url: $destination_sha256_url,
+              destination_help_key: $destination_help_key,
+              destination_help_url: $destination_help_url,
               dry_run: ($dry_run == "true"),
               promoted_at: $promoted_at
             }' >"out/promote-meta-${client}-${arch}.json"
@@ -230,15 +299,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "${{ inputs.aws_role_to_assume }}" ]]; then
-            echo "aws_role_to_assume is required for manifest publication."
+          role="${{ inputs.aws_role_to_assume || secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN }}"
+          if [[ -z "$role" ]]; then
+            echo "No IAM role available: set aws_role_to_assume input or AWS_ROLE_ARN repository variable."
             exit 1
           fi
 
       - name: Configure AWS credentials with GitHub OIDC (manifest publication)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ inputs.aws_role_to_assume }}
+          role-to-assume: ${{ inputs.aws_role_to_assume || secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN }}
           role-session-name: gha-solanabin-manifest-${{ github.run_id }}
           aws-region: ${{ inputs.aws_region }}
 

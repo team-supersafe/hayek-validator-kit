@@ -1,0 +1,218 @@
+name: solana-sfdp-watch
+
+# Polls the Solana Foundation Delegation Program (SFDP) API for minimum required
+# client versions on mainnet-beta and testnet, checks whether those versions are
+# already built and released in S3, and automatically triggers
+# solana-binary-pipeline (with auto_promote=true) for any missing versions.
+#
+# Required repository configuration:
+#   Variable  AWS_ROLE_ARN  — IAM role ARN for GitHub OIDC
+#             (can be overridden per-run via aws_role_to_assume input)
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'   # every 4 hours
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Check only, do not trigger builds"
+        required: true
+        default: false
+        type: boolean
+      client:
+        description: "Which client(s) to check/build"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - agave
+          - jito-solana
+      s3_bucket:
+        description: "S3 bucket to check (release, not staging)"
+        required: true
+        default: "solv-store"
+        type: string
+      aws_region:
+        description: "AWS region"
+        required: true
+        default: "us-east-1"
+        type: string
+      aws_role_to_assume:
+        description: "IAM role ARN for GitHub OIDC (overrides AWS_ROLE_ARN variable when set)"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write    # AWS OIDC
+      actions: write     # trigger workflow_dispatch on same repo
+    steps:
+      - name: Validate OIDC role input
+        shell: bash
+        run: |
+          set -euo pipefail
+          role="${{ inputs.aws_role_to_assume || vars.AWS_ROLE_ARN }}"
+          if [[ -z "$role" ]]; then
+            echo "No IAM role available: set aws_role_to_assume input or AWS_ROLE_ARN repository variable."
+            exit 1
+          fi
+
+      - name: Fetch SFDP required versions
+        id: sfdp
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Fetching SFDP required versions..."
+          curl -sf 'https://api.solana.org/api/epoch/required_versions?cluster=mainnet-beta' \
+            >/tmp/mainnet.json
+          curl -sf 'https://api.solana.org/api/epoch/required_versions?cluster=testnet' \
+            >/tmp/testnet.json
+
+          echo "=== mainnet-beta ==="
+          cat /tmp/mainnet.json | jq '.'
+          echo "=== testnet ==="
+          cat /tmp/testnet.json | jq '.'
+
+          # Extract all unique agave_min_version values across both clusters
+          mapfile -t required_versions < <(
+            jq -rs '[.[].data[] | .agave_min_version | select(. != null)] | unique[]' \
+              /tmp/mainnet.json /tmp/testnet.json
+          )
+
+          if [[ ${#required_versions[@]} -eq 0 ]]; then
+            echo "No required versions returned by SFDP API."
+            exit 1
+          fi
+
+          printf 'Required versions: %s\n' "${required_versions[*]}"
+          printf '%s\n' "${required_versions[@]}" >/tmp/required_versions.txt
+
+          # Encode as comma-separated for GITHUB_OUTPUT (newlines not allowed)
+          versions_csv="$(IFS=','; printf '%s' "${required_versions[*]}")"
+          echo "versions=${versions_csv}" >>"$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws_role_to_assume || vars.AWS_ROLE_ARN }}
+          role-session-name: gha-sfdp-watch-${{ github.run_id }}
+          aws-region: ${{ inputs.aws_region || 'us-east-1' }}
+
+      - name: Check S3 and trigger missing builds
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Determine effective inputs for scheduled runs (inputs.* are '' on schedule)
+          dry_run="${{ inputs.dry_run }}"    # '' on schedule → treated as false below
+          s3_bucket="${{ inputs.s3_bucket || 'solv-store' }}"
+          aws_region="${{ inputs.aws_region || 'us-east-1' }}"
+          client_filter="${{ inputs.client || 'all' }}"
+
+          versions_csv="${{ steps.sfdp.outputs.versions }}"
+          IFS=',' read -ra versions <<< "$versions_csv"
+
+          # Build client list
+          if [[ "$client_filter" == "all" ]]; then
+            clients=("agave" "jito-solana")
+          else
+            clients=("$client_filter")
+          fi
+
+          # Accumulate results for step summary
+          declare -a summary_rows=()
+          triggered_count=0
+
+          for version in "${versions[@]}"; do
+            [[ -z "$version" ]] && continue
+
+            for client in "${clients[@]}"; do
+              # Use x86_64 as the proxy existence check — both arches are built together
+              if [[ "$client" == "agave" ]]; then
+                check_key="agave/releases/download/v${version}/solana-release-x86_64-unknown-linux-gnu.tar.bz2"
+              else
+                check_key="jito-solana/releases/download/v${version}-jito/solana-release-x86_64-unknown-linux-gnu.tar.bz2"
+              fi
+
+              echo "Checking: s3://${s3_bucket}/${check_key}"
+              if aws s3api head-object --bucket "$s3_bucket" --key "$check_key" >/dev/null 2>&1; then
+                echo "  EXISTS: ${client} v${version}"
+                summary_rows+=("${version}|${client}|EXISTS|—")
+              else
+                echo "  MISSING: ${client} v${version}"
+                if [[ "$dry_run" == "true" ]]; then
+                  echo "  (dry_run=true, skipping trigger)"
+                  summary_rows+=("${version}|${client}|MISSING|skipped (dry_run)")
+                else
+                  echo "  Triggering build for ${client} v${version}..."
+                  gh workflow run solana-binary-pipeline.yml \
+                    --ref "${{ github.ref_name }}" \
+                    --field "client=${client}" \
+                    --field "version=${version}" \
+                    --field "arch=all" \
+                    --field "dry_run=false" \
+                    --field "publish_staging=true" \
+                    --field "auto_promote=true" \
+                    --field "s3_bucket=${s3_bucket}" \
+                    --field "aws_region=${aws_region}"
+                  # aws_role_to_assume intentionally omitted — pipeline uses AWS_ROLE_ARN variable
+                  echo "  Triggered."
+                  summary_rows+=("${version}|${client}|MISSING|triggered build")
+                  triggered_count=$((triggered_count + 1))
+                fi
+              fi
+            done
+          done
+
+          echo "triggered_count=${triggered_count}" >>"$GITHUB_OUTPUT"
+
+          # Write summary rows to file for next step
+          printf '%s\n' "${summary_rows[@]}" >/tmp/summary_rows.txt
+
+      - name: Write step summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          triggered_count="${{ steps.check.outputs.triggered_count }}"
+
+          {
+            echo "## SFDP Version Watch — ${generated_at}"
+            echo ""
+            echo "| Version | Client | S3 Status | Action |"
+            echo "|---|---|---|---|"
+            while IFS='|' read -r version client status action; do
+              echo "| \`${version}\` | ${client} | ${status} | ${action} |"
+            done </tmp/summary_rows.txt
+            echo ""
+
+            if [[ "${triggered_count}" -gt 0 ]]; then
+              echo "> **${triggered_count} build(s) triggered.** Monitor [Actions](${{ github.server_url }}/${{ github.repository }}/actions) for progress."
+            else
+              echo "> All required versions are present in S3."
+            fi
+            echo ""
+            echo "### SFDP API Raw Data"
+            echo ""
+            echo "**mainnet-beta**"
+            echo '```json'
+            cat /tmp/mainnet.json | jq '.'
+            echo '```'
+            echo ""
+            echo "**testnet**"
+            echo '```json'
+            cat /tmp/testnet.json | jq '.'
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"
