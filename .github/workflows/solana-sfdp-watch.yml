@@ -184,6 +184,7 @@ jobs:
               else
                 echo "  Triggering build for ${client} v${version} arch=${arch_field}..."
                 gh workflow run solana-binary-pipeline.yml \
+                  --repo "${{ github.repository }}" \
                   --ref "${{ github.ref_name }}" \
                   --field "client=${client}" \
                   --field "version=${version}" \
