@@ -1,0 +1,157 @@
+name: solana-binary-help-diff
+
+on:
+  workflow_dispatch:
+    inputs:
+      client:
+        description: "Client"
+        required: true
+        default: "jito-solana"
+        type: choice
+        options:
+          - agave
+          - jito-solana
+      arch:
+        description: "Architecture"
+        required: true
+        default: "x86_64"
+        type: choice
+        options:
+          - x86_64
+          - aarch64
+      version_from:
+        description: "Base version for diff (older, e.g. 3.0.13)"
+        required: true
+        type: string
+      version_to:
+        description: "New version for diff (newer, e.g. 3.0.14)"
+        required: true
+        type: string
+      s3_bucket:
+        description: "S3 bucket containing help dumps"
+        required: true
+        default: "solv-store"
+        type: string
+      aws_region:
+        description: "AWS region"
+        required: true
+        default: "us-east-1"
+        type: string
+      aws_role_to_assume:
+        description: "IAM role ARN for GitHub OIDC (overrides AWS_ROLE_ARN variable when set)"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  help-diff:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Validate OIDC role input
+        shell: bash
+        run: |
+          set -euo pipefail
+          role="${{ inputs.aws_role_to_assume || vars.AWS_ROLE_ARN }}"
+          if [[ -z "$role" ]]; then
+            echo "No IAM role available: set aws_role_to_assume input or AWS_ROLE_ARN repository variable."
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws_role_to_assume || vars.AWS_ROLE_ARN }}
+          role-session-name: gha-helpdiff-${{ github.run_id }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Compute S3 keys and download help dumps
+        id: keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          client="${{ inputs.client }}"
+          arch="${{ inputs.arch }}"
+          version_from="${{ inputs.version_from }}"
+          version_to="${{ inputs.version_to }}"
+          bucket="${{ inputs.s3_bucket }}"
+
+          if [[ "$client" == "agave" ]]; then
+            dir_from="agave/releases/download/v${version_from}"
+            dir_to="agave/releases/download/v${version_to}"
+          else
+            dir_from="jito-solana/releases/download/v${version_from}-jito"
+            dir_to="jito-solana/releases/download/v${version_to}-jito"
+          fi
+
+          key_from="${dir_from}/cli-help-dump-${arch}.txt"
+          key_to="${dir_to}/cli-help-dump-${arch}.txt"
+
+          echo "key_from=${key_from}" >>"$GITHUB_OUTPUT"
+          echo "key_to=${key_to}"     >>"$GITHUB_OUTPUT"
+
+          mkdir -p dumps
+
+          echo "Downloading: s3://${bucket}/${key_from}"
+          aws s3 cp "s3://${bucket}/${key_from}" dumps/help-from.txt --only-show-errors
+
+          echo "Downloading: s3://${bucket}/${key_to}"
+          aws s3 cp "s3://${bucket}/${key_to}" dumps/help-to.txt --only-show-errors
+
+      - name: Compute diff and write step summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          client="${{ inputs.client }}"
+          arch="${{ inputs.arch }}"
+          version_from="${{ inputs.version_from }}"
+          version_to="${{ inputs.version_to }}"
+
+          mkdir -p out
+          diff_file="out/help-diff-${client}-${arch}-v${version_from}-v${version_to}.txt"
+
+          # diff exits 1 when files differ — that is expected, do not fail the step
+          diff -u dumps/help-from.txt dumps/help-to.txt >"$diff_file" || true
+
+          # Summarise additions and removals (subtract the +++ / --- header lines)
+          added="$(grep -c '^+' "$diff_file" || true)"
+          removed="$(grep -c '^-' "$diff_file" || true)"
+          added=$(( added > 0 ? added - 1 : 0 ))
+          removed=$(( removed > 0 ? removed - 1 : 0 ))
+
+          {
+            echo "## CLI Help Diff: ${client} ${arch}"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Client** | \`${client}\` |"
+            echo "| **Architecture** | \`${arch}\` |"
+            echo "| **From version** | \`${version_from}\` |"
+            echo "| **To version** | \`${version_to}\` |"
+            echo "| **From S3 key** | \`${{ steps.keys.outputs.key_from }}\` |"
+            echo "| **To S3 key** | \`${{ steps.keys.outputs.key_to }}\` |"
+            echo "| **Lines added** | +${added} |"
+            echo "| **Lines removed** | -${removed} |"
+            echo ""
+            echo "### Unified Diff (first 500 lines)"
+            echo ""
+            echo '```diff'
+            head -500 "$diff_file" || true
+            echo '```'
+            echo ""
+            echo "_Full diff available as workflow artifact._"
+          } >>"$GITHUB_STEP_SUMMARY"
+
+          echo "Diff written to ${diff_file} (+${added} / -${removed} lines)"
+
+      - name: Upload diff artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: help-diff-${{ inputs.client }}-${{ inputs.arch }}-v${{ inputs.version_from }}-v${{ inputs.version_to }}
+          path: out/help-diff-${{ inputs.client }}-${{ inputs.arch }}-v${{ inputs.version_from }}-v${{ inputs.version_to }}.txt
+          if-no-files-found: error

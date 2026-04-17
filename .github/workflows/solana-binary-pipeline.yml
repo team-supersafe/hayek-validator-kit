@@ -46,7 +46,7 @@ on:
         default: "us-east-1"
         type: string
       aws_role_to_assume:
-        description: "IAM role ARN for GitHub OIDC (required when publish_staging=true)"
+        description: "IAM role ARN for GitHub OIDC (overrides AWS_ROLE_ARN variable when set)"
         required: false
         default: ""
         type: string
@@ -55,6 +55,11 @@ on:
         required: true
         default: "staging"
         type: string
+      auto_promote:
+        description: "Automatically promote to release after successful staging publish"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -216,6 +221,31 @@ jobs:
           path: out/solana-release-${{ matrix.arch }}-unknown-linux-gnu.tar.bz2.sha256
           if-no-files-found: error
 
+      - name: Extract CLI help dump
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="out/solana-release-${{ matrix.arch }}-unknown-linux-gnu.tar.bz2"
+          extract_dir="out/help-extract-${{ matrix.client }}-${{ matrix.arch }}"
+          mkdir -p "$extract_dir"
+          tar -xjf "$archive" -C "$extract_dir"
+          bash solana-localnet/build-solana-cli/extract-cli-help.sh \
+            "$extract_dir/solana-release/bin" \
+            out \
+            "${{ matrix.client }}" \
+            "${{ inputs.version }}" \
+            "${{ matrix.arch }}"
+          rm -rf "$extract_dir"
+
+      - name: Upload help dump artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-help-${{ matrix.client }}-${{ matrix.arch }}-v${{ inputs.version }}
+          path: out/cli-help-dump-${{ matrix.client }}-${{ matrix.arch }}.txt
+          if-no-files-found: error
+
   manifest:
     if: ${{ !inputs.dry_run }}
     needs: binary-pipeline
@@ -293,15 +323,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "${{ inputs.aws_role_to_assume }}" ]]; then
-            echo "publish_staging=true requires aws_role_to_assume to be set."
+          role="${{ inputs.aws_role_to_assume || vars.AWS_ROLE_ARN }}"
+          if [[ -z "$role" ]]; then
+            echo "publish_staging=true requires an IAM role: set aws_role_to_assume input or AWS_ROLE_ARN repository variable."
             exit 1
           fi
 
       - name: Configure AWS credentials with GitHub OIDC (staging)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ inputs.aws_role_to_assume }}
+          role-to-assume: ${{ inputs.aws_role_to_assume || vars.AWS_ROLE_ARN }}
           role-session-name: gha-solanabin-stage-${{ github.run_id }}
           aws-region: ${{ inputs.aws_region }}
 
@@ -329,6 +360,13 @@ jobs:
         with:
           pattern: build-manifest*-v${{ inputs.version }}
           path: manifests
+          merge-multiple: true
+
+      - name: Download help dump artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-help-*-v${{ inputs.version }}
+          path: helpdumps
           merge-multiple: true
 
       - name: Publish binaries and checksums to S3 staging
@@ -369,6 +407,39 @@ jobs:
 
             echo "published_archive=s3://${bucket}/${staging_key}"
             echo "published_checksum=s3://${bucket}/${staging_key}.sha256"
+          done
+
+      - name: Publish help dumps to S3 staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          bucket="${{ inputs.s3_bucket }}"
+          prefix="${{ inputs.staging_prefix }}"
+
+          metadata_files=(metadata/metadata-*.json)
+          if [[ ${#metadata_files[@]} -eq 0 ]]; then
+            echo "No metadata files found for help dump staging publish."
+            exit 1
+          fi
+
+          for meta in "${metadata_files[@]}"; do
+            client="$(jq -r '.client' "$meta")"
+            arch="$(jq -r '.arch' "$meta")"
+            release_key="$(jq -r '.s3_key' "$meta")"
+            release_dir="$(dirname "$release_key")"
+            help_filename="cli-help-dump-${arch}.txt"
+            help_path="helpdumps/cli-help-dump-${client}-${arch}.txt"
+            staging_key="${prefix}/${release_dir}/${help_filename}"
+
+            if [[ ! -f "$help_path" ]]; then
+              echo "Help dump missing for client=${client} arch=${arch}: $help_path"
+              exit 1
+            fi
+
+            aws s3 cp "$help_path" "s3://${bucket}/${staging_key}" --only-show-errors
+            echo "published_help=s3://${bucket}/${staging_key}"
           done
 
       - name: Build staging manifest
@@ -435,3 +506,27 @@ jobs:
 
           echo "published_manifest=s3://${bucket}/${manifest_key}"
           echo "published_manifest_sha256=s3://${bucket}/${manifest_key}.sha256"
+
+  auto-promote:
+    if: ${{ !inputs.dry_run && inputs.auto_promote && inputs.publish_staging }}
+    needs:
+      - manifest
+      - publish-staging
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/solana-binary-promote.yml
+    with:
+      version: ${{ inputs.version }}
+      client: ${{ inputs.client }}
+      arch: ${{ inputs.arch }}
+      source_bucket: ${{ inputs.s3_bucket }}
+      source_prefix: ${{ inputs.staging_prefix }}
+      destination_bucket: ${{ inputs.s3_bucket }}
+      destination_prefix: ""
+      aws_region: ${{ inputs.aws_region }}
+      aws_role_to_assume: ${{ inputs.aws_role_to_assume }}
+      dry_run: false
+      force_overwrite: false
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
