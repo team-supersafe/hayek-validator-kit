@@ -64,6 +64,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: binary-build-${{ inputs.client }}-${{ inputs.version }}
+  cancel-in-progress: false
+
 jobs:
   plan:
     runs-on: ubuntu-latest

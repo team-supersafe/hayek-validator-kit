@@ -47,6 +47,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: solana-sfdp-watch
+  cancel-in-progress: false
+
 jobs:
   watch:
     runs-on: ubuntu-latest
