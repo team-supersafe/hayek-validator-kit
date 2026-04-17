@@ -512,6 +512,9 @@ jobs:
     needs:
       - manifest
       - publish-staging
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/solana-binary-promote.yml
     with:
       version: ${{ inputs.version }}
@@ -524,5 +527,6 @@ jobs:
       aws_region: ${{ inputs.aws_region }}
       aws_role_to_assume: ${{ inputs.aws_role_to_assume }}
       dry_run: false
+      force_overwrite: false
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}

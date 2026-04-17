@@ -139,40 +139,65 @@ jobs:
             [[ -z "$version" ]] && continue
 
             for client in "${clients[@]}"; do
-              # Use x86_64 as the proxy existence check — both arches are built together
-              if [[ "$client" == "agave" ]]; then
-                check_key="agave/releases/download/v${version}/solana-release-x86_64-unknown-linux-gnu.tar.bz2"
-              else
-                check_key="jito-solana/releases/download/v${version}-jito/solana-release-x86_64-unknown-linux-gnu.tar.bz2"
+              # Check each architecture individually so we only dispatch what's missing.
+              # Using x86_64 as a proxy would hide missing aarch64 artifacts and could
+              # unnecessarily re-promote an already-released arch.
+              declare -a missing_arches=()
+
+              for arch in "x86_64" "aarch64"; do
+                if [[ "$client" == "agave" ]]; then
+                  check_key="agave/releases/download/v${version}/solana-release-${arch}-unknown-linux-gnu.tar.bz2"
+                else
+                  check_key="jito-solana/releases/download/v${version}-jito/solana-release-${arch}-unknown-linux-gnu.tar.bz2"
+                fi
+
+                echo "Checking: s3://${s3_bucket}/${check_key}"
+                if aws s3api head-object --bucket "$s3_bucket" --key "$check_key" >/dev/null 2>&1; then
+                  echo "  EXISTS: ${client} ${arch} v${version}"
+                  summary_rows+=("${version}|${client}|${arch}|EXISTS|—")
+                else
+                  echo "  MISSING: ${client} ${arch} v${version}"
+                  missing_arches+=("$arch")
+                fi
+              done
+
+              if [[ ${#missing_arches[@]} -eq 0 ]]; then
+                continue
               fi
 
-              echo "Checking: s3://${s3_bucket}/${check_key}"
-              if aws s3api head-object --bucket "$s3_bucket" --key "$check_key" >/dev/null 2>&1; then
-                echo "  EXISTS: ${client} v${version}"
-                summary_rows+=("${version}|${client}|EXISTS|—")
+              # Compute the minimal arch field for the dispatch
+              if [[ ${#missing_arches[@]} -eq 2 ]]; then
+                arch_field="all"
               else
-                echo "  MISSING: ${client} v${version}"
-                if [[ "$dry_run" == "true" ]]; then
-                  echo "  (dry_run=true, skipping trigger)"
-                  summary_rows+=("${version}|${client}|MISSING|skipped (dry_run)")
-                else
-                  echo "  Triggering build for ${client} v${version}..."
-                  gh workflow run solana-binary-pipeline.yml \
-                    --ref "${{ github.ref_name }}" \
-                    --field "client=${client}" \
-                    --field "version=${version}" \
-                    --field "arch=all" \
-                    --field "dry_run=false" \
-                    --field "publish_staging=true" \
-                    --field "auto_promote=true" \
-                    --field "s3_bucket=${s3_bucket}" \
-                    --field "aws_region=${aws_region}"
-                  # aws_role_to_assume intentionally omitted — pipeline uses AWS_ROLE_ARN variable
-                  echo "  Triggered."
-                  summary_rows+=("${version}|${client}|MISSING|triggered build")
-                  triggered_count=$((triggered_count + 1))
-                fi
+                arch_field="${missing_arches[0]}"
               fi
+
+              if [[ "$dry_run" == "true" ]]; then
+                echo "  (dry_run=true, skipping trigger for arch=${arch_field})"
+                for arch in "${missing_arches[@]}"; do
+                  summary_rows+=("${version}|${client}|${arch}|MISSING|skipped (dry_run)")
+                done
+              else
+                echo "  Triggering build for ${client} v${version} arch=${arch_field}..."
+                gh workflow run solana-binary-pipeline.yml \
+                  --ref "${{ github.ref_name }}" \
+                  --field "client=${client}" \
+                  --field "version=${version}" \
+                  --field "arch=${arch_field}" \
+                  --field "dry_run=false" \
+                  --field "publish_staging=true" \
+                  --field "auto_promote=true" \
+                  --field "s3_bucket=${s3_bucket}" \
+                  --field "aws_region=${aws_region}" \
+                  --field "aws_role_to_assume=${{ inputs.aws_role_to_assume }}"
+                echo "  Triggered."
+                for arch in "${missing_arches[@]}"; do
+                  summary_rows+=("${version}|${client}|${arch}|MISSING|triggered (arch=${arch_field})")
+                done
+                triggered_count=$((triggered_count + 1))
+              fi
+
+              unset missing_arches
             done
           done
 
@@ -191,10 +216,10 @@ jobs:
           {
             echo "## SFDP Version Watch — ${generated_at}"
             echo ""
-            echo "| Version | Client | S3 Status | Action |"
-            echo "|---|---|---|---|"
-            while IFS='|' read -r version client status action; do
-              echo "| \`${version}\` | ${client} | ${status} | ${action} |"
+            echo "| Version | Client | Arch | S3 Status | Action |"
+            echo "|---|---|---|---|---|"
+            while IFS='|' read -r version client arch status action; do
+              echo "| \`${version}\` | ${client} | ${arch} | ${status} | ${action} |"
             done </tmp/summary_rows.txt
             echo ""
 

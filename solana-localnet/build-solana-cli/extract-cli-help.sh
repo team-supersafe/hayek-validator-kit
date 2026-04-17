@@ -208,12 +208,13 @@ done
 # Write output file: header + alphabetically-sorted entries
 # ---------------------------------------------------------------------------
 
+# generated_at is intentionally excluded from the file so that diffs between
+# versions reflect only actual CLI changes, not timestamp noise.
 {
   printf '# cli-help-dump\n'
   printf '# client: %s\n' "$CLIENT"
   printf '# version: %s\n' "$VERSION"
-  printf '# arch: %s\n' "$ARCH"
-  printf '# generated_at: %s\n\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf '# arch: %s\n\n' "$ARCH"
 } > "$OUTPUT_FILE"
 
 # Sort blocks alphabetically by command path using Python 3 (available on all GHA runners)

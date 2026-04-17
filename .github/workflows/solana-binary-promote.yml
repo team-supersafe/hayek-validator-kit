@@ -60,6 +60,11 @@ on:
         required: true
         default: true
         type: boolean
+      force_overwrite:
+        description: "Allow overwriting already-published release artifacts (default: false — fail if destination exists)"
+        required: true
+        default: false
+        type: boolean
 
   workflow_call:
     inputs:
@@ -99,6 +104,10 @@ on:
         default: ""
         type: string
       dry_run:
+        required: false
+        default: false
+        type: boolean
+      force_overwrite:
         required: false
         default: false
         type: boolean
@@ -214,6 +223,18 @@ jobs:
 
           aws s3api head-object --bucket "$source_bucket" --key "$source_key" >/dev/null
           aws s3api head-object --bucket "$source_bucket" --key "$source_sha256_key" >/dev/null
+
+          # Guard against silently overwriting already-published release artifacts.
+          # Reruns or duplicate watcher dispatches for the same version would otherwise
+          # replace binaries that consumers may already have verified.
+          if aws s3api head-object --bucket "$destination_bucket" --key "$destination_key" >/dev/null 2>&1; then
+            if [[ "${{ inputs.force_overwrite }}" != "true" ]]; then
+              echo "Error: release artifact already exists at s3://${destination_bucket}/${destination_key}"
+              echo "Set force_overwrite=true to allow overwriting published artifacts."
+              exit 1
+            fi
+            echo "Warning: overwriting existing release artifact (force_overwrite=true)"
+          fi
 
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then
             echo "dry_run=true, skipping copy."
