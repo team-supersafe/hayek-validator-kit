@@ -68,6 +68,9 @@
       become: false
       check_mode: false
       changed_when: false
+      tags:
+        - system-tuning
+        - health-check
       when:
         - health_check_controller_tmp is defined
         - health_check_controller_tmp.path is defined

@@ -130,7 +130,3 @@
     owner: root
     group: root
   when: check_westwood.rc != 0
-
-# Health Check Script
-- name: Install health check from fork
-  ansible.builtin.import_tasks: install_health_check.yml
