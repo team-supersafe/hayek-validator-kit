@@ -1,0 +1,12 @@
+[Unit]
+Description=Set physical NIC ring buffers to maximum
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/set-ethtool-ring-buffers.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
