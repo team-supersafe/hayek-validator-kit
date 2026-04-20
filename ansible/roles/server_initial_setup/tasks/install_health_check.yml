@@ -1,0 +1,73 @@
+---
+- name: Install health check from fork
+  block:
+    - name: Create health check temp directory on control node
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: valigator_health_check_
+      delegate_to: localhost
+      become: false
+      check_mode: false
+      changed_when: false
+      register: health_check_controller_tmp
+
+    - name: Download health_check.sh on control node
+      ansible.builtin.get_url:
+        url: "{{ health_check.script_url }}"
+        dest: "{{ health_check_controller_tmp.path }}/{{ health_check.script_name }}"
+        mode: "{{ health_check.mode }}"
+      delegate_to: localhost
+      become: false
+      check_mode: false
+      changed_when: false
+
+    - name: Download health check config on control node
+      ansible.builtin.get_url:
+        url: "{{ health_check.config_url }}"
+        dest: "{{ health_check_controller_tmp.path }}/{{ health_check.config_name }}"
+        mode: "{{ health_check.config_mode }}"
+      delegate_to: localhost
+      become: false
+      check_mode: false
+      changed_when: false
+
+    - name: Install health_check.sh in /usr/local/bin
+      ansible.builtin.copy:
+        src: "{{ health_check_controller_tmp.path }}/{{ health_check.script_name }}"
+        dest: "{{ health_check.dest_path }}"
+        owner: "{{ health_check.owner }}"
+        group: "{{ health_check.group }}"
+        mode: "{{ health_check.mode }}"
+
+    - name: Install health check config next to health_check.sh
+      ansible.builtin.copy:
+        src: "{{ health_check_controller_tmp.path }}/{{ health_check.config_name }}"
+        dest: "{{ health_check.config_dest_path }}"
+        owner: "{{ health_check.owner }}"
+        group: "{{ health_check.group }}"
+        mode: "{{ health_check.config_mode }}"
+
+    - name: Check legacy health_check.sh path
+      ansible.builtin.stat:
+        path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
+      register: legacy_health_check_path
+
+    - name: Remove legacy health_check.sh symlink
+      ansible.builtin.file:
+        path: "{{ validator_directory.path }}/{{ validator_directory.scripts_subdir }}/{{ health_check.script_name }}"
+        state: absent
+      when:
+        - health_check.dest_path != (validator_directory.path ~ '/' ~ validator_directory.scripts_subdir ~ '/' ~ health_check.script_name)
+        - legacy_health_check_path.stat.islnk | default(false)
+  always:
+    - name: Clean up health check temp directory on control node
+      ansible.builtin.file:
+        path: "{{ health_check_controller_tmp.path }}"
+        state: absent
+      delegate_to: localhost
+      become: false
+      check_mode: false
+      changed_when: false
+      when:
+        - health_check_controller_tmp is defined
+        - health_check_controller_tmp.path is defined
