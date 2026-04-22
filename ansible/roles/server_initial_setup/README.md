@@ -120,6 +120,72 @@ Host your-target-server
 
 `IdentitiesOnly yes` is important because it stops SSH, 1Password, and other agent-managed keys from being tried automatically. Repeated wrong-key attempts can hit the fail2ban retry limit and temporarily lock out your source IP.
 
+## Reviewer Health Check Install
+
+Use the `health-check` tag to install only the maintained-fork validator health
+check script and config through the normal metal-box playbook. This gives
+reviewers a small, repeatable path for testing the script without running the
+full server setup.
+
+1. Validate task selection:
+
+   ```sh
+   cd ansible
+   ansible-playbook playbooks/pb_setup_metal_box.yml \
+     -i <inventory> \
+     -e "target_host=<host> ansible_user=<user>" \
+     --list-tasks --tags health-check
+   ```
+
+   Expected: health check install tasks only.
+
+1. Install the script and config:
+
+   ```sh
+   ansible-playbook playbooks/pb_setup_metal_box.yml \
+     -i <inventory> \
+     -e "target_host=<host> ansible_user=<user>" \
+     -K --tags health-check
+   ```
+
+1. Verify the installed files:
+
+   ```bash
+   ansible new-metal-box \
+     -i solana_new_metal_box.yml \
+     -u <admin_user> \
+     -b -K \
+     -m stat \
+     -a "path=/usr/local/bin/config.json"
+
+   ansible new-metal-box \
+     -i solana_new_metal_box.yml \
+     -u <admin_user> \
+     -b -K \
+     -m stat \
+     -a "path=/usr/local/bin/health_check.sh"
+
+   ansible new-metal-box \
+     -i solana_new_metal_box.yml \
+     -u <admin_user> \
+     -m command \
+     -a "/usr/local/bin/health_check.sh" \
+     -b -K
+   ```
+
+   The script should run on the remote host and report findings. Ansible marks
+   the command red when the script returns a non-zero exit code.
+
+The final command intentionally runs the health check. It may return a non-zero
+exit code when the host has failing health checks, such as worn NVMe drives or
+missing validator prerequisites. For install validation, confirm that the script
+loads `/usr/local/bin/config.json` and reaches the health-check report instead of
+failing with missing file, permission, or invalid config errors.
+
+Override `health_check_ref`, `health_check_script_url`, or
+`health_check_config_url` with `-e` when testing a specific branch, tag, or
+artifact URL.
+
 ## Special Testnet Two-Disk Mode (Opt-In)
 
 For exceptional testnet hosts with exactly two disks (`1 root + 1 data`), you can enable a special disk setup mode.

@@ -29,6 +29,13 @@
   ansible.builtin.import_tasks: system_tuning.yml
   tags: system-tuning
 
+# Installs the validator health check script without requiring the full setup path
+- name: Include health check install tasks
+  ansible.builtin.import_tasks: install_health_check.yml
+  tags:
+    - system-tuning
+    - health-check
+
 # Configures storage devices and mount points for validator data
 - name: Include selected disk setup tasks
   ansible.builtin.include_tasks:
