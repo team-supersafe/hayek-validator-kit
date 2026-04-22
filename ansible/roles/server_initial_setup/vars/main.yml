@@ -12,7 +12,7 @@ fail2ban:
 
 
 # Timezone configuration for the server
-timezone: "America/New_York"
+timezone: "UTC"
 
 # User configuration for Solana validator
 sol_owner: "sol"

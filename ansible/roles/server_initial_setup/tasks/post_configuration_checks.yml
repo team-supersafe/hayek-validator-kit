@@ -183,6 +183,57 @@
         msg: "{{ ip_fail2ban_check.results | map(attribute='stdout') | list }}"
       when: authorized_ips_csv is defined and authorized_ips_csv.dict | length > 0
 
+- name: Post-configuration no-reboot health contract checks
+  when: not (server_initial_setup_hostname_only_checks | default(false) | bool)
+  block:
+    - name: Verify timezone matches validator baseline
+      ansible.builtin.command: timedatectl show -p Timezone --value
+      register: server_initial_setup_timezone_check
+      changed_when: false
+
+    - name: Assert timezone matches validator baseline
+      ansible.builtin.assert:
+        that:
+          - server_initial_setup_timezone_check.stdout == timezone
+        fail_msg: "ERROR! Timezone is {{ server_initial_setup_timezone_check.stdout }}, expected {{ timezone }}"
+        success_msg: "✓ Timezone matches validator baseline"
+
+    - name: Verify nvme-cli is installed
+      ansible.builtin.command: which nvme
+      register: server_initial_setup_nvme_cli_check
+      changed_when: false
+
+    - name: Verify apt automation timers are disabled
+      ansible.builtin.shell: |
+        failed=0
+        for unit in apt-daily.timer apt-daily-upgrade.timer; do
+          if systemctl is-enabled --quiet "$unit"; then
+            echo "$unit enabled"
+            failed=1
+          else
+            echo "$unit disabled"
+          fi
+        done
+        exit "$failed"
+      register: server_initial_setup_apt_timer_check
+      changed_when: false
+
+    - name: Verify NIC ring buffer tuning service is enabled and active
+      ansible.builtin.systemd:
+        name: ethtool-ring-buffers.service
+      register: server_initial_setup_ethtool_ring_service_check
+
+    - name: Assert NIC ring buffer tuning service is enabled and active
+      ansible.builtin.assert:
+        that:
+          - server_initial_setup_ethtool_ring_service_check.status.UnitFileState == "enabled"
+          - server_initial_setup_ethtool_ring_service_check.status.ActiveState == "active"
+        fail_msg: >-
+          ERROR! ethtool-ring-buffers.service status is
+          {{ server_initial_setup_ethtool_ring_service_check.status.ActiveState | default('unknown') }},
+          enabled state is {{ server_initial_setup_ethtool_ring_service_check.status.UnitFileState | default('unknown') }}
+        success_msg: "✓ NIC ring buffer tuning service is enabled and active"
+
 - name: Final configuration summary
   ansible.builtin.debug:
     msg: |
