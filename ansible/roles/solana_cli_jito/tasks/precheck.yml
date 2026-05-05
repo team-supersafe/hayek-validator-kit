@@ -8,16 +8,16 @@
       Required variable is missing or invalid:
       - jito_version must be defined and follow semantic versioning (e.g. 3.1.10 for mainnet, 4.0.0-beta.2 or 4.0.0-rc.0 for testnet)
 
-- name: Precheck - Block pre-release versions on mainnet clusters
+- name: Precheck - Block alpha/beta versions on mainnet clusters
   ansible.builtin.fail:
     msg: >-
-      Pre-release versions (alpha/beta/rc) are only supported on testnet.
-      jito_version={{ jito_version }} is a pre-release and cannot be used
+      Alpha and beta versions are only supported on testnet.
+      jito_version={{ jito_version }} cannot be used
       with solana_cluster={{ solana_cluster }}.
   when:
     - solana_cluster is defined
     - solana_cluster == 'mainnet'
-    - jito_version is regex('-(?:alpha|beta|rc)\.')
+    - jito_version is regex('-(?:alpha|beta)\.')
 
 - name: Precheck - Display version message
   ansible.builtin.debug:
