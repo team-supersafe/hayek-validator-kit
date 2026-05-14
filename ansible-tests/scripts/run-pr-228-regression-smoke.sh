@@ -340,6 +340,7 @@ run_xdp_interface_detection_checks() {
   local has_bond_active_slave
   local has_lower_device
   local has_interface_flag_probe
+  local has_interface_probe_cpu_arg
   local has_interface_flag_injection
   local has_zero_copy_effective
   local has_bnxt_block
@@ -351,6 +352,7 @@ run_xdp_interface_detection_checks() {
   has_bond_active_slave="$(yes_no_from_rg 'bond_active_slave|Currently Active Slave' "$xdp_task")"
   has_lower_device="$(yes_no_from_rg 'lower_\\*|lower_device' "$xdp_task")"
   has_interface_flag_probe="$(yes_no_from_rg 'exp_retransmit_interface|--experimental-retransmit-xdp-interface' "$xdp_task")"
+  has_interface_probe_cpu_arg="$(yes_no_from_rg 'exp_retransmit_interface.*--experimental-retransmit-xdp-cpu-cores.*--experimental-retransmit-xdp-interface' "$xdp_task")"
   has_interface_flag_injection="$(yes_no_from_rg 'xdp_interface_flag_eligible|--experimental-retransmit-xdp-interface' "$xdp_task")"
   has_zero_copy_effective="$(yes_no_from_rg 'xdp_zero_copy_effective|xdp_zero_copy_block_reason' "$xdp_task")"
   has_bnxt_block="$(yes_no_from_rg 'xdp_zero_copy_unsupported_iface_drivers|bnxt_en|driver_unsupported_' "$REPO_ROOT/ansible/roles/solana_validator_shared/defaults/main.yml" "$xdp_task")"
@@ -362,6 +364,7 @@ run_xdp_interface_detection_checks() {
   note "XDP bond active slave resolver present: $has_bond_active_slave"
   note "XDP lower-device resolver present: $has_lower_device"
   note "XDP interface flag probe present: $has_interface_flag_probe"
+  note "XDP interface flag probe includes CPU arg: $has_interface_probe_cpu_arg"
   note "XDP interface flag injection guard present: $has_interface_flag_injection"
   note "XDP zero-copy effective guard present: $has_zero_copy_effective"
   note "XDP bnxt_en zero-copy block present: $has_bnxt_block"
@@ -380,6 +383,9 @@ run_xdp_interface_detection_checks() {
   fi
   if [[ "$has_interface_flag_probe" != "yes" ]]; then
     fail "XDP configure task must probe --experimental-retransmit-xdp-interface support."
+  fi
+  if [[ "$has_interface_probe_cpu_arg" != "yes" ]]; then
+    fail "XDP interface flag probe must include --experimental-retransmit-xdp-cpu-cores to avoid parser false negatives."
   fi
   if [[ "$has_interface_flag_injection" != "yes" ]]; then
     fail "XDP configure task must guard interface flag injection with eligibility facts."

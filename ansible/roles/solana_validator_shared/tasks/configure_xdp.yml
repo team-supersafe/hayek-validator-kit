@@ -438,7 +438,7 @@
         - { name: "xdp_enable", arg: "--enable-xdp" }
         - { name: "xdp_enabled", arg: "--xdp-enabled" }
         - { name: "exp_retransmit_cpu", arg: "--experimental-retransmit-xdp-cpu-cores {{ xdp_experimental_retransmit_xdp_cpu_cores | default(1) }}" }
-        - { name: "exp_retransmit_interface", arg: "--experimental-retransmit-xdp-interface {{ xdp_primary_iface | default('') }}" }
+        - { name: "exp_retransmit_interface", arg: "--experimental-retransmit-xdp-cpu-cores {{ xdp_experimental_retransmit_xdp_cpu_cores | default(1) }} --experimental-retransmit-xdp-interface {{ xdp_primary_iface | default('') }}" }
         - { name: "exp_retransmit_zero_copy", arg: "--experimental-retransmit-xdp-zero-copy" }
       register: xdp_flag_probe_results
       changed_when: false
