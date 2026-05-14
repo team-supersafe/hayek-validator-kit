@@ -28,6 +28,7 @@ Default behavior:
   - harness contract checks
   - ansible syntax checks for validator/swap/HA playbooks
   - identity-model consistency checks around hot-spare startup and runtime identity
+  - XDP interface auto-detection checks
 
 Optional heavier checks:
   --with-compose-hot-swap-matrix    Run compose hot-swap matrix smoke
@@ -328,6 +329,78 @@ run_hot_swap_contract_checks() {
   fi
 }
 
+run_xdp_interface_detection_checks() {
+  log_step "XDP interface auto-detection checks"
+
+  local xdp_task="$REPO_ROOT/ansible/roles/solana_validator_shared/tasks/configure_xdp.yml"
+  local xdp_state="$REPO_ROOT/ansible/roles/solana_validator_shared/templates/xdp_status.env.j2"
+  local xdp_validate="$REPO_ROOT/ansible/playbooks/pb_validate_xdp_shared.yml"
+
+  local has_route_fact
+  local has_bond_active_slave
+  local has_lower_device
+  local has_interface_flag_probe
+  local has_interface_flag_injection
+  local has_zero_copy_effective
+  local has_bnxt_block
+  local has_state_metadata
+  local has_validate_summary
+  local has_unconditional_zero_copy
+
+  has_route_fact="$(yes_no_from_rg 'xdp_route_iface|route_iface=' "$xdp_task")"
+  has_bond_active_slave="$(yes_no_from_rg 'bond_active_slave|Currently Active Slave' "$xdp_task")"
+  has_lower_device="$(yes_no_from_rg 'lower_\\*|lower_device' "$xdp_task")"
+  has_interface_flag_probe="$(yes_no_from_rg 'exp_retransmit_interface|--experimental-retransmit-xdp-interface' "$xdp_task")"
+  has_interface_flag_injection="$(yes_no_from_rg 'xdp_interface_flag_eligible|--experimental-retransmit-xdp-interface' "$xdp_task")"
+  has_zero_copy_effective="$(yes_no_from_rg 'xdp_zero_copy_effective|xdp_zero_copy_block_reason' "$xdp_task")"
+  has_bnxt_block="$(yes_no_from_rg 'xdp_zero_copy_unsupported_iface_drivers|bnxt_en|driver_unsupported_' "$REPO_ROOT/ansible/roles/solana_validator_shared/defaults/main.yml" "$xdp_task")"
+  has_state_metadata="$(yes_no_from_rg 'XDP_ROUTE_IFACE|XDP_ATTACH_IFACE|XDP_ZERO_COPY_EFFECTIVE|XDP_INTERFACE_FLAG_ELIGIBLE' "$xdp_state")"
+  has_validate_summary="$(yes_no_from_rg 'Route interface:|Selected XDP interface:|Zero-copy effective:|Interface flag supported:' "$xdp_validate")"
+  has_unconditional_zero_copy="$(yes_no_from_rg '--experimental-retransmit-xdp-zero-copy.*xdp_experimental_retransmit_xdp_zero_copy|xdp_experimental_retransmit_xdp_zero_copy.*--experimental-retransmit-xdp-zero-copy' "$xdp_task")"
+
+  note "XDP route interface fact present: $has_route_fact"
+  note "XDP bond active slave resolver present: $has_bond_active_slave"
+  note "XDP lower-device resolver present: $has_lower_device"
+  note "XDP interface flag probe present: $has_interface_flag_probe"
+  note "XDP interface flag injection guard present: $has_interface_flag_injection"
+  note "XDP zero-copy effective guard present: $has_zero_copy_effective"
+  note "XDP bnxt_en zero-copy block present: $has_bnxt_block"
+  note "XDP state metadata present: $has_state_metadata"
+  note "XDP validate summary metadata present: $has_validate_summary"
+  note "XDP unconditional zero-copy injection present: $has_unconditional_zero_copy"
+
+  if [[ "$has_route_fact" != "yes" ]]; then
+    fail "XDP configure task must expose route-interface metadata."
+  fi
+  if [[ "$has_bond_active_slave" != "yes" ]]; then
+    fail "XDP configure task must resolve bonded interfaces to active/up slaves."
+  fi
+  if [[ "$has_lower_device" != "yes" ]]; then
+    fail "XDP configure task must attempt unambiguous lower-device resolution."
+  fi
+  if [[ "$has_interface_flag_probe" != "yes" ]]; then
+    fail "XDP configure task must probe --experimental-retransmit-xdp-interface support."
+  fi
+  if [[ "$has_interface_flag_injection" != "yes" ]]; then
+    fail "XDP configure task must guard interface flag injection with eligibility facts."
+  fi
+  if [[ "$has_zero_copy_effective" != "yes" ]]; then
+    fail "XDP configure task must compute effective zero-copy state and block reason."
+  fi
+  if [[ "$has_bnxt_block" != "yes" ]]; then
+    fail "XDP zero-copy safety must block known-problem bnxt_en driver paths."
+  fi
+  if [[ "$has_state_metadata" != "yes" ]]; then
+    fail "XDP state file must persist interface and zero-copy metadata."
+  fi
+  if [[ "$has_validate_summary" != "yes" ]]; then
+    fail "XDP validation summary must print interface and zero-copy metadata."
+  fi
+  if [[ "$has_unconditional_zero_copy" != "no" ]]; then
+    fail "XDP configure task must not inject zero-copy directly from requested preference; it must use xdp_zero_copy_effective."
+  fi
+}
+
 run_compose_hot_swap_matrix() {
   log_step "Compose hot-swap matrix"
   require_cmd "$COMPOSE_ENGINE"
@@ -366,6 +439,7 @@ main() {
   if [[ "$SKIP_IDENTITY_MODEL" != true ]]; then
     run_identity_model_checks
     run_hot_swap_contract_checks
+    run_xdp_interface_detection_checks
   fi
 
   if [[ "$WITH_COMPOSE_HOT_SWAP_MATRIX" == true ]]; then
