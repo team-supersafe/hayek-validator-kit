@@ -860,7 +860,7 @@
       failed_when: false
       args:
         executable: /bin/bash
-      when: xdp_numa_check_enabled | default(false) | bool
+      when: xdp_numa_check_enabled | default(true) | bool
 
     - name: xdp - Parse NUMA placement assessment
       ansible.builtin.set_fact:
@@ -873,7 +873,7 @@
         xdp_numa_same_cpu: "{{ ((xdp_numa_probe.stdout | default('') | regex_findall('(?m)^same_cpu=(.+)$') | first | default('false')) | lower) == 'true' }}"
         xdp_numa_same_smt: "{{ ((xdp_numa_probe.stdout | default('') | regex_findall('(?m)^same_smt=(.+)$') | first | default('false')) | lower) == 'true' }}"
         xdp_numa_same_node: "{{ ((xdp_numa_probe.stdout | default('') | regex_findall('(?m)^same_node=(.+)$') | first | default('false')) | lower) == 'true' }}"
-      when: xdp_numa_check_enabled | default(false) | bool
+      when: xdp_numa_check_enabled | default(true) | bool
 
     - name: xdp - Debug NUMA placement assessment
       ansible.builtin.debug:
