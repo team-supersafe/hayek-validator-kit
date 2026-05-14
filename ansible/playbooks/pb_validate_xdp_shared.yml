@@ -93,7 +93,7 @@
 
     - name: validate_xdp - Set default xdp_experimental_retransmit_xdp_zero_copy when undefined
       ansible.builtin.set_fact:
-        xdp_experimental_retransmit_xdp_zero_copy: true
+        xdp_experimental_retransmit_xdp_zero_copy: false
       when: xdp_experimental_retransmit_xdp_zero_copy is not defined
       tags: [xdp, xdp_preflight, xdp_validate]
 
@@ -136,6 +136,8 @@
           - xdp_interface_selection_source is defined
           - xdp_interface_selection_reason is defined
           - xdp_flag_support_exp_retransmit_interface is defined
+          - xdp_interface_flag_eligible is defined
+          - xdp_zero_copy_requested is defined
           - xdp_zero_copy_effective is defined
           - xdp_zero_copy_block_reason is defined
           - xdp_capability_source is defined

@@ -306,15 +306,17 @@
         resolve_lower_iface() {
           local iface="$1"
           local lower_names=()
+          local lower_count=0
           local path lower
           shopt -s nullglob
           for path in "${SYS_CLASS_NET}/${iface}"/lower_*; do
             lower="$(basename "${path}" | sed 's/^lower_//')"
             lower_names+=("${lower}")
+            lower_count=$((lower_count + 1))
           done
           shopt -u nullglob
 
-          if [[ "$(printf '%s\n' "${lower_names[@]}" | sed '/^$/d' | wc -l | tr -d ' ')" == "1" ]]; then
+          if [[ "${lower_count}" == "1" ]]; then
             echo "${lower_names[0]}"
           fi
         }
@@ -417,7 +419,7 @@
 
     - name: xdp - Detect network interface driver name
       ansible.builtin.shell: |
-        driver_link="$(readlink -f "/sys/class/net/{{ xdp_primary_iface }}/device/driver" 2>/dev/null || true)"
+        driver_link="$(readlink -f {{ ('/sys/class/net/' ~ xdp_primary_iface ~ '/device/driver') | quote }} 2>/dev/null || true)"
         if [[ -n "${driver_link}" ]]; then
           basename "${driver_link}"
         fi
@@ -438,7 +440,7 @@
         - { name: "xdp_enable", arg: "--enable-xdp" }
         - { name: "xdp_enabled", arg: "--xdp-enabled" }
         - { name: "exp_retransmit_cpu", arg: "--experimental-retransmit-xdp-cpu-cores {{ xdp_experimental_retransmit_xdp_cpu_cores | default(1) }}" }
-        - { name: "exp_retransmit_interface", arg: "--experimental-retransmit-xdp-cpu-cores {{ xdp_experimental_retransmit_xdp_cpu_cores | default(1) }} --experimental-retransmit-xdp-interface {{ xdp_primary_iface | default('') }}" }
+        - { name: "exp_retransmit_interface", arg: "--experimental-retransmit-xdp-cpu-cores {{ xdp_experimental_retransmit_xdp_cpu_cores | default(1) }} --experimental-retransmit-xdp-interface {{ (((xdp_primary_iface | default('') | length) > 0) | ternary(xdp_primary_iface, 'lo')) | quote }}" }
         - { name: "exp_retransmit_zero_copy", arg: "--experimental-retransmit-xdp-zero-copy" }
       register: xdp_flag_probe_results
       changed_when: false
@@ -533,8 +535,6 @@
           }}
         xdp_flag_support_exp_retransmit_interface: >-
           {{
-            (xdp_primary_iface | default('') | length > 0)
-            and
             (
               (
                 (xdp_flag_probe_results.results | selectattr('item.name', 'equalto', 'exp_retransmit_interface') | map(attribute='stdout') | first | default(''))
@@ -923,7 +923,7 @@
             (
               ['--experimental-retransmit-xdp-cpu-cores ' ~ ((xdp_experimental_retransmit_xdp_cpu_cores | default(1)) | string)]
               +
-              (['--experimental-retransmit-xdp-interface ' ~ (xdp_primary_iface | string)] if (xdp_interface_flag_eligible | bool) else [])
+              (['--experimental-retransmit-xdp-interface ' ~ (xdp_primary_iface | string | quote)] if (xdp_interface_flag_eligible | bool) else [])
               +
               (['--experimental-retransmit-xdp-zero-copy'] if (xdp_zero_copy_effective | bool) else [])
             ) if ((xdp_skip_reasons | length == 0) and (xdp_flag_support_exp_retransmit_cpu | bool))
