@@ -1,0 +1,97 @@
+---
+- name: xdp_ring - Select interface
+  ansible.builtin.set_fact:
+    xdp_ring_effective_interface: "{{ (xdp_ring_interface | default('') | trim) if ((xdp_ring_interface | default('') | trim | length) > 0) else (xdp_primary_iface | default('') | trim) }}"
+  when: xdp_ring_config_enabled | default(false) | bool
+
+- name: xdp_ring - Validate requested ring settings
+  ansible.builtin.assert:
+    that:
+      - xdp_ring_effective_interface | length > 0
+      - xdp_ring_rx | int > 0
+      - xdp_ring_tx | int > 0
+      - (xdp_ring_rx | int) in [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
+      - (xdp_ring_tx | int) in [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
+    fail_msg: "xdp_ring_config_enabled requires a resolved interface and power-of-two rx/tx ring sizes."
+  when: xdp_ring_config_enabled | default(false) | bool
+
+- name: xdp_ring - Read current ring settings
+  ansible.builtin.shell: |
+    set -o pipefail
+    ethtool -g {{ xdp_ring_effective_interface | quote }} \
+      | awk '
+        /Current hardware settings:/ {current=1}
+        current && /^RX:/ {print "rx="$2}
+        current && /^TX:/ {print "tx="$2}
+      '
+  register: xdp_ring_current_cmd
+  changed_when: false
+  when: xdp_ring_config_enabled | default(false) | bool
+  args:
+    executable: /bin/bash
+  become: true
+
+- name: xdp_ring - Set current ring facts
+  ansible.builtin.set_fact:
+    xdp_ring_current_rx: "{{ xdp_ring_current_cmd.stdout | regex_findall('(?m)^rx=(\\d+)$') | first | default('') }}"
+    xdp_ring_current_tx: "{{ xdp_ring_current_cmd.stdout | regex_findall('(?m)^tx=(\\d+)$') | first | default('') }}"
+  when: xdp_ring_config_enabled | default(false) | bool
+
+- name: xdp_ring - Check validator service state
+  ansible.builtin.command: "systemctl is-active {{ validator_service_name }}"
+  register: xdp_ring_validator_active_cmd
+  changed_when: false
+  failed_when: false
+  when: xdp_ring_config_enabled | default(false) | bool
+
+- name: xdp_ring - Refuse live ring change while validator is running
+  ansible.builtin.assert:
+    that:
+      - xdp_ring_validator_active_cmd.rc != 0
+    fail_msg: >-
+      {{ validator_service_name }} is active and {{ xdp_ring_effective_interface }} rings are
+      {{ xdp_ring_current_rx }}/{{ xdp_ring_current_tx }}, not {{ xdp_ring_rx }}/{{ xdp_ring_tx }}.
+      Stop the validator or reboot into a maintenance window before applying ring changes.
+  when:
+    - xdp_ring_config_enabled | default(false) | bool
+    - (xdp_ring_current_rx | string) != (xdp_ring_rx | string) or (xdp_ring_current_tx | string) != (xdp_ring_tx | string)
+
+- name: xdp_ring - Install persistent systemd unit
+  ansible.builtin.copy:
+    dest: "/etc/systemd/system/xdp-rings-{{ validator_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Configure XDP NIC rings for {{ validator_service_name }}
+      Documentation=man:ethtool(8)
+      After=network-pre.target systemd-udev-settle.service
+      Before={{ validator_service_name }}.service
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/sbin/ethtool -G {{ xdp_ring_effective_interface }} rx {{ xdp_ring_rx | int }} tx {{ xdp_ring_tx | int }}
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+  when: xdp_ring_config_enabled | default(false) | bool
+  become: true
+
+- name: xdp_ring - Enable persistent systemd unit
+  ansible.builtin.systemd:
+    name: "xdp-rings-{{ validator_service_name }}.service"
+    enabled: true
+    daemon_reload: true
+  when: xdp_ring_config_enabled | default(false) | bool
+  become: true
+
+- name: xdp_ring - Apply rings now when validator is stopped
+  ansible.builtin.systemd:
+    name: "xdp-rings-{{ validator_service_name }}.service"
+    state: started
+  when:
+    - xdp_ring_config_enabled | default(false) | bool
+    - xdp_ring_validator_active_cmd.rc != 0
+  become: true
