@@ -28,7 +28,8 @@ Default behavior:
   - harness contract checks
   - ansible syntax checks for validator/swap/HA playbooks
   - identity-model consistency checks around hot-spare startup and runtime identity
-  - XDP interface auto-detection checks
+  - validator script directory preservation checks
+  - testnet snapshot retention checks
 
 Optional heavier checks:
   --with-compose-hot-swap-matrix    Run compose hot-swap matrix smoke
@@ -329,82 +330,88 @@ run_hot_swap_contract_checks() {
   fi
 }
 
-run_xdp_interface_detection_checks() {
-  log_step "XDP interface auto-detection checks"
+run_validator_script_preservation_checks() {
+  log_step "Validator script directory preservation checks"
 
-  local xdp_task="$REPO_ROOT/ansible/roles/solana_validator_shared/tasks/configure_xdp.yml"
-  local xdp_state="$REPO_ROOT/ansible/roles/solana_validator_shared/templates/xdp_status.env.j2"
-  local xdp_validate="$REPO_ROOT/ansible/playbooks/pb_validate_xdp_shared.yml"
+  local broad_script_delete_present
+  local jito_prepare_mentions_ha_wrapper
+  local agave_prepare_mentions_ha_wrapper
 
-  local has_route_fact
-  local has_bond_active_slave
-  local has_lower_device
-  local has_interface_flag_probe
-  local has_interface_probe_cpu_arg
-  local has_interface_flag_injection
-  local has_zero_copy_effective
-  local has_bnxt_block
-  local has_state_metadata
-  local has_validate_summary
-  local has_unconditional_zero_copy
+  broad_script_delete_present="$(yes_no_from_rg 'rm[[:space:]]+-rf[[:space:]]+"?\{\{[[:space:]]*validator_scripts_dir[[:space:]]*\}\}"?/\*' \
+    "$REPO_ROOT/ansible/roles/solana_validator_jito_v2/tasks/prepare.yml" \
+    "$REPO_ROOT/ansible/roles/solana_validator_agave/tasks/prepare.yml")"
+  jito_prepare_mentions_ha_wrapper="$(yes_no_from_rg 'ha-set-role\.sh|solana_validator_ha_wrapper_script_path' \
+    "$REPO_ROOT/ansible/roles/solana_validator_jito_v2/tasks/prepare.yml")"
+  agave_prepare_mentions_ha_wrapper="$(yes_no_from_rg 'ha-set-role\.sh|solana_validator_ha_wrapper_script_path' \
+    "$REPO_ROOT/ansible/roles/solana_validator_agave/tasks/prepare.yml")"
 
-  has_route_fact="$(yes_no_from_rg 'xdp_route_iface|route_iface=' "$xdp_task")"
-  has_bond_active_slave="$(yes_no_from_rg 'bond_active_slave|Currently Active Slave' "$xdp_task")"
-  has_lower_device="$(yes_no_from_rg 'lower_\\*|lower_device' "$xdp_task")"
-  has_interface_flag_probe="$(yes_no_from_rg 'exp_retransmit_interface|--experimental-retransmit-xdp-interface' "$xdp_task")"
-  has_interface_probe_cpu_arg="$(yes_no_from_rg 'exp_retransmit_interface.*--experimental-retransmit-xdp-cpu-cores.*--experimental-retransmit-xdp-interface' "$xdp_task")"
-  has_interface_flag_injection="$(yes_no_from_rg 'xdp_interface_flag_eligible|--experimental-retransmit-xdp-interface' "$xdp_task")"
-  has_zero_copy_effective="$(yes_no_from_rg 'xdp_zero_copy_effective|xdp_zero_copy_block_reason' "$xdp_task")"
-  has_bnxt_block="$(yes_no_from_rg 'xdp_zero_copy_unsupported_iface_drivers|bnxt_en|driver_unsupported_' "$REPO_ROOT/ansible/roles/solana_validator_shared/defaults/main.yml" "$xdp_task")"
-  has_state_metadata="$(yes_no_from_rg 'XDP_ROUTE_IFACE|XDP_ATTACH_IFACE|XDP_ZERO_COPY_EFFECTIVE|XDP_INTERFACE_FLAG_ELIGIBLE' "$xdp_state")"
-  has_validate_summary="$(yes_no_from_rg 'Route interface:|Selected XDP interface:|Zero-copy effective:|Interface flag supported:' "$xdp_validate")"
-  has_unconditional_zero_copy="$(yes_no_from_rg '--experimental-retransmit-xdp-zero-copy.*xdp_experimental_retransmit_xdp_zero_copy|xdp_experimental_retransmit_xdp_zero_copy.*--experimental-retransmit-xdp-zero-copy' "$xdp_task")"
+  note "Broad validator_scripts_dir deletion in validator prepare tasks: $broad_script_delete_present"
+  note "Jito prepare directly manages HA wrapper: $jito_prepare_mentions_ha_wrapper"
+  note "Agave prepare directly manages HA wrapper: $agave_prepare_mentions_ha_wrapper"
 
-  note "XDP route interface fact present: $has_route_fact"
-  note "XDP bond active slave resolver present: $has_bond_active_slave"
-  note "XDP lower-device resolver present: $has_lower_device"
-  note "XDP interface flag probe present: $has_interface_flag_probe"
-  note "XDP interface flag probe includes CPU arg: $has_interface_probe_cpu_arg"
-  note "XDP interface flag injection guard present: $has_interface_flag_injection"
-  note "XDP zero-copy effective guard present: $has_zero_copy_effective"
-  note "XDP bnxt_en zero-copy block present: $has_bnxt_block"
-  note "XDP state metadata present: $has_state_metadata"
-  note "XDP validate summary metadata present: $has_validate_summary"
-  note "XDP unconditional zero-copy injection present: $has_unconditional_zero_copy"
+  if [[ "$broad_script_delete_present" != "no" ]]; then
+    fail "Validator prepare tasks must not broadly delete validator_scripts_dir; it is shared with HA/runtime scripts."
+  fi
 
-  if [[ "$has_route_fact" != "yes" ]]; then
-    fail "XDP configure task must expose route-interface metadata."
+  if [[ "$jito_prepare_mentions_ha_wrapper" != "no" ]]; then
+    fail "Jito validator prepare must not delete or manage the HA wrapper; solana_validator_ha owns ha-set-role.sh."
   fi
-  if [[ "$has_bond_active_slave" != "yes" ]]; then
-    fail "XDP configure task must resolve bonded interfaces to active/up slaves."
+
+  if [[ "$agave_prepare_mentions_ha_wrapper" != "no" ]]; then
+    fail "Agave validator prepare must not delete or manage the HA wrapper; solana_validator_ha owns ha-set-role.sh."
   fi
-  if [[ "$has_lower_device" != "yes" ]]; then
-    fail "XDP configure task must attempt unambiguous lower-device resolution."
-  fi
-  if [[ "$has_interface_flag_probe" != "yes" ]]; then
-    fail "XDP configure task must probe --experimental-retransmit-xdp-interface support."
-  fi
-  if [[ "$has_interface_probe_cpu_arg" != "yes" ]]; then
-    fail "XDP interface flag probe must include --experimental-retransmit-xdp-cpu-cores to avoid parser false negatives."
-  fi
-  if [[ "$has_interface_flag_injection" != "yes" ]]; then
-    fail "XDP configure task must guard interface flag injection with eligibility facts."
-  fi
-  if [[ "$has_zero_copy_effective" != "yes" ]]; then
-    fail "XDP configure task must compute effective zero-copy state and block reason."
-  fi
-  if [[ "$has_bnxt_block" != "yes" ]]; then
-    fail "XDP zero-copy safety must block known-problem bnxt_en driver paths."
-  fi
-  if [[ "$has_state_metadata" != "yes" ]]; then
-    fail "XDP state file must persist interface and zero-copy metadata."
-  fi
-  if [[ "$has_validate_summary" != "yes" ]]; then
-    fail "XDP validation summary must print interface and zero-copy metadata."
-  fi
-  if [[ "$has_unconditional_zero_copy" != "no" ]]; then
-    fail "XDP configure task must not inject zero-copy directly from requested preference; it must use xdp_zero_copy_effective."
-  fi
+}
+
+run_testnet_snapshot_retention_checks() {
+  log_step "Testnet snapshot retention checks"
+
+  local file
+  for file in \
+    "$REPO_ROOT/ansible/roles/solana_validator_jito_v2/templates/validator.startup.j2" \
+    "$REPO_ROOT/ansible/roles/solana_validator_agave/templates/validator.startup.j2"
+  do
+    local rel_file
+    local has_testnet_branch
+    local has_incremental_retain
+    local has_full_retain
+    local has_no_snapshots
+    local testnet_line
+    local no_snapshots_before_testnet
+
+    rel_file="${file#$REPO_ROOT/}"
+    has_testnet_branch="$(yes_no_from_rg '\{%[[:space:]]*if[[:space:]]+solana_cluster[[:space:]]*==[[:space:]]*"testnet"[[:space:]]*%\}' "$file")"
+    has_incremental_retain="$(yes_no_from_rg '--maximum-incremental-snapshots-to-retain[[:space:]]+1' "$file")"
+    has_full_retain="$(yes_no_from_rg '--maximum-full-snapshots-to-retain[[:space:]]+1' "$file")"
+    has_no_snapshots="$(yes_no_from_rg '--no-snapshots' "$file")"
+    testnet_line="$(rg -n '\{%[[:space:]]*if[[:space:]]+solana_cluster[[:space:]]*==[[:space:]]*"testnet"[[:space:]]*%\}' "$file" | head -n1 | cut -d: -f1 || true)"
+
+    no_snapshots_before_testnet="unknown"
+    if [[ -n "$testnet_line" ]]; then
+      no_snapshots_before_testnet="$(awk -v limit="$testnet_line" 'NR < limit && /--no-snapshots/ { found=1 } END { print found ? "yes" : "no" }' "$file")"
+    fi
+
+    note "$rel_file testnet branch: $has_testnet_branch"
+    note "$rel_file incremental retain=1: $has_incremental_retain"
+    note "$rel_file full retain=1: $has_full_retain"
+    note "$rel_file no-snapshots fallback present: $has_no_snapshots"
+    note "$rel_file no-snapshots before testnet branch: $no_snapshots_before_testnet"
+
+    if [[ "$has_testnet_branch" != "yes" ]]; then
+      fail "$rel_file must branch on solana_cluster == \"testnet\" for snapshot retention."
+    fi
+    if [[ "$has_incremental_retain" != "yes" ]]; then
+      fail "$rel_file must retain exactly one incremental snapshot on testnet."
+    fi
+    if [[ "$has_full_retain" != "yes" ]]; then
+      fail "$rel_file must retain exactly one full snapshot on testnet."
+    fi
+    if [[ "$has_no_snapshots" != "yes" ]]; then
+      fail "$rel_file must keep --no-snapshots for non-testnet clusters."
+    fi
+    if [[ "$no_snapshots_before_testnet" != "no" ]]; then
+      fail "$rel_file must not render --no-snapshots before the testnet retention branch."
+    fi
+  done
 }
 
 run_compose_hot_swap_matrix() {
@@ -445,7 +452,8 @@ main() {
   if [[ "$SKIP_IDENTITY_MODEL" != true ]]; then
     run_identity_model_checks
     run_hot_swap_contract_checks
-    run_xdp_interface_detection_checks
+    run_validator_script_preservation_checks
+    run_testnet_snapshot_retention_checks
   fi
 
   if [[ "$WITH_COMPOSE_HOT_SWAP_MATRIX" == true ]]; then
