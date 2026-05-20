@@ -28,6 +28,15 @@ argument_specs:
         required: true
         choices: ["localnet", "testnet", "mainnet"]
         description: "Target Solana cluster"
+      expected_shred_version:
+        type: int
+        required: false
+        description: "Expected cluster shred version rendered as --expected-shred-version. Required when XDP zero-copy is effectively enabled unless expected_shred_version_auto_detect is true."
+      expected_shred_version_auto_detect:
+        type: bool
+        required: false
+        default: false
+        description: "When true and expected_shred_version is unset, query the configured RPC URL and use the majority non-zero cluster shredVersion."
       force_host_cleanup:
         type: bool
         required: false
