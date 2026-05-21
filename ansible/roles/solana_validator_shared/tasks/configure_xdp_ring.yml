@@ -83,18 +83,6 @@
   failed_when: false
   when: xdp_ring_config_enabled | default(false) | bool
 
-- name: xdp_ring - Refuse live ring change while validator is running
-  ansible.builtin.assert:
-    that:
-      - xdp_ring_validator_active_cmd.rc != 0
-    fail_msg: >-
-      {{ validator_service_name }} is active and {{ xdp_ring_effective_interface }} rings are
-      {{ xdp_ring_current_rx }}/{{ xdp_ring_current_tx }}, not {{ xdp_ring_rx }}/{{ xdp_ring_tx }}.
-      Stop the validator or reboot into a maintenance window before applying ring changes.
-  when:
-    - xdp_ring_config_enabled | default(false) | bool
-    - xdp_ring_update_required | default(false) | bool
-
 - name: xdp_ring - Install persistent systemd unit
   ansible.builtin.copy:
     dest: "/etc/systemd/system/xdp-rings-{{ validator_service_name }}.service"
@@ -114,8 +102,19 @@
       RemainAfterExit=yes
 
       [Install]
-      WantedBy=multi-user.target
+      WantedBy={{ validator_service_name }}.service
+  register: xdp_ring_unit_copy_result
   when: xdp_ring_config_enabled | default(false) | bool
+  become: true
+
+- name: xdp_ring - Reset persistent systemd unit install links when changed
+  ansible.builtin.systemd:
+    name: "xdp-rings-{{ validator_service_name }}.service"
+    enabled: false
+    daemon_reload: true
+  when:
+    - xdp_ring_config_enabled | default(false) | bool
+    - xdp_ring_unit_copy_result.changed | default(false)
   become: true
 
 - name: xdp_ring - Enable persistent systemd unit
@@ -125,6 +124,27 @@
     daemon_reload: true
   when: xdp_ring_config_enabled | default(false) | bool
   become: true
+
+- name: xdp_ring - Mark staged ring unit pending while validator is running
+  ansible.builtin.systemd:
+    name: "xdp-rings-{{ validator_service_name }}.service"
+    state: stopped
+  when:
+    - xdp_ring_config_enabled | default(false) | bool
+    - xdp_ring_update_required | default(false) | bool
+    - xdp_ring_validator_active_cmd.rc == 0
+  become: true
+
+- name: xdp_ring - Report staged ring change while validator is running
+  ansible.builtin.debug:
+    msg: >-
+      {{ validator_service_name }} is active and {{ xdp_ring_effective_interface }} rings are
+      {{ xdp_ring_current_rx }}/{{ xdp_ring_current_tx }}, not {{ xdp_ring_rx }}/{{ xdp_ring_tx }}.
+      The xdp-rings unit has been staged and will apply before the next {{ validator_service_name }} start.
+  when:
+    - xdp_ring_config_enabled | default(false) | bool
+    - xdp_ring_update_required | default(false) | bool
+    - xdp_ring_validator_active_cmd.rc == 0
 
 - name: xdp_ring - Apply rings now when validator is stopped
   ansible.builtin.systemd:
