@@ -37,6 +37,11 @@
     xdp_ring_current_tx: "{{ xdp_ring_current_cmd.stdout | regex_findall('(?m)^tx=(\\d+)$') | first | default('') }}"
   when: xdp_ring_config_enabled | default(false) | bool
 
+- name: xdp_ring - Set update requirement fact
+  ansible.builtin.set_fact:
+    xdp_ring_update_required: "{{ (xdp_ring_current_rx | string) != (xdp_ring_rx | string) or (xdp_ring_current_tx | string) != (xdp_ring_tx | string) }}"
+  when: xdp_ring_config_enabled | default(false) | bool
+
 - name: xdp_ring - Check validator service state
   ansible.builtin.command: "systemctl is-active {{ validator_service_name }}"
   register: xdp_ring_validator_active_cmd
@@ -54,7 +59,7 @@
       Stop the validator or reboot into a maintenance window before applying ring changes.
   when:
     - xdp_ring_config_enabled | default(false) | bool
-    - (xdp_ring_current_rx | string) != (xdp_ring_rx | string) or (xdp_ring_current_tx | string) != (xdp_ring_tx | string)
+    - xdp_ring_update_required | default(false) | bool
 
 - name: xdp_ring - Install persistent systemd unit
   ansible.builtin.copy:
@@ -90,7 +95,7 @@
 - name: xdp_ring - Apply rings now when validator is stopped
   ansible.builtin.systemd:
     name: "xdp-rings-{{ validator_service_name }}.service"
-    state: started
+    state: "{{ (xdp_ring_update_required | default(false) | bool) | ternary('restarted', 'started') }}"
   when:
     - xdp_ring_config_enabled | default(false) | bool
     - xdp_ring_validator_active_cmd.rc != 0
