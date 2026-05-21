@@ -47,8 +47,9 @@
       {{
         deploy_grafana_api_base_url
         | default(
-            ((ssl_enabled | default(false) | bool) | ternary('https', 'http'))
-            ~ '://127.0.0.1:'
+            'http://'
+            ~ (monitoring_network.bind_address | default('localhost'))
+            ~ ':'
             ~ ((grafana_port | default(3000)) | string)
           )
       }}
