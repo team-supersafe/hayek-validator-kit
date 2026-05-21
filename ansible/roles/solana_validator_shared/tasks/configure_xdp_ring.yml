@@ -4,6 +4,40 @@
     xdp_ring_effective_interface: "{{ (xdp_ring_interface | default('') | trim) if ((xdp_ring_interface | default('') | trim | length) > 0) else (xdp_primary_iface | default('') | trim) }}"
   when: xdp_ring_config_enabled | default(false) | bool
 
+- name: xdp_ring - Check persistent systemd unit when disabled
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/xdp-rings-{{ validator_service_name }}.service"
+  register: xdp_ring_unit_stat
+  when: not (xdp_ring_config_enabled | default(false) | bool)
+
+- name: xdp_ring - Disable persistent systemd unit when disabled
+  ansible.builtin.systemd:
+    name: "xdp-rings-{{ validator_service_name }}.service"
+    enabled: false
+    state: stopped
+  when:
+    - not (xdp_ring_config_enabled | default(false) | bool)
+    - xdp_ring_unit_stat.stat.exists | default(false)
+  become: true
+
+- name: xdp_ring - Remove persistent systemd unit when disabled
+  ansible.builtin.file:
+    path: "/etc/systemd/system/xdp-rings-{{ validator_service_name }}.service"
+    state: absent
+  register: xdp_ring_unit_remove_result
+  when:
+    - not (xdp_ring_config_enabled | default(false) | bool)
+    - xdp_ring_unit_stat.stat.exists | default(false)
+  become: true
+
+- name: xdp_ring - Reload systemd after removing disabled unit
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when:
+    - not (xdp_ring_config_enabled | default(false) | bool)
+    - xdp_ring_unit_remove_result.changed | default(false)
+  become: true
+
 - name: xdp_ring - Validate requested ring settings
   ansible.builtin.assert:
     that:

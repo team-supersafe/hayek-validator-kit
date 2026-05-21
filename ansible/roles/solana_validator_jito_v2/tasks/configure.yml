@@ -112,6 +112,7 @@
       when:
         - expected_shred_version_auto_detect | default(false) | bool
         - (expected_shred_version | default('') | string | trim | length) == 0
+        - xdp_zero_copy_startup_enabled | default(false) | bool
         - solana_cluster != "localnet"
 
     - name: configure - Require expected shred version when XDP zero-copy is enabled
@@ -123,7 +124,7 @@
           expected_shred_version is unset. Set expected_shred_version explicitly or enable
           expected_shred_version_auto_detect=true.
       when:
-        - xdp_zero_copy_effective | default(false) | bool
+        - xdp_zero_copy_startup_enabled | default(false) | bool
         - solana_cluster != "localnet"
 
     - name: configure - Create validator startup script
