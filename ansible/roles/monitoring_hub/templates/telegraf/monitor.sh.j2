@@ -41,7 +41,12 @@ validatorVoteBalance=$($cli balance $voteAccount --url $rpcURL | grep -o '[0-9.]
 solanaPrice=$(curl -s 'GET' 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd' -H 'accept: application/json' | jq -r .solana.usd)
 openfiles=$(cat /proc/sys/fs/file-nr | awk '{ print $1 }')
 validatorCheck=$($cli validators --url $rpcURL 2>/dev/null)
-validatorInSet=$(grep -c "$voteAccount" <<< "$validatorCheck")
+validatorCheckRc=$?
+if [ "$validatorCheckRc" -ne 0 ] || [ -z "$validatorCheck" ]; then
+   validatorInSet=-1
+else
+   validatorInSet=$(grep -c "$voteAccount" <<< "$validatorCheck")
+fi
 
 blockProduction=$($cli block-production --url $rpcURL --output json-compact 2>&- | grep -v Note:)
 validatorBlockProduction=$(jq -r '.leaders[] | select(.identityPubkey == '\"$identityPubkey\"')' <<<$blockProduction 2>/dev/null)
@@ -53,7 +58,10 @@ delinquentValidatorInfo=$(jq -r '.validators[] | select(.voteAccountPubkey == '\
 status=2
 logentry="rootSlot=0,lastVote=0,credits=0,activatedStake=0,leaderSlots=0,skippedSlots=0,pctSkipped=0,pctTotSkipped=0,pctSkippedDelta=0,pctTotDelinquent=0,version=0,pctNewerVersions=0,commission=0,solanaPrice=$solanaPrice"
 
-if [ "$validatorInSet" -eq 0 ]; then
+if [ "$validatorInSet" -lt 0 ]; then
+   echo "unable to retrieve validator set; emitting error metrics" >&2
+   status=2
+elif [ "$validatorInSet" -eq 0 ]; then
    echo "validator not found in active set; emitting baseline metrics" >&2
    status=5
 elif [ -n "$delinquentValidatorInfo" ]; then
