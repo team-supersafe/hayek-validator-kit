@@ -32,7 +32,7 @@ exec agave-validator \
 --entrypoint {{ entrypoint }} \
 {% endfor %}
 --expected-genesis-hash {{ expected_genesis_hash }} \
-{% if expected_shred_version is defined and (expected_shred_version | string | trim | length) > 0 %}
+{% if expected_shred_version is defined and (expected_shred_version | int) > 0 %}
 --expected-shred-version {{ expected_shred_version }} \
 {% endif %}
 --wal-recovery-mode skip_any_corrupted_record \
