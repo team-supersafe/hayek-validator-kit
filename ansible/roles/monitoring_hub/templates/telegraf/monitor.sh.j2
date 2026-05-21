@@ -40,11 +40,17 @@ validatorBalance=$($cli balance $identityPubkey --url $rpcURL | grep -o '[0-9.]*
 validatorVoteBalance=$($cli balance $voteAccount --url $rpcURL | grep -o '[0-9.]*')
 solanaPrice=$(curl -s 'GET' 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd' -H 'accept: application/json' | jq -r .solana.usd)
 openfiles=$(cat /proc/sys/fs/file-nr | awk '{ print $1 }')
-validatorCheck=$($cli validators --url $rpcURL 2>/dev/null)
-validatorCheckRc=$?
-if [ "$validatorCheckRc" -ne 0 ] || [ -z "$validatorCheck" ]; then
+validatorCheck=""
+validatorCheckRc=1
+if [ -z "$voteAccount" ]; then
    validatorInSet=-1
 else
+   validatorCheck=$($cli validators --url $rpcURL 2>/dev/null)
+   validatorCheckRc=$?
+fi
+if [ -n "$voteAccount" ] && { [ "$validatorCheckRc" -ne 0 ] || [ -z "$validatorCheck" ]; }; then
+   validatorInSet=-1
+elif [ -n "$voteAccount" ]; then
    validatorInSet=$(grep -c "$voteAccount" <<< "$validatorCheck")
 fi
 
@@ -109,7 +115,7 @@ elif [ -n "$currentValidatorInfo" ]; then
    logentry="$logentry,version=$version2,pctNewerVersions=$pctNewerVersions,commission=$commission,activatedStake=$activatedStake,credits=$credits,solanaPrice=$solanaPrice"
 fi
 
-if [ "$additionalInfo" == "on" ]; then
+if [ "$additionalInfo" == "on" ] && { [ "$status" -eq 0 ] || [ "$status" -eq 3 ]; }; then
    nodes=$($cli gossip --url $rpcURL | grep -Po "Nodes:\s+\K[0-9]+")
    epochInfo=$($cli epoch-info --url $rpcURL --output json-compact)
    epoch=$(jq -r '.epoch' <<<$epochInfo)

@@ -179,7 +179,6 @@
         owner: root
         group: root
         mode: "0600"
-      register: deploy_hardware_dashboard_staging_result
       when: deploy_hardware_dashboard | default(true) | bool
 
     - name: Check hardware dashboard import marker
@@ -237,7 +236,7 @@
         body:
           dashboard: "{{ hardware_dashboard_json }}"
           overwrite: true
-          folderId: 0
+          folderUid: ""
           inputs:
             - name: "DS_INFLUXDB-1"
               type: "datasource"
@@ -245,6 +244,7 @@
               value: "{{ grafana_config.hardware_metrics_source_uid | default('hardware_metrics_uid') }}"
         status_code: 200
         timeout: 20
+      register: deploy_hardware_dashboard_import_result
       when:
         - deploy_hardware_dashboard | default(true) | bool
         - not ansible_check_mode
@@ -263,6 +263,7 @@
         - deploy_hardware_dashboard | default(true) | bool
         - not ansible_check_mode
         - hardware_dashboard_json is defined
+        - deploy_hardware_dashboard_import_result.status | default(0) == 200
 
     - name: Render validator dashboard JSON staging file
       ansible.builtin.template:
@@ -271,7 +272,6 @@
         owner: root
         group: root
         mode: "0600"
-      register: deploy_validator_dashboard_staging_result
       vars:
         selected_network: "{{ target_network }}"
       when: deploy_validator_dashboard | default(true) | bool
@@ -333,18 +333,15 @@
         body:
           dashboard: "{{ validator_dashboard_json }}"
           overwrite: true
-          folderId: 0
+          folderUid: ""
           inputs:
             - name: "DS_SOLANA_METRICS"
               type: "datasource"
               pluginId: "influxdb"
               value: "{{ grafana_config.solana_metrics_source_uid | default('solana_metrics_uid') }}"
-            - name: "DS_HAYEK_MAINNET STAKEWIZ ACTIVATING/DEACTIVATING STAKE JSON"
-              type: "datasource"
-              pluginId: "marcusolsson-json-datasource"
-              value: "stakewiz_json_mainnet_activating"
         status_code: 200
         timeout: 20
+      register: deploy_validator_dashboard_import_result
       when:
         - deploy_validator_dashboard | default(true) | bool
         - not ansible_check_mode
@@ -363,6 +360,7 @@
         - deploy_validator_dashboard | default(true) | bool
         - not ansible_check_mode
         - validator_dashboard_json is defined
+        - deploy_validator_dashboard_import_result.status | default(0) == 200
 
     - name: Restart alert formatter service when script changed
       ansible.builtin.systemd:
@@ -390,4 +388,7 @@
         daemon_reload: true
       when:
         - deploy_telegraf_service_unit_stat.stat.exists
-        - deploy_monitor_script_result.changed or deploy_force_telegraf_restart | default(false) | bool
+        - >-
+          deploy_monitor_script_result.changed or
+          deploy_monitor_env_result.changed or
+          deploy_force_telegraf_restart | default(false) | bool
