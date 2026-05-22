@@ -91,10 +91,19 @@ filesystem_formats:
 
 # Health check configuration
 # Script to monitor validator health
+health_check_ref: "main"
+health_check_raw_base_url: "https://raw.githubusercontent.com/team-supersafe/valigatorHealthCheck-fork/{{ health_check_ref }}"
+health_check_script_url: "{{ health_check_raw_base_url }}/health_check.sh"
+health_check_config_url: "{{ health_check_raw_base_url }}/config.json"
 health_check_script_name: "health_check.sh"
 health_check:
   script_name: "{{ health_check_script_name }}"
   dest_path: "/usr/local/bin/{{ health_check_script_name }}"
+  config_name: "config.json"
+  config_dest_path: "/usr/local/bin/config.json"
+  script_url: "{{ health_check_script_url }}"
+  config_url: "{{ health_check_config_url }}"
   owner: "root"
   group: "root"
   mode: "0755"
+  config_mode: "0644"

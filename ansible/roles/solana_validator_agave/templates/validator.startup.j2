@@ -17,6 +17,12 @@ exec agave-validator \
 --ledger {{ ledger_path }} \
 --accounts {{ accounts_path }} \
 --snapshots {{ snapshots_path }} \
+{% if solana_cluster == "testnet" %}
+--maximum-incremental-snapshots-to-retain 1 \
+--maximum-full-snapshots-to-retain 1 \
+{% else %}
+--no-snapshots \
+{% endif %}
 --minimal-snapshot-download-speed {{ minimal_snapshot_download_speed }} \
 --private-rpc \
 --rpc-port {{ solana_rpc_port }} \
@@ -26,14 +32,16 @@ exec agave-validator \
 --entrypoint {{ entrypoint }} \
 {% endfor %}
 --expected-genesis-hash {{ expected_genesis_hash }} \
+{% if expected_shred_version is defined and (expected_shred_version | int) > 0 %}
+--expected-shred-version {{ expected_shred_version }} \
+{% endif %}
 --wal-recovery-mode skip_any_corrupted_record \
---limit-ledger-size {{ limit_ledger_size | default('') }} \
+--limit-ledger-size{% if limit_ledger_size is defined and (limit_ledger_size | string | trim | length) > 0 %} {{ limit_ledger_size }}{% endif %} \
 --block-verification-method unified-scheduler \
 {% if solana_cluster != "localnet" and poh_pinned_cpu_core_enabled is defined and poh_pinned_cpu_core_enabled and poh_pinned_cpu_core is defined %}
 --experimental-poh-pinned-cpu-core {{ poh_pinned_cpu_core }} \
 {% endif %}
 {% if solana_cluster == "localnet" %}
---no-snapshots \
 --no-os-network-limits-test \
 --allow-private-addr \
 {% endif %}
