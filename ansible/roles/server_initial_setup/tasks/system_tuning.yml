@@ -147,12 +147,14 @@
     owner: root
     group: root
     mode: '0644'
+  notify: Reload systemd
+
+- name: Apply systemd unit changes before enabling NIC ring buffer tuning
+  ansible.builtin.meta: flush_handlers
 
 - name: Enable and run NIC ring buffer tuning service
   ansible.builtin.systemd:
     name: ethtool-ring-buffers.service
     state: started
     enabled: true
-    daemon_reload: true
   when: not ansible_check_mode
-

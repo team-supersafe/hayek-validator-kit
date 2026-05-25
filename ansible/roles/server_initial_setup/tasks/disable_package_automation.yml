@@ -31,7 +31,7 @@
     apt-daily-upgrade.timer
   register: server_initial_setup_disable_apt_daily_units
   changed_when: "'Removed' in server_initial_setup_disable_apt_daily_units.stderr or 'Removed' in server_initial_setup_disable_apt_daily_units.stdout"
-  failed_when: false
+  failed_when: server_initial_setup_disable_apt_daily_units.rc not in [0, 1]
 
 - name: Mask apt daily automation timers
   ansible.builtin.systemd:

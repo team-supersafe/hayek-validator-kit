@@ -54,6 +54,7 @@ for nic_path in /sys/class/net/*; do
   tx_max="$(ring_value "Pre-set maximums:" "TX" <<< "${ring_info}")"
   tx_current="$(ring_value "Current hardware settings:" "TX" <<< "${ring_info}")"
 
+  # Empty or nonnumeric ring values are expected on some drivers and are ignored.
   set_args=()
   if is_uint "${rx_max}" && is_uint "${rx_current}" && ((rx_current < rx_max)); then
     set_args+=(rx "${rx_max}")

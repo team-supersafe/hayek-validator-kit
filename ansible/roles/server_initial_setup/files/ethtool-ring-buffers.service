@@ -5,6 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
+# Runs as root so ethtool has CAP_NET_ADMIN for NIC ring buffer changes.
 ExecStart=/usr/local/sbin/set-ethtool-ring-buffers.sh
 RemainAfterExit=yes
 
