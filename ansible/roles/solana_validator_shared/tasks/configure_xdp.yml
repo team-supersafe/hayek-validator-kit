@@ -618,7 +618,7 @@
 
     - name: xdp - Compute interface flag eligibility
       ansible.builtin.set_fact:
-        xdp_use_modern_flags: "{{ xdp_validator_version is version('4.0.0', '>=') }}"
+        xdp_use_modern_flags: "{{ xdp_validator_version is version('4.1.0', '>=') }}"
         xdp_interface_flag_eligible: >-
           {{
             (xdp_primary_iface | default('') | length > 0)
@@ -626,12 +626,12 @@
             and (xdp_iface_driver_link_present | bool)
             and (
               (
-                (xdp_validator_version is version('4.0.0', '>='))
+                (xdp_validator_version is version('4.1.0', '>='))
                 and (xdp_flag_support_interface | bool)
               )
               or
               (
-                not (xdp_validator_version is version('4.0.0', '>='))
+                not (xdp_validator_version is version('4.1.0', '>='))
                 and (xdp_flag_support_exp_retransmit_interface | bool)
               )
             )

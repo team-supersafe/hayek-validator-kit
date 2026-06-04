@@ -79,8 +79,8 @@ Default behavior:
 - XDP is default-off (`xdp_enabled=false`).
 - If `xdp_enabled=true` is requested explicitly and the host/binary support it, XDP params are injected into validator startup.
 - Current preference order is version-aware:
-  - v4.0.0 and newer: `--xdp-cpu-cores`, optional `--xdp-interface`, and `--xdp-zero-copy` when enabled and accepted
-  - older supported versions: legacy `--experimental-retransmit-xdp-*` flags
+  - v4.1.0 and newer: `--xdp-cpu-cores`, optional `--xdp-interface`, and `--xdp-zero-copy` when enabled and accepted
+  - older supported versions, including v4.0.x: legacy `--experimental-retransmit-xdp-*` flags
   - fallback to older `--xdp-mode` / `--xdp` / `--enable-xdp` / `--xdp-enabled` flags only when needed
 - If unsupported, behavior is fail-open: validator setup/startup continues with explicit warnings and no XDP params injected.
 - When validator directory vars are available, the role also exports an XDP state snapshot to `{{ xdp_runtime_state_file_path }}` for monitoring.
