@@ -81,10 +81,12 @@ resolve_lower_iface() {
 resolve_bond_slave() {
   local bond="$1"
   local bond_file="${PROC_NET_BONDING}/${bond}"
-  local active first_up first
+  local active active_lc first_up first
   [[ -r "${bond_file}" ]] || return 0
   active="$(awk -F': ' '/^Currently Active Slave:/ {print $2; exit}' "${bond_file}")"
-  if [[ -n "${active}" ]]; then
+  active="$(printf '%s' "${active}" | xargs)"
+  active_lc="$(printf '%s' "${active}" | tr '[:upper:]' '[:lower:]')"
+  if [[ -n "${active}" && "${active_lc}" != "none" ]]; then
     echo "bond_active_slave:${active}"
     return
   fi
