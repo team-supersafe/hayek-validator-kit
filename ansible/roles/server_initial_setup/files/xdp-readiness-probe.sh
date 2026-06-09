@@ -254,6 +254,10 @@ if have_tool lscpu; then
         if [[ -z "${UNIQUE_NODE_COUNT}" ]]; then
           UNIQUE_NODE_COUNT=0
         fi
+        SINGLE_NUMA=false
+        if (( UNIQUE_NODE_COUNT <= 1 )); then
+          SINGLE_NUMA=true
+        fi
         POH_NODE="$(get_cpu_node "${POH_CORE_RAW}")"
         if [[ -z "${POH_NODE}" || "${POH_NODE}" == "NA" || "${POH_NODE}" == "-" ]]; then
           NUMA_REASON="poh_node_unknown"
@@ -301,15 +305,15 @@ if have_tool lscpu; then
             if [[ "${SAME_SMT}" == "true" ]]; then
               WARN_REASONS="$(append_csv "${WARN_REASONS}" "shared_physical_core")"
             fi
-            if [[ "${SAME_NODE}" == "true" ]]; then
+            if [[ "${SAME_NODE}" == "true" && "${SINGLE_NUMA}" != "true" ]]; then
               WARN_REASONS="$(append_csv "${WARN_REASONS}" "same_numa_node")"
-            fi
-            if (( UNIQUE_NODE_COUNT <= 1 )); then
-              WARN_REASONS="$(append_csv "${WARN_REASONS}" "single_numa_host")"
             fi
             if [[ -n "${WARN_REASONS}" ]]; then
               NUMA_STATUS="warn"
               NUMA_REASON="${WARN_REASONS}"
+            elif [[ "${SINGLE_NUMA}" == "true" ]]; then
+              NUMA_STATUS="skip"
+              NUMA_REASON="single_numa_host"
             else
               NUMA_STATUS="ok"
               NUMA_REASON="none"
