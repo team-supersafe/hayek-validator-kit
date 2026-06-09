@@ -1,6 +1,17 @@
 #!/bin/bash
 set -u
-PROBE_STATUS="ok"
+
+# Environment overrides:
+#   XDP_SYS_CLASS_NET=/sys/class/net
+#   XDP_SYS_CPU=/sys/devices/system/cpu
+#   XDP_PROC_NET_BONDING=/proc/net/bonding
+#   XDP_ROUTE_IFACE=
+#   XDP_TARGET_INTERFACE=
+#   XDP_CPU_CORES=1
+#   XDP_POH_CORE=
+#   XDP_ZERO_COPY_EXPECTED=true
+#   XDP_UNSUPPORTED_DRIVERS=virtio_net
+#   XDP_ZERO_COPY_UNSUPPORTED_DRIVERS=bnxt_en
 SYS_CLASS_NET="${XDP_SYS_CLASS_NET:-/sys/class/net}"
 SYS_CPU="${XDP_SYS_CPU:-/sys/devices/system/cpu}"
 PROC_NET_BONDING="${XDP_PROC_NET_BONDING:-/proc/net/bonding}"
@@ -10,6 +21,7 @@ POH_CORE_RAW="${XDP_POH_CORE:-}"
 ZERO_COPY_EXPECTED="${XDP_ZERO_COPY_EXPECTED:-true}"
 UNSUPPORTED_DRIVERS="${XDP_UNSUPPORTED_DRIVERS:-virtio_net}"
 ZERO_COPY_UNSUPPORTED_DRIVERS="${XDP_ZERO_COPY_UNSUPPORTED_DRIVERS:-bnxt_en}"
+CPU_LIST_EXPANSION_LIMIT=4096
 LSCPU_MAP=""
 have_tool() {
   command -v "$1" >/dev/null 2>&1
@@ -23,11 +35,13 @@ append_csv() {
     printf '%s,%s' "${current}" "${value}"
   fi
 }
-contains_word() {
+contains_list_word() {
   local needle="$1"
-  shift
+  local values="$2"
   local value
-  for value in "$@"; do
+  values="${values//,/ }"
+  read -r -a words <<< "${values}"
+  for value in "${words[@]}"; do
     [[ "${value}" == "${needle}" ]] && return 0
   done
   return 1
@@ -89,11 +103,12 @@ resolve_bond_slave() {
 }
 expand_cpu_list() {
   local raw="$1"
-  local out="" part start end i
+  local out="" part start end i count=0
   IFS=',' read -r -a parts <<< "${raw}"
   for part in "${parts[@]}"; do
     if [[ "${part}" =~ ^[0-9]+$ ]]; then
       out="${out} ${part}"
+      count=$((count + 1))
     elif [[ "${part}" =~ ^([0-9]+)-([0-9]+)$ ]]; then
       start="${BASH_REMATCH[1]}"
       end="${BASH_REMATCH[2]}"
@@ -102,8 +117,15 @@ expand_cpu_list() {
       fi
       for ((i=start; i<=end; i++)); do
         out="${out} ${i}"
+        count=$((count + 1))
+        if (( count > CPU_LIST_EXPANSION_LIMIT )); then
+          return 1
+        fi
       done
     else
+      return 1
+    fi
+    if (( count > CPU_LIST_EXPANSION_LIMIT )); then
       return 1
     fi
   done
@@ -189,7 +211,7 @@ elif [[ -z "${SELECTED_IFACE}" || "${IFACE_PRESENT}" != "true" || "${IFACE_DRIVE
   ZERO_COPY_REASON="physical_interface_unresolved"
 elif [[ "${SELECTION_SOURCE}" == bond_* ]]; then
   ZERO_COPY_REASON="route_uses_bond"
-elif [[ -n "${IFACE_DRIVER_NAME}" ]] && contains_word "${IFACE_DRIVER_NAME}" ${ZERO_COPY_UNSUPPORTED_DRIVERS}; then
+elif [[ -n "${IFACE_DRIVER_NAME}" ]] && contains_list_word "${IFACE_DRIVER_NAME}" "${ZERO_COPY_UNSUPPORTED_DRIVERS}"; then
   ZERO_COPY_REASON="driver_unsupported_${IFACE_DRIVER_NAME}"
 else
   ZERO_COPY_SAFE=true
@@ -208,9 +230,9 @@ NUMA_REASON="lscpu_missing"
 POH_NODE=""
 XDP_CORES=""
 XDP_NODES=""
-SAME_CPU=false
-SAME_SMT=false
-SAME_NODE=false
+SAME_CPU=""
+SAME_SMT=""
+SAME_NODE=""
 if have_tool lscpu; then
   if [[ -z "${POH_CORE_RAW}" ]]; then
     NUMA_REASON="poh_core_unset"
@@ -225,6 +247,9 @@ if have_tool lscpu; then
       if [[ -z "${XDP_CORES_SPACE}" ]]; then
         NUMA_REASON="xdp_cpu_list_invalid"
       else
+        SAME_CPU=false
+        SAME_SMT=false
+        SAME_NODE=false
         UNIQUE_NODE_COUNT="$(awk -F, '/^[^#]/ && $2 != "" && $2 != "-" {print $2}' <<< "${LSCPU_MAP}" | sort -u | wc -l | tr -d ' ')"
         if [[ -z "${UNIQUE_NODE_COUNT}" ]]; then
           UNIQUE_NODE_COUNT=0
@@ -306,7 +331,7 @@ elif [[ "${IFACE_PRESENT}" != "true" ]]; then
 elif [[ "${IFACE_DRIVER_LINK_PRESENT}" != "true" ]]; then
   WARNINGS="$(append_csv "${WARNINGS}" "xdp_interface_driver_unavailable_${SELECTED_IFACE}")"
 fi
-if [[ -n "${IFACE_DRIVER_NAME}" ]] && contains_word "${IFACE_DRIVER_NAME}" ${UNSUPPORTED_DRIVERS}; then
+if [[ -n "${IFACE_DRIVER_NAME}" ]] && contains_list_word "${IFACE_DRIVER_NAME}" "${UNSUPPORTED_DRIVERS}"; then
   WARNINGS="$(append_csv "${WARNINGS}" "xdp_driver_unsupported_${IFACE_DRIVER_NAME}")"
 fi
 if [[ "${BPFFS_PRESENT}" != "true" ]]; then
@@ -317,6 +342,11 @@ if [[ "${ZERO_COPY_EXPECTED}" == "true" && "${ZERO_COPY_SAFE}" != "true" ]]; the
 fi
 if [[ "${NUMA_STATUS}" == "warn" ]]; then
   WARNINGS="$(append_csv "${WARNINGS}" "numa_${NUMA_REASON//,/_}")"
+fi
+if [[ -n "${WARNINGS}" ]]; then
+  PROBE_STATUS="degraded"
+else
+  PROBE_STATUS="ok"
 fi
 echo "probe_status=${PROBE_STATUS}"
 echo "route_iface=${ROUTE_IFACE}"
@@ -335,7 +365,7 @@ echo "numa_status=${NUMA_STATUS}"
 echo "numa_reason=${NUMA_REASON}"
 echo "numa_poh_core=${POH_CORE_RAW}"
 echo "numa_poh_node=${POH_NODE}"
-echo "numa_xdp_cores=${XDP_CORES:-${XDP_CORES_RAW}}"
+echo "numa_xdp_cores=${XDP_CORES}"
 echo "numa_xdp_nodes=${XDP_NODES}"
 echo "numa_same_cpu=${SAME_CPU}"
 echo "numa_same_smt=${SAME_SMT}"
