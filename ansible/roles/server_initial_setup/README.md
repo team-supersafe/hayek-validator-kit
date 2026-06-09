@@ -76,10 +76,34 @@ At this point, the server is ready to be configured.
 This role automates the initial configuration and hardening of a Solana validator server, including:
 
 - System tuning
+- Pre-validator XDP readiness framework
 - Disk and mount setup
 - SSH and firewall configuration
 - Fail2ban setup
 - Pre- and post-configuration checks
+
+## Pre-Validator XDP Readiness
+
+During metal-box setup, `server_initial_setup` runs a best-effort XDP readiness
+probe before any Agave, Jito, Firedancer, or Frankendancer validator binary is
+installed. This probe checks host-level prerequisites from the Anza XDP setup
+guidance: required tools, kernel baseline, bpffs availability, primary physical
+NIC resolution, driver visibility, bond/zero-copy suitability, and XDP/PoH NUMA
+placement. Validator binary flag/version probing remains in the validator setup
+roles.
+
+The acquisition probe is warn-only by default so operators can decide whether to
+return a host without interrupting provisioning:
+
+```yaml
+server_initial_setup_xdp_fail_on_warning: false
+```
+
+Set `server_initial_setup_xdp_fail_on_warning=true` to make readiness warnings
+fatal. Override `server_initial_setup_xdp_target_interface` when the route-based
+interface resolver cannot pick the intended NIC unambiguously. The override is
+treated as trusted operator intent and is used as-is instead of re-deriving bond
+or lower-device placement from the route interface.
 
 For SSH, the role standardizes on `ssh.service` and disables `ssh.socket` if present, so port changes are controlled only through `/etc/ssh/sshd_config`. On Ubuntu-style socket-activated hosts, it also removes the socket-activation generator/drop-in state before starting `ssh.service`.
 

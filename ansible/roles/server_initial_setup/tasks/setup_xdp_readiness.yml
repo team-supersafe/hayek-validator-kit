@@ -1,0 +1,100 @@
+---
+# Pre-validator XDP readiness wrapper for newly acquired validator hosts.
+# The probe is read-only and intentionally avoids validator binaries/services.
+
+- name: XDP readiness - Probe host prerequisites and placement
+  ansible.builtin.script: xdp-readiness-probe.sh
+  args:
+    executable: /bin/bash
+  register: server_initial_setup_xdp_readiness_probe
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  environment:
+    XDP_TARGET_INTERFACE: "{{ server_initial_setup_xdp_target_interface | default('') | trim }}"
+    XDP_CPU_CORES: "{{ (server_initial_setup_xdp_cpu_cores | default(1)) | string }}"
+    XDP_POH_CORE: "{{ (cpu_config.poh_core | string) if (cpu_config is defined and cpu_config.poh_core is defined) else '' }}"
+    XDP_ZERO_COPY_EXPECTED: "{{ server_initial_setup_xdp_zero_copy_expected | default(true) | bool | ternary('true', 'false') }}"
+    XDP_UNSUPPORTED_DRIVERS: "{{ (server_initial_setup_xdp_unsupported_iface_drivers | default(['virtio_net'])) | join(' ') }}"
+    XDP_ZERO_COPY_UNSUPPORTED_DRIVERS: "{{ (server_initial_setup_xdp_zero_copy_unsupported_iface_drivers | default(['bnxt_en'])) | join(' ') }}"
+  when: server_initial_setup_xdp_readiness_enabled | default(false) | bool
+
+- name: XDP readiness - Set readiness facts
+  ansible.builtin.set_fact:
+    server_initial_setup_xdp_probe_status: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^probe_status=(.*)$') | first | default('error') | trim }}"
+    server_initial_setup_xdp_route_iface: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^route_iface=(.*)$') | first | default('') | trim }}"
+    server_initial_setup_xdp_primary_iface: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^selected_iface=(.*)$') | first | default('') | trim }}"
+    server_initial_setup_xdp_interface_selection_source: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^selection_source=(.*)$') | first | default('ambiguous') | trim }}"
+    server_initial_setup_xdp_interface_selection_reason: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^selection_reason=(.*)$') | first | default('interface_unresolved') | trim }}"
+    server_initial_setup_xdp_iface_present: "{{ ((server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^iface_present=(.*)$') | first | default('false') | trim) | lower) == 'true' }}"
+    server_initial_setup_xdp_iface_driver_link_present: "{{ ((server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^iface_driver_link_present=(.*)$') | first | default('false') | trim) | lower) == 'true' }}"
+    server_initial_setup_xdp_iface_driver_name: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^iface_driver_name=(.*)$') | first | default('') | trim }}"
+    server_initial_setup_xdp_kernel_semver: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^kernel_semver=(.*)$') | first | default('0.0.0') | trim }}"
+    server_initial_setup_xdp_bpffs_present: "{{ ((server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^bpffs_present=(.*)$') | first | default('false') | trim) | lower) == 'true' }}"
+    server_initial_setup_xdp_missing_tools: "{{ ((server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^missing_tools=(.*)$') | first | default('') | trim).split(',')) | reject('equalto', '') | list }}"
+    server_initial_setup_xdp_zero_copy_safe: "{{ ((server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^zero_copy_safe=(.*)$') | first | default('false') | trim) | lower) == 'true' }}"
+    server_initial_setup_xdp_zero_copy_reason: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^zero_copy_reason=(.*)$') | first | default('not_evaluated') | trim }}"
+    server_initial_setup_xdp_numa_check_status: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^numa_status=(.*)$') | first | default('skip') | trim }}"
+    server_initial_setup_xdp_numa_check_reason: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^numa_reason=(.*)$') | first | default('numa_probe_unavailable') | trim }}"
+    server_initial_setup_xdp_numa_poh_core: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^numa_poh_core=(.*)$') | first | default('') | trim }}"
+    server_initial_setup_xdp_numa_poh_node: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^numa_poh_node=(.*)$') | first | default('') | trim }}"
+    server_initial_setup_xdp_numa_xdp_cores: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^numa_xdp_cores=(.*)$') | first | default((server_initial_setup_xdp_cpu_cores | default(1)) | string) | trim }}"
+    server_initial_setup_xdp_numa_xdp_nodes: "{{ server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^numa_xdp_nodes=(.*)$') | first | default('') | trim }}"
+    server_initial_setup_xdp_warnings: "{{ ((server_initial_setup_xdp_readiness_probe.stdout | regex_findall('(?m)^warnings=(.*)$') | first | default('') | trim).split(',')) | reject('equalto', '') | list }}"
+  when: server_initial_setup_xdp_readiness_enabled | default(false) | bool
+
+- name: XDP readiness - Derive readiness result
+  ansible.builtin.set_fact:
+    server_initial_setup_xdp_ready: >-
+      {{
+        (server_initial_setup_xdp_probe_status | default('error') == 'ok')
+        and (server_initial_setup_xdp_warnings | default([]) | length == 0)
+        and (server_initial_setup_xdp_kernel_semver is version(server_initial_setup_xdp_min_kernel_version, '>='))
+      }}
+    server_initial_setup_xdp_warning_reasons: >-
+      {{
+        (
+          ['probe_failed']
+          if (server_initial_setup_xdp_probe_status | default('error')) != 'ok'
+          else []
+        )
+        + (server_initial_setup_xdp_warnings | default([]))
+        + (
+          ['kernel_too_old']
+          if not (server_initial_setup_xdp_kernel_semver is version(server_initial_setup_xdp_min_kernel_version, '>='))
+          else []
+        )
+      }}
+  when: server_initial_setup_xdp_readiness_enabled | default(false) | bool
+
+- name: XDP readiness - Print acquisition summary
+  ansible.builtin.debug:
+    msg: |
+      Pre-validator XDP Readiness Summary
+      - Probe status: {{ server_initial_setup_xdp_probe_status | default('error') }}
+      - Ready: {{ server_initial_setup_xdp_ready | default(false) }}
+      - Warnings: {{ (server_initial_setup_xdp_warning_reasons | default([])) | join(', ') if (server_initial_setup_xdp_warning_reasons | default([]) | length > 0) else 'none' }}
+      - Kernel: {{ server_initial_setup_xdp_kernel_semver | default('n/a') }} (minimum {{ server_initial_setup_xdp_min_kernel_version }})
+      - bpffs present: {{ server_initial_setup_xdp_bpffs_present | default(false) }}
+      - Missing tools: {{ (server_initial_setup_xdp_missing_tools | default([])) | join(', ') if (server_initial_setup_xdp_missing_tools | default([]) | length > 0) else 'none' }}
+      - Route interface: {{ server_initial_setup_xdp_route_iface | default('n/a') }}
+      - Selected XDP interface: {{ server_initial_setup_xdp_primary_iface | default('n/a') }}
+      - Interface source: {{ server_initial_setup_xdp_interface_selection_source | default('n/a') }}
+      - Interface reason: {{ server_initial_setup_xdp_interface_selection_reason | default('n/a') }}
+      - Driver link present: {{ server_initial_setup_xdp_iface_driver_link_present | default(false) }}
+      - Driver: {{ server_initial_setup_xdp_iface_driver_name | default('n/a') }}
+      - Zero-copy suitable: {{ server_initial_setup_xdp_zero_copy_safe | default(false) }} ({{ server_initial_setup_xdp_zero_copy_reason | default('n/a') }})
+      - NUMA check: {{ server_initial_setup_xdp_numa_check_status | default('n/a') }} ({{ server_initial_setup_xdp_numa_check_reason | default('n/a') }})
+      - PoH core/node: {{ server_initial_setup_xdp_numa_poh_core | default('n/a') }}/{{ server_initial_setup_xdp_numa_poh_node | default('n/a') }}
+      - XDP cores/nodes: {{ server_initial_setup_xdp_numa_xdp_cores | default('n/a') }}/{{ server_initial_setup_xdp_numa_xdp_nodes | default('n/a') }}
+  when: server_initial_setup_xdp_readiness_enabled | default(false) | bool
+
+- name: XDP readiness - Fail when acquisition readiness warnings are configured as fatal
+  ansible.builtin.assert:
+    that:
+      - server_initial_setup_xdp_ready | bool
+    fail_msg: "Pre-validator XDP readiness warnings are fatal: {{ (server_initial_setup_xdp_warning_reasons | default([])) | join(', ') }}"
+    success_msg: "Pre-validator XDP readiness checks passed"
+  when:
+    - server_initial_setup_xdp_readiness_enabled | default(false) | bool
+    - server_initial_setup_xdp_fail_on_warning | default(false) | bool
