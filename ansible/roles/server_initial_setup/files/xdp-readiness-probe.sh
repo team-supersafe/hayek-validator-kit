@@ -4,6 +4,7 @@ set -u
 # Environment overrides:
 #   XDP_SYS_CLASS_NET=/sys/class/net
 #   XDP_SYS_CPU=/sys/devices/system/cpu
+#   XDP_PROC_MOUNTS=/proc/mounts
 #   XDP_PROC_NET_BONDING=/proc/net/bonding
 #   XDP_ROUTE_IFACE=
 #   XDP_TARGET_INTERFACE=
@@ -14,6 +15,7 @@ set -u
 #   XDP_ZERO_COPY_UNSUPPORTED_DRIVERS=bnxt_en
 SYS_CLASS_NET="${XDP_SYS_CLASS_NET:-/sys/class/net}"
 SYS_CPU="${XDP_SYS_CPU:-/sys/devices/system/cpu}"
+PROC_MOUNTS="${XDP_PROC_MOUNTS:-/proc/mounts}"
 PROC_NET_BONDING="${XDP_PROC_NET_BONDING:-/proc/net/bonding}"
 OVERRIDE_IFACE="${XDP_TARGET_INTERFACE:-}"
 XDP_CORES_RAW="${XDP_CPU_CORES:-1}"
@@ -145,6 +147,10 @@ get_cpu_node() {
   local cpu="$1"
   awk -F, -v c="${cpu}" 'BEGIN { found=0 } /^[^#]/ && $1 == c { print $2; found=1; exit } END { if (!found) print "NA" }' <<< "${LSCPU_MAP}"
 }
+is_bpffs_mounted() {
+  [[ -r "${PROC_MOUNTS}" ]] || return 1
+  awk '$2 == "/sys/fs/bpf" && $3 == "bpf" { found=1 } END { exit found ? 0 : 1 }' "${PROC_MOUNTS}"
+}
 MISSING_TOOLS=""
 for tool in ip ethtool lscpu; do
   if ! have_tool "${tool}"; then
@@ -224,7 +230,7 @@ if [[ -z "${KERNEL_SEMVER}" ]]; then
   KERNEL_SEMVER="0.0.0"
 fi
 BPFFS_PRESENT=false
-if [[ -d /sys/fs/bpf ]]; then
+if is_bpffs_mounted; then
   BPFFS_PRESENT=true
 fi
 NUMA_STATUS="skip"
