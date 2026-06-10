@@ -12,7 +12,7 @@ set -u
 #   XDP_POH_CORE=
 #   XDP_ZERO_COPY_EXPECTED=true
 #   XDP_UNSUPPORTED_DRIVERS=virtio_net
-#   XDP_ZERO_COPY_UNSUPPORTED_DRIVERS=bnxt_en
+#   XDP_ZERO_COPY_UNSUPPORTED_DRIVERS=bnxt_en ice
 #
 # Output contract: emits key=value lines only, always exits 0, and reports
 # readiness through probe_status=ok|degraded plus warnings=<csv>.
@@ -25,7 +25,7 @@ XDP_CORES_RAW="${XDP_CPU_CORES:-1}"
 POH_CORE_RAW="${XDP_POH_CORE:-}"
 ZERO_COPY_EXPECTED="${XDP_ZERO_COPY_EXPECTED:-true}"
 UNSUPPORTED_DRIVERS="${XDP_UNSUPPORTED_DRIVERS:-virtio_net}"
-ZERO_COPY_UNSUPPORTED_DRIVERS="${XDP_ZERO_COPY_UNSUPPORTED_DRIVERS:-bnxt_en}"
+ZERO_COPY_UNSUPPORTED_DRIVERS="${XDP_ZERO_COPY_UNSUPPORTED_DRIVERS:-bnxt_en ice}"
 CPU_LIST_EXPANSION_LIMIT=4096
 LSCPU_MAP=""
 have_tool() {
