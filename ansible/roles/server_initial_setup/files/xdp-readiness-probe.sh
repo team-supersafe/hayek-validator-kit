@@ -7,12 +7,15 @@ set -u
 #   XDP_PROC_MOUNTS=/proc/mounts
 #   XDP_PROC_NET_BONDING=/proc/net/bonding
 #   XDP_ROUTE_IFACE=
-#   XDP_TARGET_INTERFACE=
+#   XDP_TARGET_INTERFACE=  # explicit escape hatch for indirect interface topologies
 #   XDP_CPU_CORES=1
 #   XDP_POH_CORE=
 #   XDP_ZERO_COPY_EXPECTED=true
 #   XDP_UNSUPPORTED_DRIVERS=virtio_net
 #   XDP_ZERO_COPY_UNSUPPORTED_DRIVERS=bnxt_en
+#
+# Output contract: emits key=value lines only, always exits 0, and reports
+# readiness through probe_status=ok|degraded plus warnings=<csv>.
 SYS_CLASS_NET="${XDP_SYS_CLASS_NET:-/sys/class/net}"
 SYS_CPU="${XDP_SYS_CPU:-/sys/devices/system/cpu}"
 PROC_MOUNTS="${XDP_PROC_MOUNTS:-/proc/mounts}"
@@ -108,6 +111,9 @@ resolve_bond_slave() {
 expand_cpu_list() {
   local raw="$1"
   local out="" part start end i count=0
+  if [[ -z "${raw}" || "${raw}" == *, || "${raw}" == ,* || "${raw}" == *,,* ]]; then
+    return 1
+  fi
   IFS=',' read -r -a parts <<< "${raw}"
   for part in "${parts[@]}"; do
     if [[ "${part}" =~ ^[0-9]+$ ]]; then
@@ -159,7 +165,7 @@ for tool in ip ethtool lscpu; do
 done
 ROUTE_IFACE=""
 SELECTED_IFACE=""
-SELECTION_SOURCE="ambiguous"
+SELECTION_SOURCE="unresolved"
 SELECTION_REASON="interface_unresolved"
 ZERO_COPY_SAFE=false
 ZERO_COPY_REASON="not_evaluated"
