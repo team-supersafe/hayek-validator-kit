@@ -1,0 +1,14 @@
+---
+# Pre-validator XDP readiness checks run during metal-box acquisition before any
+# validator binary is installed. They are warn-only by default so operators can
+# decide whether to return a host without interrupting the rest of provisioning.
+server_initial_setup_xdp_readiness_enabled: true
+server_initial_setup_xdp_fail_on_warning: false
+server_initial_setup_xdp_min_kernel_version: "5.10.0"
+server_initial_setup_xdp_target_interface: ""
+server_initial_setup_xdp_cpu_cores: "{{ xdp_experimental_retransmit_xdp_cpu_cores | default(1) }}"
+server_initial_setup_xdp_zero_copy_expected: true
+server_initial_setup_xdp_unsupported_iface_drivers:
+  - "virtio_net"
+server_initial_setup_xdp_zero_copy_unsupported_iface_drivers:
+  - "bnxt_en"

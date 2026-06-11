@@ -55,7 +55,7 @@
       {{
         (
           ['probe_failed']
-          if (server_initial_setup_xdp_probe_status | default('error')) != 'ok'
+          if (server_initial_setup_xdp_probe_status | default('error')) not in ['ok', 'degraded']
           else []
         )
         + (server_initial_setup_xdp_warnings | default([]))
